@@ -270,7 +270,14 @@ export default function Library() {
             ))}
           </div>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/importera")}
+              className="h-11 rounded-full px-4 text-[14px] font-medium gap-1.5 hover:bg-surface-2"
+            >
+              <Upload className="h-4 w-4" /> Importera
+            </Button>
             <Dialog open={openNew} onOpenChange={setOpenNew}>
               <DialogTrigger asChild>
                 <Button
