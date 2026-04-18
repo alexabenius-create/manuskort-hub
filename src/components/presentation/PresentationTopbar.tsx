@@ -48,7 +48,7 @@ export function PresentationTopbar({
   const targetClockTime = (() => {
     // Målklocka beräknas som "nu + remainingSeconds" om timern går; annars när countdown är klar
     const target = new Date(now + remainingSeconds * 1000);
-    return formatClock(target);
+    return formatClock(target, true);
   })();
 
   const timeColor = isOverdue
@@ -126,7 +126,7 @@ export function PresentationTopbar({
           {mode === "clock" ? (
             <>
               <span className={`font-mono text-[56px] tabular-nums leading-none ${timeColor}`}>
-                {formatClock(new Date(now))}
+                {formatClock(new Date(now), true)}
                 <span className="text-zinc-600 mx-2">/</span>
                 <span className="text-zinc-400">{targetClockTime}</span>
               </span>

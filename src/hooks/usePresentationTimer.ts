@@ -215,19 +215,22 @@ export function formatElapsedSeconds(totalSeconds: number, alwaysShowSeconds = t
   return alwaysShowSeconds ? `${sign}${pad(m)}:${pad(s)}` : `${sign}${m} min`;
 }
 
-/** HH:MM utifrån Date. */
-export function formatClock(date: Date): string {
+/** HH:MM eller HH:MM:SS utifrån Date. */
+export function formatClock(date: Date, withSeconds = false): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const base = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return withSeconds ? `${base}:${pad(date.getSeconds())}` : base;
 }
 
-/** "X min kvar" — avrundat uppåt. */
+/** "X min kvar" — avrundat uppåt. Sekundprecision under 1 min. */
 export function formatMinutesLeft(seconds: number): string {
   if (seconds < 0) {
-    const m = Math.ceil(Math.abs(seconds) / 60);
+    const abs = Math.abs(seconds);
+    if (abs < 60) return `${abs} sek över`;
+    const m = Math.ceil(abs / 60);
     return `${m} min över`;
   }
-  if (seconds < 60) return "<1 min kvar";
+  if (seconds < 60) return `${seconds} sek kvar`;
   const m = Math.ceil(seconds / 60);
   return `${m} min kvar`;
 }
