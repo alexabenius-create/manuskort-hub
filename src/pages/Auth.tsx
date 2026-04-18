@@ -22,19 +22,19 @@ export default function Auth() {
       if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: { emailRedirectTo: `${window.location.origin}/bibliotek` },
         });
         if (error) throw error;
         toast({ title: "Kolla din e-post", description: "Vi har skickat en magisk länk." });
       } else if (mode === "password") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/", { replace: true });
+        navigate("/bibliotek", { replace: true });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: { emailRedirectTo: `${window.location.origin}/bibliotek` },
         });
         if (error) throw error;
         toast({ title: "Konto skapat", description: "Verifiera din e-post om det krävs, sen är du inne." });
