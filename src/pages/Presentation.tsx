@@ -34,6 +34,8 @@ export default function Presentation() {
   const [showNotes, setShowNotes] = useState(true);
   const [sizeOffset, setSizeOffset] = useState(0);
   const [xVisible, setXVisible] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(true);
+  const [startMode, setStartMode] = useState<"countdown" | "instant" | null>(null);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
