@@ -1,30 +1,31 @@
 
 
-## Problem
-Hastighetsändring känns fördröjd av två orsaker:
+## Mål
+Ta bort visuell uppdelning av kort i mjuk rullning. Manuset renderas som ett långt sammanhängande dokument.
 
-1. **RAF-loopen startar om** vid varje `speedFactor`-ändring. Effekten har `pixelsPerSecond` i deps, så den nuvarande RAF cancelleras och ny startar — `lastTickRef` nollställs, vilket skapar en synlig mikropaus.
-2. **Drift-korrektion motverkar ändringen.** När du höjer hastigheten avviker `offsetRef` snabbt från `expected = elapsedSeconds * pixelsPerSecond`. Vid nästa drift-koll (upp till 5 sek senare) tvingas scrollen tillbaka till "förväntad" position — vilket suddar ut effekten av din hastighetsjustering.
+## Ändring
+**`src/components/presentation/ScrollingTeleprompter.tsx`**
 
-## Lösning
+Idag renderas varje kort som en egen `<section>` med:
+- Egen `header` (Kort N, titel, cue-tider)
+- Egen `<article>` med `max-w-[60ch]` och `px-6 md:px-16 py-8` padding
+- I `sentence`-läget: separat `SentenceRenderer` per kort → meningar mäts kort-för-kort
 
-### 1. Läs `pixelsPerSecond` via ref i RAF-loopen
-- Behåll `useMemo` för att beräkna värdet, men spegla det i en `pixelsPerSecondRef`.
-- Ta bort `pixelsPerSecond` (och `elapsedSeconds`) från RAF-effektens deps. Effekten startas bara en gång (eller vid `countdownActive`/dimensioner).
-- Resultat: hastighetsändring slår igenom omedelbart i nästa frame utan att RAF startas om.
+Detta skapar problem:
+- Sentence-highlight återställs/förvirras vid kortgränser
+- Vertikala "luckor" mellan korten gör scroll-rytmen ojämn
+- Höjdmätning blir mer fragmenterad
 
-### 2. Pausa drift-korrigering en kort stund efter manuell hastighetsändring
-- Ny ref: `manualOverrideUntilRef` (timestamp).
-- Vid hastighetsändring (ny prop-ändring detekteras via `useEffect` på `speedFactor`): sätt `manualOverrideUntilRef = performance.now() + 8000` (8 sek karens).
-- Nollställ även pågående `driftCorrectionRef` direkt.
-- I RAF-loopen: skippa drift-koll om `ts < manualOverrideUntilRef`.
+### Lösning
+1. **Slå ihop alla kort till en enda HTML-sträng** innan rendering. Separera korten med ett enkelt mellanrum (t.ex. `<p><br/></p>` eller bara dubbel marginal i CSS) — ingen rubrik, ingen badge, ingen tidsstämpel.
+2. **En enda `<article>`** med all transformerad HTML, eller en enda `SentenceRenderer` med alla meningar från alla kort konkatenerade.
+3. **`SentenceRenderer`**: tar emot en samlad lista meningar från hela manuset → alla mäts i samma container → ingen återställning vid kortgränser.
+4. Behåll padding på ytter-containern, men ta bort per-kort `py-8` och `header`.
 
-### 3. Mindre cleanup
-- Ta bort `elapsedSeconds` från RAF-deps (läses via ref från props i en separat `useEffect` som speglar till `elapsedSecondsRef`).
-
-## Filer som ändras
-- `src/components/presentation/ScrollingTeleprompter.tsx` — refs för `pixelsPerSecond`, `elapsedSeconds`, `manualOverrideUntil`; trimmade RAF-deps; karens efter speed-ändring.
+### Kvarstår oförändrat
+- Samma typografi, fontstorlek, läs-linje, hastighetslogik, drift-korrigering.
+- Cards-läget (en-i-taget) är helt orört.
 
 ## Resultat
-Klick på +/− eller tangent triggar omedelbar visuell hastighetsändring. Drift-synken pausas i 8 sekunder så användarens justering hinner kännas innan systemet börjar korrigera igen.
+Mjuk rullning blir ett enda flytande dokument. Sentence-highlight fungerar konsekvent över hela manuset utan hopp vid kortgränser.
 
