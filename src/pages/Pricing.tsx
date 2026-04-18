@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Minus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Feature = { label: string; included: boolean };
+type Billing = "month" | "year";
 
 const freeFeatures: Feature[] = [
   { label: "Upp till 2 manus", included: true },
@@ -48,6 +51,9 @@ function FeatureRow({ feature }: { feature: Feature }) {
 export default function Pricing() {
   const { user } = useAuth();
   const startHref = user ? "/" : "/auth";
+  const [billing, setBilling] = useState<Billing>("year");
+
+  const proPrice = billing === "year" ? "74" : "99";
 
   return (
     <div className="min-h-screen">
@@ -72,6 +78,32 @@ export default function Pricing() {
           </p>
         </section>
 
+        {/* Billing toggle */}
+        <div className="flex items-center justify-center gap-3">
+          <ToggleGroup
+            type="single"
+            value={billing}
+            onValueChange={(v) => v && setBilling(v as Billing)}
+            className="bg-surface rounded-full p-1 shadow-card"
+          >
+            <ToggleGroupItem
+              value="month"
+              className="rounded-full px-4 h-8 text-[13px] data-[state=on]:bg-foreground data-[state=on]:text-background"
+            >
+              Månad
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="year"
+              className="rounded-full px-4 h-8 text-[13px] data-[state=on]:bg-foreground data-[state=on]:text-background"
+            >
+              År
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <span className="inline-flex items-center rounded-full bg-accent-blue/10 text-accent-blue px-2.5 py-1 text-[11px] font-semibold tracking-wide">
+            Spara ~25%
+          </span>
+        </div>
+
         <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Gratis */}
           <article className="bg-surface rounded-2xl shadow-card p-7 flex flex-col gap-6">
@@ -84,6 +116,8 @@ export default function Pricing() {
                 <span className="font-display text-4xl font-semibold tracking-tight">0</span>
                 <span className="text-[14px] text-muted-foreground">kr/mån</span>
               </div>
+              {/* Spacer to align with PRO sub-price */}
+              <div className="h-4" />
             </header>
 
             <ul className="flex flex-col gap-3">
@@ -103,13 +137,23 @@ export default function Pricing() {
               Rekommenderas
             </span>
             <header className="flex flex-col gap-2">
-              <h3 className="font-display text-xl font-semibold tracking-tight">PRO</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-xl font-semibold tracking-tight">PRO</h3>
+                {billing === "year" && (
+                  <span className="inline-flex items-center rounded-full bg-accent-blue/10 text-accent-blue px-2 py-0.5 text-[10px] font-semibold tracking-wide">
+                    Bäst värde
+                  </span>
+                )}
+              </div>
               <p className="text-[13px] text-muted-foreground">
                 För dig som använder verktyget på riktigt.
               </p>
               <div className="flex items-baseline gap-1.5 mt-2">
-                <span className="font-display text-4xl font-semibold tracking-tight">—</span>
+                <span className="font-display text-4xl font-semibold tracking-tight">{proPrice}</span>
                 <span className="text-[14px] text-muted-foreground">kr/mån</span>
+              </div>
+              <div className="h-4 text-[12px] text-muted-foreground">
+                {billing === "year" ? "890 kr faktureras årligen" : "\u00A0"}
               </div>
             </header>
 
@@ -131,10 +175,6 @@ export default function Pricing() {
             </Tooltip>
           </article>
         </section>
-
-        <p className="text-center text-[12px] text-muted-foreground">
-          Pris bestäms inom kort. Ditt admin-konto har full tillgång till allt.
-        </p>
       </main>
     </div>
   );
