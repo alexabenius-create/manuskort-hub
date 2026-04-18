@@ -200,7 +200,7 @@ function HelpDot({ text }: { text: string }) {
           <HelpCircle className="h-3.5 w-3.5" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[260px] text-[12px] leading-[1.5] rounded-lg">
+      <TooltipContent side="top" className="max-w-[260px] text-[12px] leading-[1.5] rounded-lg whitespace-pre-line">
         {text}
       </TooltipContent>
     </Tooltip>
