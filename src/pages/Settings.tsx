@@ -26,7 +26,7 @@ export default function Settings() {
     <div className="min-h-screen">
       <header className="topbar-blur sticky top-0 z-40 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Link
-          to="/"
+          to="/bibliotek"
           className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
           aria-label="Tillbaka till bibliotek"
         >

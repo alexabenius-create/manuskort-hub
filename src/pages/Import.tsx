@@ -317,7 +317,7 @@ export default function Import() {
   const cancel = () => {
     if (store.dirty && !confirm("Avbryta importen? Dina val går förlorade.")) return;
     store.reset();
-    navigate("/");
+    navigate("/bibliotek");
   };
 
   // ============== GATING: PRO-only ==============
@@ -325,7 +325,7 @@ export default function Import() {
     return (
       <div className="min-h-screen">
         <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="rounded-full">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek")} className="rounded-full">
             <ArrowLeft className="h-4 w-4" /> Tillbaka
           </Button>
           <h1 className="font-display text-[17px] font-semibold tracking-tight">Importera manus</h1>
@@ -344,7 +344,7 @@ export default function Import() {
           </div>
           <div className="flex gap-3">
             <Button asChild variant="ghost" className="rounded-full">
-              <Link to="/">Tillbaka</Link>
+              <Link to="/bibliotek">Tillbaka</Link>
             </Button>
             <Button asChild className="rounded-full bg-accent-blue text-white hover:bg-accent-blue/90">
               <Link to="/priser">Se PRO</Link>
@@ -360,7 +360,7 @@ export default function Import() {
     return (
       <div className="min-h-screen">
         <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="rounded-full">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek")} className="rounded-full">
             <ArrowLeft className="h-4 w-4" /> Tillbaka
           </Button>
           <h1 className="font-display text-[17px] font-semibold tracking-tight">

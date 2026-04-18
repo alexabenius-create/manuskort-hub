@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
+import Landing from "./pages/Landing";
 import Library from "./pages/Library";
 import Editor from "./pages/Editor";
 import Presentation from "./pages/Presentation";
@@ -29,15 +30,16 @@ const App = () => (
           <TourProvider>
             <TierProvider>
               <Routes>
+                <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/priser" element={<Pricing />} />
-                <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
+                <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
                 <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                 <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
                 <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
                 <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                 <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
-                <Route path="/index" element={<Navigate to="/" replace />} />
+                <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TierProvider>
