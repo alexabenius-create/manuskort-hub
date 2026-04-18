@@ -189,6 +189,41 @@ export function ManusCard({
         </div>
       )}
 
+      {/* Panelist selection toolbar — visas mellan Tider och Manus när text är markerad */}
+      {showPanelistBar && (
+        <div className="bg-surface rounded-xl shadow-subtle px-5 py-3 flex items-center gap-2 flex-wrap animate-in fade-in slide-in-from-top-1 duration-150">
+          <span className="text-[12px] font-medium text-muted-foreground mr-1">
+            Rikta till:
+          </span>
+          {panelists.map((p) => {
+            const isActive = selection.activePanelistId === p.id;
+            return (
+              <button
+                key={p.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyPanelist(p)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all ${
+                  isActive ? "ring-2 ring-foreground/30" : "hover:scale-[1.03]"
+                }`}
+                style={{ backgroundColor: p.color, color: "hsl(240 6% 18%)" }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
+                {p.name || "Namnlös"}
+              </button>
+            );
+          })}
+          {selection.activePanelistId && (
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={clearPanelist}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+            >
+              <X className="h-3 w-3" /> Ta bort
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Body — manus + anteckningar som separata paneler */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
@@ -201,6 +236,8 @@ export function ManusCard({
             onChange={(html) => onLocalChange({ content_html: html })}
             placeholder={placeholder}
             size={textSize}
+            onEditorReady={setEditor}
+            onSelectionChange={setSelection}
           />
         </div>
         {showNotes && (
