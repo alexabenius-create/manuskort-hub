@@ -1,23 +1,20 @@
 
 
-Lägger till en passande emoji till varje av de 10 peppande budskapen i startmenyn.
+Ändra Enter-/Esc-beteendet i anteckningsrutan i presentationsläget.
 
-## Ändring
+## Ändringar
 
-I `src/components/presentation/PresentationStartMenu.tsx` (skapas i nästa steg enligt befintlig plan), uppdatera `MESSAGES`-listan:
+### `src/components/presentation/PresentationCard.tsx` (textarea `onKeyDown`)
 
-```
-"Du har förberett dig — nu är det din tur. ✨"
-"Andas. Du äger rummet. 🌬️"
-"Det här blir bra. 🌟"
-"Publiken är på din sida. 🤝"
-"Du har något viktigt att säga. 💬"
-"Lugn. Rak. Tydlig. 🧭"
-"En mening i taget. 🪜"
-"Du behöver inte vara perfekt — bara närvarande. 🌿"
-"Det är dina ord. Lita på dem. 📜"
-"Visa dem vad du kan. 🚀"
-```
+Ny logik:
+- **Enter (utan Shift)**: `blur()` på textarean → lämnar redigeringen. `e.preventDefault()` så ingen radbrytning skapas.
+- **Shift+Enter**: låt default ske (ny rad). Stoppa propagation så det inte triggar globala genvägar.
+- **Escape**: ta bort blur-hanteringen helt. Låt eventet bubbla upp så `Presentation.tsx` avslutar presentationen som vanligt.
+- Övriga tangenter: fortsätt `stopPropagation()` så Space, piltangenter, P m.fl. kan användas i texten utan att trigga navigation.
 
-Emojin placeras sist i strängen så typografin förblir ren och läsbar. Övrig logik och layout är oförändrad jämfört med tidigare plan.
+### `src/pages/Presentation.tsx` (global keydown)
+
+I Esc-grenen: ta bort specialfallet som blur:ar en `isEditable` target. Esc ska alltid kalla `exit()` direkt (oavsett om fokus ligger i textarean). Behåll `isEditable`-guarden för övriga tangenter (så Enter inte fångas globalt — fast Enter blir ändå hanterad i textarean nu).
+
+Resultat: Enter lämnar fältet, Shift+Enter radbryter, Esc avslutar presentationen även från textarean.
 
