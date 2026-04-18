@@ -530,12 +530,32 @@
 
   /* Minska gap mellan linjen ovanför manus och själva manustexten */
   .manu-card .card-panel-body {
-    padding: 0.5mm 0 0 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    align-items: flex-start !important;
+  }
+  .manu-card .card-panel-script,
+  .manu-card .card-panel-notes {
+    padding-top: 0 !important;
+  }
+  .manu-card .card-panel-script > *,
+  .manu-card .card-panel-notes > * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  .manu-card .card-panel-script .ProseMirror,
+  .manu-card .card-panel-notes textarea {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
     overflow: hidden !important;
   }
-  .manu-card .card-panel-script .ProseMirror {
+  .manu-card .ProseMirror > *:first-child,
+  .manu-card .ProseMirror p:first-child {
     margin-top: 0 !important;
-    overflow: hidden !important;
+    padding-top: 0 !important;
+  }
+  .manu-card .ProseMirror p:has(.panelist-mark) {
+    padding-top: 0 !important;
   }
 
   /* Dölj Signaler-panelen helt om inga fält är ifyllda */
