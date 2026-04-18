@@ -244,8 +244,9 @@ export default function Editor() {
 
   return (
     <div className="min-h-screen">
-      {/* Topbar */}
-      <header className="topbar-blur sticky top-0 z-50 border-b-hair px-5 sm:px-8 h-14 flex items-center gap-5 flex-wrap">
+      {/* Sticky topbar-grupp: huvudrad + (villkorlig) tidsformat-rad */}
+      <div className="topbar-blur sticky top-0 z-50 border-b-hair">
+        <header className="px-5 sm:px-8 h-14 flex items-center gap-5 flex-wrap">
         <Link
           to="/"
           className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
@@ -312,34 +313,35 @@ export default function Editor() {
             <Printer className="h-3.5 w-3.5" /> Skriv ut
           </Button>
         </div>
-      </header>
+        </header>
 
-      {/* Sekundär rad: tidsformat-toggle, visas bara när Tider är på */}
-      {manuscript.show_times && (
-        <div className="border-b-hair px-5 sm:px-8 py-2.5 flex items-center gap-3 flex-wrap bg-surface/40">
-          <span className="text-[12px] text-muted-foreground">
-            Ska tiderna visa klockslag eller förfluten tid?
-          </span>
-          <div className="seg-group">
-            <button
-              data-active={timeFormat === "clock"}
-              onClick={() => updateMeta({ time_format: "clock" })}
-              className="seg-btn"
-              title="Klockslag på dygnet (HH:MM)"
-            >
-              Klockslag
-            </button>
-            <button
-              data-active={timeFormat === "elapsed"}
-              onClick={() => updateMeta({ time_format: "elapsed" })}
-              className="seg-btn"
-              title="Förfluten tid från programmets start (MM:SS)"
-            >
-              Förfluten
-            </button>
+        {/* Sekundär rad: tidsformat-toggle, visas bara när Tider är på */}
+        {manuscript.show_times && (
+          <div className="border-t-hair px-5 sm:px-8 py-2.5 flex items-center gap-3 flex-wrap">
+            <span className="text-[12px] text-muted-foreground">
+              Ska tiderna visa klockslag eller förfluten tid?
+            </span>
+            <div className="seg-group">
+              <button
+                data-active={timeFormat === "clock"}
+                onClick={() => updateMeta({ time_format: "clock" })}
+                className="seg-btn"
+                title="Klockslag på dygnet (HH:MM)"
+              >
+                Klockslag
+              </button>
+              <button
+                data-active={timeFormat === "elapsed"}
+                onClick={() => updateMeta({ time_format: "elapsed" })}
+                className="seg-btn"
+                title="Förfluten tid från programmets start (MM:SS)"
+              >
+                Förfluten
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <main className="max-w-[920px] mx-auto px-5 sm:px-8 py-10 sm:py-14 pb-24 flex flex-col gap-6">
         {/* Legend */}
