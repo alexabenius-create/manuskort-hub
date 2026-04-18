@@ -325,7 +325,7 @@ export default function Editor() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => window.print()}
+            onClick={() => setPrintDialogOpen(true)}
             className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
           >
             <Printer className="h-3.5 w-3.5" /> Skriv ut
