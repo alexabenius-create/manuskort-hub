@@ -39,9 +39,7 @@ serve(async (req) => {
       line_items: [{ price: stripePrice.id, quantity: quantity || 1 }],
       mode: isRecurring ? "subscription" : "payment",
       ui_mode: "embedded",
-      // automatic_tax kräver default tax code i Stripe Tax settings.
-      // Aktivera när tax code är konfigurerad i Stripe Dashboard.
-      // automatic_tax: { enabled: true },
+      automatic_tax: { enabled: true },
       return_url:
         returnUrl ||
         `${req.headers.get("origin")}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
