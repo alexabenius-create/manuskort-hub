@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
 import { LIMITS } from "@/lib/tierLimits";
 import { useImportStore } from "@/lib/import/importStore";
+import { SEO } from "@/components/SEO";
 import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";

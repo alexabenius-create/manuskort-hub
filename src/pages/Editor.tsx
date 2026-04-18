@@ -8,6 +8,7 @@ import type { Editor as TiptapEditorType } from "@tiptap/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 import { ManusCard } from "@/components/editor/ManusCard";
 import { ManusCardV2, type NotesPlacement } from "@/components/editor/ManusCardV2";
 import { SaveIndicator } from "@/components/SaveIndicator";
@@ -592,6 +593,7 @@ export default function Editor() {
 
   return (
     <PanelistsProvider manuscriptId={manuscript.id}>
+    <SEO title="Manus – Manuskort" noindex nofollow />
     <div className="min-h-screen">
       {/* Sticky topbar — kompakt, en rad. Vy-inställningar i popover. */}
       <div className="topbar-blur sticky top-0 z-50 border-b-hair">

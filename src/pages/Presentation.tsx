@@ -11,6 +11,7 @@ import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
 import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/components/presentation/PresentationStartMenu";
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
 import { HelpOverlay } from "@/components/presentation/HelpOverlay";
+import { SEO } from "@/components/SEO";
 
 const HELP_SEEN_KEY = "presentation-help-seen-v1";
 import { toast } from "sonner";
@@ -367,6 +368,8 @@ export default function Presentation() {
   const hasPanicCards = cards.some((c) => c.is_panic_card);
 
   return (
+    <>
+    <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
       onTouchStart={onTouchStart}
