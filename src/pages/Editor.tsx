@@ -20,7 +20,7 @@ import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
 import { wordCount, estimateSeconds } from "@/lib/wordCount";
-import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE, countVisualRows } from "@/lib/cardLimits";
+import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
@@ -339,13 +339,6 @@ export default function Editor() {
     const startIdx = cards.findIndex((c) => c.id === cardId);
     if (startIdx === -1) return;
 
-    const sampleEditor = editorRefs.current.get(cardId);
-    const sampleEl = sampleEditor?.view.dom as HTMLElement | undefined;
-    if (!sampleEl) {
-      toast({ title: "Kunde inte mäta kortet", description: "Försök igen om en stund.", variant: "destructive" });
-      return;
-    }
-
     const textSize = (manuscript.text_size as "sm" | "md" | "lg") ?? "md";
     const maxRows = MAX_ROWS_BY_SIZE[textSize];
 
@@ -371,22 +364,8 @@ export default function Editor() {
       const cur = working[idx];
       const html = cur.content_html ?? "";
 
-      // Mät mot DOM-klonen
-      let [fits, overflow] = splitHtmlAtRow(html, maxRows, sampleEl);
-
-      // Defensivt: för startkortet vet vi via live-editorn att det är över gränsen.
-      // Om mät-klonen ändå säger att allt ryms (kan hända vid CSS-skillnader) →
-      // tvinga en halv-split så vi inte tyst misslyckas med ett "framgångs"-toast.
-      if (idx === startIdx && !overflow) {
-        const liveRows = countVisualRows(sampleEl);
-        if (liveRows > maxRows) {
-          const [a, b] = splitHtmlInHalf(html);
-          if (b) {
-            fits = a;
-            overflow = b;
-          }
-        }
-      }
+      // Mät mot presentationsgeometrin
+      let [fits, overflow] = splitHtmlAtRow(html, maxRows, textSize);
 
       if (!overflow) {
         if (fits !== html) working[idx] = { ...cur, content_html: fits };
@@ -467,7 +446,7 @@ export default function Editor() {
 
       // Kontrollera om nästa kort nu ryms — om ja, klart
       const after = working[idx];
-      const [, overflowAfter] = splitHtmlAtRow(after.content_html ?? "", maxRows, sampleEl);
+      const [, overflowAfter] = splitHtmlAtRow(after.content_html ?? "", maxRows, textSize);
       if (!overflowAfter) break;
       // Annars fortsätt loopen och splitta detta kort i nästa iteration
     }

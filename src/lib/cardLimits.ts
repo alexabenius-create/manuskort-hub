@@ -4,8 +4,63 @@ export const MAX_ROWS_BY_SIZE = { sm: 10, md: 8, lg: 6 } as const;
 export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
 
 /**
+ * Presentationslägets typografi per textstorlek — speglar PresentationCard.
+ * Vi mäter alltid mot dessa värden, oavsett editorns visuella bredd, så
+ * "X/8 rader" i editorn alltid stämmer med antal rader i presentationsläget.
+ *
+ * Bredd: 60ch i font-display vid given fontSize. ch ≈ 0.5em för proportionella
+ * fonter — vi använder 0.52 som rimligt medel för Inter Tight.
+ */
+const PRESENTATION_GEOMETRY = {
+  sm: { fontSize: 24, lineHeight: 1.7, widthPx: Math.round(60 * 24 * 0.52) },
+  md: { fontSize: 30, lineHeight: 1.7, widthPx: Math.round(60 * 30 * 0.52) },
+  lg: { fontSize: 38, lineHeight: 1.7, widthPx: Math.round(60 * 38 * 0.52) },
+} as const;
+
+let presentationMeasurer: HTMLDivElement | null = null;
+function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
+  const g = PRESENTATION_GEOMETRY[textSize];
+  if (!presentationMeasurer) {
+    const el = document.createElement("div");
+    el.setAttribute("data-presentation-measurer", "true");
+    el.className = "presentation-prose font-display";
+    el.style.position = "fixed";
+    el.style.left = "-99999px";
+    el.style.top = "0";
+    el.style.visibility = "hidden";
+    el.style.pointerEvents = "none";
+    el.style.boxSizing = "content-box";
+    el.style.padding = "0";
+    el.style.margin = "0";
+    document.body.appendChild(el);
+    presentationMeasurer = el;
+  }
+  presentationMeasurer.style.width = `${g.widthPx}px`;
+  presentationMeasurer.style.fontSize = `${g.fontSize}px`;
+  presentationMeasurer.style.lineHeight = String(g.lineHeight);
+  return presentationMeasurer;
+}
+
+/**
+ * Mäter hur många rader `html` skulle bli i presentationsläget.
+ * Detta är den enda korrekta källan för radantal — editorns egen DOM
+ * har annan bredd/font och ger fel resultat.
+ */
+export function countPresentationRows(html: string, textSize: TextSize): number {
+  const el = getPresentationMeasurer(textSize);
+  el.innerHTML = html || "<p></p>";
+  const cs = getComputedStyle(el);
+  const lh = parseFloat(cs.lineHeight);
+  if (!lh || !isFinite(lh) || lh <= 0) return 0;
+  return Math.max(1, Math.round(el.scrollHeight / lh));
+}
+
+/**
  * Räknar antal visuella rader (inklusive mjuk wrappning) i ett element.
  * Mäter scrollHeight / line-height på roten.
+ *
+ * OBS: Detta mäter ELEMENTETS egen geometri — för korrekt radantal mot
+ * presentationsläget, använd `countPresentationRows` istället.
  */
 export function countVisualRows(el: HTMLElement): number {
   if (!el) return 0;
@@ -15,41 +70,9 @@ export function countVisualRows(el: HTMLElement): number {
   return Math.max(1, Math.round(el.scrollHeight / lh));
 }
 
-/**
- * Skapar en dold mät-div som efterliknar sampleEl exakt — samma klassnamn,
- * samma föräldra-bredd och samma typografi. På det sättet matchar wrappningen
- * det användaren faktiskt ser i editorn (CSS-regler för .ProseMirror p osv.
- * appliceras korrekt).
- */
-function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
-  const width = sampleEl.clientWidth || sampleEl.getBoundingClientRect().width || 600;
-
-  // Wrappa mät-elementet i en container med exakt samma bredd, så att inre
-  // CSS-regler (font-size, line-height, padding) räknas på samma sätt.
-  const wrapper = document.createElement("div");
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "-99999px";
-  wrapper.style.top = "0";
-  wrapper.style.visibility = "hidden";
-  wrapper.style.pointerEvents = "none";
-  wrapper.style.width = `${width}px`;
-  wrapper.style.boxSizing = "border-box";
-
-  // Klona sampleEl-noden (utan innehåll) — så vi får samma klasser och stilar.
-  const clone = sampleEl.cloneNode(false) as HTMLDivElement;
-  clone.removeAttribute("contenteditable");
-  clone.removeAttribute("id");
-  clone.style.width = "100%";
-  clone.style.minHeight = "0";
-  clone.style.height = "auto";
-  clone.style.maxHeight = "none";
-  clone.style.overflow = "visible";
-  clone.innerHTML = "";
-
-  wrapper.appendChild(clone);
-  document.body.appendChild(wrapper);
-  return { el: clone, cleanup: () => wrapper.remove() };
-}
+// (Tidigare createMeasurer borttagen — vi mäter alltid mot presentations-
+// geometrin via getPresentationMeasurer ovan, för att radantal ska stämma
+// med vad användaren faktiskt ser i presentationsläget.)
 
 
 /**
@@ -64,17 +87,18 @@ function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: (
 export function splitHtmlAtRow(
   html: string,
   maxRows: number,
-  sampleEl: HTMLElement,
+  textSize: TextSize,
 ): [string, string] {
   if (!html || !html.trim()) return [html, ""];
 
-  const { el: measurer, cleanup } = createMeasurer(sampleEl);
-  try {
-    // Kontrollera först om allt får plats
-    measurer.innerHTML = html;
-    if (countVisualRows(measurer) <= maxRows) {
-      return [html, ""];
-    }
+  const measurer = getPresentationMeasurer(textSize);
+  // Kontrollera först om allt får plats
+  measurer.innerHTML = html;
+  if (countVisualRows(measurer) <= maxRows) {
+    return [html, ""];
+  }
+  // Wrapper try/finally inte längre nödvändig — measurer återanvänds globalt.
+  {
 
     // Parsa HTML till en lista av blockelement
     const tmp = document.createElement("div");
@@ -202,8 +226,6 @@ export function splitHtmlAtRow(
     }
 
     return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
-  } finally {
-    cleanup();
   }
 }
 

@@ -5,7 +5,7 @@ import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
-import { countVisualRows } from "@/lib/cardLimits";
+import { countPresentationRows } from "@/lib/cardLimits";
 
 export interface SelectionState {
   hasSelection: boolean;
@@ -30,13 +30,6 @@ const sizeClass = {
   lg: "text-[22px] leading-[1.55] min-h-[150px]",
 };
 
-// Tangenter som alltid är tillåtna även när kortet är fullt
-const ALWAYS_ALLOWED_KEYS = new Set([
-  "Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
-  "Home", "End", "PageUp", "PageDown", "Tab", "Escape", "Shift", "Control",
-  "Alt", "Meta", "CapsLock",
-]);
-
 export function TiptapEditor({
   value,
   onChange,
@@ -52,10 +45,14 @@ export function TiptapEditor({
   const rowsRef = useRef(0);
   const maxRowsRef = useRef<number | undefined>(maxRows);
   maxRowsRef.current = maxRows;
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
 
   const measureAndReport = (editor: Editor) => {
-    const dom = editor.view.dom as HTMLElement;
-    const rows = countVisualRows(dom);
+    // Mät mot presentations-geometrin, INTE editorns egen DOM.
+    // Detta säkerställer att "X/Y rader" stämmer med presentationsläget
+    // även om editorn har en smalare/bredare textruta.
+    const rows = countPresentationRows(editor.getHTML(), sizeRef.current);
     rowsRef.current = rows;
     onRowCountChange?.(rows);
   };
@@ -136,8 +133,8 @@ export function TiptapEditor({
 
         const insertAndMeasure = (chunk: string): number => {
           editor?.chain().focus().insertContent(chunk.replace(/\n/g, "<br>")).run();
-          // Synkron mätning direkt efter insert
-          return countVisualRows(dom);
+          // Mät mot presentationsgeometrin (inte editorns DOM)
+          return countPresentationRows(editor?.getHTML() ?? "", sizeRef.current);
         };
 
         // Försök sätt in allt
@@ -161,7 +158,7 @@ export function TiptapEditor({
           const mid = Math.floor((lo + hi) / 2);
           const chunk = text.slice(0, mid);
           editor?.chain().focus().insertContent(chunk.replace(/\n/g, "<br>")).run();
-          const r = countVisualRows(dom);
+          const r = countPresentationRows(editor?.getHTML() ?? "", sizeRef.current);
           editor?.chain().focus().undo().run();
           if (r <= max) {
             bestFit = mid;
