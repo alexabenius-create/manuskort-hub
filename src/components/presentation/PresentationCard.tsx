@@ -20,6 +20,8 @@ interface Props {
   sizeOffset: number;
   showNotes: boolean;
   onToggleNotes: () => void;
+  /** Callback när användaren redigerar anteckningar. */
+  onNotesChange?: (notes: string) => void;
 }
 
 const BASE_SIZE = { sm: 24, md: 30, lg: 38 } as const;
