@@ -130,7 +130,7 @@ export function ManusCard({
       className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
       {/* Header panel */}
-      <header className="bg-surface rounded-xl shadow-subtle px-5 pt-4 pb-4 flex items-start gap-4">
+      <header className="card-panel-header bg-surface rounded-xl shadow-subtle px-5 pt-4 pb-4 flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="font-mono text-[11px] text-muted-foreground tracking-wide">
@@ -185,7 +185,7 @@ export function ManusCard({
 
       {/* Tider panel */}
       {showTimes && (
-        <div className="bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
+        <div className="card-panel-times bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="text-[12px] font-medium text-muted-foreground">Tider</span>
             <HelpDot text={timeFormat === "clock"
@@ -272,8 +272,8 @@ export function ManusCard({
       )}
 
       {/* Body — manus + anteckningar som separata paneler */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
+      <div className="card-panel-body flex flex-col md:flex-row gap-3">
+        <div className="card-panel-script flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
           <div className="flex items-center gap-1.5 mb-3">
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
             <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser." />
@@ -329,7 +329,7 @@ export function ManusCard({
           )}
         </div>
         {showNotes && (
-          <div className="w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
+          <div className="card-panel-notes w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
               <HelpDot text="Privata noter till dig själv som inte ska läsas upp — t.ex. ”vänta in applåd”, ”titta upp här”, eller bakgrundsfakta. Syns bara i redigeringsläget, inte i ett framtida presentationsläge." />
@@ -345,7 +345,7 @@ export function ManusCard({
       </div>
 
       {/* Cue panel */}
-      <footer className="bg-surface rounded-xl shadow-subtle px-5 py-4 flex flex-col gap-2">
+      <footer className="card-panel-cues bg-surface rounded-xl shadow-subtle px-5 py-4 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-medium text-muted-foreground">Signaler</span>
           <HelpDot text={"Korta visuella påminnelser för dig själv under framförandet.\n\nRöd = bromsa eller pausa här.\nGul = avslutningssignal, börja runda av.\nGrön = överlämning till nästa person eller nästa kort.\n\nSkriv kort och konkret, så de är lätta att skanna i farten."} />

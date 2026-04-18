@@ -363,13 +363,103 @@
     padding: 4mm !important;
     animation: none !important;
     background: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2mm !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
-  /* Kortpaneler (header/body/footer) ska inte ha egna bakgrunder/skuggor i print */
+  /* Kortpaneler — neutralisera bakgrund/skugga, vi styr layout via klasser nedan */
   .manu-card > * {
     background: white !important;
     box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Kompakta paneler: ~20% tillsammans */
+  .manu-card .card-panel-header {
+    flex: 0 0 auto !important;
+    padding: 0 0 1.5mm 0 !important;
+    border-bottom: 1px solid hsl(240 6% 88%) !important;
+  }
+  .manu-card .card-panel-header .font-display {
+    font-size: 12pt !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .manu-card .card-panel-times {
+    flex: 0 0 auto !important;
+    padding: 1mm 0 !important;
+    font-size: 9pt !important;
+    border-bottom: 1px solid hsl(240 6% 92%) !important;
+  }
+  .manu-card .card-panel-cues {
+    flex: 0 0 auto !important;
+    padding: 1.5mm 0 0 0 !important;
+    font-size: 9pt !important;
+    border-top: 1px solid hsl(240 6% 92%) !important;
+  }
+
+  /* Manus + anteckningar tillsammans = ~80% av kortets yta */
+  .manu-card .card-panel-body {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4mm !important;
+    min-height: 0 !important;
     padding: 2mm 0 !important;
+  }
+  .manu-card .card-panel-script {
+    flex: 0 0 65% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .manu-card .card-panel-notes {
+    flex: 0 0 calc(35% - 4mm) !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    border-left: 1px solid hsl(240 6% 92%) !important;
+    padding-left: 3mm !important;
+  }
+  /* Tom anteckningstextarea → låt manus ta hela utrymmet */
+  .manu-card .card-panel-notes:has(textarea[value=""]),
+  .manu-card .card-panel-body:not(:has(.card-panel-notes)) .card-panel-script {
+    /* När noter saknas: script får växa */
+  }
+  .manu-card .card-panel-body:not(:has(.card-panel-notes)) .card-panel-script {
+    flex: 1 1 100% !important;
+  }
+
+  /* Dölj UI-element inuti panelerna som inte tillför något i print */
+  .manu-card .card-panel-script > div:first-child,
+  .manu-card .card-panel-notes > div:first-child {
+    display: none !important; /* "Manus" / "Anteckningar"-rubriker + radräknare */
+  }
+  .manu-card .card-panel-times .ml-auto {
+    margin-left: auto !important;
+  }
+
+  /* Typografi i manus + notes — skala efter format */
+  .manu-card .ProseMirror,
+  .manu-card .card-panel-notes textarea {
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    color: black !important;
+  }
+  html[data-print-format="a5-1up"] .manu-card .ProseMirror,
+  html[data-print-format="a5-1up"] .manu-card .card-panel-notes textarea {
+    font-size: 13pt !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Dölj felmeddelande/auto-split-knapp i print */
+  .manu-card .card-panel-script .bg-destructive\/10 {
+    display: none !important;
   }
 
   /* Säkerställ att färger på panelist-markeringar och cue-dots faktiskt skrivs ut */
@@ -381,17 +471,21 @@
     color-adjust: exact !important;
   }
 
-  /* A4 — 2 kort per sida: bryt efter varannan */
+  /* A4 — 2 kort per sida: fix höjd och bryt efter varannan */
+  html[data-print-format="a4-2up"] .manu-card {
+    height: calc((297mm - 24mm - 6mm) / 2) !important;
+  }
   html[data-print-format="a4-2up"] .manu-card:nth-child(2n) {
     break-after: page;
     page-break-after: always;
   }
 
-  /* A5 — 1 kort per sida */
+  /* A5 — 1 kort per sida (liggande: sidhöjd ≈ 148mm) */
   html[data-print-format="a5-1up"] .manu-card {
+    height: calc(148mm - 20mm) !important;
+    padding: 6mm !important;
     break-after: page;
     page-break-after: always;
-    padding: 6mm !important;
   }
 }
 
