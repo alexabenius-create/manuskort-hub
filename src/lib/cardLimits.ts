@@ -111,7 +111,7 @@ export function splitHtmlAtRow(
         const removed = fitBlocks.pop()!;
         const fitsHtml = fitBlocks.map((b) => b.outerHTML).join("");
         const overflowHtml = [removed, ...blocks.slice(blocks.length)].map((b) => b.outerHTML).join("");
-        return [fitsHtml, overflowHtml];
+        return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
       }
       // Enda blocket — gå till ord-split nedan
       overflowBlockIdx = 0;
