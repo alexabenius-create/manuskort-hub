@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Minus } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 type Feature = { label: string; included: boolean };
 type Billing = "month" | "year";
@@ -50,13 +52,25 @@ function FeatureRow({ feature }: { feature: Feature }) {
 
 export default function Pricing() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const startHref = user ? "/" : "/auth";
   const [billing, setBilling] = useState<Billing>("year");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const proPrice = billing === "year" ? "74" : "99";
+  const priceId = billing === "year" ? "pro_yearly" : "pro_monthly";
+
+  const handleUpgrade = () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setCheckoutOpen(true);
+  };
 
   return (
     <div className="min-h-screen">
+      <PaymentTestModeBanner />
       <header className="topbar-blur sticky top-0 z-40 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Link
           to="/bibliotek"
@@ -163,19 +177,33 @@ export default function Pricing() {
               ))}
             </ul>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="mt-auto">
-                  <Button disabled className="rounded-full w-full bg-accent-blue text-white hover:bg-accent-blue/90">
-                    Uppgradera
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Kommer snart</TooltipContent>
-            </Tooltip>
+            <Button
+              onClick={handleUpgrade}
+              className="rounded-full w-full bg-accent-blue text-white hover:bg-accent-blue/90 mt-auto"
+            >
+              Uppgradera
+            </Button>
           </article>
         </section>
       </main>
+
+      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Manuskort PRO – {billing === "year" ? "Årsplan" : "Månadsplan"}
+            </DialogTitle>
+          </DialogHeader>
+          {checkoutOpen && (
+            <StripeEmbeddedCheckout
+              priceId={priceId}
+              customerEmail={user?.email}
+              userId={user?.id}
+              returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
