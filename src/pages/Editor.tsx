@@ -26,6 +26,8 @@ export default function Editor() {
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
+  const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
 
   const meta = useMemo(() => {
     if (!manuscript) return null;
