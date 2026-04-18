@@ -66,7 +66,6 @@ export default function Library() {
       toast({ title: "Kunde inte skapa", description: error?.message, variant: "destructive" });
       return;
     }
-    // Skapa ett första tomt kort
     await supabase.from("cards").insert({
       manuscript_id: data.id,
       user_id: user.id,
@@ -133,133 +132,183 @@ export default function Library() {
     setRenameId(null);
   };
 
+  const filters: ["all" | "moderator" | "speaker", string][] = [
+    ["all", "Alla"],
+    ["moderator", "Moderator"],
+    ["speaker", "Talare"],
+  ];
+
   return (
     <div className="min-h-screen">
       {/* Topbar */}
-      <header className="topbar-blur sticky top-0 z-50 border-b-hair-strong px-8 py-3 flex items-center gap-6">
-        <h1 className="font-serif text-[15px] tracking-tight font-medium">
-          Manuskort <span className="italic font-light text-muted-foreground">— bibliotek</span>
-        </h1>
+      <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-6">
+        <h1 className="font-display text-[17px] font-semibold tracking-tight">Manuskort</h1>
         <div className="ml-auto flex items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-widest text-faint hidden sm:inline">
+          <span className="text-[13px] text-muted-foreground hidden sm:inline">
             {user?.email}
           </span>
-          <Button variant="ghost" size="sm" onClick={signOut} className="font-mono text-[11px] uppercase tracking-widest">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={signOut}
+            className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+          >
             <LogOut className="h-3.5 w-3.5" /> Logga ut
           </Button>
         </div>
       </header>
 
-      <main className="max-w-[860px] mx-auto px-8 py-10">
+      <main className="max-w-[1100px] mx-auto px-6 sm:px-10 pt-12 sm:pt-16 pb-20">
+        {/* Hero */}
+        <div className="mb-10 sm:mb-14">
+          <h2 className="font-display text-4xl sm:text-5xl font-semibold tracking-tight">
+            Dina manus
+          </h2>
+          <p className="text-muted-foreground text-[17px] mt-3">
+            Skapa, redigera och håll flyt — från första hälsning till sista applåd.
+          </p>
+        </div>
+
+        {/* Controls */}
         <div className="flex flex-wrap gap-3 items-center mb-8">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-faint" />
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Sök titel eller tagg…"
-              className="pl-9 bg-surface border-hair-strong font-serif"
+              placeholder="Sök titel eller tagg"
+              className="pl-11 h-11 rounded-full bg-surface-2 border-0 text-[14px] focus-visible:ring-2 focus-visible:ring-accent-blue"
             />
           </div>
 
-          <div className="flex font-mono text-[11px] uppercase tracking-widest">
-            {(["all", "moderator", "speaker"] as const).map((v, i, a) => (
+          <div className="seg-group">
+            {filters.map(([v, label]) => (
               <button
                 key={v}
                 onClick={() => setFilterMode(v)}
-                className={`px-3 py-2 border-hair-strong transition-colors ${
-                  filterMode === v ? "bg-foreground text-background border-foreground" : "text-muted-foreground hover:bg-surface-2"
-                } ${i === 0 ? "rounded-l-md" : ""} ${i === a.length - 1 ? "rounded-r-md" : ""}`}
+                data-active={filterMode === v}
+                className="seg-btn"
               >
-                {v === "all" ? "Alla" : v === "moderator" ? "Moderator" : "Talare"}
+                {label}
               </button>
             ))}
           </div>
 
-          <Dialog open={openNew} onOpenChange={setOpenNew}>
-            <DialogTrigger asChild>
-              <Button className="font-mono text-xs uppercase tracking-widest gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> Nytt manus
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle className="font-serif">Nytt manus</DialogTitle>
-                <DialogDescription className="font-serif italic text-faint">
-                  Välj läge och ge manuset en titel.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="font-mono text-[11px] uppercase tracking-widest text-faint">Läge</Label>
-                  <div className="flex font-mono text-xs">
-                    {(["speaker", "moderator"] as const).map((v, i, a) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => setNewMode(v)}
-                        className={`flex-1 px-3 py-2 border-hair-strong transition-colors ${
-                          newMode === v ? "bg-foreground text-background border-foreground" : "text-muted-foreground hover:bg-surface-2"
-                        } ${i === 0 ? "rounded-l-md" : ""} ${i === a.length - 1 ? "rounded-r-md" : ""}`}
-                      >
-                        {v === "speaker" ? "Talare" : "Moderator"}
-                      </button>
-                    ))}
+          <div className="ml-auto">
+            <Dialog open={openNew} onOpenChange={setOpenNew}>
+              <DialogTrigger asChild>
+                <Button className="h-11 rounded-full px-5 bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] font-medium gap-1.5">
+                  <Plus className="h-4 w-4" /> Nytt manus
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-2xl font-semibold">Nytt manus</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    Välj läge och ge manuset en titel.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-5 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-muted-foreground font-medium">Läge</Label>
+                    <div className="seg-group w-full">
+                      {(["speaker", "moderator"] as const).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setNewMode(v)}
+                          data-active={newMode === v}
+                          className="seg-btn flex-1"
+                        >
+                          {v === "speaker" ? "Talare" : "Moderator"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="t" className="text-[13px] text-muted-foreground font-medium">Titel</Label>
+                    <Input
+                      id="t"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder="t.ex. Keynote — Stockholm 25 nov"
+                      className="h-11 rounded-xl bg-surface-2 border-0 focus-visible:ring-2 focus-visible:ring-accent-blue"
+                    />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="t" className="font-mono text-[11px] uppercase tracking-widest text-faint">Titel</Label>
-                  <Input id="t" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="t.ex. Keynote — Stockholm 25 nov" className="font-serif" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpenNew(false)} className="font-mono text-xs uppercase">Avbryt</Button>
-                <Button onClick={createNew} className="font-mono text-xs uppercase">Skapa</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setOpenNew(false)} className="rounded-full">Avbryt</Button>
+                  <Button onClick={createNew} className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white">Skapa</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-center font-serif italic text-faint py-20">Laddar dina manus…</p>
+          <p className="text-center text-muted-foreground py-20">Laddar dina manus…</p>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 font-serif italic text-faint">
+          <div className="text-center py-24 text-muted-foreground">
             {items.length === 0 ? (
-              <>Du har inga manus än. <button className="underline not-italic" onClick={() => setOpenNew(true)}>Skapa ditt första</button>.</>
+              <>
+                <p className="text-[17px] mb-3">Du har inga manus än.</p>
+                <button
+                  className="text-accent-blue hover:underline font-medium"
+                  onClick={() => setOpenNew(true)}
+                >
+                  Skapa ditt första
+                </button>
+              </>
             ) : (
               <>Inga manus matchar din sökning.</>
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filtered.map((m) => (
-              <li key={m.id} className="bg-surface border-hair-strong rounded-lg overflow-hidden hover:shadow-sm transition-shadow">
+              <li
+                key={m.id}
+                className="group bg-surface rounded-2xl shadow-card hover:shadow-pop transition-shadow duration-200 overflow-hidden"
+              >
                 <div className="flex items-stretch">
                   <button
                     onClick={() => navigate(`/manus/${m.id}`)}
-                    className="flex-1 text-left px-5 py-4 flex items-center gap-4"
+                    className="flex-1 text-left px-6 py-5 min-w-0"
                   >
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-serif text-[17px] truncate">{m.title}</h3>
-                      <div className="flex gap-3 items-center mt-1 font-mono text-[10px] uppercase tracking-widest text-faint">
-                        <span>{m.mode === "moderator" ? "Moderator" : "Talare"}</span>
-                        <span>·</span>
-                        <span>Uppdaterad {new Date(m.updated_at).toLocaleDateString("sv-SE")}</span>
-                      </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-0.5 rounded-full ${
+                          m.mode === "moderator"
+                            ? "bg-accent-blue/10 text-accent-blue"
+                            : "bg-cue-teal/10 text-[hsl(var(--cue-teal))]"
+                        }`}
+                      >
+                        {m.mode === "moderator" ? "Moderator" : "Talare"}
+                      </span>
                     </div>
+                    <h3 className="font-display text-[20px] font-semibold tracking-tight truncate">{m.title}</h3>
+                    <p className="text-[13px] text-muted-foreground mt-1.5">
+                      Uppdaterad {new Date(m.updated_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
                   </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="mr-2 my-auto text-muted-foreground">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="font-mono text-xs">
-                      <DropdownMenuItem onClick={() => duplicate(m)}>Duplicera</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setRenameId(m.id); setRenameValue(m.title); }}>Byt namn</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">Radera</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center pr-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground h-9 w-9"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem onClick={() => duplicate(m)}>Duplicera</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setRenameId(m.id); setRenameValue(m.title); }}>Byt namn</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">Radera</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </li>
             ))}
@@ -268,14 +317,19 @@ export default function Library() {
       </main>
 
       <Dialog open={!!renameId} onOpenChange={(o) => !o && setRenameId(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="font-serif">Byt namn</DialogTitle>
+            <DialogTitle className="font-display text-2xl font-semibold">Byt namn</DialogTitle>
           </DialogHeader>
-          <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} className="font-serif" autoFocus />
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            className="h-11 rounded-xl bg-surface-2 border-0 focus-visible:ring-2 focus-visible:ring-accent-blue"
+            autoFocus
+          />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRenameId(null)} className="font-mono text-xs uppercase">Avbryt</Button>
-            <Button onClick={renameSubmit} className="font-mono text-xs uppercase">Spara</Button>
+            <Button variant="ghost" onClick={() => setRenameId(null)} className="rounded-full">Avbryt</Button>
+            <Button onClick={renameSubmit} className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white">Spara</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

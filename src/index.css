@@ -3,147 +3,203 @@
 @tailwind utilities;
 
 /*
-  Manuskort design system.
-  Colors are HSL. Light theme is paper-like (#F7F5F0).
+  Manuskort design system — Apple-inspired.
+  Generous whitespace, neutral grays, soft shadows, Inter typography.
 */
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 44 33% 95%;          /* #F7F5F0 paper */
-    --foreground: 40 6% 9%;            /* #1A1917 ink */
+    /* Surfaces — Apple neutral whites */
+    --background: 240 20% 99%;          /* #FBFBFD */
+    --foreground: 240 6% 10%;           /* #1D1D1F */
 
-    --surface: 0 0% 100%;              /* card #FFFFFF */
-    --surface-2: 44 22% 93%;           /* #F1EFE8 inset / notes */
+    --surface: 0 0% 100%;               /* #FFFFFF */
+    --surface-2: 240 9% 96%;            /* #F5F5F7 */
 
     --card: 0 0% 100%;
-    --card-foreground: 40 6% 9%;
+    --card-foreground: 240 6% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 40 6% 9%;
+    --popover-foreground: 240 6% 10%;
 
-    --primary: 40 6% 9%;               /* ink */
-    --primary-foreground: 44 33% 95%;  /* paper */
+    --primary: 240 6% 10%;              /* near-black */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 44 22% 93%;
-    --secondary-foreground: 40 6% 9%;
+    --secondary: 240 9% 96%;
+    --secondary-foreground: 240 6% 10%;
 
-    --muted: 44 22% 93%;
-    --muted-foreground: 45 4% 41%;     /* #6B6A65 */
+    --muted: 240 9% 96%;
+    --muted-foreground: 240 3% 53%;     /* #86868B */
 
-    --accent: 44 22% 93%;
-    --accent-foreground: 40 6% 9%;
+    --accent-blue: 211 100% 45%;        /* #0071E3 Apple blue */
+    --accent: 240 9% 96%;
+    --accent-foreground: 240 6% 10%;
 
-    --faint: 45 4% 65%;                /* #A8A7A2 */
+    --faint: 240 6% 83%;                /* #D2D2D7 */
 
-    --destructive: 14 67% 52%;         /* same as cue-red */
+    --destructive: 5 78% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 6% 9% / 0.10;         /* used via hsl(var(--border) / x) — keep raw triplet below */
-    --border: 40 6% 9%;                /* raw triplet; alpha applied at use */
-    --border-strong: 40 6% 9%;         /* alpha applied at use */
-    --input: 40 6% 9%;
-    --ring: 40 6% 9%;
+    --border: 240 6% 10%;               /* alpha applied at use */
+    --border-strong: 240 6% 10%;
+    --input: 240 6% 10%;
+    --ring: 211 100% 45%;
 
-    /* Cues */
-    --cue-red: 14 67% 52%;             /* #D85A30 */
-    --cue-amber: 32 78% 41%;           /* #BA7517 */
-    --cue-teal: 165 76% 25%;           /* #0F6E56 */
+    /* Cues — slightly muted, Apple-leaning */
+    --cue-red: 6 78% 57%;               /* #E55A4A */
+    --cue-amber: 35 85% 50%;            /* #ED9821 */
+    --cue-teal: 168 70% 36%;            /* #1C9C7E */
 
-    --radius: 10px;
+    --radius: 14px;
 
-    --font-serif: 'Fraunces', Georgia, serif;
-    --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    /* Soft Apple-style shadows */
+    --shadow-sm: 0 1px 2px hsl(240 6% 10% / 0.04);
+    --shadow-card: 0 1px 3px hsl(240 6% 10% / 0.04), 0 4px 12px hsl(240 6% 10% / 0.04);
+    --shadow-pop: 0 4px 12px hsl(240 6% 10% / 0.06), 0 12px 32px hsl(240 6% 10% / 0.08);
+
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Inter Tight', 'Inter', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
     /* Sidebar (legacy shadcn) */
-    --sidebar-background: 44 33% 95%;
-    --sidebar-foreground: 40 6% 9%;
-    --sidebar-primary: 40 6% 9%;
-    --sidebar-primary-foreground: 44 33% 95%;
-    --sidebar-accent: 44 22% 93%;
-    --sidebar-accent-foreground: 40 6% 9%;
-    --sidebar-border: 40 6% 9%;
-    --sidebar-ring: 40 6% 9%;
+    --sidebar-background: 240 20% 99%;
+    --sidebar-foreground: 240 6% 10%;
+    --sidebar-primary: 240 6% 10%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 9% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 240 6% 10%;
+    --sidebar-ring: 211 100% 45%;
   }
 
   .dark {
-    --background: 40 8% 7%;
-    --foreground: 44 20% 92%;
+    --background: 0 0% 0%;
+    --foreground: 240 9% 96%;
 
-    --surface: 40 8% 11%;
-    --surface-2: 40 8% 14%;
+    --surface: 240 6% 11%;              /* #1D1D1F */
+    --surface-2: 240 4% 17%;            /* #2C2C2E */
 
-    --card: 40 8% 11%;
-    --card-foreground: 44 20% 92%;
+    --card: 240 6% 11%;
+    --card-foreground: 240 9% 96%;
 
-    --popover: 40 8% 11%;
-    --popover-foreground: 44 20% 92%;
+    --popover: 240 6% 11%;
+    --popover-foreground: 240 9% 96%;
 
-    --primary: 44 20% 92%;
-    --primary-foreground: 40 8% 7%;
+    --primary: 240 9% 96%;
+    --primary-foreground: 240 6% 10%;
 
-    --secondary: 40 8% 14%;
-    --secondary-foreground: 44 20% 92%;
+    --secondary: 240 4% 17%;
+    --secondary-foreground: 240 9% 96%;
 
-    --muted: 40 8% 14%;
-    --muted-foreground: 44 8% 65%;
+    --muted: 240 4% 17%;
+    --muted-foreground: 240 5% 64%;
 
-    --accent: 40 8% 14%;
-    --accent-foreground: 44 20% 92%;
+    --accent: 240 4% 17%;
+    --accent-foreground: 240 9% 96%;
+    --accent-blue: 211 100% 56%;
 
-    --faint: 44 6% 45%;
+    --faint: 240 4% 35%;
 
-    --destructive: 14 67% 52%;
+    --destructive: 5 78% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 44 20% 92%;
-    --border-strong: 44 20% 92%;
-    --input: 44 20% 92%;
-    --ring: 44 20% 92%;
+    --border: 240 9% 96%;
+    --border-strong: 240 9% 96%;
+    --input: 240 9% 96%;
+    --ring: 211 100% 56%;
   }
 }
 
 @layer base {
   * {
-    border-color: hsl(var(--border) / 0.10);
+    border-color: hsl(var(--border) / 0.08);
   }
 
   html, body {
     background: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: var(--font-serif);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
   }
 
   ::selection {
-    background: hsl(var(--cue-amber) / 0.25);
+    background: hsl(var(--accent-blue) / 0.18);
   }
 }
 
 @layer utilities {
-  .font-serif { font-family: var(--font-serif); }
-  .font-mono  { font-family: var(--font-mono); }
+  .font-sans    { font-family: var(--font-sans); }
+  .font-display { font-family: var(--font-display); letter-spacing: -0.025em; }
+  .font-mono    { font-family: var(--font-mono); }
 
   .text-faint { color: hsl(var(--faint)); }
   .bg-surface { background-color: hsl(var(--surface)); }
   .bg-surface-2 { background-color: hsl(var(--surface-2)); }
 
-  .border-hair        { border-width: 0.5px; border-color: hsl(var(--border) / 0.10); }
-  .border-hair-strong { border-width: 0.5px; border-color: hsl(var(--border) / 0.18); }
-  .border-b-hair        { border-bottom-width: 0.5px; border-color: hsl(var(--border) / 0.10); }
-  .border-b-hair-strong { border-bottom-width: 0.5px; border-color: hsl(var(--border) / 0.18); }
-  .border-t-hair        { border-top-width: 0.5px; border-color: hsl(var(--border) / 0.10); }
-  .border-r-hair        { border-right-width: 0.5px; border-color: hsl(var(--border) / 0.10); }
+  .text-accent-blue { color: hsl(var(--accent-blue)); }
+  .bg-accent-blue   { background-color: hsl(var(--accent-blue)); }
+  .hover\:bg-accent-blue\/90:hover { background-color: hsl(var(--accent-blue) / 0.9); }
+  .ring-accent-blue { --tw-ring-color: hsl(var(--accent-blue)); }
+
+  .border-hair        { border-width: 1px; border-color: hsl(var(--border) / 0.08); }
+  .border-hair-strong { border-width: 1px; border-color: hsl(var(--border) / 0.12); }
+  .border-b-hair        { border-bottom-width: 1px; border-color: hsl(var(--border) / 0.08); }
+  .border-b-hair-strong { border-bottom-width: 1px; border-color: hsl(var(--border) / 0.12); }
+  .border-t-hair        { border-top-width: 1px; border-color: hsl(var(--border) / 0.08); }
+  .border-r-hair        { border-right-width: 1px; border-color: hsl(var(--border) / 0.08); }
+
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-pop  { box-shadow: var(--shadow-pop); }
 
   .cue-dot { width: 8px; height: 8px; border-radius: 9999px; flex-shrink: 0; display: inline-block; }
   .cue-red   { background: hsl(var(--cue-red)); }
   .cue-amber { background: hsl(var(--cue-amber)); }
   .cue-teal  { background: hsl(var(--cue-teal)); }
 
+  .cue-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 9999px;
+    font-size: 12px; font-weight: 500;
+    background: hsl(var(--surface-2));
+    color: hsl(var(--foreground));
+  }
+  .cue-pill-red   { background: hsl(var(--cue-red) / 0.10);   color: hsl(var(--cue-red)); }
+  .cue-pill-amber { background: hsl(var(--cue-amber) / 0.12); color: hsl(35 85% 38%); }
+  .cue-pill-teal  { background: hsl(var(--cue-teal) / 0.10);  color: hsl(var(--cue-teal)); }
+
   .topbar-blur {
-    background: hsl(var(--background) / 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: hsl(var(--background) / 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  /* Apple-style segmented control */
+  .seg-group {
+    display: inline-flex;
+    background: hsl(var(--surface-2));
+    border-radius: 9999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .seg-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 5px 14px;
+    font-size: 13px; font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    border-radius: 9999px;
+    border: none; background: transparent;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+  .seg-btn:hover { color: hsl(var(--foreground)); }
+  .seg-btn[data-active="true"] {
+    background: hsl(var(--surface));
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 2px hsl(240 6% 10% / 0.06), 0 0 0 0.5px hsl(240 6% 10% / 0.04);
   }
 
   /* Tiptap placeholder */
@@ -151,30 +207,31 @@
     content: attr(data-placeholder);
     float: left;
     color: hsl(var(--faint));
-    font-style: italic;
-    font-weight: 300;
     pointer-events: none;
     height: 0;
   }
   .ProseMirror:focus { outline: none; }
-  .ProseMirror p { line-height: 1.7; }
-  .ProseMirror mark { background: hsl(var(--cue-amber) / 0.25); padding: 0 2px; border-radius: 2px; }
+  .ProseMirror p { line-height: 1.6; }
+  .ProseMirror mark { background: hsl(var(--cue-amber) / 0.22); padding: 1px 3px; border-radius: 3px; }
   .ProseMirror .pause-mark {
     display: inline-block;
-    color: hsl(var(--faint));
-    font-family: var(--font-mono);
+    color: hsl(var(--muted-foreground));
+    background: hsl(var(--surface-2));
+    border-radius: 9999px;
+    padding: 0 8px;
     margin: 0 4px;
+    font-size: 0.9em;
+    font-weight: 500;
   }
 }
 
 @layer components {
-  /* Manus card animation */
   .manu-card {
-    animation: fadeUp 0.3s ease both;
+    animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }

@@ -7,11 +7,11 @@ export function SaveIndicator() {
   return (
     <span
       aria-live="polite"
-      className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1.5"
+      className="text-[12px] text-muted-foreground inline-flex items-center gap-1.5"
     >
-      {status === "saving" && (<><Loader2 className="h-3 w-3 animate-spin" /> Sparar…</>)}
-      {status === "saved" && (<><Check className="h-3 w-3" /> Sparat</>)}
-      {status === "error" && (<><AlertCircle className="h-3 w-3 text-destructive" /> <span className="text-destructive">Försöker igen…</span></>)}
+      {status === "saving" && (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Sparar…</>)}
+      {status === "saved" && (<><Check className="h-3.5 w-3.5" /> Sparat</>)}
+      {status === "error" && (<><AlertCircle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">Försöker igen…</span></>)}
     </span>
   );
 }
