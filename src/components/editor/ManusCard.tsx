@@ -10,6 +10,7 @@ import { TiptapEditor } from "./TiptapEditor";
 import { useAutosave } from "@/hooks/useAutosave";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { placeholderFor } from "@/lib/placeholders";
+import { placeholderForFormat, type TimeFormat } from "@/lib/timeChain";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -21,6 +22,7 @@ interface Props {
   showNotes: boolean;
   showTimes: boolean;
   wpm: number;
+  timeFormat: TimeFormat;
   canSyncWithPrevious?: boolean;
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
@@ -31,7 +33,7 @@ interface Props {
 }
 
 export function ManusCard({
-  card, number, textSize, showNotes, showTimes, wpm, canSyncWithPrevious,
+  card, number, textSize, showNotes, showTimes, wpm, timeFormat, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
@@ -134,10 +136,12 @@ export function ManusCard({
         <div className="bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="text-[12px] font-medium text-muted-foreground">Tider</span>
-            <HelpDot text="Planerad start- och sluttid för det här avsnittet (t.ex. 12:03 / 12:08). Används för att hålla koll på tempot under sändning. Räknaren till höger visar antal ord och uppskattad uppläsningstid baserat på inställd talhastighet." />
+            <HelpDot text={timeFormat === "clock"
+              ? "Planerat klockslag (HH:MM, 24h) för när avsnittet börjar och slutar — t.ex. 14:03 / 14:08. Används för att hålla koll på tempot mot körschemat. Räknaren till höger visar antal ord och uppskattad uppläsningstid."
+              : "Planerad start- och sluttid räknat från programmets början (MM:SS) — t.ex. 02:30 / 05:45. Används för att hålla koll på tempot. Räknaren till höger visar antal ord och uppskattad uppläsningstid."} />
           </div>
-          <TimeField label="Start" value={card.start_time} onChange={(v) => onLocalChange({ start_time: v })} />
-          <TimeField label="Slut" value={card.end_time} onChange={(v) => onLocalChange({ end_time: v })} />
+          <TimeField label="Start" value={card.start_time} placeholder={placeholderForFormat(timeFormat)} onChange={(v) => onLocalChange({ start_time: v })} />
+          <TimeField label="Slut" value={card.end_time} placeholder={placeholderForFormat(timeFormat)} onChange={(v) => onLocalChange({ end_time: v })} />
           {canSyncWithPrevious && onSyncWithPrevious && (
             <Tooltip delayDuration={150}>
               <TooltipTrigger asChild>
@@ -151,12 +155,14 @@ export function ManusCard({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[240px] text-[12px] leading-[1.5] rounded-lg">
-                Sätter starttiden till föregående korts sluttid + 1 sekund.
+                {timeFormat === "clock"
+                  ? "Sätter starttiden till föregående korts sluttid + 1 minut."
+                  : "Sätter starttiden till föregående korts sluttid + 1 sekund."}
               </TooltipContent>
             </Tooltip>
           )}
           <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono">
-            {words} ord · {formatDuration(seconds)}
+            {words} ord · ~{formatDuration(seconds)} uppläsning
           </span>
         </div>
       )}
@@ -226,14 +232,14 @@ function HelpDot({ text }: { text: string }) {
   );
 }
 
-function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function TimeField({ label, value, placeholder = "00:00", onChange }: { label: string; value: string; placeholder?: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-[12px] text-muted-foreground">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="00:00"
+        placeholder={placeholder}
         className="font-mono text-[13px] bg-surface-2 rounded-md border-0 outline-none w-[72px] px-2.5 py-1 placeholder:text-faint focus:ring-2 focus:ring-accent-blue"
       />
     </div>

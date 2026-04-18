@@ -38,8 +38,11 @@ export default function Editor() {
       show_notes: manuscript.show_notes,
       show_times: manuscript.show_times,
       wpm: manuscript.wpm,
+      time_format: manuscript.time_format,
     };
   }, [manuscript]);
+
+  const timeFormat = (manuscript?.time_format === "clock" ? "clock" : "elapsed") as "clock" | "elapsed";
 
   useAutosave({
     table: "manuscripts",
@@ -90,7 +93,7 @@ export default function Editor() {
         if (idx !== -1 && idx < next.length - 1) {
           const nextCard = next[idx + 1];
           if (!manualStartIds.has(nextCard.id)) {
-            const chained = nextStartFromEnd(next[idx].end_time ?? "");
+            const chained = nextStartFromEnd(next[idx].end_time ?? "", timeFormat);
             if (chained !== null) {
               next[idx + 1] = { ...nextCard, start_time: chained };
             }
@@ -213,9 +216,10 @@ export default function Editor() {
     const idx = cards.findIndex((c) => c.id === cardId);
     if (idx <= 0) return;
     const prev = cards[idx - 1];
-    const chained = nextStartFromEnd(prev.end_time ?? "");
+    const chained = nextStartFromEnd(prev.end_time ?? "", timeFormat);
     if (chained === null) {
-      toast({ title: "Kan inte synka", description: "Föregående kort saknar giltig sluttid (t.ex. 02:30)." });
+      const example = timeFormat === "clock" ? "14:30" : "02:30";
+      toast({ title: "Kan inte synka", description: `Föregående kort saknar giltig sluttid (t.ex. ${example}).` });
       return;
     }
     setCards((list) => list.map((c) => (c.id === cardId ? { ...c, start_time: chained } : c)));
@@ -275,6 +279,25 @@ export default function Editor() {
                 {sizeLabels[s]}
               </button>
             ))}
+          </div>
+
+          <div className="seg-group">
+            <button
+              data-active={timeFormat === "elapsed"}
+              onClick={() => updateMeta({ time_format: "elapsed" })}
+              className="seg-btn"
+              title="Förfluten tid från programmets start (MM:SS)"
+            >
+              Förfluten
+            </button>
+            <button
+              data-active={timeFormat === "clock"}
+              onClick={() => updateMeta({ time_format: "clock" })}
+              className="seg-btn"
+              title="Klockslag på dygnet (HH:MM)"
+            >
+              Klockslag
+            </button>
           </div>
 
           <div className="seg-group">
@@ -344,6 +367,7 @@ export default function Editor() {
                     showNotes={manuscript.show_notes}
                     showTimes={manuscript.show_times}
                     wpm={manuscript.wpm}
+                    timeFormat={timeFormat}
                     canSyncWithPrevious={idx > 0}
                     onLocalChange={(patch) => updateCard(c.id, patch)}
                     onDelete={() => deleteCard(c.id)}
