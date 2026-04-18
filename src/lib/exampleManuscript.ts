@@ -71,13 +71,12 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       title: "Välkommen till kvällen",
       content_html: p(
         "Välkommen allesammans till kvällens paneldebatt. / Jag heter [ditt namn] och leder samtalet de närmaste 30 minuterna.",
-        "Tema ikväll är framtidens arbetsplats — hur vi ska arbeta, leda och må bra på jobbet. Vi kommer fokusera på tre områden: hybridarbetet, ledarskap i förändring och kulturen som håller ihop allt.",
-        "/ Panelen består av fyra personer med olika perspektiv. Låt mig presentera dem — [ANNA SVENSSON], HR-chef, [JOHAN BERG], ledarskapskonsult, [MARIA EK], forskare, och [THOMAS LINDQVIST], VD. Välkomna!"
+        "Tema ikväll är framtidens arbetsplats — hur vi ska arbeta, leda och må bra på jobbet. Vi kommer fokusera på tre områden: hybridarbetet, ledarskap i förändring och kulturen som håller ihop allt."
       ),
       notes: "Stå centralt. Le brett. Ögonkontakt med hela panelen under presentationen.",
       start_time: "00:00",
       end_time: "02:00",
-      cue_red: "andas efter \"Välkomna!\"",
+      cue_red: "andas efter \"Välkomma!\"",
       cue_amber: "",
       cue_teal: "Öppningsfråga till alla",
       is_panic_card: false,
@@ -85,10 +84,25 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
     {
       position: 1,
       role: "moderator",
+      title: "Panelen",
+      content_html: p(
+        "Panelen består av fyra personer med olika perspektiv. Låt mig presentera dem — [ANNA SVENSSON], HR-chef, [JOHAN BERG], ledarskapskonsult, [MARIA EK], forskare, och [THOMAS LINDQVIST], VD. Välkomna!"
+      ),
+      notes: "",
+      start_time: "",
+      end_time: "",
+      cue_red: "",
+      cue_amber: "",
+      cue_teal: "",
+      is_panic_card: false,
+    },
+    {
+      position: 2,
+      role: "moderator",
       title: "Den stora frågan",
       content_html: p(
         "Jag vill börja brett. / Om ni blickar fem år framåt — hur ser arbetsplatsen ut då? Vad är det viktigaste som har förändrats?",
-        "/ Vi börjar med dig, [ANNA] — ur HR-perspektiv. Sen går vi laget runt. Cirka en minut var."
+        "/ [ANNA] Vi börjar med dig — ur HR-perspektiv. Sen går vi laget runt. Cirka en minut var."
       ),
       notes: "Låt var och en tala färdigt. Avbryt inte även om någon blir långrandig — det sätter tonen för kvällen.",
       start_time: "02:00",
@@ -99,7 +113,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 2,
+      position: 3,
       role: "moderator",
       title: "Vad säger forskningen?",
       content_html: p(
@@ -114,7 +128,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 3,
+      position: 4,
       role: "moderator",
       title: "Att leda människor man sällan ser",
       content_html: p(
@@ -129,7 +143,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 4,
+      position: 5,
       role: "moderator",
       title: "PANIK: Snabb sammanfattning",
       content_html: p(
@@ -144,7 +158,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: true,
     },
     {
-      position: 5,
+      position: 6,
       role: "moderator",
       title: "Är kontoret dött?",
       content_html: p(
@@ -159,7 +173,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 6,
+      position: 7,
       role: "moderator",
       title: "Unga vs. erfarna",
       content_html: p(
@@ -174,7 +188,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 7,
+      position: 8,
       role: "moderator",
       title: "Ordet till salen",
       content_html: p(
@@ -189,7 +203,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 8,
+      position: 9,
       role: "moderator",
       title: "PANIK: Direkt till avslutning",
       content_html: p(
@@ -204,7 +218,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: true,
     },
     {
-      position: 9,
+      position: 10,
       role: "moderator",
       title: "En sak att ta med sig",
       content_html: p(
@@ -219,7 +233,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       is_panic_card: false,
     },
     {
-      position: 10,
+      position: 11,
       role: "moderator",
       title: "Tack",
       content_html: p(
