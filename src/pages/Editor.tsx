@@ -831,6 +831,26 @@ export default function Editor() {
       )}
 
       <PrintDialog open={printDialogOpen} onOpenChange={setPrintDialogOpen} />
+
+      <TargetDurationDialog
+        open={targetDialogOpen}
+        onOpenChange={(open) => {
+          setTargetDialogOpen(open);
+          if (!open) {
+            setTargetDialogIntro(undefined);
+            setTargetSaveLabel("Spara");
+          }
+        }}
+        value={targetDurationSeconds}
+        intro={targetDialogIntro}
+        saveLabel={targetSaveLabel}
+        onSave={(seconds) => {
+          updateMeta({ target_duration_seconds: seconds } as Partial<Manuscript>);
+          if (targetSaveLabel === "Spara och starta" && seconds !== null && manuscript) {
+            setTimeout(() => navigate(`/manus/${manuscript.id}/presentera`), 50);
+          }
+        }}
+      />
     </div>
     </PanelistsProvider>
   );

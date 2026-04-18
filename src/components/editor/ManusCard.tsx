@@ -104,6 +104,7 @@ export function ManusCard({
       cue_amber: card.cue_amber,
       cue_teal: card.cue_teal,
       position: card.position,
+      is_panic_card: card.is_panic_card ?? false,
     },
   });
 
