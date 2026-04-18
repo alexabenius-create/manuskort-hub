@@ -7,21 +7,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 type Feature = { label: string; included: boolean };
 
 const freeFeatures: Feature[] = [
-  { label: "Upp till 3 manus", included: true },
-  { label: "Max 30 kort per manus", included: true },
-  { label: "Grundläggande presentation", included: true },
-  { label: ".docx-import", included: true },
-  { label: "Obegränsade manus och kort", included: false },
+  { label: "Upp till 2 manus", included: true },
+  { label: "Max 15 kort per manus", included: true },
+  { label: "Max 5 paneldeltagare per manus", included: true },
+  { label: "Presentationsläge med cue-färger", included: true },
+  { label: ".docx-import", included: false },
+  { label: "Obegränsade manus, kort och deltagare", included: false },
   { label: "Prioriterad support", included: false },
 ];
 
 const proFeatures: Feature[] = [
   { label: "Obegränsade manus", included: true },
   { label: "Obegränsade kort per manus", included: true },
-  { label: "Alla nuvarande och framtida features", included: true },
+  { label: "Obegränsade paneldeltagare", included: true },
   { label: ".docx-import", included: true },
+  { label: "Presentationsläge med cue-färger", included: true },
+  { label: "Alla framtida features", included: true },
   { label: "Prioriterad support", included: true },
-  { label: "Tidig tillgång till nya funktioner", included: true },
 ];
 
 function FeatureRow({ feature }: { feature: Feature }) {
@@ -131,7 +133,7 @@ export default function Pricing() {
         </section>
 
         <p className="text-center text-[12px] text-muted-foreground">
-          Priser och exakta gränser bestäms inom kort.
+          Pris bestäms inom kort. Ditt admin-konto har full tillgång till allt.
         </p>
       </main>
     </div>

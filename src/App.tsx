@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TourProvider } from "@/hooks/useTour";
+import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
 import Library from "./pages/Library";
 import Editor from "./pages/Editor";
@@ -25,17 +26,19 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <TourProvider>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/priser" element={<Pricing />} />
-              <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
-              <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
-              <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
-              <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
-              <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
-              <Route path="/index" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <TierProvider>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/priser" element={<Pricing />} />
+                <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
+                <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
+                <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
+                <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
+                <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
+                <Route path="/index" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TierProvider>
           </TourProvider>
         </AuthProvider>
       </BrowserRouter>
