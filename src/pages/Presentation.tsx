@@ -449,6 +449,8 @@ export default function Presentation() {
 
       {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
 
+      <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} viewMode={viewMode} />
+
       {menuOpen && (
         <PresentationStartMenu
           estimatedSpeedFactor={1.0}
