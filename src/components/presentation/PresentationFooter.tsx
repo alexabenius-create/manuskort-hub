@@ -82,24 +82,24 @@ export function PresentationFooter({
           </button>
         </div>
 
-        {/* Mitten — kortnummer med progress-ring + nästa-preview */}
-        <div className="flex flex-col items-center gap-2 pointer-events-none">
-          <div className="relative h-12 w-12 flex items-center justify-center">
+        {/* Mitten — kortnummer med progress-ring + nästa-preview (2x storlek) */}
+        <div className="flex flex-col items-center gap-3 pointer-events-none">
+          <div className="relative h-24 w-24 flex items-center justify-center">
             {planned && (
-              <svg className="absolute inset-0 -rotate-90" width="48" height="48" viewBox="0 0 48 48">
+              <svg className="absolute inset-0 -rotate-90" width="96" height="96" viewBox="0 0 96 96">
                 <circle
-                  cx="24"
-                  cy="24"
+                  cx="48"
+                  cy="48"
                   r={ringRadius}
-                  strokeWidth="2.5"
+                  strokeWidth="5"
                   fill="none"
                   className="stroke-zinc-800"
                 />
                 <circle
-                  cx="24"
-                  cy="24"
+                  cx="48"
+                  cy="48"
                   r={ringRadius}
-                  strokeWidth="2.5"
+                  strokeWidth="5"
                   fill="none"
                   strokeLinecap="round"
                   strokeDasharray={ringCircumference}
@@ -109,17 +109,17 @@ export function PresentationFooter({
                 />
               </svg>
             )}
-            <span className="font-mono text-[13px] text-zinc-200 tabular-nums">
+            <span className="font-mono text-[26px] text-zinc-200 tabular-nums">
               {String(index + 1).padStart(2, "0")}
               <span className="text-zinc-600">/{String(total).padStart(2, "0")}</span>
             </span>
           </div>
           {next ? (
-            <p className="text-[11px] text-zinc-600 font-mono uppercase tracking-wider truncate max-w-[300px] text-center">
+            <p className="text-[22px] text-zinc-600 font-mono uppercase tracking-wider truncate max-w-[600px] text-center">
               Nästa: {nextRoleLabel}{next.title ? ` · ${next.title}` : ""}
             </p>
           ) : (
-            <p className="text-[11px] text-zinc-700 font-mono uppercase tracking-wider">
+            <p className="text-[22px] text-zinc-700 font-mono uppercase tracking-wider">
               Sista kortet
             </p>
           )}
