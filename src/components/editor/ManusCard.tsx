@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TiptapEditor } from "./TiptapEditor";
 import { useAutosave } from "@/hooks/useAutosave";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
