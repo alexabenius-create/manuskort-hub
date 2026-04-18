@@ -128,7 +128,8 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
     unwrap(node);
   };
 
-  walk(root);
+  // Kör walk på rotens barn — INTE på root själv (annars skulle root unwrappas och bli borta)
+  Array.from(root.children).forEach((child) => walk(child));
 
   // 4) Säkerställ att top-level text wrappas i <p>
   const out = doc.createElement("div");
