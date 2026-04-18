@@ -469,6 +469,13 @@ export default function Library() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title={upgradeReason?.title}
+        description={upgradeReason?.description}
+      />
     </div>
   );
 }
