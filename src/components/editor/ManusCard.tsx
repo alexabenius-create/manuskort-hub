@@ -43,7 +43,7 @@ interface Props {
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
-  onAutoSplit, onOverflowStateChange,
+  onAutoSplit, onOverflowStateChange, onEditorReady,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
