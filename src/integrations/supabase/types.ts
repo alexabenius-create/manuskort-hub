@@ -85,6 +85,7 @@ export type Database = {
           show_times: boolean
           tags: string[]
           text_size: string
+          time_format: string
           title: string
           updated_at: string
           user_id: string
@@ -98,6 +99,7 @@ export type Database = {
           show_times?: boolean
           tags?: string[]
           text_size?: string
+          time_format?: string
           title?: string
           updated_at?: string
           user_id: string
@@ -111,6 +113,7 @@ export type Database = {
           show_times?: boolean
           tags?: string[]
           text_size?: string
+          time_format?: string
           title?: string
           updated_at?: string
           user_id?: string
