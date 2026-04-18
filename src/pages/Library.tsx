@@ -298,7 +298,7 @@ export default function Library() {
                     onClick={() => navigate(`/manus/${m.id}`)}
                     className="flex-1 text-left px-6 py-5 min-w-0"
                   >
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span
                         className={`inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-0.5 rounded-full ${
                           m.mode === "moderator"
@@ -308,6 +308,11 @@ export default function Library() {
                       >
                         {m.mode === "moderator" ? "Moderator" : "Talare"}
                       </span>
+                      {(m.tags ?? []).includes(EXAMPLE_TAG) && (
+                        <span className="inline-flex items-center gap-1 text-[12px] font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          <Sparkles className="h-3 w-3" /> Exempel
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-display text-[20px] font-semibold tracking-tight truncate">{m.title}</h3>
                     <p className="text-[13px] text-muted-foreground mt-1.5">
