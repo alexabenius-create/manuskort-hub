@@ -168,6 +168,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          bibliotek_tour_completed: boolean
+          created_at: string
+          email: string | null
+          id: string
+          manus_tour_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bibliotek_tour_completed?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          manus_tour_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bibliotek_tour_completed?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          manus_tour_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

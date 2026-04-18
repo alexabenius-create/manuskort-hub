@@ -4,11 +4,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
+import { TourProvider } from "@/hooks/useTour";
 import { RequireAuth } from "@/components/RequireAuth";
 import Library from "./pages/Library";
 import Editor from "./pages/Editor";
 import Presentation from "./pages/Presentation";
 import Auth from "./pages/Auth";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,14 +22,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
-            <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
-            <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
-            <Route path="/index" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <TourProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
+              <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
+              <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
+              <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
+              <Route path="/index" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </TourProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

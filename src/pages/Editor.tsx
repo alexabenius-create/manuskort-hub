@@ -21,6 +21,8 @@ import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
 import { wordCount, estimateSeconds } from "@/lib/wordCount";
 import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
+import { useTourTrigger } from "@/hooks/useTour";
+import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
