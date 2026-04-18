@@ -70,10 +70,10 @@ export function ManusCard({
     <article
       ref={setNodeRef}
       style={style}
-      className="manu-card bg-surface rounded-2xl shadow-card overflow-hidden"
+      className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
-      {/* Header */}
-      <header className="px-6 pt-5 pb-4 flex items-start gap-4">
+      {/* Header panel */}
+      <header className="bg-surface rounded-xl shadow-subtle px-5 pt-4 pb-4 flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="font-mono text-[11px] text-muted-foreground tracking-wide">
@@ -125,9 +125,9 @@ export function ManusCard({
         </div>
       </header>
 
-      {/* Tider */}
+      {/* Tider panel */}
       {showTimes && (
-        <div className="px-6 pb-3 flex gap-5 items-center flex-wrap">
+        <div className="bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
           <TimeField label="Start" value={card.start_time} onChange={(v) => onLocalChange({ start_time: v })} />
           <TimeField label="Slut" value={card.end_time} onChange={(v) => onLocalChange({ end_time: v })} />
           <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono">
@@ -136,9 +136,9 @@ export function ManusCard({
         </div>
       )}
 
-      {/* Body */}
-      <div className="flex flex-col md:flex-row gap-px bg-[hsl(var(--border)/0.05)]">
-        <div className="flex-1 px-6 py-5 bg-surface">
+      {/* Body — manus + anteckningar som separata paneler */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
           <p className="text-[12px] font-medium text-muted-foreground mb-3">Manus</p>
           <TiptapEditor
             value={card.content_html}
@@ -148,7 +148,7 @@ export function ManusCard({
           />
         </div>
         {showNotes && (
-          <div className="w-full md:w-[220px] px-5 py-5 bg-surface-2 flex flex-col gap-2">
+          <div className="w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
             <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
             <textarea
               value={card.notes}
@@ -160,8 +160,8 @@ export function ManusCard({
         )}
       </div>
 
-      {/* Cue footer */}
-      <footer className="px-6 py-4 flex gap-2 flex-wrap items-center bg-surface">
+      {/* Cue panel */}
+      <footer className="bg-surface rounded-xl shadow-subtle px-5 py-4 flex gap-2 flex-wrap items-center">
         <CueField icon={<Pause className="h-3 w-3" />} colorClass="cue-pill-red" placeholder="Paus / bromsa" value={card.cue_red} onChange={(v) => onLocalChange({ cue_red: v })} />
         <CueField icon={<Flag className="h-3 w-3" />} colorClass="cue-pill-amber" placeholder="Avslutningssignal" value={card.cue_amber} onChange={(v) => onLocalChange({ cue_amber: v })} />
         <CueField icon={<ArrowRight className="h-3 w-3" />} colorClass="cue-pill-teal" placeholder="Överlämning / nästa" value={card.cue_teal} onChange={(v) => onLocalChange({ cue_teal: v })} />
