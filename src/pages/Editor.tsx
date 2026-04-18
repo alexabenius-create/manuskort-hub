@@ -844,10 +844,14 @@ export default function Editor() {
         value={targetDurationSeconds}
         intro={targetDialogIntro}
         saveLabel={targetSaveLabel}
-        onSave={(seconds) => {
+        onSave={async (seconds) => {
           updateMeta({ target_duration_seconds: seconds } as Partial<Manuscript>);
           if (targetSaveLabel === "Spara och starta" && seconds !== null && manuscript) {
-            setTimeout(() => navigate(`/manus/${manuscript.id}/presentera`), 50);
+            const { error } = await supabase
+              .from("manuscripts")
+              .update({ target_duration_seconds: seconds })
+              .eq("id", manuscript.id);
+            if (!error) navigate(`/manus/${manuscript.id}/presentera`);
           }
         }}
       />

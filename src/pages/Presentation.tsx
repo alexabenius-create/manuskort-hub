@@ -34,6 +34,7 @@ export default function Presentation() {
   const [sizeOffset, setSizeOffset] = useState(0);
   const [xVisible, setXVisible] = useState(true);
   const xTimerRef = useRef<number | null>(null);
+  const hasEnteredFullscreenRef = useRef(false);
 
   const wakeLockStatus = useWakeLock(true);
   useFullscreen(true);
@@ -106,6 +107,7 @@ export default function Presentation() {
   // Exit-flöde
   const exit = useCallback(() => {
     timer.clearPersisted();
+    hasEnteredFullscreenRef.current = false;
     if (id) {
       try { sessionStorage.removeItem(SIZE_OFFSET_KEY(id)); } catch { /* ignore */ }
     }
@@ -133,12 +135,11 @@ export default function Presentation() {
       }
     };
 
-    let hasEnteredFullscreen = false;
     const onFsChange = () => {
       const doc = document as Document & { webkitFullscreenElement?: Element | null };
       const isFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
-      if (isFs) hasEnteredFullscreen = true;
-      else if (hasEnteredFullscreen) exit();
+      if (isFs) hasEnteredFullscreenRef.current = true;
+      else if (hasEnteredFullscreenRef.current) exit();
     };
 
     window.addEventListener("keydown", onKey);
