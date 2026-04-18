@@ -259,11 +259,14 @@ export function ManusCard({
                 editor.chain().focus().insertContent('<span class="pause-mark">paus</span>&nbsp;').run();
               }}
               disabled={!editor}
-              title="Lägg in en paus-markör vid markören (kortkommando: /)"
-              className="ml-2 inline-flex items-center gap-1 rounded-full border border-[hsl(var(--cue-red)/0.3)] bg-[hsl(var(--cue-red)/0.1)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--cue-red))] transition-colors hover:bg-[hsl(var(--cue-red)/0.18)] disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Sätter in en paus-markör där markören står. Kortkommando: /"
+              className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--cue-red)/0.35)] bg-[hsl(var(--cue-red)/0.1)] pl-2.5 pr-3 py-1 text-[hsl(var(--cue-red))] transition-colors hover:bg-[hsl(var(--cue-red)/0.18)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Pause className="h-3 w-3" />
-              Paus
+              <Pause className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="flex flex-col items-start leading-none text-left">
+                <span className="text-[11px] font-semibold uppercase tracking-wide">Lägg in paus</span>
+                <span className="text-[9px] font-medium uppercase tracking-wider opacity-70 mt-0.5">vid markören</span>
+              </span>
             </button>
             <span
               className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
