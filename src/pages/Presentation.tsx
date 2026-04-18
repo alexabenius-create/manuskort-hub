@@ -122,11 +122,27 @@ export default function Presentation() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (menuOpen) return; // Menyn hanterar sina egna tangenter
+
+      // Ignorera tangenter när användaren skriver i ett input/textarea/contentEditable
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        !!target &&
+        (target.tagName === "TEXTAREA" ||
+          target.tagName === "INPUT" ||
+          target.isContentEditable);
+
       if (e.key === "Escape") {
         e.preventDefault();
+        if (isEditable && target) {
+          (target as HTMLElement).blur();
+          return;
+        }
         exit();
         return;
       }
+
+      if (isEditable) return;
+
       // Navigation
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
