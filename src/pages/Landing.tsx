@@ -37,8 +37,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Manuskort – Manus för presentation, tal och panelsamtal"
-        description="Manuskort hjälper dig skapa manus, hålla tiden och tala tryggt inför publik. Stöd vid presentation, anförande och panelsamtal — gratis att testa."
+        title="Manuskort – Manus för presentation, tal & panelsamtal | Gratis"
+        description="Skapa manus i kortformat, håll tiden och tala tryggt inför publik. Stöd för presentation, anförande och panelsamtal. Gratis att testa — utan kort."
         canonical="/"
         jsonLd={[
           {
