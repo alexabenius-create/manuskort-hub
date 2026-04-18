@@ -116,6 +116,10 @@ export default function Editor() {
   // utöver att Skriv ut-knappen är disablad.
   useEffect(() => {
     const blocked = overflowingCardIds.size > 0;
+    // Sätt CSS-flagga så print-arket blir tomt även om utskrift på något sätt körs
+    if (blocked) document.documentElement.setAttribute("data-print-blocked", "true");
+    else document.documentElement.removeAttribute("data-print-blocked");
+
     if (!blocked) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -144,6 +148,7 @@ export default function Editor() {
       window.removeEventListener("beforeprint", onBeforePrint);
     };
   }, [overflowingCardIds]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
