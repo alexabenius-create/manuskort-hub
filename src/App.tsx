@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { RequireAuth } from "@/components/RequireAuth";
 import Library from "./pages/Library";
 import Editor from "./pages/Editor";
+import Presentation from "./pages/Presentation";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
             <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
+            <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
