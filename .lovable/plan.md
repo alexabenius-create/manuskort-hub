@@ -1,20 +1,15 @@
 
+Ta bort cue-prickar och cue-toast. Visa signalerna alltid uppe i manustextytan: gul centrerad i mitten, röd till vänster, grön (teal) till höger.
 
-Ändra Enter-/Esc-beteendet i anteckningsrutan i presentationsläget.
+## Ändringar i `src/components/presentation/PresentationCard.tsx`
 
-## Ändringar
+1. **Ta bort**: cirkel-knapparna (`hasAnyCue && <div className="absolute top-2 left-6 ...">`), `activeCue`-state, `cueTimerRef`, `showCue`-funktion, `useEffect` som resetar cue, samt cue-toast-blocket.
 
-### `src/components/presentation/PresentationCard.tsx` (textarea `onKeyDown`)
+2. **Ersätt** den persistenta signal-listan i manusytan (rad ~181–202) med en horisontell rad i tre kolumner:
+   - Vänster: röd signal (om finns)
+   - Mitten: gul signal (alltid centrerad horisontellt, även om röd/teal saknas)
+   - Höger: teal signal (om finns)
+   
+   Layout: `flex items-start justify-between` på en wrapper med max-bredd. Mitten-kolumnen får `text-center` och flex-1, sidokolumnerna fast bredd / flex-1 med text-left respektive text-right. Behåll samma färgning, ikoner (Pause/Flag/ArrowRight) och typografi som idag.
 
-Ny logik:
-- **Enter (utan Shift)**: `blur()` på textarean → lämnar redigeringen. `e.preventDefault()` så ingen radbrytning skapas.
-- **Shift+Enter**: låt default ske (ny rad). Stoppa propagation så det inte triggar globala genvägar.
-- **Escape**: ta bort blur-hanteringen helt. Låt eventet bubbla upp så `Presentation.tsx` avslutar presentationen som vanligt.
-- Övriga tangenter: fortsätt `stopPropagation()` så Space, piltangenter, P m.fl. kan användas i texten utan att trigga navigation.
-
-### `src/pages/Presentation.tsx` (global keydown)
-
-I Esc-grenen: ta bort specialfallet som blur:ar en `isEditable` target. Esc ska alltid kalla `exit()` direkt (oavsett om fokus ligger i textarean). Behåll `isEditable`-guarden för övriga tangenter (så Enter inte fångas globalt — fast Enter blir ändå hanterad i textarean nu).
-
-Resultat: Enter lämnar fältet, Shift+Enter radbryter, Esc avslutar presentationen även från textarean.
-
+3. **Rensa imports**: behåll `Pause`, `Flag`, `ArrowRight`, `ZoomIn`, `ZoomOut`. Ta bort `useRef`, `useState` om de inte längre används (notesOffset använder fortfarande useState).
