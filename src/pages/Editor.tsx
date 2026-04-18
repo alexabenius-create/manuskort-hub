@@ -158,6 +158,9 @@ export default function Editor() {
     };
   }, [overflowingCardIds]);
 
+  // Trigger manus-rundturen när exempelmanuset är öppnat och korten är renderade
+  const isExampleManuscript = !!manuscript && (manuscript.tags ?? []).includes(EXAMPLE_TAG);
+  useTourTrigger("manus", isExampleManuscript && !loading && cards.length > 0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
