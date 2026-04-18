@@ -326,8 +326,6 @@ export default function Pricing() {
           {checkoutOpen && (
             <StripeEmbeddedCheckout
               priceId={priceId}
-              customerEmail={user?.email}
-              userId={user?.id}
               returnUrl={`${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`}
             />
           )}
