@@ -356,8 +356,8 @@
   }
 
   .manu-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
     border: 1px solid hsl(240 6% 80%) !important;
     margin: 0 0 6mm 0 !important;
     padding: 4mm !important;
@@ -368,6 +368,11 @@
     gap: 2mm !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
+  }
+
+  .ProseMirror p {
+    orphans: 3;
+    widows: 3;
   }
 
   /* Kortpaneler — neutralisera bakgrund/skugga, vi styr layout via klasser nedan */
@@ -478,18 +483,22 @@
     color-adjust: exact !important;
   }
 
-  /* A4 — 2 kort per sida: fix höjd och bryt efter varannan */
+  /* A4 — 2 kort per sida: fix höjd och bryt efter varannan.
+     Buffer: 12mm (istället för 6mm) skyddar mot @page-marginal-avrundning i webbläsare. */
   html[data-print-format="a4-2up"] .manu-card {
-    height: calc((297mm - 24mm - 6mm) / 2) !important;
+    height: calc((297mm - 24mm - 12mm) / 2) !important;
+    max-height: calc((297mm - 24mm - 12mm) / 2) !important;
   }
   html[data-print-format="a4-2up"] .manu-card:nth-child(2n) {
     break-after: page;
     page-break-after: always;
   }
 
-  /* A5 — 1 kort per sida (liggande: sidhöjd ≈ 148mm) */
+  /* A5 — 1 kort per sida (liggande: sidhöjd ≈ 148mm).
+     Buffer: 28mm (istället för 20mm) skyddar mot @page-marginal-avrundning. */
   html[data-print-format="a5-1up"] .manu-card {
-    height: calc(148mm - 20mm) !important;
+    height: calc(148mm - 28mm) !important;
+    max-height: calc(148mm - 28mm) !important;
     padding: 6mm !important;
     break-after: page;
     page-break-after: always;
