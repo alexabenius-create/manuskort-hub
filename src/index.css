@@ -356,8 +356,8 @@
   }
 
   .manu-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
     border: 1px solid hsl(240 6% 80%) !important;
     margin: 0 0 6mm 0 !important;
     padding: 4mm !important;
@@ -368,6 +368,11 @@
     gap: 2mm !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
+  }
+
+  .ProseMirror p {
+    orphans: 3;
+    widows: 3;
   }
 
   /* Kortpaneler — neutralisera bakgrund/skugga, vi styr layout via klasser nedan */
