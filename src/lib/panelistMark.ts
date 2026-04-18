@@ -36,10 +36,9 @@ export const PanelistMark = Mark.create<{ HTMLAttributes: Record<string, unknown
         renderHTML: (attrs) => {
           if (!attrs.color) return {};
           const bg = hexToRgba(attrs.color as string, 0.32);
-          const labelBg = hexToRgba(attrs.color as string, 0.55);
           return {
             "data-panelist-color": attrs.color,
-            style: `background-color: ${bg}; --panelist-bg: ${labelBg}; border-radius: 10px; padding: 2px 8px; position: relative; box-decoration-break: clone; -webkit-box-decoration-break: clone;`,
+            style: `background-color: ${bg}; --panelist-bg: ${attrs.color}; border-radius: 10px; padding: 2px 8px; position: relative; box-decoration-break: clone; -webkit-box-decoration-break: clone;`,
           };
         },
       },
