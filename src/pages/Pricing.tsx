@@ -78,11 +78,13 @@ export default function Pricing() {
         jsonLd={[
           {
             "@context": "https://schema.org",
-            "@type": "Product",
+            "@type": "Service",
+            serviceType: "SaaS-prenumeration",
             name: "Manuskort PRO",
             description:
               "Obegränsade manus, kort och paneldeltagare. Inkluderar .docx-import, presentationsläge med cue-färger och prioriterad support.",
-            brand: { "@type": "Brand", name: "Manuskort" },
+            provider: { "@type": "Organization", name: "Manuskort", url: "https://manuskort.se/" },
+            areaServed: "SE",
             offers: [
               {
                 "@type": "Offer",
@@ -90,7 +92,8 @@ export default function Pricing() {
                 price: "99",
                 priceCurrency: "SEK",
                 url: "https://manuskort.se/priser",
-                availability: "https://schema.org/InStock",
+                category: "subscription",
+                eligibleDuration: { "@type": "QuantitativeValue", value: "1", unitCode: "MON" },
               },
               {
                 "@type": "Offer",
@@ -98,7 +101,8 @@ export default function Pricing() {
                 price: "890",
                 priceCurrency: "SEK",
                 url: "https://manuskort.se/priser",
-                availability: "https://schema.org/InStock",
+                category: "subscription",
+                eligibleDuration: { "@type": "QuantitativeValue", value: "1", unitCode: "ANN" },
               },
             ],
           },
