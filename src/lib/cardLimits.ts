@@ -262,7 +262,7 @@ export function splitHtmlInHalf(html: string): [string, string] {
   const firstText = text.slice(0, splitChar).trimEnd();
   const secondText = text.slice(splitChar).trimStart();
   if (!secondText) return [html, ""];
-  return [`<${tag}>${escapeHtml(firstText)}</${tag}>`, `<${tag}>${escapeHtml(secondText)}</${tag}>`];
+  return [`<${tag}>${escapeHtml(firstText)}</${tag}>`, trimEmptyBlocksHtml(`<${tag}>${escapeHtml(secondText)}</${tag}>`)];
 }
 
 function escapeHtml(s: string): string {
