@@ -503,6 +503,45 @@
     break-after: page;
     page-break-after: always;
   }
+
+  /* ============================================================
+     Header-layout: ord/tid-pill flyttas upp till höger i headern,
+     titeln trunkeras med ellipsis innan den krockar med pillen.
+     ============================================================ */
+  .manu-card .card-panel-header {
+    position: relative !important;
+    padding-right: 45mm !important;
+  }
+  .manu-card .card-panel-header .font-display {
+    display: block !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .manu-card .card-panel-times .ml-auto {
+    position: absolute !important;
+    top: 3mm !important;
+    right: 0 !important;
+    max-width: 43mm !important;
+    white-space: nowrap !important;
+    font-size: 9pt !important;
+  }
+
+  /* Minska gap mellan linjen ovanför manus och själva manustexten */
+  .manu-card .card-panel-body {
+    padding: 0.5mm 0 0 0 !important;
+    overflow: hidden !important;
+  }
+  .manu-card .card-panel-script .ProseMirror {
+    margin-top: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Dölj Signaler-panelen helt om inga fält är ifyllda */
+  .manu-card .card-panel-cues:not(:has(input:not(:placeholder-shown))) {
+    display: none !important;
+  }
 }
 
 
