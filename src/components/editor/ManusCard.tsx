@@ -13,6 +13,7 @@ import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { placeholderFor } from "@/lib/placeholders";
 import { placeholderForFormat, type TimeFormat } from "@/lib/timeChain";
 import { usePanelists, type Panelist } from "@/hooks/usePanelists";
+import { MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -33,16 +34,20 @@ interface Props {
   onSplit: () => void;
   onMergeUp: () => void;
   onSyncWithPrevious?: () => void;
+  onPasteOverflow?: (overflowText: string) => void;
 }
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
-  onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious,
+  onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [selection, setSelection] = useState<SelectionState>({ hasSelection: false, activePanelistId: null });
+  const [currentRows, setCurrentRows] = useState(0);
+  const maxRows = MAX_ROWS_BY_SIZE[textSize];
+  const isFull = currentRows >= maxRows;
 
   const showPanelistBar = isModerator && panelists.length > 0 && selection.hasSelection;
 
