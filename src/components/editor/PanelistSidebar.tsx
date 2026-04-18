@@ -81,13 +81,20 @@ export function PanelistSidebar({ open, onClose }: Props) {
 
         <footer className="px-3 py-3 border-t-hair">
           <button
-            onClick={() => void add()}
+            onClick={handleAdd}
             className="w-full flex items-center justify-center gap-1.5 h-9 rounded-full bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/15 text-[13px] font-medium transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> Lägg till deltagare
           </button>
         </footer>
       </aside>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title="Du har nått deltagar-gränsen för Gratis"
+        description={`Gratis tillåter ${limits.panelistsPerManuscript} paneldeltagare per manus. Uppgradera till PRO för obegränsat.`}
+      />
     </>
   );
 }
