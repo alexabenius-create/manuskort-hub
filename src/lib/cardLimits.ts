@@ -111,7 +111,7 @@ export function splitHtmlAtRow(
         const removed = fitBlocks.pop()!;
         const fitsHtml = fitBlocks.map((b) => b.outerHTML).join("");
         const overflowHtml = [removed, ...blocks.slice(blocks.length)].map((b) => b.outerHTML).join("");
-        return [fitsHtml, overflowHtml];
+        return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
       }
       // Enda blocket — gå till ord-split nedan
       overflowBlockIdx = 0;
@@ -197,11 +197,11 @@ export function splitHtmlAtRow(
       const rest = words.slice(1).join("");
       return [
         `<${tagName}>${escapeHtml(firstWord)}</${tagName}>`,
-        `<${tagName}>${escapeHtml(rest)}</${tagName}>` + remainingBlocks.map((b) => b.outerHTML).join(""),
+        trimEmptyBlocksHtml(`<${tagName}>${escapeHtml(rest)}</${tagName}>` + remainingBlocks.map((b) => b.outerHTML).join("")),
       ];
     }
 
-    return [fitsHtml, overflowHtml];
+    return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
   } finally {
     cleanup();
   }
@@ -234,7 +234,7 @@ export function splitHtmlInHalf(html: string): [string, string] {
     splitAt = Math.max(1, Math.min(blocks.length - 1, splitAt));
     const first = blocks.slice(0, splitAt).map((b) => b.outerHTML).join("");
     const second = blocks.slice(splitAt).map((b) => b.outerHTML).join("");
-    return [first, second];
+    return [first, trimEmptyBlocksHtml(second)];
   }
 
   const block = blocks[0] ?? container;
@@ -262,7 +262,7 @@ export function splitHtmlInHalf(html: string): [string, string] {
   const firstText = text.slice(0, splitChar).trimEnd();
   const secondText = text.slice(splitChar).trimStart();
   if (!secondText) return [html, ""];
-  return [`<${tag}>${escapeHtml(firstText)}</${tag}>`, `<${tag}>${escapeHtml(secondText)}</${tag}>`];
+  return [`<${tag}>${escapeHtml(firstText)}</${tag}>`, trimEmptyBlocksHtml(`<${tag}>${escapeHtml(secondText)}</${tag}>`)];
 }
 
 function escapeHtml(s: string): string {
@@ -270,4 +270,26 @@ function escapeHtml(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/**
+ * Tar bort tomma block (<p></p>, <p><br></p>, <p>&nbsp;</p>, whitespace-only)
+ * från BÖRJAN av en HTML-sträng. Bevarar tomma rader i mitten och slutet.
+ */
+export function trimEmptyBlocksHtml(html: string): string {
+  if (!html || !html.trim()) return "";
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  while (container.firstElementChild) {
+    const el = container.firstElementChild as HTMLElement;
+    const text = (el.textContent ?? "").replace(/\u00a0/g, "").trim();
+    // Tomt om ingen text och inga meningsfulla barnnoder (bara <br> räknas som tomt)
+    const onlyBr = Array.from(el.children).every((c) => c.tagName === "BR");
+    if (text === "" && (el.children.length === 0 || onlyBr)) {
+      el.remove();
+    } else {
+      break;
+    }
+  }
+  return container.innerHTML;
 }
