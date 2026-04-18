@@ -108,33 +108,27 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
 
   return (
     <div className="relative flex w-full h-full min-h-0 gap-4 px-6 md:px-12 py-4">
-      {/* Persistenta signaler — absolut positionerade i överkant av kortet */}
+      {/* Persistenta signaler — absolut positionerade i överkant av kortet, centrerat grupperade */}
       {hasAnyCue && (
-        <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex items-start gap-4 pointer-events-none z-10">
-          <div className="flex-1 min-w-0 text-left">
-            {hasCueRed && (
-              <div className="inline-flex items-start gap-2 text-[14px] text-[hsl(var(--cue-red))]">
-                <Pause className="h-3.5 w-3.5 mt-1 flex-shrink-0" />
-                <span className="font-medium">{card.cue_red}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0 text-center">
-            {hasCueAmber && (
-              <div className="inline-flex items-start gap-2 text-[14px] text-[hsl(var(--cue-amber))]">
-                <Flag className="h-3.5 w-3.5 mt-1 flex-shrink-0" />
-                <span className="font-medium">{card.cue_amber}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0 text-right">
-            {hasCueTeal && (
-              <div className="inline-flex items-start gap-2 text-[14px] text-[hsl(var(--cue-teal))]">
-                <ArrowRight className="h-3.5 w-3.5 mt-1 flex-shrink-0" />
-                <span className="font-medium">{card.cue_teal}</span>
-              </div>
-            )}
-          </div>
+        <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10">
+          {hasCueRed && (
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]">
+              <Pause className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{card.cue_red}</span>
+            </div>
+          )}
+          {hasCueAmber && (
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-amber))] bg-[hsl(var(--cue-amber)/0.15)] border border-[hsl(var(--cue-amber)/0.3)]">
+              <Flag className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{card.cue_amber}</span>
+            </div>
+          )}
+          {hasCueTeal && (
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-teal))] bg-[hsl(var(--cue-teal)/0.15)] border border-[hsl(var(--cue-teal)/0.3)]">
+              <ArrowRight className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{card.cue_teal}</span>
+            </div>
+          )}
         </div>
       )}
 
