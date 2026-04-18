@@ -133,8 +133,8 @@ export function TiptapEditor({
 
         const insertAndMeasure = (chunk: string): number => {
           editor?.chain().focus().insertContent(chunk.replace(/\n/g, "<br>")).run();
-          // Synkron mätning direkt efter insert
-          return countVisualRows(dom);
+          // Mät mot presentationsgeometrin (inte editorns DOM)
+          return countPresentationRows(editor?.getHTML() ?? "", sizeRef.current);
         };
 
         // Försök sätt in allt
