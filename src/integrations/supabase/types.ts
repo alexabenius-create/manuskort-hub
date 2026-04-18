@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cards: {
+        Row: {
+          content_html: string
+          created_at: string
+          cue_amber: string
+          cue_red: string
+          cue_teal: string
+          end_time: string
+          id: string
+          manuscript_id: string
+          notes: string
+          position: number
+          role: Database["public"]["Enums"]["card_role"]
+          start_time: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_html?: string
+          created_at?: string
+          cue_amber?: string
+          cue_red?: string
+          cue_teal?: string
+          end_time?: string
+          id?: string
+          manuscript_id: string
+          notes?: string
+          position?: number
+          role?: Database["public"]["Enums"]["card_role"]
+          start_time?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_html?: string
+          created_at?: string
+          cue_amber?: string
+          cue_red?: string
+          cue_teal?: string
+          end_time?: string
+          id?: string
+          manuscript_id?: string
+          notes?: string
+          position?: number
+          role?: Database["public"]["Enums"]["card_role"]
+          start_time?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_manuscript_id_fkey"
+            columns: ["manuscript_id"]
+            isOneToOne: false
+            referencedRelation: "manuscripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manuscripts: {
+        Row: {
+          created_at: string
+          id: string
+          mode: Database["public"]["Enums"]["manuscript_mode"]
+          show_notes: boolean
+          show_times: boolean
+          tags: string[]
+          text_size: string
+          title: string
+          updated_at: string
+          user_id: string
+          wpm: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode?: Database["public"]["Enums"]["manuscript_mode"]
+          show_notes?: boolean
+          show_times?: boolean
+          tags?: string[]
+          text_size?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+          wpm?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: Database["public"]["Enums"]["manuscript_mode"]
+          show_notes?: boolean
+          show_times?: boolean
+          tags?: string[]
+          text_size?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          wpm?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +126,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      card_role: "moderator" | "speaker"
+      manuscript_mode: "moderator" | "speaker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +254,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      card_role: ["moderator", "speaker"],
+      manuscript_mode: ["moderator", "speaker"],
+    },
   },
 } as const
