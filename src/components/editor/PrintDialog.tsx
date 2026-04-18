@@ -21,8 +21,24 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
   const [format, setFormat] = useState<PrintFormat>("a4-2up");
 
   const handlePrint = () => {
+    const STYLE_ID = "print-page-size-style";
+    // Injicera @page-regel dynamiskt — @page kan inte villkoras via attribut/klass
+    const pageCSS =
+      format === "a5-1up"
+        ? "@page { size: A5 portrait; margin: 10mm; }"
+        : "@page { size: A4 portrait; margin: 12mm; }";
+    let styleEl = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = STYLE_ID;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = pageCSS;
+
     const onAfterPrint = () => {
       document.documentElement.removeAttribute("data-print-format");
+      const el = document.getElementById(STYLE_ID);
+      if (el) el.remove();
       window.removeEventListener("afterprint", onAfterPrint);
     };
     window.addEventListener("afterprint", onAfterPrint);
