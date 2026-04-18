@@ -37,6 +37,10 @@ export default function Presentation() {
   const [xVisible, setXVisible] = useState(true);
   const [menuOpen, setMenuOpen] = useState(true);
   const [startMode, setStartMode] = useState<"countdown" | "instant" | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [focusStyle, setFocusStyle] = useState<FocusStyle>("line");
+  const [speedFactor, setSpeedFactor] = useState(1.0);
+  const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
