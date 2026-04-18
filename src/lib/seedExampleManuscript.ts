@@ -18,13 +18,13 @@ function applyPanelistMarks(
   panelists: { id: string; name: string; color: string }[]
 ): string {
   let out = html;
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   for (const p of panelists) {
-    const first = p.name.split(" ")[0]; // "Anna Svensson" -> "Anna"
+    const first = p.name.split(" ")[0];
     const fullUpper = p.name.toUpperCase();
     const firstUpper = first.toUpperCase();
-    // Fullt namn först (mer specifikt), sen förnamn
-    out = out.replaceAll(`[${fullUpper}]`, panelistSpan(p.id, p.color, p.name, p.name));
-    out = out.replaceAll(`[${firstUpper}]`, panelistSpan(p.id, p.color, p.name, first));
+    out = out.replace(new RegExp(`\\[${escape(fullUpper)}\\]`, "g"), panelistSpan(p.id, p.color, p.name, p.name));
+    out = out.replace(new RegExp(`\\[${escape(firstUpper)}\\]`, "g"), panelistSpan(p.id, p.color, p.name, first));
   }
   return out;
 }
