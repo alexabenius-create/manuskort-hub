@@ -13,6 +13,7 @@ import {
   Mic2,
   Users,
   Landmark,
+  GraduationCap,
   Timer,
   ShieldCheck,
   Sparkles,
