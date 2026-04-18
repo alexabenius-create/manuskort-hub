@@ -126,14 +126,20 @@ export function ScrollingTeleprompter({
   const [totalHeight, setTotalHeight] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
 
-  // Förbered kortinnehåll
-  const renderedCards = useMemo(() => {
-    return cards.map((c) => {
-      const html = transformHtmlForPresentation(c.content_html ?? "", panelists);
-      const plain = htmlToPlainText(c.content_html ?? "");
-      const sentences = focusStyle === "sentence" ? splitSentences(plain) : [];
-      return { card: c, html, sentences };
-    });
+  // Slå ihop alla kort till ett sammanhängande dokument
+  const merged = useMemo(() => {
+    const htmlParts: string[] = [];
+    const sentences: string[] = [];
+    for (const c of cards) {
+      const raw = c.content_html ?? "";
+      if (!raw.trim()) continue;
+      htmlParts.push(transformHtmlForPresentation(raw, panelists));
+      if (focusStyle === "sentence") {
+        const plain = htmlToPlainText(raw);
+        sentences.push(...splitSentences(plain));
+      }
+    }
+    return { html: htmlParts.join('<p class="teleprompter-card-gap">&nbsp;</p>'), sentences };
   }, [cards, panelists, focusStyle]);
 
   // Mät höjder
@@ -151,7 +157,7 @@ export function ScrollingTeleprompter({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [renderedCards, fontSize]);
+  }, [merged, fontSize]);
 
   // Beräkna pixels per sekund (clampad)
   const pixelsPerSecond = useMemo(() => {
@@ -306,34 +312,22 @@ export function ScrollingTeleprompter({
         {/* Top spacer så första texten startar vid läs-linjen */}
         <div style={{ height: `${focusLineY}px` }} />
 
-        {renderedCards.map(({ card, html, sentences }, idx) => (
-          <section key={card.id} className="px-6 md:px-16 py-8" data-card-idx={idx}>
-            <header className="mb-4 font-mono text-[12px] uppercase tracking-wider text-zinc-600 flex items-center gap-3">
-              <span>Kort {idx + 1}</span>
-              {card.title && <span className="text-zinc-500">· {card.title}</span>}
-              {(card.start_time || card.end_time) && (
-                <span className="ml-auto tabular-nums">
-                  {card.start_time}{card.end_time ? `–${card.end_time}` : ""}
-                </span>
-              )}
-            </header>
-
-            {focusStyle === "sentence" && sentences.length > 0 ? (
-              <SentenceRenderer
-                sentences={sentences}
-                fontSize={fontSize}
-                focusLineY={focusLineY}
-                offsetRef={offsetRef}
-              />
-            ) : (
-              <article
-                className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
-                style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            )}
-          </section>
-        ))}
+        <div className="px-6 md:px-16 py-8">
+          {focusStyle === "sentence" && merged.sentences.length > 0 ? (
+            <SentenceRenderer
+              sentences={merged.sentences}
+              fontSize={fontSize}
+              focusLineY={focusLineY}
+              offsetRef={offsetRef}
+            />
+          ) : (
+            <article
+              className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
+              style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
+              dangerouslySetInnerHTML={{ __html: merged.html }}
+            />
+          )}
+        </div>
 
         {/* Bottom spacer */}
         <div style={{ height: `${viewportHeight - focusLineY}px` }} />
