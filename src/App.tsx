@@ -21,6 +21,10 @@ const Import = lazy(() => import("./pages/Import"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Admin = lazy(() => import("./pages/Admin"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
+const Moderator = lazy(() => import("./pages/usecase/Moderator"));
+const Talare = lazy(() => import("./pages/usecase/Talare"));
+const Panelsamtal = lazy(() => import("./pages/usecase/Panelsamtal"));
+const Forelasning = lazy(() => import("./pages/usecase/Forelasning"));
 
 const queryClient = new QueryClient();
 
@@ -42,6 +46,10 @@ const App = () => (
                   <Route path="/" element={<Landing />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/priser" element={<Pricing />} />
+                  <Route path="/moderator" element={<Moderator />} />
+                  <Route path="/talare" element={<Talare />} />
+                  <Route path="/panelsamtal" element={<Panelsamtal />} />
+                  <Route path="/forelasning" element={<Forelasning />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />

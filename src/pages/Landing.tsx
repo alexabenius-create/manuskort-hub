@@ -13,6 +13,7 @@ import {
   Mic2,
   Users,
   Landmark,
+  GraduationCap,
   Timer,
   ShieldCheck,
   Sparkles,
@@ -306,16 +307,19 @@ export default function Landing() {
               icon={<Users className="h-5 w-5" />}
               title="Moderatorn"
               text="Led panelsamtal med flera röster. Tagga inlägg per deltagare och håll totaltiden i realtid."
+              to="/moderator"
             />
             <UseCaseCard
               icon={<Mic2 className="h-5 w-5" />}
               title="Talaren"
               text="Anförande på kongress, kickoff eller kundevent. Träffa exakt rätt minut, varje gång."
+              to="/talare"
             />
             <UseCaseCard
-              icon={<Landmark className="h-5 w-5" />}
-              title="Beslutsfattaren"
-              text="Strukturerade inlägg i fullmäktige, styrelsemöten eller pressmöten. Tydligt — under press."
+              icon={<GraduationCap className="h-5 w-5" />}
+              title="Föreläsaren"
+              text="Längre pass med stödord, anteckningar och tider per avsnitt — för utbildare och kursledare."
+              to="/forelasning"
             />
           </div>
         </div>
@@ -572,20 +576,41 @@ function UseCaseCard({
   icon,
   title,
   text,
+  to,
 }: {
   icon: React.ReactNode;
   title: string;
   text: string;
+  to?: string;
 }) {
-  return (
-    <div className="bg-surface rounded-2xl shadow-card p-7">
+  const inner = (
+    <>
       <div className="h-10 w-10 rounded-full bg-accent-blue/10 text-accent-blue flex items-center justify-center mb-5">
         {icon}
       </div>
-      <h3 className="font-display text-[19px] font-semibold mb-2">{title}</h3>
+      <h3 className="font-display text-[19px] font-semibold mb-2 group-hover:text-accent-blue transition-colors">
+        {title}
+      </h3>
       <p className="text-[14.5px] text-muted-foreground leading-relaxed">{text}</p>
-    </div>
+      {to && (
+        <span className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent-blue">
+          Läs mer
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      )}
+    </>
   );
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className="group bg-surface rounded-2xl shadow-card p-7 block hover:shadow-pop transition-shadow"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="bg-surface rounded-2xl shadow-card p-7">{inner}</div>;
 }
 
 function BenefitCard({
