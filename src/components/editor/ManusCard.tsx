@@ -299,7 +299,7 @@ export function ManusCard({
         <div className="card-panel-script flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
           <div className="flex items-center gap-1.5 mb-3">
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
-            <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser." />
+            <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser. Tryck Enter för nytt stycke. Tryck Shift+Enter för en radbrytning som syns även i presentationsläget (markeras med ↵ i editorn)." />
             <span
               className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                 isOver
