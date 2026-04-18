@@ -101,30 +101,13 @@ export function TiptapEditor({
         class: `font-sans ${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
       handleKeyDown: (_view, event) => {
-        // "/" → infoga paus
+        // "/" → infoga paus (alltid tillåtet, även över gräns)
         if (event.key === "/" && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
-          // Blockera om fullt
-          const max = maxRowsRef.current;
-          if (max && rowsRef.current >= max) {
-            event.preventDefault();
-            return true;
-          }
           event.preventDefault();
           editor?.chain().focus().insertContent('<span class="pause-mark">paus</span>&nbsp;').run();
           return true;
         }
-
-        // Blockera teckeninmatning + Enter när gränsen nås
-        const max = maxRowsRef.current;
-        if (max && rowsRef.current >= max) {
-          // Tillåt navigations- och raderingstangenter
-          if (ALWAYS_ALLOWED_KEYS.has(event.key)) return false;
-          // Tillåt modifierade kortkommandon (cmd/ctrl + X)
-          if (event.metaKey || event.ctrlKey) return false;
-          // Blockera resten (Enter + alla tecken)
-          event.preventDefault();
-          return true;
-        }
+        // Inmatning är alltid tillåten — överskott visas som varning, inte spärr.
         return false;
       },
       handlePaste: (view, event) => {
