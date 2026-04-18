@@ -158,7 +158,7 @@ export function TiptapEditor({
           const mid = Math.floor((lo + hi) / 2);
           const chunk = text.slice(0, mid);
           editor?.chain().focus().insertContent(chunk.replace(/\n/g, "<br>")).run();
-          const r = countVisualRows(dom);
+          const r = countPresentationRows(editor?.getHTML() ?? "", sizeRef.current);
           editor?.chain().focus().undo().run();
           if (r <= max) {
             bestFit = mid;
