@@ -141,6 +141,7 @@ export function ManusCard({
             </span>
             <span className="text-faint">·</span>
             <select
+              data-tour="card.role"
               value={card.role}
               onChange={(e) => onLocalChange({ role: e.target.value as "moderator" | "speaker" })}
               className={`text-[12px] font-medium px-2.5 py-0.5 rounded-full border-0 outline-none cursor-pointer appearance-none ${roleColor}`}
@@ -166,6 +167,7 @@ export function ManusCard({
             <HelpDot text="Varje kort är ett avsnitt av manuset — t.ex. en intro, en fråga eller ett ämnesblock. Numret visar ordningen, och rollen avgör vem som talar (moderator eller talare). Titeln hjälper dig hitta rätt kort snabbt under sändning." />
           </div>
           <input
+            data-tour="card.title"
             value={titleVal}
             onChange={(e) => { setTitleVal(e.target.value); onLocalChange({ title: e.target.value }); }}
             placeholder="Korttitel"
@@ -176,6 +178,7 @@ export function ManusCard({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
+                data-tour="card.menu"
                 className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
                 aria-label="Kortmeny"
               >
@@ -208,7 +211,7 @@ export function ManusCard({
 
       {/* Tider panel */}
       {showTimes && (
-        <div className="card-panel-times bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
+        <div data-tour="card.times" className="card-panel-times bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="text-[12px] font-medium text-muted-foreground">Tider</span>
             <HelpDot text={timeFormat === "clock"
@@ -296,7 +299,7 @@ export function ManusCard({
 
       {/* Body — manus + anteckningar som separata paneler */}
       <div className="card-panel-body flex flex-col md:flex-row gap-3">
-        <div className="card-panel-script flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
+        <div data-tour="card.script" className="card-panel-script flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
           <div className="flex items-center gap-1.5 mb-3">
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
             <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser. Tryck Enter för nytt stycke. Tryck Shift+Enter för en radbrytning som syns även i presentationsläget (markeras med ↵ i editorn)." />
@@ -352,7 +355,7 @@ export function ManusCard({
           )}
         </div>
         {showNotes && (
-          <div className="card-panel-notes w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
+          <div data-tour="card.notes" className="card-panel-notes w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
               <HelpDot text="Privata noter till dig själv som inte ska läsas upp — t.ex. ”vänta in applåd”, ”titta upp här”, eller bakgrundsfakta. Syns bara i redigeringsläget, inte i ett framtida presentationsläge." />
@@ -368,7 +371,7 @@ export function ManusCard({
       </div>
 
       {/* Cue panel */}
-      <footer className="card-panel-cues bg-surface rounded-xl shadow-subtle px-5 py-4 flex flex-col gap-2">
+      <footer data-tour="card.cues" className="card-panel-cues bg-surface rounded-xl shadow-subtle px-5 py-4 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-medium text-muted-foreground">Signaler</span>
           <HelpDot text={"Korta visuella påminnelser för dig själv under framförandet.\n\nRöd = bromsa eller pausa här.\nGul = avslutningssignal, börja runda av.\nGrön = överlämning till nästa person eller nästa kort.\n\nSkriv kort och konkret, så de är lätta att skanna i farten."} />
