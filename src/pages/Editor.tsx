@@ -712,6 +712,31 @@ export default function Editor() {
               </span>
             )}
           </Button>
+
+          <Button
+            onClick={() => {
+              if (overflowingCardIds.size > 0) {
+                toast({
+                  title: "Presentationsläge blockerat",
+                  description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Åtgärda först.`,
+                  variant: "destructive",
+                });
+                return;
+              }
+              if (targetDurationSeconds === null) {
+                setTargetDialogIntro("Ange måltid för att starta presentationen.");
+                setTargetSaveLabel("Spara och starta");
+                setTargetDialogOpen(true);
+                return;
+              }
+              navigate(`/manus/${manuscript.id}/presentera`);
+            }}
+            disabled={overflowingCardIds.size > 0}
+            title={overflowingCardIds.size > 0 ? "Blockerad: kort överskrider radgränsen" : "Starta presentationsläge"}
+            className="h-9 rounded-full px-4 bg-foreground hover:bg-foreground/90 text-background text-[13px] font-medium gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Play className="h-3.5 w-3.5" /> Visa
+          </Button>
         </div>
         </header>
 
