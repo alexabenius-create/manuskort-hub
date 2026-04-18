@@ -12,12 +12,27 @@ function panelistSpan(panelistId: string, color: string, name: string, label: st
   return `<span class="panelist-mark" data-panelist-id="${panelistId}" data-panelist-color="${color}" data-panelist-name="${name}" style="${style}">${label}</span>`;
 }
 
-// Ersätter [NAMN] och [FULLT NAMN] i HTML mot färgade panelist-markeringar.
+// Ersätter [[PANELIST:Förnamn]]...innehåll...[[/PANELIST]] mot färgade panelist-markeringar.
+// Bakåtkompatibel: [NAMN] och [FULLT NAMN] (versaler) ersätts också till en namn-pillet.
 function applyPanelistMarks(
   html: string,
   panelists: { id: string; name: string; color: string }[]
 ): string {
   let out = html;
+  const byFirst = new Map<string, { id: string; name: string; color: string }>();
+  for (const p of panelists) byFirst.set(p.name.split(" ")[0].toLowerCase(), p);
+
+  // Nya markörer: [[PANELIST:Förnamn]]inner[[/PANELIST]]
+  out = out.replace(
+    /\[\[PANELIST:([^\]]+)\]\]([\s\S]*?)\[\[\/PANELIST\]\]/g,
+    (_full, first: string, inner: string) => {
+      const p = byFirst.get(first.trim().toLowerCase());
+      if (!p) return inner;
+      return panelistSpan(p.id, p.color, p.name, inner);
+    }
+  );
+
+  // Bakåtkompatibilitet: [NAMN] / [FULLT NAMN] (versaler).
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   for (const p of panelists) {
     const first = p.name.split(" ")[0];
