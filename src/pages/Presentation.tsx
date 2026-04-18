@@ -194,6 +194,30 @@ export default function Presentation() {
     setCurrentIndex(target.idx);
   }, [cards, currentIndex]);
 
+  // Anteckningar — debounced spara till Supabase
+  const notesSaveTimers = useRef<Map<string, number>>(new Map());
+  const handleNotesChange = useCallback((cardId: string, notes: string) => {
+    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
+    const timers = notesSaveTimers.current;
+    const existing = timers.get(cardId);
+    if (existing) window.clearTimeout(existing);
+    const t = window.setTimeout(async () => {
+      timers.delete(cardId);
+      const { error } = await supabase.from("cards").update({ notes }).eq("id", cardId);
+      if (error) toast.error("Kunde inte spara anteckningar", { description: error.message });
+    }, 600);
+    timers.set(cardId, t);
+  }, []);
+
+  // Spara väntande anteckningar vid unmount/exit
+  useEffect(() => {
+    const timers = notesSaveTimers.current;
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
+
   // Touch — svep + tap-zoner
   const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
