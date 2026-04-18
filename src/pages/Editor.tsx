@@ -823,18 +823,20 @@ export default function Editor() {
       </div>
 
       <main className="max-w-[920px] mx-auto px-5 sm:px-8 py-10 sm:py-14 pb-24 flex flex-col gap-6">
-        {/* Legend */}
-        <div className="flex gap-2 flex-wrap">
-          <span className="cue-pill cue-pill-red">
-            <span className="cue-dot cue-red" /> Paus / bromsa
-          </span>
-          <span className="cue-pill cue-pill-amber">
-            <span className="cue-dot cue-amber" /> Avslutningssignal
-          </span>
-          <span className="cue-pill cue-pill-teal">
-            <span className="cue-dot cue-teal" /> Överlämning / nästa talare
-          </span>
-        </div>
+        {/* Cue-legend — bara i klassisk layout (i Ny layout finns ?-tooltip per kort) */}
+        {layoutVariant === "klassisk" && (
+          <div className="flex gap-2 flex-wrap">
+            <span className="cue-pill cue-pill-red">
+              <span className="cue-dot cue-red" /> Paus / bromsa
+            </span>
+            <span className="cue-pill cue-pill-amber">
+              <span className="cue-dot cue-amber" /> Avslutningssignal
+            </span>
+            <span className="cue-pill cue-pill-teal">
+              <span className="cue-dot cue-teal" /> Överlämning / nästa talare
+            </span>
+          </div>
+        )}
 
         {cards.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
@@ -847,30 +849,32 @@ export default function Editor() {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
               <div className="flex flex-col gap-5">
-                {cards.map((c, idx) => (
-                  <ManusCard
-                    key={c.id}
-                    card={c}
-                    number={idx + 1}
-                    textSize={manuscript.text_size as "sm" | "md" | "lg"}
-                    showNotes={manuscript.show_notes}
-                    showTimes={manuscript.show_times}
-                    wpm={manuscript.wpm}
-                    timeFormat={timeFormat}
-                    isModerator={isModerator}
-                    canSyncWithPrevious={idx > 0}
-                    onLocalChange={(patch) => updateCard(c.id, patch)}
-                    onDelete={() => deleteCard(c.id)}
-                    onDuplicate={() => duplicateCard(c.id)}
-                    onSplit={() => splitCard(c.id)}
-                    onMergeUp={() => mergeUp(c.id)}
-                    onSyncWithPrevious={() => syncWithPrevious(c.id)}
-                    onPasteOverflow={(text) => handlePasteOverflow(c.id, text)}
-                    onAutoSplit={() => cascadeSplitFromCard(c.id)}
-                    onOverflowStateChange={handleOverflowChange}
-                    onEditorReady={handleEditorReady}
-                  />
-                ))}
+                {cards.map((c, idx) => {
+                  const commonProps = {
+                    card: c,
+                    number: idx + 1,
+                    textSize: manuscript.text_size as "sm" | "md" | "lg",
+                    showNotes: manuscript.show_notes,
+                    showTimes: manuscript.show_times,
+                    wpm: manuscript.wpm,
+                    timeFormat,
+                    isModerator,
+                    canSyncWithPrevious: idx > 0,
+                    onLocalChange: (patch: Partial<Card>) => updateCard(c.id, patch),
+                    onDelete: () => deleteCard(c.id),
+                    onDuplicate: () => duplicateCard(c.id),
+                    onSplit: () => splitCard(c.id),
+                    onMergeUp: () => mergeUp(c.id),
+                    onSyncWithPrevious: () => syncWithPrevious(c.id),
+                    onPasteOverflow: (text: string) => handlePasteOverflow(c.id, text),
+                    onAutoSplit: () => cascadeSplitFromCard(c.id),
+                    onOverflowStateChange: handleOverflowChange,
+                    onEditorReady: handleEditorReady,
+                  };
+                  return layoutVariant === "ny"
+                    ? <ManusCardV2 key={c.id} {...commonProps} notesPlacement={notesPlacement} />
+                    : <ManusCard key={c.id} {...commonProps} />;
+                })}
               </div>
             </SortableContext>
           </DndContext>
