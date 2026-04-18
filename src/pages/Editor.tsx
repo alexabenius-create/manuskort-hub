@@ -18,7 +18,7 @@ import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
-import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
+import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE, countVisualRows } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
