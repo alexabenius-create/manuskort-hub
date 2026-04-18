@@ -81,7 +81,7 @@ const NOTES_MIN_OFFSET = -2;
 const NOTES_MAX_OFFSET = 4;
 const NOTES_KEY = "presentation-notes-size-offset";
 
-export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes }: Props) {
+export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes, onNotesChange }: Props) {
   const baseSize = BASE_SIZE[textSize];
   const fontSize = baseSize + sizeOffset * 2;
   const html = useMemo(() => transformHtmlForPresentation(card.content_html ?? "", panelists), [card.content_html, panelists]);
