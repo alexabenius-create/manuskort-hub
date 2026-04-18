@@ -682,6 +682,44 @@ export default function Editor() {
               Tider
             </button>
           </div>
+
+          {/* Layout-mockup-toggle */}
+          <div className="seg-group" title="Växla mellan klassisk och ny kortlayout (sparas lokalt)">
+            <button
+              data-active={layoutVariant === "klassisk"}
+              onClick={() => setLayoutVariant("klassisk")}
+              className="seg-btn"
+            >
+              Klassisk
+            </button>
+            <button
+              data-active={layoutVariant === "ny"}
+              onClick={() => setLayoutVariant("ny")}
+              className="seg-btn"
+            >
+              Ny layout
+            </button>
+          </div>
+
+          {/* Anteckningsplacering — bara i Ny layout + när anteckningar är på */}
+          {layoutVariant === "ny" && manuscript.show_notes && (
+            <div className="seg-group" title="Var anteckningar visas i nya layouten">
+              <button
+                data-active={notesPlacement === "side"}
+                onClick={() => setNotesPlacement("side")}
+                className="seg-btn"
+              >
+                Sida
+              </button>
+              <button
+                data-active={notesPlacement === "below"}
+                onClick={() => setNotesPlacement("below")}
+                className="seg-btn"
+              >
+                Under
+              </button>
+            </div>
+          )}
           </div>
 
           {isModerator && (
