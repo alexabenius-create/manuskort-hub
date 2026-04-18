@@ -297,7 +297,7 @@ export default function Presentation() {
         onSizeChange={handleSizeChange}
       />
 
-      {timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
+      {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
     </div>
   );
 }
