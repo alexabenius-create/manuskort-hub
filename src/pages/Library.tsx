@@ -18,7 +18,7 @@ import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
 import { seedExampleForUser, hasBeenSeeded, markAsSeeded } from "@/lib/seedExampleManuscript";
 import { useTourTrigger } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
-import { LIMITS } from "@/lib/tierLimits";
+import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
@@ -254,8 +254,19 @@ export default function Library() {
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-6">
         <h1 className="font-display text-[17px] font-semibold tracking-tight">Manuskort</h1>
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-[13px] text-muted-foreground hidden sm:inline">
+          <span className="text-[13px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
             {user?.email}
+            {(tier === "pro" || tier === "admin") && (
+              <span
+                className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide ${
+                  tier === "admin"
+                    ? "bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40"
+                    : "bg-accent-blue/10 text-accent-blue ring-1 ring-accent-blue/30"
+                }`}
+              >
+                {TIER_LABEL[tier]}
+              </span>
+            )}
           </span>
           <Button
             asChild
