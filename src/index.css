@@ -444,17 +444,24 @@
     margin-left: auto !important;
   }
 
-  /* Typografi i manus + notes — skala efter format */
-  .manu-card .ProseMirror,
-  .manu-card .card-panel-notes textarea {
+  /* Typografi i manus + notes — skala efter format. Anteckningar mindre än manus. */
+  .manu-card .ProseMirror {
     font-size: 11pt !important;
     line-height: 1.5 !important;
     color: black !important;
   }
-  html[data-print-format="a5-1up"] .manu-card .ProseMirror,
-  html[data-print-format="a5-1up"] .manu-card .card-panel-notes textarea {
+  .manu-card .card-panel-notes textarea {
+    font-size: 9pt !important;
+    line-height: 1.4 !important;
+    color: black !important;
+  }
+  html[data-print-format="a5-1up"] .manu-card .ProseMirror {
     font-size: 13pt !important;
     line-height: 1.55 !important;
+  }
+  html[data-print-format="a5-1up"] .manu-card .card-panel-notes textarea {
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
   }
 
   /* Dölj felmeddelande/auto-split-knapp i print */
