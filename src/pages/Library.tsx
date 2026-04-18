@@ -17,17 +17,24 @@ import type { Database } from "@/integrations/supabase/types";
 import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
 import { seedExampleForUser, hasBeenSeeded, markAsSeeded } from "@/lib/seedExampleManuscript";
 import { useTourTrigger } from "@/hooks/useTour";
+import { useTier } from "@/hooks/useTier";
+import { LIMITS } from "@/lib/tierLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
 export default function Library() {
   const { user, signOut } = useAuth();
+  const { tier } = useTier();
+  const limits = LIMITS[tier];
   const navigate = useNavigate();
   const [items, setItems] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "moderator" | "speaker">("all");
   const [dragOver, setDragOver] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<{ title: string; description: string } | null>(null);
 
   const [openNew, setOpenNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -35,6 +42,32 @@ export default function Library() {
 
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+
+  const atManuscriptLimit = items.length >= limits.manuscripts;
+
+  const requestNew = () => {
+    if (atManuscriptLimit) {
+      setUpgradeReason({
+        title: "Du har nått gränsen för Gratis",
+        description: `Gratis tillåter ${limits.manuscripts} manus. Uppgradera till PRO för obegränsat.`,
+      });
+      setUpgradeOpen(true);
+      return;
+    }
+    setOpenNew(true);
+  };
+
+  const requestImport = () => {
+    if (!limits.docxImport) {
+      setUpgradeReason({
+        title: "Import är en PRO-funktion",
+        description: ".docx-import ingår inte i Gratis. Uppgradera till PRO för att importera dokument.",
+      });
+      setUpgradeOpen(true);
+      return;
+    }
+    navigate("/importera");
+  };
 
   const load = async () => {
     setLoading(true);
