@@ -309,8 +309,8 @@ export default function Library() {
                         {m.mode === "moderator" ? "Moderator" : "Talare"}
                       </span>
                       {(m.tags ?? []).includes(EXAMPLE_TAG) && (
-                        <span className="inline-flex items-center gap-1 text-[12px] font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                          <Sparkles className="h-3 w-3" /> Exempel
+                        <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 rounded-full bg-amber-400/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-400/40 uppercase tracking-wide">
+                          <Sparkles className="h-3.5 w-3.5" /> Exempel
                         </span>
                       )}
                     </div>
