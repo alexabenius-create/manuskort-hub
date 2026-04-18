@@ -223,6 +223,15 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
             <textarea
               value={card.notes ?? ""}
               onChange={(e) => onNotesChange?.(e.target.value)}
+              onKeyDown={(e) => {
+                // Hindra alla globala genvägar (Enter, mellanslag, piltangenter, P, Esc) från att triggas
+                // medan användaren skriver. Esc hanteras separat genom blur.
+                if (e.key === "Escape") {
+                  (e.target as HTMLTextAreaElement).blur();
+                  e.preventDefault();
+                }
+                e.stopPropagation();
+              }}
               placeholder="Skriv anteckningar…"
               spellCheck={false}
               className="font-mono text-zinc-200 placeholder:text-zinc-600 whitespace-pre-wrap text-center w-full h-full bg-transparent border-0 outline-none resize-none focus:ring-0 focus:outline-none caret-zinc-300 selection:bg-zinc-700/60"
