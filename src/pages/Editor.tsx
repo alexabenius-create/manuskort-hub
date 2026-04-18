@@ -22,6 +22,9 @@ import { nextStartFromEnd } from "@/lib/timeChain";
 import { wordCount, estimateSeconds } from "@/lib/wordCount";
 import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import { useTourTrigger } from "@/hooks/useTour";
+import { useTier } from "@/hooks/useTier";
+import { LIMITS } from "@/lib/tierLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -43,6 +46,9 @@ export default function Editor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { tier } = useTier();
+  const limits = LIMITS[tier];
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -202,6 +208,10 @@ export default function Editor() {
 
   const addCard = async () => {
     if (!user || !manuscript) return;
+    if (cards.length >= limits.cardsPerManuscript) {
+      setUpgradeOpen(true);
+      return;
+    }
     const position = cards.length;
     const { data, error } = await supabase
       .from("cards")
@@ -844,6 +854,13 @@ export default function Editor() {
             if (!error) navigate(`/manus/${manuscript.id}/presentera`);
           }
         }}
+      />
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title="Du har nått kort-gränsen för Gratis"
+        description={`Gratis tillåter ${limits.cardsPerManuscript} kort per manus. Uppgradera till PRO för obegränsat.`}
       />
     </div>
     </PanelistsProvider>

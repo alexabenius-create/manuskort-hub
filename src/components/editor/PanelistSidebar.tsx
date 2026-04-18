@@ -5,6 +5,9 @@ import { PANELIST_PALETTE } from "@/lib/panelistColors";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTier } from "@/hooks/useTier";
+import { LIMITS } from "@/lib/tierLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Props {
   open: boolean;
@@ -13,6 +16,17 @@ interface Props {
 
 export function PanelistSidebar({ open, onClose }: Props) {
   const { panelists, add, rename, recolor, remove } = usePanelists();
+  const { tier } = useTier();
+  const limits = LIMITS[tier];
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const handleAdd = () => {
+    if (panelists.length >= limits.panelistsPerManuscript) {
+      setUpgradeOpen(true);
+      return;
+    }
+    void add();
+  };
 
   return (
     <>
@@ -67,13 +81,20 @@ export function PanelistSidebar({ open, onClose }: Props) {
 
         <footer className="px-3 py-3 border-t-hair">
           <button
-            onClick={() => void add()}
+            onClick={handleAdd}
             className="w-full flex items-center justify-center gap-1.5 h-9 rounded-full bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/15 text-[13px] font-medium transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> Lägg till deltagare
           </button>
         </footer>
       </aside>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title="Du har nått deltagar-gränsen för Gratis"
+        description={`Gratis tillåter ${limits.panelistsPerManuscript} paneldeltagare per manus. Uppgradera till PRO för obegränsat.`}
+      />
     </>
   );
 }
