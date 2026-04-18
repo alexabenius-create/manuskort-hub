@@ -1,16 +1,20 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
 import { TIER_LABEL } from "@/lib/tierLimits";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
   const { resetTour } = useTour();
-  const { tier, isFree } = useTier();
+  const { tier, isFree, isPro } = useTier();
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const onResetBibliotek = async () => {
     await resetTour("bibliotek");
@@ -20,6 +24,26 @@ export default function Settings() {
   const onResetManus = async () => {
     await resetTour("manus");
     toast.success("Rundturen körs nästa gång du öppnar exempelmanuset");
+  };
+
+  const onManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-portal-session", {
+        body: {
+          environment: getStripeEnvironment(),
+          returnUrl: `${window.location.origin}/installningar`,
+        },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error("Ingen portal-URL");
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Kunde inte öppna prenumerationsportalen");
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   return (
@@ -60,6 +84,20 @@ export default function Settings() {
             {isFree ? (
               <Button asChild variant="ghost" className="rounded-full text-[13px] text-accent-blue hover:text-accent-blue hover:bg-accent-blue/10">
                 <Link to="/priser">Uppgradera</Link>
+              </Button>
+            ) : isPro ? (
+              <Button
+                variant="ghost"
+                onClick={onManageSubscription}
+                disabled={portalLoading}
+                className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 gap-1.5"
+              >
+                {portalLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <SettingsIcon className="h-3.5 w-3.5" />
+                )}
+                Hantera prenumeration
               </Button>
             ) : (
               <Button asChild variant="ghost" className="rounded-full text-[13px] text-muted-foreground hover:text-foreground">
