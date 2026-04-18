@@ -176,7 +176,7 @@ export function ManusCard({
       <footer className="bg-surface rounded-xl shadow-subtle px-5 py-4 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-medium text-muted-foreground">Signaler</span>
-          <HelpDot text="Korta visuella påminnelser för dig själv under framförandet. Röd = bromsa eller pausa här. Gul = avslutningssignal, börja runda av. Grön = överlämning till nästa person eller nästa kort. Skriv kort och konkret, så de är lätta att skanna i farten." />
+          <HelpDot text={"Korta visuella påminnelser för dig själv under framförandet.\n\nRöd = bromsa eller pausa här.\nGul = avslutningssignal, börja runda av.\nGrön = överlämning till nästa person eller nästa kort.\n\nSkriv kort och konkret, så de är lätta att skanna i farten."} />
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <CueField icon={<Pause className="h-3 w-3" />} colorClass="cue-pill-red" placeholder="Paus / bromsa" value={card.cue_red} onChange={(v) => onLocalChange({ cue_red: v })} />
@@ -200,7 +200,7 @@ function HelpDot({ text }: { text: string }) {
           <HelpCircle className="h-3.5 w-3.5" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[260px] text-[12px] leading-[1.5] rounded-lg">
+      <TooltipContent side="top" className="max-w-[260px] text-[12px] leading-[1.5] rounded-lg whitespace-pre-line">
         {text}
       </TooltipContent>
     </Tooltip>
