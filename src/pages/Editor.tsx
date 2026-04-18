@@ -257,47 +257,207 @@ export default function Editor() {
     toast({ title: "Texten delades på 2 kort", description: "Överskottet flyttades till ett nytt kort." });
   };
 
-  const autoSplitCard = async (cardId: string) => {
-    if (!user || !manuscript) return;
-    const src = cards.find((c) => c.id === cardId);
-    if (!src) return;
-    const [firstHalf, secondHalf] = splitHtmlInHalf(src.content_html ?? "");
-    if (!secondHalf) {
-      toast({ title: "Kunde inte dela", description: "Texten är för kort eller saknar tydliga delningspunkter.", variant: "destructive" });
-      return;
-    }
-    const idx = cards.findIndex((c) => c.id === cardId);
-    const { data, error } = await supabase
-      .from("cards")
-      .insert({
-        manuscript_id: manuscript.id,
-        user_id: user.id,
-        position: idx + 1,
-        role: src.role,
-        title: src.title ? `${src.title} (forts.)` : "",
-        content_html: secondHalf,
-      })
-      .select()
-      .single();
-    if (error || !data) {
-      toast({ title: "Kunde inte dela kortet", description: error?.message, variant: "destructive" });
-      return;
-    }
-    const next = [...cards];
-    next[idx] = { ...next[idx], content_html: firstHalf };
-    next.splice(idx + 1, 0, data);
-    const renum = next.map((c, i) => ({ ...c, position: i }));
-    setCards(renum);
+  const restoreSnapshot = async (snap: SplitSnapshot) => {
+    // Återställ content_html på alla berörda kort som inte är nyskapade
+    const toRestore = snap.affected.filter((s) => !s.isNew);
+    setCards((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c]));
+      // Ta bort nyskapade kort
+      for (const newId of snap.createdIds) byId.delete(newId);
+      // Återställ innehåll
+      for (const s of toRestore) {
+        const c = byId.get(s.id);
+        if (c) byId.set(s.id, { ...c, content_html: s.content_html, position: s.position });
+      }
+      // Sortera efter position och renumera
+      const list = Array.from(byId.values()).sort((a, b) => a.position - b.position);
+      return list.map((c, i) => ({ ...c, position: i }));
+    });
+    // Persistera mot DB
     await Promise.all([
-      supabase.from("cards").update({ content_html: firstHalf }).eq("id", cardId),
-      persistPositions(renum),
+      ...snap.createdIds.map((id) => supabase.from("cards").delete().eq("id", id)),
+      ...toRestore.map((s) =>
+        supabase.from("cards").update({ content_html: s.content_html }).eq("id", s.id),
+      ),
     ]);
+    lastSnapshotRef.current = null;
+    if (snapshotTimerRef.current) {
+      window.clearTimeout(snapshotTimerRef.current);
+      snapshotTimerRef.current = null;
+    }
+    toast({ title: "Återställt", description: "Korten återställdes till tidigare innehåll." });
+  };
+
+  const cascadeSplitFromCard = async (cardId: string) => {
+    if (!user || !manuscript) return;
+    const startIdx = cards.findIndex((c) => c.id === cardId);
+    if (startIdx === -1) return;
+
+    const sampleEditor = editorRefs.current.get(cardId);
+    const sampleEl = sampleEditor?.view.dom as HTMLElement | undefined;
+    if (!sampleEl) {
+      toast({ title: "Kunde inte mäta kortet", description: "Försök igen om en stund.", variant: "destructive" });
+      return;
+    }
+
+    const textSize = (manuscript.text_size as "sm" | "md" | "lg") ?? "md";
+    const maxRows = MAX_ROWS_BY_SIZE[textSize];
+
+    // Snapshot
+    const affected: CardSnapshot[] = [];
+    const createdIds: string[] = [];
+    const snapTaken = new Set<string>();
+    const takeSnap = (c: Card, isNew = false) => {
+      if (snapTaken.has(c.id)) return;
+      snapTaken.add(c.id);
+      affected.push({ id: c.id, content_html: c.content_html ?? "", position: c.position, isNew });
+    };
+
+    // Arbeta på en lokal kopia av cards som vi sedan committar
+    let working: Card[] = cards.map((c) => ({ ...c }));
+    let idx = startIdx;
+    takeSnap(working[idx]);
+
+    // Säkerhetsspärr för att undvika oändlig loop
+    let safety = 50;
+
+    while (safety-- > 0) {
+      const cur = working[idx];
+      const html = cur.content_html ?? "";
+
+      // Mät: ryms allt?
+      sampleEl; // bara säkerställa scope
+      const [fits, overflow] = splitHtmlAtRow(html, maxRows, sampleEl);
+
+      if (!overflow) {
+        // Inget mer att flytta — uppdatera ev. nuvarande och avsluta
+        if (fits !== html) working[idx] = { ...cur, content_html: fits };
+        break;
+      }
+
+      // Skriv fits till nuvarande kort
+      working[idx] = { ...cur, content_html: fits };
+
+      // Säkerhetsnät: om split inte gjorde framsteg → fall tillbaka på halv-split
+      if (fits === html) {
+        const [a, b] = splitHtmlInHalf(html);
+        if (b) {
+          working[idx] = { ...cur, content_html: a };
+          // Tvinga in b i nästa kort nedan
+          const forced = b;
+          const nextIdxForced = idx + 1;
+          if (nextIdxForced >= working.length) {
+            // Skapa nytt
+            const { data, error } = await supabase
+              .from("cards")
+              .insert({
+                manuscript_id: manuscript.id,
+                user_id: user.id,
+                position: nextIdxForced,
+                role: cur.role,
+                content_html: forced,
+              })
+              .select()
+              .single();
+            if (error || !data) {
+              toast({ title: "Kunde inte dela kortet", description: error?.message, variant: "destructive" });
+              return;
+            }
+            createdIds.push(data.id);
+            working.splice(nextIdxForced, 0, data);
+            takeSnap(data, true);
+          } else {
+            const n = working[nextIdxForced];
+            takeSnap(n);
+            working[nextIdxForced] = { ...n, content_html: forced + (n.content_html ?? "") };
+          }
+          idx = nextIdxForced;
+          continue;
+        }
+        // Kunde inte dela alls — bryt
+        break;
+      }
+
+      // Lägg till overflow först i nästa kort (skapa nytt om sista)
+      const nextIdx = idx + 1;
+      if (nextIdx >= working.length) {
+        const { data, error } = await supabase
+          .from("cards")
+          .insert({
+            manuscript_id: manuscript.id,
+            user_id: user.id,
+            position: nextIdx,
+            role: cur.role,
+            content_html: overflow,
+          })
+          .select()
+          .single();
+        if (error || !data) {
+          toast({ title: "Kunde inte dela kortet", description: error?.message, variant: "destructive" });
+          return;
+        }
+        createdIds.push(data.id);
+        working.splice(nextIdx, 0, data);
+        takeSnap(data, true);
+      } else {
+        const n = working[nextIdx];
+        takeSnap(n);
+        const merged = overflow + (n.content_html ?? "");
+        working[nextIdx] = { ...n, content_html: merged };
+      }
+      idx = nextIdx;
+
+      // Kontrollera om nästa kort nu ryms — om ja, klart
+      const after = working[idx];
+      const [, overflowAfter] = splitHtmlAtRow(after.content_html ?? "", maxRows, sampleEl);
+      if (!overflowAfter) break;
+      // Annars fortsätt loopen och splitta detta kort i nästa iteration
+    }
+
+    // Renumera positioner
+    const renum = working.map((c, i) => ({ ...c, position: i }));
+    setCards(renum);
+
+    // Persistera ändringar mot DB (innehåll + positioner)
+    const updates: Promise<unknown>[] = [];
+    for (const c of renum) {
+      // Hitta ursprunglig snapshot för att veta om innehåll ändrats
+      const snap = affected.find((s) => s.id === c.id);
+      if (snap && !snap.isNew && snap.content_html !== (c.content_html ?? "")) {
+        updates.push(supabase.from("cards").update({ content_html: c.content_html }).eq("id", c.id));
+      }
+    }
+    updates.push(persistPositions(renum));
+    await Promise.all(updates);
+
+    // Spara snapshot för Ångra
+    const snapshot: SplitSnapshot = { affected, createdIds };
+    lastSnapshotRef.current = snapshot;
+    if (snapshotTimerRef.current) window.clearTimeout(snapshotTimerRef.current);
+    snapshotTimerRef.current = window.setTimeout(() => {
+      lastSnapshotRef.current = null;
+      snapshotTimerRef.current = null;
+    }, 30000);
+
     setOverflowingCardIds((prev) => {
       const n = new Set(prev);
       n.delete(cardId);
       return n;
     });
-    toast({ title: "Kortet delades", description: "Innehållet fördelades på två kort." });
+
+    const movedCount = createdIds.length;
+    const description = movedCount > 0
+      ? `Överskottet flödade vidare och ${movedCount === 1 ? "1 nytt kort skapades" : `${movedCount} nya kort skapades`}.`
+      : "Överskottet flyttades till efterföljande kort.";
+    toast({
+      title: "Kortet delades",
+      description,
+      action: (
+        <ToastAction altText="Ångra delning" onClick={() => restoreSnapshot(snapshot)}>
+          Ångra
+        </ToastAction>
+      ),
+    });
   };
 
   const mergeUp = (cardId: string) => {
