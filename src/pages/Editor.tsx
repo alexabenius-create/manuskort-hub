@@ -234,6 +234,49 @@ export default function Editor() {
     toast({ title: "Texten delades på 2 kort", description: "Överskottet flyttades till ett nytt kort." });
   };
 
+  const autoSplitCard = async (cardId: string) => {
+    if (!user || !manuscript) return;
+    const src = cards.find((c) => c.id === cardId);
+    if (!src) return;
+    const [firstHalf, secondHalf] = splitHtmlInHalf(src.content_html ?? "");
+    if (!secondHalf) {
+      toast({ title: "Kunde inte dela", description: "Texten är för kort eller saknar tydliga delningspunkter.", variant: "destructive" });
+      return;
+    }
+    const idx = cards.findIndex((c) => c.id === cardId);
+    const { data, error } = await supabase
+      .from("cards")
+      .insert({
+        manuscript_id: manuscript.id,
+        user_id: user.id,
+        position: idx + 1,
+        role: src.role,
+        title: src.title ? `${src.title} (forts.)` : "",
+        content_html: secondHalf,
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      toast({ title: "Kunde inte dela kortet", description: error?.message, variant: "destructive" });
+      return;
+    }
+    const next = [...cards];
+    next[idx] = { ...next[idx], content_html: firstHalf };
+    next.splice(idx + 1, 0, data);
+    const renum = next.map((c, i) => ({ ...c, position: i }));
+    setCards(renum);
+    await Promise.all([
+      supabase.from("cards").update({ content_html: firstHalf }).eq("id", cardId),
+      persistPositions(renum),
+    ]);
+    setOverflowingCardIds((prev) => {
+      const n = new Set(prev);
+      n.delete(cardId);
+      return n;
+    });
+    toast({ title: "Kortet delades", description: "Innehållet fördelades på två kort." });
+  };
+
   const mergeUp = (cardId: string) => {
     const idx = cards.findIndex((c) => c.id === cardId);
     if (idx <= 0) return;
