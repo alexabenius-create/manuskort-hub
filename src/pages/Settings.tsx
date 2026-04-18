@@ -9,6 +9,7 @@ import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loade
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { SEO } from "@/components/SEO";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -48,6 +49,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen">
+      <SEO title="Inställningar – Manuskort" noindex nofollow />
       <header className="topbar-blur sticky top-0 z-40 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Link
           to="/bibliotek"

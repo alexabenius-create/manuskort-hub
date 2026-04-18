@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
 import { LIMITS } from "@/lib/tierLimits";
 import { useImportStore } from "@/lib/import/importStore";
+import { SEO } from "@/components/SEO";
 import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
@@ -324,6 +325,7 @@ export default function Import() {
   if (importBlocked) {
     return (
       <div className="min-h-screen">
+        <SEO title="Importera – Manuskort" noindex nofollow />
         <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek")} className="rounded-full">
             <ArrowLeft className="h-4 w-4" /> Tillbaka
@@ -359,6 +361,7 @@ export default function Import() {
   if (step === 1) {
     return (
       <div className="min-h-screen">
+        <SEO title="Importera – Manuskort" noindex nofollow />
         <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek")} className="rounded-full">
             <ArrowLeft className="h-4 w-4" /> Tillbaka
@@ -425,6 +428,7 @@ export default function Import() {
 
   return (
     <div className="min-h-screen">
+      <SEO title="Importera – Manuskort" noindex nofollow />
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="rounded-full">
           <ArrowLeft className="h-4 w-4" /> Tillbaka

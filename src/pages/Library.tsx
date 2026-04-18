@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -234,6 +235,8 @@ export default function Library() {
   };
 
   return (
+    <>
+    <SEO title="Bibliotek – Manuskort" noindex nofollow />
     <div
       className="min-h-screen relative"
       onDragEnter={onDragEnter}
@@ -509,5 +512,6 @@ export default function Library() {
         description={upgradeReason?.description}
       />
     </div>
+    </>
   );
 }

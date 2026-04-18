@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Minus } from "lucide-react";
+import { SEO } from "@/components/SEO";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
@@ -70,6 +71,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Priser – Manuskort"
+        description="Jämför Gratis och Pro. Skapa manus, importera dokument, presentera med teleprompter och paniccards. Inget kreditkort krävs för att börja."
+        canonical="/priser"
+      />
       <PaymentTestModeBanner />
       <header className="topbar-blur sticky top-0 z-40 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Link

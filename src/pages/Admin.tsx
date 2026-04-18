@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -111,6 +112,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen">
+      <SEO title="Admin – Manuskort" noindex nofollow />
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Button
           variant="ghost"
