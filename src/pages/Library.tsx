@@ -167,8 +167,47 @@ export default function Library() {
     ["speaker", "Talare"],
   ];
 
+  const dragCounter = { current: 0 };
+
+  const onDragEnter = (e: React.DragEvent) => {
+    if (e.dataTransfer?.types?.includes("Files")) {
+      e.preventDefault();
+      dragCounter.current += 1;
+      setDragOver(true);
+    }
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setDragOver(false);
+    }
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) navigate("/importera", { state: { file } });
+  };
+
   return (
-    <div className="min-h-screen">
+    <div
+      className="min-h-screen relative"
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={(e) => e.dataTransfer?.types?.includes("Files") && e.preventDefault()}
+      onDrop={onDrop}
+    >
+      {dragOver && (
+        <div className="fixed inset-0 z-[100] bg-accent-blue/10 backdrop-blur-sm pointer-events-none flex items-center justify-center">
+          <div className="bg-surface rounded-2xl shadow-pop px-8 py-6 text-center">
+            <Upload className="h-8 w-8 mx-auto mb-2 text-accent-blue" />
+            <p className="font-display text-[18px] font-semibold">Släpp för att importera</p>
+            <p className="text-[13px] text-muted-foreground mt-1">.docx eller .txt</p>
+          </div>
+        </div>
+      )}
       {/* Topbar */}
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-6">
         <h1 className="font-display text-[17px] font-semibold tracking-tight">Manuskort</h1>
