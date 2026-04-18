@@ -41,11 +41,32 @@ export default function Library() {
       .select("*")
       .order("updated_at", { ascending: false });
     if (error) toast({ title: "Kunde inte ladda", description: error.message, variant: "destructive" });
-    setItems(data ?? []);
+    const list = data ?? [];
+
+    // Seed exempelmanus vid första besöket: om användaren har 0 manus och
+    // inte tidigare seedats, skapa ett färdigt exempel åt dem.
+    if (user && list.length === 0 && !hasBeenSeeded(user.id)) {
+      markAsSeeded(user.id); // markera direkt så vi inte dubbel-seedar
+      const newId = await seedExampleForUser(user.id);
+      if (newId) {
+        const { data: refreshed } = await supabase
+          .from("manuscripts")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        setItems(refreshed ?? []);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setItems(list);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (user) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const filtered = useMemo(() => {
     return items.filter((m) => {
