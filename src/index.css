@@ -14,7 +14,7 @@
     --foreground: 240 6% 10%;           /* #1D1D1F */
 
     --surface: 0 0% 100%;               /* #FFFFFF */
-    --surface-2: 240 9% 96%;            /* #F5F5F7 */
+    --surface-2: 240 14% 95%;           /* nested-panel container, cooler/darker for contrast */
 
     --card: 0 0% 100%;
     --card-foreground: 240 6% 10%;
