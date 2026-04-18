@@ -12,6 +12,7 @@ import { SaveIndicator } from "@/components/SaveIndicator";
 import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { nextStartFromEnd } from "@/lib/timeChain";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
