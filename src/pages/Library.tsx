@@ -512,5 +512,6 @@ export default function Library() {
         description={upgradeReason?.description}
       />
     </div>
+    </>
   );
 }
