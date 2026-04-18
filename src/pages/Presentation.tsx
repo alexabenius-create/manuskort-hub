@@ -250,7 +250,7 @@ export default function Presentation() {
 
   return (
     <div
-      className="fixed inset-0 bg-zinc-950 text-zinc-100 overflow-hidden flex flex-col"
+      className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -273,15 +273,17 @@ export default function Presentation() {
         countdownActive={timer.countdown > 0}
       />
 
-      <main className="flex-1 min-h-0 pt-44 pb-44 relative">
-        <PresentationCard
-          card={current}
-          panelists={panelists}
-          textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
-          sizeOffset={sizeOffset}
-          showNotes={showNotes}
-          onToggleNotes={() => setShowNotes((s) => !s)}
-        />
+      <main className="flex-1 min-h-0 pt-44 pb-44 px-6 md:px-10 relative">
+        <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
+          <PresentationCard
+            card={current}
+            panelists={panelists}
+            textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+            sizeOffset={sizeOffset}
+            showNotes={showNotes}
+            onToggleNotes={() => setShowNotes((s) => !s)}
+          />
+        </div>
       </main>
 
       <PresentationFooter
