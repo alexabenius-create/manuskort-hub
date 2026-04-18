@@ -25,7 +25,7 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
     // Injicera @page-regel dynamiskt — @page kan inte villkoras via attribut/klass
     const pageCSS =
       format === "a5-1up"
-        ? "@page { size: A5 portrait; margin: 10mm; }"
+        ? "@page { size: A5 landscape; margin: 10mm; }"
         : "@page { size: A4 portrait; margin: 12mm; }";
     let styleEl = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
     if (!styleEl) {
