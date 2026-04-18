@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X, Scissors, AlertTriangle } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X, Scissors, AlertTriangle, Triangle } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -16,7 +16,9 @@ import { usePanelists, type Panelist } from "@/hooks/usePanelists";
 import { MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
-type Card = Database["public"]["Tables"]["cards"]["Row"];
+type Card = Database["public"]["Tables"]["cards"]["Row"] & {
+  is_panic_card?: boolean;
+};
 
 interface Props {
   card: Card;
@@ -145,6 +147,21 @@ export function ManusCard({
               <option value="speaker">Talare</option>
               <option value="moderator">Moderator</option>
             </select>
+            {card.is_panic_card && (
+              <Tooltip delayDuration={150}>
+                <TooltipTrigger asChild>
+                  <span
+                    aria-label="Panik-kort"
+                    className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-cue-amber/15 text-[hsl(35_85%_38%)]"
+                  >
+                    <Triangle className="h-3 w-3 fill-current" strokeWidth={0} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px] text-[12px] leading-[1.5] rounded-lg">
+                  Panik-kort — kan nås snabbt under presentationen via "Panik"-knappen.
+                </TooltipContent>
+              </Tooltip>
+            )}
             <HelpDot text="Varje kort är ett avsnitt av manuset — t.ex. en intro, en fråga eller ett ämnesblock. Numret visar ordningen, och rollen avgör vem som talar (moderator eller talare). Titeln hjälper dig hitta rätt kort snabbt under sändning." />
           </div>
           <input
@@ -168,6 +185,11 @@ export function ManusCard({
               <DropdownMenuItem onClick={onDuplicate}>Duplicera kort</DropdownMenuItem>
               <DropdownMenuItem onClick={onSplit}>Dela kort vid markör</DropdownMenuItem>
               <DropdownMenuItem onClick={onMergeUp}>Slå ihop med föregående</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onLocalChange({ is_panic_card: !card.is_panic_card } as Partial<Card>)}>
+                <Triangle className="h-3.5 w-3.5 mr-2 fill-current" strokeWidth={0} />
+                {card.is_panic_card ? "Ta bort panik-markering" : "Markera som panik-kort"}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDelete} className="text-destructive">Radera kort</DropdownMenuItem>
             </DropdownMenuContent>
