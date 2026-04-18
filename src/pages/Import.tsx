@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTier } from "@/hooks/useTier";
+import { LIMITS } from "@/lib/tierLimits";
 import { useImportStore } from "@/lib/import/importStore";
 import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
