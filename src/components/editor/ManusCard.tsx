@@ -13,6 +13,7 @@ import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { placeholderFor } from "@/lib/placeholders";
 import { placeholderForFormat, type TimeFormat } from "@/lib/timeChain";
 import { usePanelists, type Panelist } from "@/hooks/usePanelists";
+import { MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -33,16 +34,20 @@ interface Props {
   onSplit: () => void;
   onMergeUp: () => void;
   onSyncWithPrevious?: () => void;
+  onPasteOverflow?: (overflowText: string) => void;
 }
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
-  onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious,
+  onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [selection, setSelection] = useState<SelectionState>({ hasSelection: false, activePanelistId: null });
+  const [currentRows, setCurrentRows] = useState(0);
+  const maxRows = MAX_ROWS_BY_SIZE[textSize];
+  const isFull = currentRows >= maxRows;
 
   const showPanelistBar = isModerator && panelists.length > 0 && selection.hasSelection;
 
@@ -97,6 +102,7 @@ export function ManusCard({
     <article
       ref={setNodeRef}
       style={style}
+      data-card-full={isFull ? "true" : undefined}
       className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
       {/* Header panel */}
@@ -247,6 +253,18 @@ export function ManusCard({
           <div className="flex items-center gap-1.5 mb-3">
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
             <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser." />
+            <span
+              className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full ${
+                isFull
+                  ? "bg-destructive/10 text-destructive"
+                  : currentRows >= maxRows - 1
+                    ? "bg-cue-amber/10 text-[hsl(35_85%_38%)]"
+                    : "bg-surface-2 text-muted-foreground"
+              }`}
+              title={isFull ? "Kortet är fullt — dela upp i två kort." : `Max ${maxRows} rader för storlek ${textSize.toUpperCase()}`}
+            >
+              {currentRows} / {maxRows} rader
+            </span>
           </div>
           <TiptapEditor
             value={card.content_html}
@@ -255,6 +273,9 @@ export function ManusCard({
             size={textSize}
             onEditorReady={setEditor}
             onSelectionChange={setSelection}
+            maxRows={maxRows}
+            onRowCountChange={setCurrentRows}
+            onOverflowPaste={onPasteOverflow}
           />
         </div>
         {showNotes && (

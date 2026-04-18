@@ -254,12 +254,23 @@
 @layer components {
   .manu-card {
     animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+    transition: box-shadow 0.25s ease;
+  }
+  .manu-card[data-card-full="true"] {
+    box-shadow: 0 0 0 1.5px hsl(var(--destructive) / 0.45) inset;
+    animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both, cardFullPulse 0.5s ease-out;
   }
 }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardFullPulse {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--destructive) / 0.35) inset; }
+  60%  { box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.25) inset; }
+  100% { box-shadow: 0 0 0 1.5px hsl(var(--destructive) / 0.45) inset; }
 }
 
 /* ============================================================
