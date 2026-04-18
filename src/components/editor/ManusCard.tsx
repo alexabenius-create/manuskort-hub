@@ -232,14 +232,14 @@ function HelpDot({ text }: { text: string }) {
   );
 }
 
-function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function TimeField({ label, value, placeholder = "00:00", onChange }: { label: string; value: string; placeholder?: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-[12px] text-muted-foreground">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="00:00"
+        placeholder={placeholder}
         className="font-mono text-[13px] bg-surface-2 rounded-md border-0 outline-none w-[72px] px-2.5 py-1 placeholder:text-faint focus:ring-2 focus:ring-accent-blue"
       />
     </div>
