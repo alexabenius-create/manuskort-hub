@@ -76,9 +76,9 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       notes: "Stå centralt. Le brett. Ögonkontakt med hela panelen under presentationen.",
       start_time: "00:00",
       end_time: "02:00",
-      cue_red: "andas efter \"Välkomma!\"",
+      cue_red: "andas efter \"Välkomna!\"",
       cue_amber: "",
-      cue_teal: "Öppningsfråga till alla",
+      cue_teal: "Presentation av panelen",
       is_panic_card: false,
     },
     {
@@ -93,7 +93,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       end_time: "",
       cue_red: "",
       cue_amber: "",
-      cue_teal: "",
+      cue_teal: "Öppningsfråga till alla",
       is_panic_card: false,
     },
     {
