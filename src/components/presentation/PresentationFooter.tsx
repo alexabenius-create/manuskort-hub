@@ -52,8 +52,8 @@ export function PresentationFooter({
   const ringPercent = planned ? Math.min(100, (cardElapsed / planned) * 100) : 0;
   const ringOver = planned !== null && cardElapsed > planned;
 
-  // SVG progress-ring (runt kortnumret)
-  const ringRadius = 18;
+  // SVG progress-ring (runt kortnumret) — 2x storlek
+  const ringRadius = 38;
   const ringCircumference = 2 * Math.PI * ringRadius;
   const ringDashOffset = ringCircumference * (1 - ringPercent / 100);
 
@@ -125,15 +125,15 @@ export function PresentationFooter({
           )}
         </div>
 
-        {/* Höger — panik-knapp */}
+        {/* Höger — panik-knapp (4x storlek) */}
         <div className="flex items-center pointer-events-auto">
           {hasPanicCards && (
             <button
               onClick={onPanic}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-900/30 hover:bg-amber-900/50 backdrop-blur-md text-amber-300 hover:text-amber-200 border border-amber-700/40 transition-colors text-[12px] font-medium"
+              className="inline-flex items-center gap-4 px-8 py-5 rounded-full bg-amber-900/30 hover:bg-amber-900/50 backdrop-blur-md text-amber-300 hover:text-amber-200 border-2 border-amber-700/40 transition-colors text-[24px] font-medium"
               title="Hoppa till nästa panik-kort (P)"
             >
-              <Triangle className="h-3 w-3 fill-current" strokeWidth={0} />
+              <Triangle className="h-6 w-6 fill-current" strokeWidth={0} />
               Panik
             </button>
           )}

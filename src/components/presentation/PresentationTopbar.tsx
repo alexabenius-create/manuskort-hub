@@ -72,12 +72,12 @@ export function PresentationTopbar({
       <div className="flex items-center gap-2 pointer-events-auto">
         <button
           onClick={onExit}
-          className={`p-2.5 rounded-full text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 backdrop-blur-md transition-opacity duration-300 ${
+          className={`p-5 rounded-full text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 backdrop-blur-md transition-opacity duration-300 ${
             xVisible ? "opacity-100" : "opacity-0 hover:opacity-100"
           }`}
           aria-label="Avsluta presentationsläge"
         >
-          <X className="h-5 w-5" />
+          <X className="h-10 w-10" />
         </button>
 
         {/* Wake Lock indikator (diskret) */}
@@ -97,40 +97,40 @@ export function PresentationTopbar({
         </div>
       </div>
 
-      {/* Höger — tidsmodul */}
-      <div className="flex items-center gap-2 pointer-events-auto opacity-55 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+      {/* Höger — tidsmodul (4x storlek) */}
+      <div className="flex items-center gap-4 pointer-events-auto opacity-55 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
         {/* Mode toggle */}
-        <div className="inline-flex bg-zinc-900/50 backdrop-blur-md rounded-full p-0.5 text-[11px] font-medium">
+        <div className="inline-flex bg-zinc-900/50 backdrop-blur-md rounded-full p-2 text-[22px] font-medium">
           <button
             onClick={() => onModeChange("clock")}
-            className={`px-2.5 py-1 rounded-full transition-colors inline-flex items-center gap-1 ${
+            className={`px-5 py-2 rounded-full transition-colors inline-flex items-center gap-2 ${
               mode === "clock" ? "bg-zinc-700/80 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
             }`}
             title="Klockslag"
           >
-            <Clock className="h-3 w-3" /> Klockslag
+            <Clock className="h-6 w-6" /> Klockslag
           </button>
           <button
             onClick={() => onModeChange("elapsed")}
-            className={`px-2.5 py-1 rounded-full transition-colors inline-flex items-center gap-1 ${
+            className={`px-5 py-2 rounded-full transition-colors inline-flex items-center gap-2 ${
               mode === "elapsed" ? "bg-zinc-700/80 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
             }`}
             title="Förfluten tid"
           >
-            <Timer className="h-3 w-3" /> Förfluten
+            <Timer className="h-6 w-6" /> Förfluten
           </button>
         </div>
 
         {/* Tidsdisplay */}
-        <div className="flex flex-col items-end px-3 py-2 rounded-2xl bg-zinc-900/50 backdrop-blur-md min-w-[140px]">
+        <div className="flex flex-col items-end px-6 py-4 rounded-3xl bg-zinc-900/50 backdrop-blur-md min-w-[400px]">
           {mode === "clock" ? (
             <>
-              <span className={`font-mono text-[20px] tabular-nums leading-none ${timeColor}`}>
+              <span className={`font-mono text-[56px] tabular-nums leading-none ${timeColor}`}>
                 {formatClock(new Date(now))}
-                <span className="text-zinc-600 mx-1">/</span>
+                <span className="text-zinc-600 mx-2">/</span>
                 <span className="text-zinc-400">{targetClockTime}</span>
               </span>
-              <span className="font-mono text-[10px] text-zinc-500 mt-1">
+              <span className="font-mono text-[20px] text-zinc-500 mt-3">
                 {formatMinutesLeft(remainingSeconds)}
               </span>
             </>
@@ -138,15 +138,15 @@ export function PresentationTopbar({
             <>
               <button
                 onClick={onDirectionToggle}
-                className={`font-mono text-[20px] tabular-nums leading-none inline-flex items-center gap-1.5 hover:text-zinc-300 transition-colors ${timeColor}`}
+                className={`font-mono text-[56px] tabular-nums leading-none inline-flex items-center gap-3 hover:text-zinc-300 transition-colors ${timeColor}`}
                 title={direction === "down" ? "Visa förfluten tid istället" : "Visa återstående tid istället"}
               >
                 {direction === "down"
                   ? formatElapsedSeconds(remainingSeconds)
                   : formatElapsedSeconds(elapsedSeconds)}
-                <ArrowUpDown className="h-3 w-3 opacity-50" />
+                <ArrowUpDown className="h-6 w-6 opacity-50" />
               </button>
-              <span className="font-mono text-[10px] text-zinc-500 mt-1">
+              <span className="font-mono text-[20px] text-zinc-500 mt-3">
                 {direction === "down" ? "kvar av" : "av"} {formatElapsedSeconds(targetSeconds)}
               </span>
             </>
@@ -158,11 +158,11 @@ export function PresentationTopbar({
           <button
             onClick={onPauseToggle}
             disabled={countdownActive}
-            className="p-2.5 rounded-full bg-zinc-900/50 backdrop-blur-md text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 transition-colors disabled:opacity-40"
+            className="p-5 rounded-full bg-zinc-900/50 backdrop-blur-md text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 transition-colors disabled:opacity-40"
             aria-label={isPaused ? "Återuppta timer" : "Pausa timer"}
             title={isPaused ? "Återuppta" : "Pausa"}
           >
-            {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            {isPaused ? <Play className="h-8 w-8" /> : <Pause className="h-8 w-8" />}
           </button>
         )}
       </div>
