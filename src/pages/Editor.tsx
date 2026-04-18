@@ -855,6 +855,13 @@ export default function Editor() {
           }
         }}
       />
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title="Du har nått kort-gränsen för Gratis"
+        description={`Gratis tillåter ${limits.cardsPerManuscript} kort per manus. Uppgradera till PRO för obegränsat.`}
+      />
     </div>
     </PanelistsProvider>
   );
