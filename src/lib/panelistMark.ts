@@ -40,7 +40,7 @@ export const PanelistMark = Mark.create<{ HTMLAttributes: Record<string, unknown
             style: `background-color: ${hexToRgba(
               attrs.color as string,
               0.32
-            )}; border-radius: 4px; padding: 1px 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone;`,
+            )}; border-radius: 10px; padding: 2px 8px; position: relative; box-decoration-break: clone; -webkit-box-decoration-break: clone;`,
           };
         },
       },
