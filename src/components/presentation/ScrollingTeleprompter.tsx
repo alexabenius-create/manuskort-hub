@@ -126,14 +126,20 @@ export function ScrollingTeleprompter({
   const [totalHeight, setTotalHeight] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
 
-  // Förbered kortinnehåll
-  const renderedCards = useMemo(() => {
-    return cards.map((c) => {
-      const html = transformHtmlForPresentation(c.content_html ?? "", panelists);
-      const plain = htmlToPlainText(c.content_html ?? "");
-      const sentences = focusStyle === "sentence" ? splitSentences(plain) : [];
-      return { card: c, html, sentences };
-    });
+  // Slå ihop alla kort till ett sammanhängande dokument
+  const merged = useMemo(() => {
+    const htmlParts: string[] = [];
+    const sentences: string[] = [];
+    for (const c of cards) {
+      const raw = c.content_html ?? "";
+      if (!raw.trim()) continue;
+      htmlParts.push(transformHtmlForPresentation(raw, panelists));
+      if (focusStyle === "sentence") {
+        const plain = htmlToPlainText(raw);
+        sentences.push(...splitSentences(plain));
+      }
+    }
+    return { html: htmlParts.join('<p class="teleprompter-card-gap">&nbsp;</p>'), sentences };
   }, [cards, panelists, focusStyle]);
 
   // Mät höjder
