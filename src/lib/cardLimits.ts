@@ -119,17 +119,18 @@ function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: (
 export function splitHtmlAtRow(
   html: string,
   maxRows: number,
-  sampleEl: HTMLElement,
+  textSize: TextSize,
 ): [string, string] {
   if (!html || !html.trim()) return [html, ""];
 
-  const { el: measurer, cleanup } = createMeasurer(sampleEl);
-  try {
-    // Kontrollera först om allt får plats
-    measurer.innerHTML = html;
-    if (countVisualRows(measurer) <= maxRows) {
-      return [html, ""];
-    }
+  const measurer = getPresentationMeasurer(textSize);
+  // Kontrollera först om allt får plats
+  measurer.innerHTML = html;
+  if (countVisualRows(measurer) <= maxRows) {
+    return [html, ""];
+  }
+  // Wrapper try/finally inte längre nödvändig — measurer återanvänds globalt.
+  {
 
     // Parsa HTML till en lista av blockelement
     const tmp = document.createElement("div");
