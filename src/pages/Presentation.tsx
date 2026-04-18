@@ -36,16 +36,40 @@ export default function Presentation() {
     }
   }, [wakeLockStatus]);
 
-  // Avsluta med Esc
+  // Avsluta med Esc — eller när användaren lämnar fullskärmsläget
+  // (browsern fångar Esc själv när den är i fullskärm, så vi måste även
+  // lyssna på fullscreenchange för att fånga det fallet)
   useEffect(() => {
+    const exit = () => navigate(`/manus/${id}`);
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        navigate(`/manus/${id}`);
+        exit();
       }
     };
+
+    // Vänta tills första fullscreen-aktivering innan vi börjar lyssna på "lämnar fullskärm"
+    // — annars triggar initial mount (innan requestFullscreen hunnit köras) en falsk exit.
+    let hasEnteredFullscreen = false;
+    const onFsChange = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      const isFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
+      if (isFs) {
+        hasEnteredFullscreen = true;
+      } else if (hasEnteredFullscreen) {
+        exit();
+      }
+    };
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+    };
   }, [id, navigate]);
 
   // Ladda data
