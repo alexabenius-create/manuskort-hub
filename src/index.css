@@ -14,7 +14,7 @@
     --foreground: 240 6% 10%;           /* #1D1D1F */
 
     --surface: 0 0% 100%;               /* #FFFFFF */
-    --surface-2: 240 9% 96%;            /* #F5F5F7 */
+    --surface-2: 240 14% 95%;           /* nested-panel container, cooler/darker for contrast */
 
     --card: 0 0% 100%;
     --card-foreground: 240 6% 10%;
@@ -54,6 +54,7 @@
 
     /* Soft Apple-style shadows */
     --shadow-sm: 0 1px 2px hsl(240 6% 10% / 0.04);
+    --shadow-subtle: 0 1px 2px hsl(240 6% 10% / 0.03);
     --shadow-card: 0 1px 3px hsl(240 6% 10% / 0.04), 0 4px 12px hsl(240 6% 10% / 0.04);
     --shadow-pop: 0 4px 12px hsl(240 6% 10% / 0.06), 0 12px 32px hsl(240 6% 10% / 0.08);
 
@@ -153,6 +154,7 @@
 
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-pop  { box-shadow: var(--shadow-pop); }
+  .shadow-subtle { box-shadow: var(--shadow-subtle); }
 
   .cue-dot { width: 8px; height: 8px; border-radius: 9999px; flex-shrink: 0; display: inline-block; }
   .cue-red   { background: hsl(var(--cue-red)); }
