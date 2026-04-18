@@ -11,7 +11,7 @@ interface SEOProps {
 }
 
 const SITE_URL = "https://manuskort.se";
-const DEFAULT_OG = "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f2656173-9968-4162-84ce-f134ab9818a1/id-preview-38e7a4e0--cd4ac673-0ac9-4b3d-b57f-a97abc72e096.lovable.app-1776526036968.png";
+const DEFAULT_OG = "https://manuskort.se/og-image.png";
 
 export function SEO({
   title,
