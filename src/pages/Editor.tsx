@@ -283,25 +283,6 @@ export default function Editor() {
 
           <div className="seg-group">
             <button
-              data-active={timeFormat === "elapsed"}
-              onClick={() => updateMeta({ time_format: "elapsed" })}
-              className="seg-btn"
-              title="Förfluten tid från programmets start (MM:SS)"
-            >
-              Förfluten
-            </button>
-            <button
-              data-active={timeFormat === "clock"}
-              onClick={() => updateMeta({ time_format: "clock" })}
-              className="seg-btn"
-              title="Klockslag på dygnet (HH:MM)"
-            >
-              Klockslag
-            </button>
-          </div>
-
-          <div className="seg-group">
-            <button
               data-active={manuscript.show_notes}
               onClick={() => updateMeta({ show_notes: !manuscript.show_notes })}
               className="seg-btn"
