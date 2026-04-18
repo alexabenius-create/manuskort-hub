@@ -71,7 +71,7 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
           <FormatOption
             active={format === "a5-1up"}
             onClick={() => setFormat("a5-1up")}
-            label="A5 stående"
+            label="A5 liggande"
             sublabel="1 kort per sida"
           >
             <PreviewA5 />
@@ -140,10 +140,11 @@ function PreviewA4() {
 }
 
 function PreviewA5() {
+  // A5 liggande — 1 kort per sida
   return (
-    <svg viewBox="0 0 60 80" className="h-20" aria-hidden>
-      <rect x="6" y="8" width="48" height="64" rx="3" fill="hsl(var(--surface))" stroke="hsl(var(--faint))" strokeWidth="1" />
-      <rect x="12" y="16" width="36" height="48" rx="2" fill="hsl(var(--surface-2))" />
+    <svg viewBox="0 0 80 60" className="h-20" aria-hidden>
+      <rect x="2" y="6" width="76" height="48" rx="3" fill="hsl(var(--surface))" stroke="hsl(var(--faint))" strokeWidth="1" />
+      <rect x="10" y="14" width="60" height="32" rx="2" fill="hsl(var(--surface-2))" />
     </svg>
   );
 }
