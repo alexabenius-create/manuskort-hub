@@ -693,8 +693,9 @@ export default function Editor() {
                     onMergeUp={() => mergeUp(c.id)}
                     onSyncWithPrevious={() => syncWithPrevious(c.id)}
                     onPasteOverflow={(text) => handlePasteOverflow(c.id, text)}
-                    onAutoSplit={() => autoSplitCard(c.id)}
+                    onAutoSplit={() => cascadeSplitFromCard(c.id)}
                     onOverflowStateChange={handleOverflowChange}
+                    onEditorReady={handleEditorReady}
                   />
                 ))}
               </div>
