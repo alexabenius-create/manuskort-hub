@@ -9,8 +9,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ManusCard } from "@/components/editor/ManusCard";
 import { SaveIndicator } from "@/components/SaveIndicator";
+import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
-import { ArrowLeft, Plus, Printer } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
 import type { Database } from "@/integrations/supabase/types";
@@ -26,6 +28,7 @@ export default function Editor() {
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
 
@@ -242,7 +245,10 @@ export default function Editor() {
   const sizes: ("sm" | "md" | "lg")[] = ["sm", "md", "lg"];
   const sizeLabels: Record<string, string> = { sm: "Liten", md: "Normal", lg: "Stor" };
 
+  const isModerator = manuscript.mode === "moderator";
+
   return (
+    <PanelistsProvider manuscriptId={manuscript.id}>
     <div className="min-h-screen">
       {/* Sticky topbar-grupp: huvudrad + (villkorlig) tidsformat-rad */}
       <div className="topbar-blur sticky top-0 z-50 border-b-hair">
@@ -298,6 +304,16 @@ export default function Editor() {
               Tider
             </button>
           </div>
+
+          {isModerator && (
+            <Button
+              variant="ghost"
+              onClick={() => setPanelistSidebarOpen(true)}
+              className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
+            >
+              <Users className="h-3.5 w-3.5" /> Deltagare
+            </Button>
+          )}
 
           <Button
             onClick={addCard}
@@ -378,6 +394,7 @@ export default function Editor() {
                     showTimes={manuscript.show_times}
                     wpm={manuscript.wpm}
                     timeFormat={timeFormat}
+                    isModerator={isModerator}
                     canSyncWithPrevious={idx > 0}
                     onLocalChange={(patch) => updateCard(c.id, patch)}
                     onDelete={() => deleteCard(c.id)}
@@ -392,6 +409,14 @@ export default function Editor() {
           </DndContext>
         )}
       </main>
+
+      {isModerator && (
+        <PanelistSidebar
+          open={panelistSidebarOpen}
+          onClose={() => setPanelistSidebarOpen(false)}
+        />
+      )}
     </div>
+    </PanelistsProvider>
   );
 }
