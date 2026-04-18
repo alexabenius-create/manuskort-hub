@@ -162,11 +162,22 @@ export default function Presentation() {
 
       if (e.key === "Escape") {
         e.preventDefault();
+        if (helpOpen) { setHelpOpen(false); return; }
         exit();
         return;
       }
 
       if (isEditable) return;
+
+      // Hjälp-overlay: ? eller H öppnar/stänger
+      if (e.key === "?" || e.key === "h" || e.key === "H") {
+        e.preventDefault();
+        setHelpOpen((o) => !o);
+        return;
+      }
+
+      // Om hjälpen är öppen, blockera andra genvägar
+      if (helpOpen) return;
 
       // Scroll-läge: hastighet via +/-/R, piltangenter ignoreras (undvik konflikt med klickare)
       if (viewMode === "scroll") {
