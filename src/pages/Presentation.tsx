@@ -8,7 +8,8 @@ import { PresentationTopbar } from "@/components/presentation/PresentationTopbar
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
-import { PresentationStartMenu } from "@/components/presentation/PresentationStartMenu";
+import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/components/presentation/PresentationStartMenu";
+import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
@@ -36,6 +37,10 @@ export default function Presentation() {
   const [xVisible, setXVisible] = useState(true);
   const [menuOpen, setMenuOpen] = useState(true);
   const [startMode, setStartMode] = useState<"countdown" | "instant" | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [focusStyle, setFocusStyle] = useState<FocusStyle>("line");
+  const [speedFactor, setSpeedFactor] = useState(1.0);
+  const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
@@ -139,7 +144,42 @@ export default function Presentation() {
 
       if (isEditable) return;
 
-      // Navigation
+      // Scroll-läge: hastighet via +/-/R, piltangenter ignoreras (undvik konflikt med klickare)
+      if (viewMode === "scroll") {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          setSpeedFactor((s) => {
+            const next = Math.min(3.0, +(s + 0.1).toFixed(2));
+            setSpeedChip({ value: next, ts: Date.now() });
+            return next;
+          });
+          return;
+        }
+        if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          setSpeedFactor((s) => {
+            const next = Math.max(0.25, +(s - 0.1).toFixed(2));
+            setSpeedChip({ value: next, ts: Date.now() });
+            return next;
+          });
+          return;
+        }
+        if (e.key === "r" || e.key === "R") {
+          e.preventDefault();
+          setSpeedFactor(1.0);
+          setSpeedChip({ value: 1.0, ts: Date.now() });
+          return;
+        }
+        if (e.key === "p" || e.key === "P") {
+          e.preventDefault();
+          handlePanic();
+          return;
+        }
+        // Pil-tangenter och space ignoreras i scroll-läge
+        return;
+      }
+
+      // Cards-läge: Navigation
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
         goNext();
@@ -168,7 +208,7 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex, menuOpen]);
+  }, [exit, cards.length, currentIndex, menuOpen, viewMode]);
 
   // Navigation
   const goNext = useCallback(() => {
@@ -316,7 +356,7 @@ export default function Presentation() {
 
       <main className="flex-1 min-h-0 pt-44 pb-44 px-6 md:px-10 relative">
         <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
-          {!menuOpen && (
+          {!menuOpen && viewMode === "cards" && (
             <PresentationCard
               card={current}
               panelists={panelists}
@@ -327,32 +367,60 @@ export default function Presentation() {
               onNotesChange={(notes) => handleNotesChange(current.id, notes)}
             />
           )}
+          {!menuOpen && viewMode === "scroll" && (
+            <ScrollingTeleprompter
+              cards={cards}
+              panelists={panelists}
+              textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+              sizeOffset={sizeOffset}
+              focusStyle={focusStyle}
+              elapsedSeconds={timer.elapsedSeconds}
+              targetSeconds={timer.targetSeconds}
+              isPaused={timer.isPaused}
+              countdownActive={timer.countdown > 0}
+              speedFactor={speedFactor}
+            />
+          )}
         </div>
       </main>
 
-      <PresentationFooter
-        current={current}
-        next={next}
-        index={currentIndex}
-        total={cards.length}
-        hasPanicCards={hasPanicCards}
-        onPanic={handlePanic}
-        elapsedSeconds={timer.elapsedSeconds}
-        cardStartedAtElapsedSeconds={cardStartedAtElapsed}
-        timeFormat={timerMode}
-        sizeOffset={sizeOffset}
-        onSizeChange={handleSizeChange}
-      />
+      {viewMode === "cards" && (
+        <PresentationFooter
+          current={current}
+          next={next}
+          index={currentIndex}
+          total={cards.length}
+          hasPanicCards={hasPanicCards}
+          onPanic={handlePanic}
+          elapsedSeconds={timer.elapsedSeconds}
+          cardStartedAtElapsedSeconds={cardStartedAtElapsed}
+          timeFormat={timerMode}
+          sizeOffset={sizeOffset}
+          onSizeChange={handleSizeChange}
+        />
+      )}
+
+      {/* Speed-chip i scroll-läge */}
+      {viewMode === "scroll" && speedChip && Date.now() - speedChip.ts < 2000 && (
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-40 px-6 py-3 rounded-2xl bg-zinc-900/90 backdrop-blur text-zinc-100 font-mono text-[20px] tabular-nums animate-in fade-in duration-200">
+          {speedChip.value.toFixed(2)}×
+        </div>
+      )}
 
       {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
 
       {menuOpen && (
         <PresentationStartMenu
-          onStartCountdown={() => {
+          estimatedSpeedFactor={1.0}
+          onStartCountdown={(opts) => {
+            setViewMode(opts.viewMode);
+            setFocusStyle(opts.focusStyle);
             setStartMode("countdown");
             setMenuOpen(false);
           }}
-          onStartInstant={() => {
+          onStartInstant={(opts) => {
+            setViewMode(opts.viewMode);
+            setFocusStyle(opts.focusStyle);
             setStartMode("instant");
             setMenuOpen(false);
           }}
