@@ -562,8 +562,24 @@
   .manu-card .card-panel-cues:not(:has(input:not(:placeholder-shown))) {
     display: none !important;
   }
-}
+  }
 
+  /* Visuell markör för explicita radbrytningar (Shift+Enter → <br>).
+     Diskret pil "↵" som visar att raden är en tvingad radbrytning som
+     också syns i presentationsläget — till skillnad från auto-wrap. */
+  .ProseMirror br {
+    position: relative;
+  }
+  .ProseMirror br::before {
+    content: "↵";
+    display: inline;
+    color: hsl(var(--faint));
+    opacity: 0.6;
+    font-size: 0.85em;
+    margin-right: 2px;
+    pointer-events: none;
+    user-select: none;
+  }
 
 /* Presentationsläge — kortets manustext */
 .presentation-prose p {
