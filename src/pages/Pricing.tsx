@@ -6,11 +6,48 @@ import { ArrowLeft, Check, Minus } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 type Feature = { label: string; included: boolean };
 type Billing = "month" | "year";
+
+const faqs: { q: string; a: string }[] = [
+  {
+    q: "Kan jag prova gratis innan jag uppgraderar?",
+    a: "Ja. Gratisplanen är gratis för alltid och kräver inget betalkort. Du kan skapa upp till 2 manus med max 15 kort och 5 paneldeltagare per manus, och testa presentationsläget fullt ut.",
+  },
+  {
+    q: "Vad händer med mina manus om jag säger upp PRO?",
+    a: "Inget försvinner. Dina manus, kort och paneldeltagare ligger kvar. Du återgår till gratisplanens gränser, men allt befintligt innehåll behålls och kan läsas och presenteras.",
+  },
+  {
+    q: "Kan jag byta mellan månads- och årsbetalning?",
+    a: "Ja. Du kan när som helst växla plan från inställningarna. Vid byte till årsbetalning sparar du cirka 25 % jämfört med månadspris.",
+  },
+  {
+    q: "Hur fungerar .docx-importen?",
+    a: "Du laddar upp ett Word-dokument och Manuskort delar automatiskt upp texten i kort, identifierar talare och föreslår tider. Du får förhandsgranska och justera innan importen sparas.",
+  },
+  {
+    q: "Är priserna inklusive moms?",
+    a: "Ja, alla priser visas inklusive svensk moms (25 %). Företag kan ange organisationsnummer i kassan för korrekt fakturaunderlag.",
+  },
+  {
+    q: "Vilka betalsätt accepteras?",
+    a: "Vi använder Stripe för säkra betalningar. Du kan betala med Visa, Mastercard, American Express samt Apple Pay och Google Pay där det stöds.",
+  },
+  {
+    q: "Kan jag säga upp prenumerationen när som helst?",
+    a: "Ja. Du säger enkelt upp i inställningarna. PRO är aktivt fram till slutet av nuvarande betalperiod, sedan övergår kontot automatiskt till gratisplanen.",
+  },
+];
 
 const freeFeatures: Feature[] = [
   { label: "Upp till 2 manus", included: true },
@@ -123,6 +160,18 @@ export default function Pricing() {
                 item: "https://manuskort.se/priser",
               },
             ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((f) => ({
+              "@type": "Question",
+              name: f.q,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: f.a,
+              },
+            })),
           },
         ]}
       />
@@ -240,6 +289,30 @@ export default function Pricing() {
               Uppgradera
             </Button>
           </article>
+        </section>
+
+        {/* FAQ */}
+        <section className="flex flex-col gap-6 max-w-[720px] mx-auto w-full pt-4">
+          <header className="flex flex-col gap-2 text-center">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+              Vanliga frågor
+            </h2>
+            <p className="text-[14px] text-muted-foreground">
+              Hittar du inte svaret? Hör av dig så hjälper vi dig.
+            </p>
+          </header>
+          <Accordion type="single" collapsible className="bg-surface rounded-2xl shadow-card px-2 sm:px-4">
+            {faqs.map((f, i) => (
+              <AccordionItem key={f.q} value={`item-${i}`} className="border-b-hair last:border-b-0">
+                <AccordionTrigger className="text-left text-[15px] font-medium hover:no-underline px-3 sm:px-4">
+                  {f.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-[14px] text-muted-foreground px-3 sm:px-4 pb-4 leading-relaxed">
+                  {f.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </section>
       </main>
 
