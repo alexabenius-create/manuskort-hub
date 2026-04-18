@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter, DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import type { Editor as TiptapEditorType } from "@tiptap/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,24 @@ import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
-import { splitHtmlInHalf } from "@/lib/cardLimits";
+import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
+
+type CardSnapshot = {
+  id: string;
+  content_html: string;
+  position: number;
+  isNew?: boolean; // true om kortet skapades under denna split
+};
+type SplitSnapshot = {
+  affected: CardSnapshot[];
+  createdIds: string[];
+};
 
 export default function Editor() {
   const { id } = useParams<{ id: string }>();
