@@ -606,6 +606,42 @@ export default function Editor() {
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <SaveIndicator />
 
+          {/* Måltid-pill */}
+          {(() => {
+            const totalSeconds = cards.reduce((sum, c) => sum + estimateSeconds(wordCount(c.content_html), manuscript.wpm), 0);
+            const diff = targetDurationSeconds !== null ? totalSeconds - targetDurationSeconds : null;
+            const diffText = diff === null ? null : (() => {
+              const abs = Math.abs(diff);
+              const m = Math.floor(abs / 60);
+              const s = abs % 60;
+              const sign = diff > 0 ? "+" : diff < 0 ? "−" : "±";
+              return `${sign}${m}:${String(s).padStart(2, "0")}`;
+            })();
+            const diffColor = diff === null || Math.abs(diff) < 30
+              ? "text-muted-foreground"
+              : diff > 0
+                ? "text-[hsl(35_85%_38%)]"
+                : "text-muted-foreground";
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetDialogIntro(undefined);
+                  setTargetSaveLabel("Spara");
+                  setTargetDialogOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[12px] font-mono bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors"
+                title="Klicka för att ändra måltid"
+              >
+                <Target className="h-3 w-3" />
+                <span>Måltid: {targetDurationSeconds !== null ? formatTargetDuration(targetDurationSeconds) : "—"}</span>
+                {diffText && (
+                  <span className={diffColor}>({diffText})</span>
+                )}
+              </button>
+            );
+          })()}
+
           <div className="seg-group">
             {sizes.map((s) => (
               <button
