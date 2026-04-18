@@ -42,7 +42,7 @@ export default function Editor() {
     };
   }, [manuscript]);
 
-  const timeFormat = (manuscript?.time_format === "clock" ? "clock" : "elapsed") as "clock" | "elapsed";
+  const timeFormat = (manuscript?.time_format === "elapsed" ? "elapsed" : "clock") as "clock" | "elapsed";
 
   useAutosave({
     table: "manuscripts",
