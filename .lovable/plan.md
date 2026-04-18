@@ -1,78 +1,38 @@
 
 
-## Mål
-Auto-dela ska splitta exakt vid radgränsen (efter rad 8 vid Normal storlek), inte i mitten. Överskottet kaskaderar nedåt — om kort 2 också blir för fullt fortsätter överskottet till kort 3, osv. Användaren ska kunna ångra hela operationen med ett klick.
+## Justering: anteckningar inkluderas i de 80 %
 
-## Beteende
+Manus-text + anteckningar tillsammans ska ta ~80 % av kortets utskriftsyta. Övriga paneler (header, tider, signaler) komprimeras till smala remsor på resterande ~20 %.
 
-**Före auto-split (Normal, max 8):**
-- Kort A: 12 rader (4 över)
-- Kort B: 5 rader
-
-**Efter auto-split:**
-- Kort A: 8 rader (rad 1–8)
-- Kort B: 8 rader (rad 9–11 från A + första 5 raderna från B's gamla innehåll)
-- Kort C: 1 rad (kvarvarande från B) — *bara om B blev över max*
-
-Endast så många rader som krävs för att rymma överskottet får "knuffas ner". Om kort B redan har plats räcker det med att lägga till överskottet — inget nytt kort behövs.
-
-**Toast efter split:**
-> "Kortet delades. [Ångra]"
-
-Klick på Ångra återställer alla berörda kort till ursprungligt innehåll och tar bort eventuella nyskapade kort.
-
-## Teknisk approach
-
-### 1. Mät visuella rader exakt — `src/lib/cardLimits.ts`
-Lägg till `splitHtmlAtRow(html, maxRows, sampleEl)`:
-- Skapa dold mät-div som klonar samma typografi (font-size, line-height, bredd) som `sampleEl` (editor-DOM:en).
-- Sätt in HTML stegvis (block för block, sedan ord för ord vid behov) tills mät-divens `countVisualRows` precis når `maxRows`.
-- Returnera `[fitsHtml, overflowHtml]`.
-
-För att undvika att kapa mitt i ett ord eller en mening: föredra split vid blockgräns → meningsslut → mellanslag, inom ±1 rad-tolerans.
-
-### 2. Ny kaskad-funktion — `src/pages/Editor.tsx`
-Ersätt nuvarande `autoSplitCard` med `cascadeSplitFromCard(cardId)`:
+## Layout per kort vid utskrift
 
 ```text
-1. Snapshot: spara alla berörda korts {id, content_html, position} + ev. nyskapade card-IDs
-2. Mät editor-DOM:en för startkortet → få sampleEl + maxRows
-3. Loop från startkortet och nedåt:
-   a. Splitta aktuellt kort vid maxRows → [fits, overflow]
-   b. Skriv fits till aktuellt kort
-   c. Om overflow är tomt → klart
-   d. Annars: nästa kort = (cards[idx+1] || skapa nytt)
-      - Sätt nästa korts innehåll = overflow + nästa korts gamla innehåll
-      - idx++, fortsätt loopen
-4. Persistera alla ändringar parallellt + uppdatera positioner
-5. Visa toast med "Ångra"-knapp som anropar restoreSnapshot()
+ ┌─────────────────────────────────────────────────┐
+ │ Kort 03 · Talare   Titel               ~7 %     │  Header
+ ├─────────────────────────────────────────────────┤
+ │ Start 14:03  Slut 14:08  120 ord       ~6 %     │  Tider
+ ├─────────────────────────┬───────────────────────┤
+ │                         │                       │
+ │     MANUS-TEXTEN        │    ANTECKNINGAR       │  ~80 %
+ │       (~65 %)           │      (~35 %)          │  tillsammans
+ │                         │                       │
+ ├─────────────────────────┴───────────────────────┤
+ │ Paus: …  Slut: …  Nästa: …             ~7 %     │  Signaler
+ └─────────────────────────────────────────────────┘
 ```
 
-### 3. Ångra-funktion
-- Snapshot lagras i en `useRef<Snapshot | null>` (eller kort-livad state).
-- Toast-knappen "Ångra" anropar `restoreSnapshot()`:
-  - Återställer `content_html` på alla berörda kort.
-  - Tar bort nyskapade kort (deleteCard).
-  - Återställer positioner.
-- Snapshot rensas efter ~30 sek eller vid nästa auto-split.
+Manus och anteckningar ligger sida vid sida i en gemensam flex-rad som får `flex: 1` (= ~80 %).
 
-### 4. Mätning utan att vara i aktiv editor
-För att kaskaden ska kunna mäta efterföljande kort (som har egna editor-instanser men kanske inte är i fokus), använder vi den dolda mät-divens DOM. Vi tar typografi från startkortets editor-DOM (alla kort delar samma `textSize`, så samma styling gäller).
-
-## Filer som påverkas
+## Tekniska ändringar
 
 | Fil | Ändring |
 |---|---|
-| `src/lib/cardLimits.ts` | Ny `splitHtmlAtRow(html, maxRows, sampleEl)` med dold mät-div |
-| `src/pages/Editor.tsx` | Ersätt `autoSplitCard` med `cascadeSplitFromCard` + snapshot/restore + toast med Ångra-action |
-| `src/components/editor/ManusCard.tsx` | Ingen ändring — `onAutoSplit` triggar fortfarande samma prop |
-| `src/components/ui/use-toast.ts` (om saknas) | Säkerställ att toast stödjer `action`-prop (shadcn gör det redan) |
-
-Inga DB-schema-ändringar.
+| `src/components/editor/ManusCard.tsx` | Lägg till stabila klasser `card-panel-header`, `card-panel-times`, `card-panel-script`, `card-panel-notes`, `card-panel-cues` på respektive panel. Ingen visuell förändring i appen. |
+| `src/index.css` | I `@media print`: gör `.manu-card` till flex-kolumn med fast höjd (A4: `(297mm - marginal) / 2`, A5: full sidhöjd). Header/tider/signaler får `flex: 0 0 auto` med minimal padding och kompakt typografi. Manus + anteckningar grupperas i en flex-rad med `flex: 1` (≈80 %). Manus får ~65 % bredd, anteckningar ~35 %. Font-storlek: 11pt (A4), 13pt (A5). |
+| `src/pages/Editor.tsx` | Fixa runtime-fel: `countVisualRows is not defined` — säkerställ att helpern importeras från `@/lib/cardLimits`. |
 
 ## Edge cases
-- **Sista kortet i listan:** Skapa nytt kort för överskottet.
-- **Innehåll som inte går att splitta** (t.ex. en mycket lång rad utan mellanslag): fall tillbaka på tecken-baserad split.
-- **Flera auto-splits i rad:** Varje ny auto-split ersätter föregående snapshot (Ångra funkar bara på senaste).
-- **Användaren redigerar mellan split och Ångra:** Ångra återställer ändå till snapshot — vi visar inte konflikt-varning (enkelt och förutsägbart).
+- **Tomma anteckningar:** Anteckningspanelen visas ändå som tom kolumn — alternativt kan vi dölja den och låta manus ta hela 80 %. Förslag: dölj om tom (`:empty`-selektor i CSS).
+- **Långa titlar i header:** `white-space: nowrap; text-overflow: ellipsis`.
+- **Korta kort:** Manus+anteckningar får mer än 80 % — ok, problemet vi löser är motsatsen.
 
