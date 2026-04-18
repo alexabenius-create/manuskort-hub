@@ -11,9 +11,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
+import { seedExampleForUser, hasBeenSeeded, markAsSeeded } from "@/lib/seedExampleManuscript";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
@@ -39,11 +41,32 @@ export default function Library() {
       .select("*")
       .order("updated_at", { ascending: false });
     if (error) toast({ title: "Kunde inte ladda", description: error.message, variant: "destructive" });
-    setItems(data ?? []);
+    const list = data ?? [];
+
+    // Seed exempelmanus vid första besöket: om användaren har 0 manus och
+    // inte tidigare seedats, skapa ett färdigt exempel åt dem.
+    if (user && list.length === 0 && !hasBeenSeeded(user.id)) {
+      markAsSeeded(user.id); // markera direkt så vi inte dubbel-seedar
+      const newId = await seedExampleForUser(user.id);
+      if (newId) {
+        const { data: refreshed } = await supabase
+          .from("manuscripts")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        setItems(refreshed ?? []);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setItems(list);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (user) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const filtered = useMemo(() => {
     return items.filter((m) => {
@@ -275,7 +298,7 @@ export default function Library() {
                     onClick={() => navigate(`/manus/${m.id}`)}
                     className="flex-1 text-left px-6 py-5 min-w-0"
                   >
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span
                         className={`inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-0.5 rounded-full ${
                           m.mode === "moderator"
@@ -285,6 +308,11 @@ export default function Library() {
                       >
                         {m.mode === "moderator" ? "Moderator" : "Talare"}
                       </span>
+                      {(m.tags ?? []).includes(EXAMPLE_TAG) && (
+                        <span className="inline-flex items-center gap-1 text-[12px] font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          <Sparkles className="h-3 w-3" /> Exempel
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-display text-[20px] font-semibold tracking-tight truncate">{m.title}</h3>
                     <p className="text-[13px] text-muted-foreground mt-1.5">
