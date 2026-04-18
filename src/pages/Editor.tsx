@@ -414,10 +414,27 @@ export default function Editor() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => setPrintDialogOpen(true)}
-            className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
+            onClick={() => {
+              if (overflowingCardIds.size > 0) {
+                toast({
+                  title: "Utskrift blockerad",
+                  description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Korta ner texten eller använd "Dela kortet automatiskt".`,
+                  variant: "destructive",
+                });
+                return;
+              }
+              setPrintDialogOpen(true);
+            }}
+            disabled={overflowingCardIds.size > 0}
+            title={overflowingCardIds.size > 0 ? `Blockerad: ${overflowingCardIds.size} kort överskrider radgränsen` : "Skriv ut manus"}
+            className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Printer className="h-3.5 w-3.5" /> Skriv ut
+            {overflowingCardIds.size > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold">
+                {overflowingCardIds.size}
+              </span>
+            )}
           </Button>
         </div>
         </header>
