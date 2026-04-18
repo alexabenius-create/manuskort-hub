@@ -303,7 +303,7 @@ export function ManusCard({
             onChange={(html) => onLocalChange({ content_html: html })}
             placeholder={placeholder}
             size={textSize}
-            onEditorReady={setEditor}
+            onEditorReady={(ed) => { setEditor(ed); onEditorReady?.(card.id, ed); }}
             onSelectionChange={setSelection}
             maxRows={maxRows}
             onRowCountChange={setCurrentRows}
