@@ -653,9 +653,11 @@ export default function Editor() {
               Tider
             </button>
           </div>
+          </div>
 
           {isModerator && (
             <Button
+              data-tour="editor.panelists"
               variant="ghost"
               onClick={() => setPanelistSidebarOpen(true)}
               className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
@@ -664,6 +666,7 @@ export default function Editor() {
             </Button>
           )}
 
+          <div data-tour="editor.add-print" className="flex items-center gap-3">
           <Button
             onClick={addCard}
             className="h-9 rounded-full px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
@@ -694,8 +697,10 @@ export default function Editor() {
               </span>
             )}
           </Button>
+          </div>
 
           <Button
+            data-tour="editor.present"
             onClick={() => {
               if (overflowingCardIds.size > 0) {
                 toast({
