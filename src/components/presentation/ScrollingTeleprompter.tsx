@@ -232,10 +232,38 @@ export function ScrollingTeleprompter({
         }}
       />
 
-      {/* Tangentbordshjälp — diskret pill överst */}
-      <div className="teleprompter-hint pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full bg-zinc-900/70 backdrop-blur text-zinc-400 font-mono text-[12px] tracking-wide">
-        <span className="text-zinc-200">+ / −</span> hastighet · <span className="text-zinc-200">R</span> återställ
+      {/* Hastighetskontroller — ikonknappar längst ner */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur border border-zinc-800/60 shadow-lg shadow-black/40">
+        <button
+          onClick={onSpeedDown}
+          className="p-3 rounded-xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors active:scale-95"
+          aria-label="Sänk hastighet (−)"
+          title="Sänk hastighet (−)"
+        >
+          <Minus className="h-5 w-5" />
+        </button>
+        <div className="px-3 min-w-[64px] text-center font-mono text-[15px] tabular-nums text-zinc-100">
+          {speedFactor.toFixed(2)}×
+        </div>
+        <button
+          onClick={onSpeedUp}
+          className="p-3 rounded-xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors active:scale-95"
+          aria-label="Höj hastighet (+)"
+          title="Höj hastighet (+)"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+        <div className="w-px h-6 bg-zinc-800 mx-1" />
+        <button
+          onClick={onSpeedReset}
+          className="p-3 rounded-xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors active:scale-95"
+          aria-label="Återställ hastighet (R)"
+          title="Återställ hastighet (R)"
+        >
+          <RotateCcw className="h-5 w-5" />
+        </button>
       </div>
+
 
       {/* Fast läs-linje */}
       {focusStyle === "line" && viewportHeight > 0 && (
