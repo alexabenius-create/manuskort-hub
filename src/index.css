@@ -261,3 +261,112 @@
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================
+   Print styles — A4 (2 kort/sida) eller A5 (1 kort/sida)
+   ============================================================ */
+@media print {
+  /* Dölj UI-chrome */
+  .topbar-blur,
+  header.sticky,
+  [data-sidebar],
+  [role="dialog"],
+  [aria-label="Kortmeny"],
+  [aria-label="Dra för att flytta"],
+  [aria-label="Hjälp"],
+  [aria-label="Tillbaka till bibliotek"],
+  .seg-group,
+  .cue-pill {
+    display: none !important;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .manu-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid hsl(240 6% 80%) !important;
+    margin: 0 0 6mm 0 !important;
+    animation: none !important;
+  }
+
+  /* Säkerställ att färger på panelist-markeringar och cues skrivs ut */
+  .ProseMirror .panelist-mark,
+  .ProseMirror .panelist-mark::before,
+  .cue-dot,
+  .cue-red, .cue-amber, .cue-teal {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+/* A4 stående — 2 kort per sida */
+@media print {
+  html[data-print-format="a4-2up"] {
+    /* sidstorlek kontrolleras via @page nedan */
+  }
+}
+@page :first { margin: 0; }
+
+html[data-print-format="a4-2up"] {
+  @media print {
+    .manu-card:nth-child(2n) {
+      break-after: page;
+      page-break-after: always;
+    }
+  }
+}
+
+@media print {
+  html[data-print-format="a4-2up"] body {
+    /* layout fyller A4 */
+  }
+}
+
+/* @page-regler måste ligga utanför nested-selectors för bästa stöd */
+@media print {
+  /* default = A4 om inget format satts */
+  @page { size: A4 portrait; margin: 12mm; }
+}
+
+/* Override @page när a5 är valt — moderna browsers stöder detta */
+@media print {
+  html[data-print-format="a5-1up"] {
+    /* En @page-regel kan inte villkoras i CSS på ett tillförlitligt sätt;
+       vi använder fallback: A5 sätts via class på documentElement */
+  }
+}
+
+/* Fallback för A5: använd separat @page-regel */
+@media print {
+  html.print-a5 {
+  }
+}
+
+/* Eftersom @page inte kan styras med attribut/klass selectorer i alla browsers
+   använder vi istället manuell sidbrytning + storleksspecifik styling */
+html[data-print-format="a5-1up"] {
+  @media print {
+    .manu-card {
+      break-after: page;
+      page-break-after: always;
+      padding: 6mm !important;
+    }
+    /* Komprimera typografi något för A5 */
+    .manu-card * {
+      font-size: 0.92em;
+    }
+  }
+}
+
