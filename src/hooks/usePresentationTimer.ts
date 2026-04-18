@@ -76,24 +76,36 @@ export function usePresentationTimer({
     });
   }, [manuscriptId, direction]);
 
-  // Countdown-fasen (3-2-1)
+  // Countdown-fasen (3-2-1) — drift-fri via wall-clock
+  const countdownStartRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!enabled || countdown <= 0) return;
-    const t = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          // När countdown är klar → sätt verklig start nu
-          startedAtRef.current = Date.now();
-          accumulatedPauseRef.current = 0;
-          pausedAtRef.current = null;
-          persist();
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
+    if (!enabled) return;
+    if (countdown <= 0) {
+      countdownStartRef.current = null;
+      return;
+    }
+    if (countdownStartRef.current === null) {
+      countdownStartRef.current = Date.now();
+    }
+    const tick = () => {
+      const start = countdownStartRef.current;
+      if (start === null) return;
+      const elapsed = Math.floor((Date.now() - start) / 1000);
+      const remaining = countdownSeconds - elapsed;
+      if (remaining <= 0) {
+        startedAtRef.current = Date.now();
+        accumulatedPauseRef.current = 0;
+        pausedAtRef.current = null;
+        countdownStartRef.current = null;
+        setCountdown(0);
+        persist();
+      } else {
+        setCountdown(remaining);
+      }
+    };
+    const t = setInterval(tick, 250);
     return () => clearInterval(t);
-  }, [countdown, enabled, persist]);
+  }, [enabled, countdown, countdownSeconds, persist]);
 
   // Tick — uppdaterar `now` varje sekund
   useEffect(() => {
