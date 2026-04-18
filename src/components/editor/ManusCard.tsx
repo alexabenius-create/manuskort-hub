@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X } from "lucide-react";
+import type { Editor } from "@tiptap/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { TiptapEditor } from "./TiptapEditor";
+import { TiptapEditor, type SelectionState } from "./TiptapEditor";
 import { useAutosave } from "@/hooks/useAutosave";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { placeholderFor } from "@/lib/placeholders";
 import { placeholderForFormat, type TimeFormat } from "@/lib/timeChain";
+import { usePanelists, type Panelist } from "@/hooks/usePanelists";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -23,6 +25,7 @@ interface Props {
   showTimes: boolean;
   wpm: number;
   timeFormat: TimeFormat;
+  isModerator: boolean;
   canSyncWithPrevious?: boolean;
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
@@ -33,10 +36,29 @@ interface Props {
 }
 
 export function ManusCard({
-  card, number, textSize, showNotes, showTimes, wpm, timeFormat, canSyncWithPrevious,
+  card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
+  const { panelists } = usePanelists();
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const [selection, setSelection] = useState<SelectionState>({ hasSelection: false, activePanelistId: null });
+
+  const showPanelistBar = isModerator && panelists.length > 0 && selection.hasSelection;
+
+  const applyPanelist = (p: Panelist) => {
+    if (!editor) return;
+    if (selection.activePanelistId === p.id) {
+      editor.chain().focus().unsetPanelist().run();
+    } else {
+      editor.chain().focus().setPanelist({ panelistId: p.id, color: p.color, name: p.name || "Namnlös" }).run();
+    }
+  };
+
+  const clearPanelist = () => {
+    if (!editor) return;
+    editor.chain().focus().unsetPanelist().run();
+  };
 
   useAutosave({
     table: "cards",
