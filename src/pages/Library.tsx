@@ -69,6 +69,10 @@ export default function Library() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Trigger bibliotek-rundtur när biblioteket har laddats och exempelmanus finns renderat
+  const exampleExists = items.some((m) => (m.tags ?? []).includes(EXAMPLE_TAG));
+  useTourTrigger("bibliotek", !loading && exampleExists);
+
   const filtered = useMemo(() => {
     return items.filter((m) => {
       if (filterMode !== "all" && m.mode !== filterMode) return false;
@@ -172,6 +176,14 @@ export default function Library() {
             {user?.email}
           </span>
           <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+          >
+            <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> Inställningar</a>
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             onClick={signOut}
@@ -221,7 +233,10 @@ export default function Library() {
           <div className="ml-auto">
             <Dialog open={openNew} onOpenChange={setOpenNew}>
               <DialogTrigger asChild>
-                <Button className="h-11 rounded-full px-5 bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] font-medium gap-1.5">
+                <Button
+                  data-tour="library.new-button"
+                  className="h-11 rounded-full px-5 bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] font-medium gap-1.5"
+                >
                   <Plus className="h-4 w-4" /> Nytt manus
                 </Button>
               </DialogTrigger>
@@ -289,9 +304,12 @@ export default function Library() {
           </div>
         ) : (
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filtered.map((m) => (
+            {filtered.map((m) => {
+              const isExample = (m.tags ?? []).includes(EXAMPLE_TAG);
+              return (
               <li
                 key={m.id}
+                data-tour={isExample ? "library.example-card" : undefined}
                 className="group bg-surface rounded-2xl shadow-card hover:shadow-pop transition-shadow duration-200 overflow-hidden"
               >
                 <div className="flex items-stretch">
