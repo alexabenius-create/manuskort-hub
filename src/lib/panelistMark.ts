@@ -1,5 +1,5 @@
 import { Mark, mergeAttributes } from "@tiptap/core";
-import { hexToRgba } from "./panelistColors";
+import { hexToRgba, hexToDarkText } from "./panelistColors";
 
 export interface PanelistAttrs {
   panelistId: string | null;
