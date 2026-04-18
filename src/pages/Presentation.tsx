@@ -327,6 +327,7 @@ export default function Presentation() {
             sizeOffset={sizeOffset}
             showNotes={showNotes}
             onToggleNotes={() => setShowNotes((s) => !s)}
+            onNotesChange={(notes) => handleNotesChange(current.id, notes)}
           />
         </div>
       </main>
