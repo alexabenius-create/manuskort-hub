@@ -34,6 +34,10 @@ interface Props {
   countdownActive: boolean;
   /** 0.25–3.0. Styrs av Presentation via tangenter. */
   speedFactor: number;
+  /** Klickbara hastighetskontroller — bör spegla samma logik som +/-/R-tangenter. */
+  onSpeedUp: () => void;
+  onSpeedDown: () => void;
+  onSpeedReset: () => void;
 }
 
 /** Strippar HTML till ren text för meningssplit. */
