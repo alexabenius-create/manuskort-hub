@@ -234,7 +234,18 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex, menuOpen, viewMode]);
+  }, [exit, cards.length, currentIndex, menuOpen, viewMode, helpOpen]);
+
+  // Auto-visa hjälp första gången användaren startar en presentation
+  useEffect(() => {
+    if (menuOpen) return;
+    try {
+      if (!localStorage.getItem(HELP_SEEN_KEY)) {
+        setHelpOpen(true);
+        localStorage.setItem(HELP_SEEN_KEY, "1");
+      }
+    } catch { /* ignore */ }
+  }, [menuOpen]);
 
   // Navigation
   const goNext = useCallback(() => {
