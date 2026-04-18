@@ -256,7 +256,7 @@ export function ManusCard({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 if (!editor) return;
-                editor.chain().focus().insertContent('<span class="pause-mark">paus</span>&nbsp;').run();
+                editor.chain().focus().insertPause().run();
               }}
               disabled={!editor}
               title="Sätter in en paus-markör där markören står. Kortkommando: /"

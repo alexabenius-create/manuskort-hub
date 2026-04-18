@@ -5,6 +5,7 @@ import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
+import { PauseMarkNode } from "@/lib/pauseNode";
 import { countPresentationRows } from "@/lib/cardLimits";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 
@@ -64,6 +65,7 @@ export function TiptapEditor({
       Underline,
       Highlight,
       PanelistMark,
+      PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
     ],
     content: value || "",
@@ -102,7 +104,7 @@ export function TiptapEditor({
         // "/" → infoga paus (alltid tillåtet, även över gräns)
         if (event.key === "/" && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
           event.preventDefault();
-          editor?.chain().focus().insertContent('<span class="pause-mark">paus</span>&nbsp;').run();
+          editor?.chain().focus().insertPause().run();
           return true;
         }
         // Inmatning är alltid tillåten — överskott visas som varning, inte spärr.
