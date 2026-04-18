@@ -1,31 +1,33 @@
 
+## Formateringstoolbar i TiptapEditor
 
-## Mål
-Ta bort visuell uppdelning av kort i mjuk rullning. Manuset renderas som ett långt sammanhängande dokument.
+Lägga till en **BubbleMenu** som dyker upp när användaren markerar text i manustexten. Tiptap-extensions för Bold, Italic, Underline och Highlight är redan laddade i `TiptapEditor.tsx` — bara UI:t saknas.
 
-## Ändring
-**`src/components/presentation/ScrollingTeleprompter.tsx`**
+### Plan
 
-Idag renderas varje kort som en egen `<section>` med:
-- Egen `header` (Kort N, titel, cue-tider)
-- Egen `<article>` med `max-w-[60ch]` och `px-6 md:px-16 py-8` padding
-- I `sentence`-läget: separat `SentenceRenderer` per kort → meningar mäts kort-för-kort
+1. **Installera `@tiptap/react` BubbleMenu** (ingår redan i `@tiptap/react` v2 via `BubbleMenu`-komponenten — ingen ny dep om versionen är ny nog, annars `@tiptap/extension-bubble-menu`).
 
-Detta skapar problem:
-- Sentence-highlight återställs/förvirras vid kortgränser
-- Vertikala "luckor" mellan korten gör scroll-rytmen ojämn
-- Höjdmätning blir mer fragmenterad
+2. **Skapa `src/components/editor/FormatBubbleMenu.tsx`**:
+   - Renderas som child till `<EditorContent>` via `<BubbleMenu editor={editor}>`.
+   - Visas bara när `from !== to` (text markerad).
+   - Fyra toggle-knappar: **B** (bold), *I* (italic), **U** (underline), gulmarkering (highlight).
+   - Varje knapp visar aktivt state via `editor.isActive('bold')` etc.
+   - Liten horisontell pill med cream-bakgrund, subtil skugga, rounded — matchar palett.
 
-### Lösning
-1. **Slå ihop alla kort till en enda HTML-sträng** innan rendering. Separera korten med ett enkelt mellanrum (t.ex. `<p><br/></p>` eller bara dubbel marginal i CSS) — ingen rubrik, ingen badge, ingen tidsstämpel.
-2. **En enda `<article>`** med all transformerad HTML, eller en enda `SentenceRenderer` med alla meningar från alla kort konkatenerade.
-3. **`SentenceRenderer`**: tar emot en samlad lista meningar från hela manuset → alla mäts i samma container → ingen återställning vid kortgränser.
-4. Behåll padding på ytter-containern, men ta bort per-kort `py-8` och `header`.
+3. **Integrera i `TiptapEditor.tsx`**:
+   - Importera och rendera `<FormatBubbleMenu editor={editor} />` bredvid `<EditorContent>`.
+   - Inga andra ändringar — extensions finns redan.
 
-### Kvarstår oförändrat
-- Samma typografi, fontstorlek, läs-linje, hastighetslogik, drift-korrigering.
-- Cards-läget (en-i-taget) är helt orört.
+4. **Uppdatera tour-texten i `src/lib/tours.ts`**:
+   - Steg "Manustexten" återinför nämnandet av formatering nu när toolbaren faktiskt finns: *"Markera text för att få fram formateringsverktyget — fetstil, kursiv, understrykning, gulmarkering. Tryck `/` för att sätta in en paus-markör."*
 
-## Resultat
-Mjuk rullning blir ett enda flytande dokument. Sentence-highlight fungerar konsekvent över hela manuset utan hopp vid kortgränser.
+### Detaljer
+- **Panelist-chip-knappen** i toolbaren: skippas i denna runda — det är en separat större feature (kräver panelist-väljare). Bara textformatering nu.
+- **Mobil**: BubbleMenu fungerar med touch-selection out of the box i Tiptap.
+- **Ingen ändring av storlek/wrappning**: formateringen lägger till `<strong>`/`<em>`/`<u>`/`<mark>`-taggar utan att påverka radräkningen.
 
+### Filer som påverkas
+- `src/components/editor/FormatBubbleMenu.tsx` (ny)
+- `src/components/editor/TiptapEditor.tsx` (rendera bubble menu)
+- `src/lib/tours.ts` (justera "Manustexten"-texten)
+- ev. `package.json` om `@tiptap/extension-bubble-menu` behövs separat
