@@ -100,7 +100,15 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
       // Attribut-vit-lista
       const attrs = Array.from(node.attributes).map((a) => a.name);
       for (const name of attrs) {
-        if (tag === "A" && name === "href") continue;
+        if (tag === "A" && name === "href") {
+          // Validera URL-schema: tillåt endast http(s), mailto, ankare och relativa länkar.
+          // Blockerar javascript:, data:, vbscript: m.fl. för att förhindra self-XSS.
+          const href = node.getAttribute("href") || "";
+          if (!/^(https?:\/\/|mailto:|#|\/)/i.test(href.trim())) {
+            node.removeAttribute("href");
+          }
+          continue;
+        }
         if (
           tag === "SPAN" &&
           (name === "data-panelist-id" ||
