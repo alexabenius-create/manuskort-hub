@@ -224,12 +224,16 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
               value={card.notes ?? ""}
               onChange={(e) => onNotesChange?.(e.target.value)}
               onKeyDown={(e) => {
-                // Hindra alla globala genvägar (Enter, mellanslag, piltangenter, P, Esc) från att triggas
-                // medan användaren skriver. Esc hanteras separat genom blur.
-                if (e.key === "Escape") {
-                  (e.target as HTMLTextAreaElement).blur();
+                // Esc: låt bubbla upp till Presentation.tsx → avslutar presentationen
+                if (e.key === "Escape") return;
+                // Enter utan Shift: lämna fältet (ingen radbrytning)
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
+                  e.stopPropagation();
+                  (e.currentTarget as HTMLTextAreaElement).blur();
+                  return;
                 }
+                // Shift+Enter och övriga tangenter: stoppa propagation så globala genvägar inte triggas
                 e.stopPropagation();
               }}
               placeholder="Skriv anteckningar…"
