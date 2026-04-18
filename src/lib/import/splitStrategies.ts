@@ -124,10 +124,12 @@ function buildCard(
     let html = blockToInlineHtml(b);
     let textForCount = blockToPlainText(b);
 
-    // Talar-detektering: om detta block har en talare, byt ut till restHtml och wrappa
+    // Talar-detektering: om detta block har en talare, byt ut till restHtml och wrappa.
+    // restHtml är redan ett komplett block (typiskt "<p>...</p>") från stripPrefixFromHtml,
+    // så vi får INTE wrappa det i ytterligare en <p>.
     const sp = ctx.speakers.blockSpeaker.get(idx);
     if (sp) {
-      html = `<p>${sp.restHtml}</p>`;
+      html = sp.restHtml;
       textForCount = sp.restText;
       html = withSpeakerWrap(html, ctx, sp.name);
       if (!speakerName) speakerName = sp.name;
