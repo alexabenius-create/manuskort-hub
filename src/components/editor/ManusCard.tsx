@@ -214,7 +214,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="—"
+        placeholder="00:00"
         className="font-mono text-[13px] bg-surface-2 rounded-md border-0 outline-none w-[72px] px-2.5 py-1 placeholder:text-faint focus:ring-2 focus:ring-accent-blue"
       />
     </div>
