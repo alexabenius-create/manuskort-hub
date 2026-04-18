@@ -1,0 +1,2 @@
+UPDATE public.user_roles SET role = 'admin' WHERE user_id = 'e60796b0-c985-4bf7-8ec8-b657ab573d30';
+DELETE FROM public.panelists WHERE manuscript_id = 'b22666a4-7c26-44ef-8615-8a0cb33586b6' AND name = 'Test 5';
