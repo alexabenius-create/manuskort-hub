@@ -16,33 +16,41 @@ export function countVisualRows(el: HTMLElement): number {
 }
 
 /**
- * Skapar en dold mät-div som kopierar font, line-height och bredd från sampleEl.
- * Används för att mäta antal visuella rader för ett HTML-fragment utan att rendera in det i DOM:en.
+ * Skapar en dold mät-div som efterliknar sampleEl exakt — samma klassnamn,
+ * samma föräldra-bredd och samma typografi. På det sättet matchar wrappningen
+ * det användaren faktiskt ser i editorn (CSS-regler för .ProseMirror p osv.
+ * appliceras korrekt).
  */
 function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
-  const cs = getComputedStyle(sampleEl);
-  const width = sampleEl.clientWidth;
-  const div = document.createElement("div");
-  div.style.position = "fixed";
-  div.style.left = "-99999px";
-  div.style.top = "0";
-  div.style.visibility = "hidden";
-  div.style.pointerEvents = "none";
-  div.style.width = `${width}px`;
-  div.style.boxSizing = "border-box";
-  // Kopiera typografi
-  const propsToCopy = [
-    "fontFamily", "fontSize", "fontStyle", "fontWeight", "fontVariant",
-    "lineHeight", "letterSpacing", "wordSpacing", "textTransform",
-    "paddingLeft", "paddingRight", "paddingTop", "paddingBottom",
-    "whiteSpace", "wordBreak", "overflowWrap",
-  ] as const;
-  for (const p of propsToCopy) {
-    (div.style as any)[p] = cs[p as any];
-  }
-  document.body.appendChild(div);
-  return { el: div, cleanup: () => div.remove() };
+  const width = sampleEl.clientWidth || sampleEl.getBoundingClientRect().width || 600;
+
+  // Wrappa mät-elementet i en container med exakt samma bredd, så att inre
+  // CSS-regler (font-size, line-height, padding) räknas på samma sätt.
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-99999px";
+  wrapper.style.top = "0";
+  wrapper.style.visibility = "hidden";
+  wrapper.style.pointerEvents = "none";
+  wrapper.style.width = `${width}px`;
+  wrapper.style.boxSizing = "border-box";
+
+  // Klona sampleEl-noden (utan innehåll) — så vi får samma klasser och stilar.
+  const clone = sampleEl.cloneNode(false) as HTMLDivElement;
+  clone.removeAttribute("contenteditable");
+  clone.removeAttribute("id");
+  clone.style.width = "100%";
+  clone.style.minHeight = "0";
+  clone.style.height = "auto";
+  clone.style.maxHeight = "none";
+  clone.style.overflow = "visible";
+  clone.innerHTML = "";
+
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  return { el: clone, cleanup: () => wrapper.remove() };
 }
+
 
 /**
  * Splitta HTML exakt vid maxRows visuella rader, mätt mot sampleEl.
