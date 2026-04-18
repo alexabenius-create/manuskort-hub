@@ -1,0 +1,1 @@
+UPDATE public.user_roles SET role = 'free' WHERE user_id = 'e60796b0-c985-4bf7-8ec8-b657ab573d30';
