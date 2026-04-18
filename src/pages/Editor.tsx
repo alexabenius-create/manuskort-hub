@@ -782,8 +782,9 @@ export default function Editor() {
                     </ViewSection>
                   )}
                 </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            </Tooltip>
 
             {isModerator && (
               <Tooltip delayDuration={200}>
