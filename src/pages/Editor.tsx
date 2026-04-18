@@ -117,7 +117,7 @@ export default function Editor() {
       ]);
       if (mRes.error || !mRes.data) {
         toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
-        navigate("/");
+        navigate("/bibliotek");
         return;
       }
       setManuscript(mRes.data);
@@ -579,7 +579,7 @@ export default function Editor() {
       <div className="topbar-blur sticky top-0 z-50 border-b-hair">
         <header className="px-5 sm:px-8 min-h-14 py-2 flex items-center gap-5 flex-wrap">
         <Link
-          to="/"
+          to="/bibliotek"
           className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
           aria-label="Tillbaka till bibliotek"
         >

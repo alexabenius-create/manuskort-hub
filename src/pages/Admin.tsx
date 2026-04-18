@@ -36,7 +36,7 @@ export default function Admin() {
   // Skydd: bara admin
   useEffect(() => {
     if (!tierLoading && tier !== "admin") {
-      navigate("/", { replace: true });
+      navigate("/bibliotek", { replace: true });
     }
   }, [tier, tierLoading, navigate]);
 
@@ -115,7 +115,7 @@ export default function Admin() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/bibliotek")}
           className="rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8 -ml-2"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka

@@ -89,7 +89,7 @@ export default function Presentation() {
       ]);
       if (mRes.error || !mRes.data) {
         toast.error("Kunde inte ladda manuset", { description: mRes.error?.message });
-        navigate("/");
+        navigate("/bibliotek");
         return;
       }
       setManuscript(mRes.data as Manuscript);
