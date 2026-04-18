@@ -8,16 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 interface StripeEmbeddedCheckoutProps {
   priceId: string;
   quantity?: number;
-  customerEmail?: string;
-  userId?: string;
   returnUrl?: string;
 }
 
 export default function StripeCheckoutInner({
   priceId,
   quantity,
-  customerEmail,
-  userId,
   returnUrl,
 }: StripeEmbeddedCheckoutProps) {
   const fetchClientSecret = async (): Promise<string> => {
@@ -25,8 +21,6 @@ export default function StripeCheckoutInner({
       body: {
         priceId,
         quantity,
-        customerEmail,
-        userId,
         returnUrl,
         environment: getStripeEnvironment(),
       },
