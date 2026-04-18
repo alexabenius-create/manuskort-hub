@@ -11,7 +11,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
@@ -27,6 +27,7 @@ export default function Library() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "moderator" | "speaker">("all");
+  const [dragOver, setDragOver] = useState(false);
 
   const [openNew, setOpenNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
