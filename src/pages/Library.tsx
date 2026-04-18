@@ -11,9 +11,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
+import { seedExampleForUser, hasBeenSeeded, markAsSeeded } from "@/lib/seedExampleManuscript";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
