@@ -320,6 +320,41 @@ export default function Import() {
     navigate("/");
   };
 
+  // ============== GATING: PRO-only ==============
+  if (importBlocked) {
+    return (
+      <div className="min-h-screen">
+        <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="rounded-full">
+            <ArrowLeft className="h-4 w-4" /> Tillbaka
+          </Button>
+          <h1 className="font-display text-[17px] font-semibold tracking-tight">Importera manus</h1>
+        </header>
+        <main className="max-w-[560px] mx-auto px-6 sm:px-10 pt-24 pb-20 text-center flex flex-col gap-6 items-center">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <h2 className="font-display text-3xl font-semibold tracking-tight">
+              Import är en PRO-funktion
+            </h2>
+            <p className="text-[15px] text-muted-foreground">
+              .docx-import ingår inte i Gratis. Uppgradera till PRO för att importera dokument och spara timmar av manuell skrivning.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button asChild variant="ghost" className="rounded-full">
+              <Link to="/">Tillbaka</Link>
+            </Button>
+            <Button asChild className="rounded-full bg-accent-blue text-white hover:bg-accent-blue/90">
+              <Link to="/priser">Se PRO</Link>
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // ============== STEG 1 ==============
   if (step === 1) {
     return (
