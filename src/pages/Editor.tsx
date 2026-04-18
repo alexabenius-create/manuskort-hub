@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ManusCard } from "@/components/editor/ManusCard";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { PrintDialog } from "@/components/editor/PrintDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
@@ -29,6 +30,7 @@ export default function Editor() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
 
@@ -323,7 +325,7 @@ export default function Editor() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => window.print()}
+            onClick={() => setPrintDialogOpen(true)}
             className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
           >
             <Printer className="h-3.5 w-3.5" /> Skriv ut
@@ -416,6 +418,8 @@ export default function Editor() {
           onClose={() => setPanelistSidebarOpen(false)}
         />
       )}
+
+      <PrintDialog open={printDialogOpen} onOpenChange={setPrintDialogOpen} />
     </div>
     </PanelistsProvider>
   );
