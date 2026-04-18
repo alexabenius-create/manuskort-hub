@@ -102,6 +102,7 @@ export function ManusCard({
     <article
       ref={setNodeRef}
       style={style}
+      data-card-full={isFull ? "true" : undefined}
       className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
       {/* Header panel */}
@@ -252,6 +253,18 @@ export function ManusCard({
           <div className="flex items-center gap-1.5 mb-3">
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
             <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser." />
+            <span
+              className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full ${
+                isFull
+                  ? "bg-destructive/10 text-destructive"
+                  : currentRows >= maxRows - 1
+                    ? "bg-cue-amber/10 text-[hsl(35_85%_38%)]"
+                    : "bg-surface-2 text-muted-foreground"
+              }`}
+              title={isFull ? "Kortet är fullt — dela upp i två kort." : `Max ${maxRows} rader för storlek ${textSize.toUpperCase()}`}
+            >
+              {currentRows} / {maxRows} rader
+            </span>
           </div>
           <TiptapEditor
             value={card.content_html}
@@ -260,6 +273,9 @@ export function ManusCard({
             size={textSize}
             onEditorReady={setEditor}
             onSelectionChange={setSelection}
+            maxRows={maxRows}
+            onRowCountChange={setCurrentRows}
+            onOverflowPaste={onPasteOverflow}
           />
         </div>
         {showNotes && (
