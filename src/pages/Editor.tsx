@@ -26,6 +26,8 @@ export default function Editor() {
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
+  const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
 
   const meta = useMemo(() => {
     if (!manuscript) return null;
@@ -71,15 +73,27 @@ export default function Editor() {
   );
 
   const updateCard = (cardId: string, patch: Partial<Card>) => {
+    // Markera nästa korts starttid som "manuellt redigerad" om användaren ändrar den direkt
+    if (Object.prototype.hasOwnProperty.call(patch, "start_time")) {
+      setManualStartIds((prev) => {
+        const next = new Set(prev);
+        next.add(cardId);
+        return next;
+      });
+    }
     setCards((prev) => {
       const next = prev.map((c) => (c.id === cardId ? { ...c, ...patch } : c));
       // Kedja: om sluttid ändrats, sätt nästa korts starttid till sluttid + 1 sek
+      // — men bara om användaren inte själv har redigerat den starttiden manuellt
       if (Object.prototype.hasOwnProperty.call(patch, "end_time")) {
         const idx = next.findIndex((c) => c.id === cardId);
         if (idx !== -1 && idx < next.length - 1) {
-          const chained = nextStartFromEnd(next[idx].end_time ?? "");
-          if (chained !== null) {
-            next[idx + 1] = { ...next[idx + 1], start_time: chained };
+          const nextCard = next[idx + 1];
+          if (!manualStartIds.has(nextCard.id)) {
+            const chained = nextStartFromEnd(next[idx].end_time ?? "");
+            if (chained !== null) {
+              next[idx + 1] = { ...nextCard, start_time: chained };
+            }
           }
         }
       }
