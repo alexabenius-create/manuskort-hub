@@ -157,7 +157,7 @@ export default function Landing() {
             <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[72px] leading-[1.02] font-semibold tracking-[-0.03em]">
               Tala tryggt.
               <br />
-              <span className="text-muted-foreground">Håll tiden. Varje gång.</span>
+              <span className="text-muted-foreground">Håll tiden. Varje&nbsp;gång.</span>
             </h1>
             <p className="mt-7 text-[18px] sm:text-[19px] text-muted-foreground leading-relaxed max-w-[540px]">
               Manuskort är det enklaste sättet att förbereda ett anförande eller panelsamtal. Skriv
