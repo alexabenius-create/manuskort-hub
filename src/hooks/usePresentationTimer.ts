@@ -59,7 +59,20 @@ export function usePresentationTimer({
   const initial = loadState(manuscriptId);
 
   const [now, setNow] = useState<number>(Date.now());
-  const [countdown, setCountdown] = useState<number>(initial ? 0 : countdownSeconds);
+  // Initiera countdown till 0 om timern inte är aktiv än — sätts korrekt när enabled blir true.
+  const [countdown, setCountdown] = useState<number>(
+    initial ? 0 : enabled ? countdownSeconds : 0
+  );
+
+  // När timern aktiveras: synka countdown med faktiskt countdownSeconds.
+  const hasInitializedRef = useRef(!!initial || enabled);
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    if (!enabled) return;
+    hasInitializedRef.current = true;
+    if (!initial) setCountdown(countdownSeconds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
   const [direction, setDirection] = useState<ElapsedDirection>(initial?.direction ?? "down");
 
   // Drift-fri tidshantering med wall-clock + ackumulerad paustid
