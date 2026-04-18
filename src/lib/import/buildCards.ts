@@ -11,6 +11,8 @@ import {
   type TextSize,
 } from "./splitStrategies";
 import type { HeadingMode } from "./sanitizeHtml";
+import { splitHtmlAtRow, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
+import { wordCount } from "@/lib/wordCount";
 
 export interface BuildOptions {
   blocks: ParsedBlock[];
