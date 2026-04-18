@@ -12,6 +12,7 @@ import Presentation from "./pages/Presentation";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Import from "./pages/Import";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <TourProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/priser" element={<Pricing />} />
               <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
               <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
               <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
