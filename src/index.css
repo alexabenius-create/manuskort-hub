@@ -246,8 +246,15 @@
     color: hsl(0 0% 98% / 0.35);
     transition: color 0.25s ease, opacity 0.25s ease;
   }
-
-  /* Panelist mark — namn-etikett ovanför + färgad bakgrund (inline-style sätts av Tiptap) */
+  .teleprompter-hint {
+    animation: teleprompterHintFade 7s ease forwards;
+  }
+  @keyframes teleprompterHintFade {
+    0%   { opacity: 0; transform: translate(-50%, -4px); }
+    8%   { opacity: 1; transform: translate(-50%, 0); }
+    75%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
   .ProseMirror p:has(.panelist-mark) { padding-top: 0.55em; }
   .ProseMirror .panelist-mark { position: relative; }
   .ProseMirror .panelist-mark::before {
