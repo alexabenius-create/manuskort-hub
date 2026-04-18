@@ -680,23 +680,22 @@ export default function Editor() {
             </div>
 
             {/* Vy-popover — samlar Anteckningar/Tider/Tidsformat/Layout/Notes-placement */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Tooltip delayDuration={200}>
-                  <TooltipTrigger asChild>
+            <Tooltip delayDuration={200}>
+              <Popover>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
                     <button
                       type="button"
                       aria-label="Vy-inställningar"
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors data-[state=open]:bg-surface-2 data-[state=open]:text-foreground"
                     >
                       <Settings2 className="h-4 w-4" />
                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-                    Vy-inställningar
-                  </TooltipContent>
-                </Tooltip>
-              </PopoverTrigger>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                  Vy-inställningar
+                </TooltipContent>
               <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
                 <div className="flex flex-col gap-4">
                   <ViewSection label="Visa">
@@ -783,8 +782,9 @@ export default function Editor() {
                     </ViewSection>
                   )}
                 </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            </Tooltip>
 
             {isModerator && (
               <Tooltip delayDuration={200}>
