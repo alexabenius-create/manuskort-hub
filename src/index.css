@@ -154,6 +154,7 @@
 
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-pop  { box-shadow: var(--shadow-pop); }
+  .shadow-subtle { box-shadow: var(--shadow-subtle); }
 
   .cue-dot { width: 8px; height: 8px; border-radius: 9999px; flex-shrink: 0; display: inline-block; }
   .cue-red   { background: hsl(var(--cue-red)); }
