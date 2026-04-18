@@ -1,57 +1,96 @@
 
-Användaren vill ha två justeringar på panelist-markeringen i editorn:
 
-1. **Namnet ovanför frågan**, inte inline framför texten (som nu via `::before` på samma rad).
-2. **Mer avrundade hörn** på den färgade bakgrundsrutan.
+## Mål
+Innan utskrift visa en dialog där användaren väljer:
+- **A4 stående, 2 kort per sida**
+- **A5 stående, 1 kort per sida**
 
-## Nuläge (från `src/index.css` + `src/lib/panelistMark.ts`)
+Sedan utlös `window.print()` med rätt CSS-layout som respekterar valet.
 
-- `PanelistMark` är en **inline mark** (Tiptap `Mark`) — renderar `<span>` runt den markerade texten.
-- Bakgrundsfärg sätts via inline `style` i `renderHTML` på color-attributet: `border-radius: 4px; padding: 1px 4px`.
-- Namn visas via CSS `::before` med `content: "● " attr(data-panelist-name)` på **samma rad**, inline framför texten.
+## Varför en dialog + CSS, inte en separat PDF-generering
 
-För att få namnet **ovanför** texten (som i inspirationsbilden) behöver vi bryta upp inline-flödet visuellt utan att ändra mark-typen (att byta till en node skulle bryta selection/flow i Tiptap markant). Bästa lösningen: behåll inline mark, men gör `::before` till ett **block-liknande element ovanför** med `display: block` + negativ margin, alternativt absolut positionerat.
+Webbläsarens utskriftsdialog kan redan spara som PDF. Genom att styra `@page size` och kort-layout via CSS får vi:
+- Korrekt sidformat (A4/A5) direkt i utskriftsdialogen
+- WYSIWYG — användaren ser exakt rätt antal kort per sida i förhandsvisning
+- Möjlighet att skriva ut direkt **eller** spara som PDF (samma flöde)
+- Ingen extra dependency, inga server-genererade PDF:er som riskerar att avvika visuellt från redigeringsläget
 
-## Plan
+En separat PDF-generator (t.ex. via pdf-lib/reportlab) skulle kräva att vi rebuildar hela kort-renderingen i en annan motor — onödigt komplext när CSS klarar det.
 
-### 1. Uppdatera `src/index.css` — `.panelist-mark` styling
+## Ändringar
 
-- Gör `::before` (namn-etiketten) till en liten **etikett ovanför** den markerade texten:
-  - `display: inline-block` med `position: absolute`, placerad strax ovanför första raden.
-  - Wrapper får `position: relative` + lite extra `padding-top` så etiketten får plats utan att krocka med raden ovanför.
-  - Mindre fontstorlek (~0.62em), versaler valfritt, samma diskreta gråton.
-  - Ta bort prick-symbolen (`●`) — färgen på bakgrunden räcker som visuell koppling.
-- Öka `border-radius` på själva markeringen från `4px` → `8px` (mjukare, matchar designspråkets `--radius` 14px-känsla).
-- Behåll regeln som döljer `::before` när två panelist-marks ligger direkt efter varandra (samma deltagare i följd).
-
-### 2. Uppdatera `src/lib/panelistMark.ts`
-
-- Ändra inline `style` i `renderHTML` för `color`-attributet:
-  - `border-radius: 8px` (istället för 4px).
-  - Behåll `padding`, men öka eventuellt vertikal padding lätt för att namn-etiketten ska ha luft.
-  - Lägg till `position: relative` så `::before` kan positioneras absolut.
-
-### 3. Editor-radavstånd
-
-- I `src/components/editor/TiptapEditor.tsx`: `sizeClass` använder `leading-[1.6]` / `leading-[1.55]`. Det räcker för att etiketten ovanför ska få plats när vi använder negativ top-positionering + lite padding-top på markeringens första rad.
-- Vi lägger en liten `margin-top` på själva paragrafen som **innehåller** en panelist-mark? Nej — för komplext. Istället låter vi `::before` ligga ovanpå med `top: -0.9em` och förlitar oss på att `line-height: 1.6` ger nog luft. Om det krockar lägger vi till `padding-top: 0.6em` på `.panelist-mark` första instans (acceptabel kompromiss).
-
-### Teknisk sammanfattning
-
-| Fil | Ändring |
-|---|---|
-| `src/lib/panelistMark.ts` | `border-radius: 8px`, `position: relative`, lätt ökad padding |
-| `src/index.css` | `::before` → absolut positionerad etikett ovanför, mindre font, ingen prick |
-
-Inga DB- eller datastrukturändringar. Befintliga markeringar uppdateras automatiskt vid nästa render.
-
-### Visuellt resultat
+### 1. Ny dialog-komponent — `src/components/editor/PrintDialog.tsx`
+Använder befintliga `Dialog`-primitiverna. Två stora val-kort:
 
 ```text
-   Anna
-  ┌──────────────────────────┐
-  │ Vad tycker du om...      │
-  └──────────────────────────┘
+┌─────────────────┐  ┌─────────────────┐
+│   A4 stående    │  │   A5 stående    │
+│  2 kort / sida  │  │  1 kort / sida  │
+│  [ikon-skiss]   │  │  [ikon-skiss]   │
+└─────────────────┘  └─────────────────┘
+        [ Avbryt ]   [ Skriv ut ]
 ```
 
-Namnet sitter strax ovanför den färgade bakgrunden, i mindre, diskret stil. Mjukare hörn (8px).
+State: `format: "a4-2up" | "a5-1up"`. Vid bekräft: sätter `data-print-format` på `<html>`, kallar `window.print()`, rensar attributet efter print (via `afterprint`-event).
+
+### 2. Editor.tsx — koppla knappen till dialogen
+- Ny state `printDialogOpen`
+- "Skriv ut"-knappen öppnar dialogen i stället för `window.print()`
+- Dialogen anropar `window.print()` när användaren bekräftar
+
+### 3. Print-CSS — i `src/index.css`
+Två `@media print`-block, ett per format, valt via attribut på `<html>`:
+
+```css
+@media print {
+  /* Dölj allt som inte tillhör manuset */
+  .topbar-blur, header.sticky, footer-knappar etc. { display: none !important; }
+  body { background: white; }
+  .manu-card { break-inside: avoid; box-shadow: none; }
+  /* Dölj dropdown-meny, drag-handtag, hjälp-prickar */
+  [aria-label="Kortmeny"], [aria-label="Dra för att flytta"], [aria-label="Hjälp"] { display: none !important; }
+}
+
+html[data-print-format="a4-2up"] {
+  @page { size: A4 portrait; margin: 12mm; }
+  /* Två kort per sida: tvinga sidbrytning efter varannan */
+  .manu-card:nth-child(2n) { break-after: page; }
+}
+
+html[data-print-format="a5-1up"] {
+  @page { size: A5 portrait; margin: 10mm; }
+  .manu-card { break-after: page; }
+  /* Lite kompaktare för A5 */
+  .manu-card { padding: 8px; gap: 8px; }
+}
+```
+
+Behåller färgade panelist-markeringar via `print-color-adjust: exact` på `.panelist-mark` och `.cue-pill`.
+
+### 4. Cleanup-logik
+I dialogen:
+```ts
+const onAfterPrint = () => {
+  document.documentElement.removeAttribute("data-print-format");
+  window.removeEventListener("afterprint", onAfterPrint);
+};
+window.addEventListener("afterprint", onAfterPrint);
+document.documentElement.setAttribute("data-print-format", format);
+window.print();
+```
+
+## Filer som påverkas
+| Fil | Ändring |
+|---|---|
+| `src/components/editor/PrintDialog.tsx` | **Ny** — val + trigga utskrift |
+| `src/pages/Editor.tsx` | Ersätt `window.print()` direkt-anrop med dialog-state |
+| `src/index.css` | Lägg till `@media print`-regler för båda formaten |
+
+Inga DB-, data- eller dependency-ändringar.
+
+## Resultat för användaren
+1. Klick på "Skriv ut" → snygg dialog med två val
+2. Välj format → systemets utskriftsdialog öppnas redan inställd på A4 eller A5
+3. Förhandsvisning visar rätt antal kort per sida
+4. Användaren kan skriva ut direkt eller välja "Spara som PDF" i samma dialog
+
