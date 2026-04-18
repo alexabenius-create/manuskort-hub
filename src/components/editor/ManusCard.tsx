@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X, Scissors, AlertTriangle } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -35,11 +35,14 @@ interface Props {
   onMergeUp: () => void;
   onSyncWithPrevious?: () => void;
   onPasteOverflow?: (overflowText: string) => void;
+  onAutoSplit?: () => void;
+  onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
 }
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
+  onAutoSplit, onOverflowStateChange,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
@@ -48,6 +51,24 @@ export function ManusCard({
   const [currentRows, setCurrentRows] = useState(0);
   const maxRows = MAX_ROWS_BY_SIZE[textSize];
   const isFull = currentRows >= maxRows;
+  const isOver = currentRows > maxRows;
+  const overBy = Math.max(0, currentRows - maxRows);
+
+  // Rapportera över-status uppåt så Editor kan blockera utskrift
+  const lastReportedOver = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lastReportedOver.current === isOver) return;
+    lastReportedOver.current = isOver;
+    onOverflowStateChange?.(card.id, isOver);
+  }, [isOver, card.id, onOverflowStateChange]);
+
+  // Städa upp när kortet unmountas (t.ex. raderas)
+  useEffect(() => {
+    return () => {
+      onOverflowStateChange?.(card.id, false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showPanelistBar = isModerator && panelists.length > 0 && selection.hasSelection;
 
