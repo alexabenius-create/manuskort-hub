@@ -281,6 +281,20 @@
    sidstorlek (@page) injiceras dynamiskt från PrintDialog.
    ============================================================ */
 @media print {
+  /* Hård spärr: om utskrift blockerats (kort över radgränsen) — visa inget alls.
+     Sätts från Editor.tsx via [data-print-blocked="true"] på <html>. */
+  html[data-print-blocked="true"] body * {
+    display: none !important;
+  }
+  html[data-print-blocked="true"] body::before {
+    content: "Utskrift blockerad: ett eller flera kort overskrider radgransen. Atgarda i appen och forsok igen.";
+    display: block !important;
+    padding: 24mm;
+    font-family: system-ui, sans-serif;
+    font-size: 14pt;
+    color: black !important;
+  }
+
   /* Dölj UI-chrome */
   .topbar-blur,
   header.sticky,
