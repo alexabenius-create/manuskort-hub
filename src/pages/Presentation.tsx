@@ -10,6 +10,9 @@ import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
 import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/components/presentation/PresentationStartMenu";
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
+import { HelpOverlay } from "@/components/presentation/HelpOverlay";
+
+const HELP_SEEN_KEY = "presentation-help-seen-v1";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
@@ -41,6 +44,7 @@ export default function Presentation() {
   const [focusStyle, setFocusStyle] = useState<FocusStyle>("line");
   const [speedFactor, setSpeedFactor] = useState(1.0);
   const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
@@ -158,11 +162,22 @@ export default function Presentation() {
 
       if (e.key === "Escape") {
         e.preventDefault();
+        if (helpOpen) { setHelpOpen(false); return; }
         exit();
         return;
       }
 
       if (isEditable) return;
+
+      // Hjälp-overlay: ? eller H öppnar/stänger
+      if (e.key === "?" || e.key === "h" || e.key === "H") {
+        e.preventDefault();
+        setHelpOpen((o) => !o);
+        return;
+      }
+
+      // Om hjälpen är öppen, blockera andra genvägar
+      if (helpOpen) return;
 
       // Scroll-läge: hastighet via +/-/R, piltangenter ignoreras (undvik konflikt med klickare)
       if (viewMode === "scroll") {
@@ -219,7 +234,18 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex, menuOpen, viewMode]);
+  }, [exit, cards.length, currentIndex, menuOpen, viewMode, helpOpen]);
+
+  // Auto-visa hjälp första gången användaren startar en presentation
+  useEffect(() => {
+    if (menuOpen) return;
+    try {
+      if (!localStorage.getItem(HELP_SEEN_KEY)) {
+        setHelpOpen(true);
+        localStorage.setItem(HELP_SEEN_KEY, "1");
+      }
+    } catch { /* ignore */ }
+  }, [menuOpen]);
 
   // Navigation
   const goNext = useCallback(() => {
@@ -365,6 +391,18 @@ export default function Presentation() {
         countdownActive={timer.countdown > 0}
       />
 
+      {/* Diskret hjälp-knapp */}
+      {!menuOpen && (
+        <button
+          onClick={() => setHelpOpen(true)}
+          className="fixed bottom-6 right-6 z-30 w-11 h-11 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors font-mono text-[16px] shadow-lg shadow-black/40"
+          aria-label="Visa hjälp (?)"
+          title="Visa hjälp (?)"
+        >
+          ?
+        </button>
+      )}
+
       <main className="flex-1 min-h-0 pt-44 pb-44 px-6 md:px-10 relative">
         <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
           {!menuOpen && viewMode === "cards" && (
@@ -422,6 +460,8 @@ export default function Presentation() {
       )}
 
       {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
+
+      <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} viewMode={viewMode} />
 
       {menuOpen && (
         <PresentationStartMenu
