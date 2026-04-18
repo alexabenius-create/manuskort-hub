@@ -358,7 +358,8 @@ export default function Library() {
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </main>
