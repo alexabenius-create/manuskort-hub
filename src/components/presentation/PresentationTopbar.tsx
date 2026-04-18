@@ -67,12 +67,12 @@ export function PresentationTopbar({
   })();
 
   return (
-    <header className="absolute top-0 inset-x-0 z-30 flex items-start justify-between px-6 py-4 gap-4 pointer-events-none">
-      {/* Vänster — X (touch-fade), läge */}
-      <div className="flex items-center gap-2 pointer-events-auto">
+    <header className="absolute top-0 inset-x-0 z-30 flex items-start justify-between px-6 md:px-10 pt-6 gap-4 pointer-events-none">
+      {/* Vänster — X (touch-fade) + wakelock i ett svart panelkort */}
+      <div className="flex items-center gap-3 pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
         <button
           onClick={onExit}
-          className={`p-5 rounded-full text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 backdrop-blur-md transition-opacity duration-300 ${
+          className={`p-5 rounded-2xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900 transition-opacity duration-300 ${
             xVisible ? "opacity-100" : "opacity-0 hover:opacity-100"
           }`}
           aria-label="Avsluta presentationsläge"
@@ -82,11 +82,11 @@ export function PresentationTopbar({
 
         {/* Wake Lock indikator (diskret) */}
         <div
-          className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900/30 backdrop-blur-md font-mono text-[10px] text-zinc-500 opacity-55 hover:opacity-100 transition-opacity"
+          className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-zinc-900 font-mono text-[12px] text-zinc-500"
           aria-live="polite"
         >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
+            className={`h-2 w-2 rounded-full ${
               wakeLockStatus === "active" ? "bg-emerald-400 animate-pulse"
                 : wakeLockStatus === "unsupported" ? "bg-amber-400"
                 : wakeLockStatus === "error" ? "bg-red-400"
@@ -97,14 +97,14 @@ export function PresentationTopbar({
         </div>
       </div>
 
-      {/* Höger — tidsmodul (4x storlek) */}
-      <div className="flex items-center gap-4 pointer-events-auto opacity-55 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+      {/* Höger — tidsmodul som ett svart panelkort */}
+      <div className="flex items-center gap-3 pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
         {/* Mode toggle */}
-        <div className="inline-flex bg-zinc-900/50 backdrop-blur-md rounded-full p-2 text-[22px] font-medium">
+        <div className="inline-flex bg-zinc-900 rounded-2xl p-2 text-[22px] font-medium">
           <button
             onClick={() => onModeChange("clock")}
-            className={`px-5 py-2 rounded-full transition-colors inline-flex items-center gap-2 ${
-              mode === "clock" ? "bg-zinc-700/80 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
+            className={`px-5 py-2 rounded-xl transition-colors inline-flex items-center gap-2 ${
+              mode === "clock" ? "bg-zinc-700 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
             }`}
             title="Klockslag"
           >
@@ -112,8 +112,8 @@ export function PresentationTopbar({
           </button>
           <button
             onClick={() => onModeChange("elapsed")}
-            className={`px-5 py-2 rounded-full transition-colors inline-flex items-center gap-2 ${
-              mode === "elapsed" ? "bg-zinc-700/80 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
+            className={`px-5 py-2 rounded-xl transition-colors inline-flex items-center gap-2 ${
+              mode === "elapsed" ? "bg-zinc-700 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
             }`}
             title="Förfluten tid"
           >
@@ -122,7 +122,7 @@ export function PresentationTopbar({
         </div>
 
         {/* Tidsdisplay */}
-        <div className="flex flex-col items-end px-6 py-4 rounded-3xl bg-zinc-900/50 backdrop-blur-md min-w-[400px]">
+        <div className="flex flex-col items-end px-6 py-4 rounded-2xl bg-zinc-900 min-w-[400px]">
           {mode === "clock" ? (
             <>
               <span className={`font-mono text-[56px] tabular-nums leading-none ${timeColor}`}>
@@ -158,7 +158,7 @@ export function PresentationTopbar({
           <button
             onClick={onPauseToggle}
             disabled={countdownActive}
-            className="p-5 rounded-full bg-zinc-900/50 backdrop-blur-md text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/80 transition-colors disabled:opacity-40"
+            className="p-5 rounded-2xl bg-zinc-900 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-40"
             aria-label={isPaused ? "Återuppta timer" : "Pausa timer"}
             title={isPaused ? "Återuppta" : "Pausa"}
           >
