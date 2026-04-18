@@ -144,7 +144,42 @@ export default function Presentation() {
 
       if (isEditable) return;
 
-      // Navigation
+      // Scroll-läge: hastighet via +/-/R, piltangenter ignoreras (undvik konflikt med klickare)
+      if (viewMode === "scroll") {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          setSpeedFactor((s) => {
+            const next = Math.min(3.0, +(s + 0.1).toFixed(2));
+            setSpeedChip({ value: next, ts: Date.now() });
+            return next;
+          });
+          return;
+        }
+        if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          setSpeedFactor((s) => {
+            const next = Math.max(0.25, +(s - 0.1).toFixed(2));
+            setSpeedChip({ value: next, ts: Date.now() });
+            return next;
+          });
+          return;
+        }
+        if (e.key === "r" || e.key === "R") {
+          e.preventDefault();
+          setSpeedFactor(1.0);
+          setSpeedChip({ value: 1.0, ts: Date.now() });
+          return;
+        }
+        if (e.key === "p" || e.key === "P") {
+          e.preventDefault();
+          handlePanic();
+          return;
+        }
+        // Pil-tangenter och space ignoreras i scroll-läge
+        return;
+      }
+
+      // Cards-läge: Navigation
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
         goNext();
