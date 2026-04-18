@@ -10,6 +10,7 @@ import { TiptapEditor } from "./TiptapEditor";
 import { useAutosave } from "@/hooks/useAutosave";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { placeholderFor } from "@/lib/placeholders";
+import { placeholderForFormat, type TimeFormat } from "@/lib/timeChain";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -21,6 +22,7 @@ interface Props {
   showNotes: boolean;
   showTimes: boolean;
   wpm: number;
+  timeFormat: TimeFormat;
   canSyncWithPrevious?: boolean;
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
@@ -31,7 +33,7 @@ interface Props {
 }
 
 export function ManusCard({
-  card, number, textSize, showNotes, showTimes, wpm, canSyncWithPrevious,
+  card, number, textSize, showNotes, showTimes, wpm, timeFormat, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });

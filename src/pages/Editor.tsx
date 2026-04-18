@@ -367,6 +367,7 @@ export default function Editor() {
                     showNotes={manuscript.show_notes}
                     showTimes={manuscript.show_times}
                     wpm={manuscript.wpm}
+                    timeFormat={timeFormat}
                     canSyncWithPrevious={idx > 0}
                     onLocalChange={(patch) => updateCard(c.id, patch)}
                     onDelete={() => deleteCard(c.id)}
