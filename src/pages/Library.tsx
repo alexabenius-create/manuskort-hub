@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -252,7 +252,9 @@ export default function Library() {
       )}
       {/* Topbar */}
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-6">
-        <h1 className="font-display text-[17px] font-semibold tracking-tight">Manuskort</h1>
+        <Link to="/" className="font-display text-[17px] font-semibold tracking-tight hover:opacity-70 transition-opacity" aria-label="Till startsidan">
+          <h1>Manuskort</h1>
+        </Link>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[13px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
             {user?.email}
