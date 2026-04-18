@@ -37,6 +37,7 @@ interface Props {
   onPasteOverflow?: (overflowText: string) => void;
   onAutoSplit?: () => void;
   onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
+  onEditorReady?: (cardId: string, editor: Editor | null) => void;
 }
 
 export function ManusCard({
