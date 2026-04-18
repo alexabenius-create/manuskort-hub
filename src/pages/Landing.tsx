@@ -62,6 +62,52 @@ export default function Landing() {
             name: "Manuskort",
             url: "https://manuskort.se/",
           },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "Vad är manuskort?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Manuskort är korta, strukturerade avsnitt av ditt manus — med stödord, tider och cues. De gör det lättare att hålla röd tråd när du talar inför publik, jämfört med att läsa från ett långt löpande manus.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Hur hjälper manuskort vid en presentation?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Du får överblick, kontroll på tiden och ett tydligt stöd vid presentationen — utan att låsa dig vid ordagrann text. Cue-färger och tidsbudgetar hjälper dig att hitta rätt tempo, hålla pauser och anpassa längden om något oväntat händer.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Är det gratis att använda?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Ja. Du kommer igång helt gratis utan kreditkort. Gratisplanen räcker för de flesta enskilda presentationer. För obegränsat antal manus och kort, samt import från .docx, finns en PRO-plan.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Fungerar det i talarstolen och på scen?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Ja. Presentationsläget är byggt för riktiga scener: stor läsbar text, mörkt tema, fullskärm och wake-lock som håller skärmen vaken. Det fungerar i webbläsaren på laptop, surfplatta och telefon.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Kan jag importera ett befintligt manus?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Ja. Med PRO-planen kan du importera ett .docx-manus. Verktyget känner igen talare och styckar upp texten automatiskt — du behöver bara finjustera.",
+                },
+              },
+            ],
+          },
         ]}
       />
       {/* Topbar */}
