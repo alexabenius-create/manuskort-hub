@@ -16,11 +16,6 @@ export function countVisualRows(el: HTMLElement): number {
 }
 
 /**
- * Skapar en dold mät-div som kopierar font, line-height och bredd från sampleEl.
- * Används för att mäta antal visuella rader för ett HTML-fragment utan att rendera in det i DOM:en.
- */
-function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
-/**
  * Skapar en dold mät-div som efterliknar sampleEl exakt — samma klassnamn,
  * samma föräldra-bredd och samma typografi. På det sättet matchar wrappningen
  * det användaren faktiskt ser i editorn (CSS-regler för .ProseMirror p osv.
