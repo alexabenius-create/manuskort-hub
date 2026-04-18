@@ -227,19 +227,19 @@
   }
 
   /* Panelist mark — namn-etikett ovanför + färgad bakgrund (inline-style sätts av Tiptap) */
-  .ProseMirror p:has(.panelist-mark) { padding-top: 0.7em; }
+  .ProseMirror p:has(.panelist-mark) { padding-top: 0.55em; }
   .ProseMirror .panelist-mark { position: relative; }
   .ProseMirror .panelist-mark::before {
     content: attr(data-panelist-name);
     position: absolute;
     left: 6px;
-    top: -0.75em;
-    font-size: 0.5em;
+    top: -0.6em;
+    font-size: 0.38em;
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: hsl(240 6% 30%);
-    opacity: 0.8;
+    opacity: 0.85;
     white-space: nowrap;
     pointer-events: none;
     line-height: 1;
