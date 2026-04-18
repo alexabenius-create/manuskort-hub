@@ -245,7 +245,10 @@ export default function Editor() {
   const sizes: ("sm" | "md" | "lg")[] = ["sm", "md", "lg"];
   const sizeLabels: Record<string, string> = { sm: "Liten", md: "Normal", lg: "Stor" };
 
+  const isModerator = manuscript.mode === "moderator";
+
   return (
+    <PanelistsProvider manuscriptId={manuscript.id}>
     <div className="min-h-screen">
       {/* Sticky topbar-grupp: huvudrad + (villkorlig) tidsformat-rad */}
       <div className="topbar-blur sticky top-0 z-50 border-b-hair">
@@ -301,6 +304,16 @@ export default function Editor() {
               Tider
             </button>
           </div>
+
+          {isModerator && (
+            <Button
+              variant="ghost"
+              onClick={() => setPanelistSidebarOpen(true)}
+              className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
+            >
+              <Users className="h-3.5 w-3.5" /> Deltagare
+            </Button>
+          )}
 
           <Button
             onClick={addCard}
@@ -381,6 +394,7 @@ export default function Editor() {
                     showTimes={manuscript.show_times}
                     wpm={manuscript.wpm}
                     timeFormat={timeFormat}
+                    isModerator={isModerator}
                     canSyncWithPrevious={idx > 0}
                     onLocalChange={(patch) => updateCard(c.id, patch)}
                     onDelete={() => deleteCard(c.id)}
@@ -395,6 +409,14 @@ export default function Editor() {
           </DndContext>
         )}
       </main>
+
+      {isModerator && (
+        <PanelistSidebar
+          open={panelistSidebarOpen}
+          onClose={() => setPanelistSidebarOpen(false)}
+        />
+      )}
     </div>
+    </PanelistsProvider>
   );
 }
