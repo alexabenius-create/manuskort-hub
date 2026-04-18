@@ -88,7 +88,7 @@ export const MANUS_TOUR: TourDefinition = {
       target: '[data-tour="card.script"]',
       title: "Manustexten",
       body:
-        "Här skriver du det du faktiskt ska säga. Tryck på snedstreck (/) i texten där du vill lägga in en medveten paus — markören syns tydligt i presentationsläget som en andningspåminnelse.",
+        "Här skriver du det du faktiskt ska säga. Markera text för att få fram formateringsverktyget — fetstil, kursiv, understrykning och gulmarkering. Tryck snedstreck (/) där du vill lägga in en medveten paus — markören syns tydligt i presentationsläget som en andningspåminnelse.",
     },
     {
       target: '[data-tour="card.notes"]',
