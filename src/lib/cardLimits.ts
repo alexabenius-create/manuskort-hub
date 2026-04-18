@@ -4,8 +4,63 @@ export const MAX_ROWS_BY_SIZE = { sm: 10, md: 8, lg: 6 } as const;
 export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
 
 /**
+ * Presentationslägets typografi per textstorlek — speglar PresentationCard.
+ * Vi mäter alltid mot dessa värden, oavsett editorns visuella bredd, så
+ * "X/8 rader" i editorn alltid stämmer med antal rader i presentationsläget.
+ *
+ * Bredd: 60ch i font-display vid given fontSize. ch ≈ 0.5em för proportionella
+ * fonter — vi använder 0.52 som rimligt medel för Inter Tight.
+ */
+const PRESENTATION_GEOMETRY = {
+  sm: { fontSize: 24, lineHeight: 1.7, widthPx: Math.round(60 * 24 * 0.52) },
+  md: { fontSize: 30, lineHeight: 1.7, widthPx: Math.round(60 * 30 * 0.52) },
+  lg: { fontSize: 38, lineHeight: 1.7, widthPx: Math.round(60 * 38 * 0.52) },
+} as const;
+
+let presentationMeasurer: HTMLDivElement | null = null;
+function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
+  const g = PRESENTATION_GEOMETRY[textSize];
+  if (!presentationMeasurer) {
+    const el = document.createElement("div");
+    el.setAttribute("data-presentation-measurer", "true");
+    el.className = "presentation-prose font-display";
+    el.style.position = "fixed";
+    el.style.left = "-99999px";
+    el.style.top = "0";
+    el.style.visibility = "hidden";
+    el.style.pointerEvents = "none";
+    el.style.boxSizing = "content-box";
+    el.style.padding = "0";
+    el.style.margin = "0";
+    document.body.appendChild(el);
+    presentationMeasurer = el;
+  }
+  presentationMeasurer.style.width = `${g.widthPx}px`;
+  presentationMeasurer.style.fontSize = `${g.fontSize}px`;
+  presentationMeasurer.style.lineHeight = String(g.lineHeight);
+  return presentationMeasurer;
+}
+
+/**
+ * Mäter hur många rader `html` skulle bli i presentationsläget.
+ * Detta är den enda korrekta källan för radantal — editorns egen DOM
+ * har annan bredd/font och ger fel resultat.
+ */
+export function countPresentationRows(html: string, textSize: TextSize): number {
+  const el = getPresentationMeasurer(textSize);
+  el.innerHTML = html || "<p></p>";
+  const cs = getComputedStyle(el);
+  const lh = parseFloat(cs.lineHeight);
+  if (!lh || !isFinite(lh) || lh <= 0) return 0;
+  return Math.max(1, Math.round(el.scrollHeight / lh));
+}
+
+/**
  * Räknar antal visuella rader (inklusive mjuk wrappning) i ett element.
  * Mäter scrollHeight / line-height på roten.
+ *
+ * OBS: Detta mäter ELEMENTETS egen geometri — för korrekt radantal mot
+ * presentationsläget, använd `countPresentationRows` istället.
  */
 export function countVisualRows(el: HTMLElement): number {
   if (!el) return 0;
