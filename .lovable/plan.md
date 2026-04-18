@@ -1,19 +1,27 @@
 
-Ändra signal-raden i presentationsläget: gruppera röd, gul och teal centrerat intill varandra med pill-formade färgrutor likt redigeringsläget.
+## Tillägg till Väg 3: explicita radbrytningar med Shift+Enter
 
-## Plan
+### Hur det ska fungera
+- **Enter** = nytt stycke (som idag) → räknas som radbrytning i både editor och presentation.
+- **Shift+Enter** = explicit radbrytning (`<br>`) → tvingar fram en ny rad i presentationen, oavsett bredd.
+- **Automatisk wrap** i editorn (när texten tar slut på raden) → påverkar INTE presentationen. Mätningen sker mot presentationsbredden.
 
-### `src/components/presentation/PresentationCard.tsx`
+Tiptap/StarterKit hanterar redan Shift+Enter som hard break (`<br>`) by default, så ingen ny tangentbordslogik behövs — den finns redan.
 
-1. **Layout**: Ändra det absolut positionerade signal-blocket från `flex justify-between` (3 kolumner) till en centrerad flex-rad: `flex justify-center items-center gap-3 flex-wrap`. Då hamnar gul i mitten och röd/teal direkt bredvid (ordning: röd, gul, teal).
+### Vad som behöver göras
+1. **Mätningen i `cardLimits.ts`** (Väg 3): den nya presentations-mätaren respekterar automatiskt `<br>` eftersom vi sätter in HTML i mät-divven och läser `scrollHeight`. En `<br>` ger en extra rad där, precis som i presentationen.
 
-2. **Pill-design** för varje signal (matchar redigeringsläget från skärmdumpen):
-   - Bakgrund: tonad färg från cue-variabeln med låg alpha, t.ex. `bg-[hsl(var(--cue-red)/0.15)]`
-   - Border: `border border-[hsl(var(--cue-red)/0.3)]`
-   - Form: `rounded-full px-3 py-1.5`
-   - Text + ikon: behåll nuvarande färg `text-[hsl(var(--cue-red))]`, ikon-storlek `h-3.5 w-3.5`, font `text-[13px] font-medium`
-   - Samma mönster för amber och teal
+2. **Visuell markör i editorn** (valfritt men rekommenderat): visa en svag pilsymbol (↵) eller liknande där `<br>` finns, så användaren ser skillnad på "auto-wrap" och "tvingad radbrytning". Implementeras via en CSS-regel på `.ProseMirror br::after` eller en custom Tiptap-extension.
 
-3. **Inga överlappningar**: eftersom raden är centrerad och varje pill är inline med `gap-3`, anpassar de sig automatiskt efter textlängd. Vid extremt lång text aktiveras `flex-wrap` så pillen wrappar till ny rad istället för att överlappa.
+3. **Hjälptext/tooltip** någonstans i UI:t som förklarar:
+   > Enter = nytt stycke · Shift+Enter = radbrytning som syns i presentationen
 
-4. **Behåll**: `pointer-events-none`, `z-10`, `absolute top-4 left-6 right-6 md:left-12 md:right-12`, ikoner Pause/Flag/ArrowRight.
+### Resultat
+- Moderatorn skriver fritt i editorn — auto-wrap stör inte presentationen.
+- När moderatorn vill ha en garanterad radbrytning (t.ex. för en lista, citat, eller dramatisk paus) → Shift+Enter.
+- Räknaren "X/8 rader" inkluderar både stycken och explicita `<br>`, eftersom mätningen läser presentationens faktiska höjd.
+
+### Ändringar utöver Väg 3
+- `src/index.css` (eller motsvarande): lägg till diskret visuell markör för `<br>` inom `.ProseMirror`.
+- `src/components/editor/ManusCard.tsx` eller PanelistSidebar: liten hjälptext om Shift+Enter.
+- Ingen ändring i Tiptap-konfig — `<br>` stöds out-of-the-box.
