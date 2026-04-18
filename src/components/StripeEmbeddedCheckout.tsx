@@ -1,9 +1,7 @@
-import {
-  EmbeddedCheckoutProvider,
-  EmbeddedCheckout,
-} from "@stripe/react-stripe-js";
-import { getStripe, getStripeEnvironment } from "@/lib/stripe";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 interface StripeEmbeddedCheckoutProps {
   priceId: string;
@@ -13,35 +11,24 @@ interface StripeEmbeddedCheckoutProps {
   returnUrl?: string;
 }
 
-export function StripeEmbeddedCheckout({
-  priceId,
-  quantity,
-  customerEmail,
-  userId,
-  returnUrl,
-}: StripeEmbeddedCheckoutProps) {
-  const fetchClientSecret = async (): Promise<string> => {
-    const { data, error } = await supabase.functions.invoke("create-checkout", {
-      body: {
-        priceId,
-        quantity,
-        customerEmail,
-        userId,
-        returnUrl,
-        environment: getStripeEnvironment(),
-      },
-    });
-    if (error || !data?.clientSecret) {
-      throw new Error(error?.message || "Kunde inte starta checkout");
-    }
-    return data.clientSecret;
-  };
+// Lazy-load the actual Stripe-dependent component so @stripe/* libraries
+// are only fetched when the user opens checkout.
+const StripeCheckoutInner = lazy(() => import("./StripeCheckoutInner"));
 
+export function StripeEmbeddedCheckout(props: StripeEmbeddedCheckoutProps) {
   return (
-    <div id="checkout" className="w-full">
-      <EmbeddedCheckoutProvider stripe={getStripe()} options={{ fetchClientSecret }}>
-        <EmbeddedCheckout />
-      </EmbeddedCheckoutProvider>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <StripeCheckoutInner {...props} />
+    </Suspense>
   );
 }
+
+// Re-export helpers so existing call-sites keep working.
+export { getStripeEnvironment };
+export { supabase };

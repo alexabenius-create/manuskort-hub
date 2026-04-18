@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,18 +9,24 @@ import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
 import Landing from "./pages/Landing";
-import Library from "./pages/Library";
-import Editor from "./pages/Editor";
-import Presentation from "./pages/Presentation";
 import Auth from "./pages/Auth";
-import Settings from "./pages/Settings";
-import Import from "./pages/Import";
-import Pricing from "./pages/Pricing";
-import Admin from "./pages/Admin";
-import CheckoutReturn from "./pages/CheckoutReturn";
 import NotFound from "./pages/NotFound";
 
+// Lazy-load tunga / sällan besökta sidor → mindre initial bundle
+const Library = lazy(() => import("./pages/Library"));
+const Editor = lazy(() => import("./pages/Editor"));
+const Presentation = lazy(() => import("./pages/Presentation"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Import = lazy(() => import("./pages/Import"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Admin = lazy(() => import("./pages/Admin"));
+const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
+
 const queryClient = new QueryClient();
+
+const RouteFallback = () => (
+  <div className="min-h-screen bg-background" aria-hidden="true" />
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -30,20 +37,22 @@ const App = () => (
         <AuthProvider>
           <TourProvider>
             <TierProvider>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/priser" element={<Pricing />} />
-                <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
-                <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
-                <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
-                <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
-                <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
-                <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
-                <Route path="/checkout/return" element={<CheckoutReturn />} />
-                <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/priser" element={<Pricing />} />
+                  <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
+                  <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
+                  <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
+                  <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
+                  <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
+                  <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+                  <Route path="/checkout/return" element={<CheckoutReturn />} />
+                  <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </TierProvider>
           </TourProvider>
         </AuthProvider>
