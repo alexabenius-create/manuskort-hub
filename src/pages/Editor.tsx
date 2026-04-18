@@ -16,6 +16,7 @@ import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
+import { splitHtmlInHalf } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
@@ -33,6 +34,18 @@ export default function Editor() {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
+  // Kort som överskrider sin radgräns — blockerar utskrift
+  const [overflowingCardIds, setOverflowingCardIds] = useState<Set<string>>(new Set());
+
+  const handleOverflowChange = (cardId: string, isOver: boolean) => {
+    setOverflowingCardIds((prev) => {
+      const has = prev.has(cardId);
+      if (isOver === has) return prev;
+      const next = new Set(prev);
+      if (isOver) next.add(cardId); else next.delete(cardId);
+      return next;
+    });
+  };
 
   const meta = useMemo(() => {
     if (!manuscript) return null;
@@ -221,6 +234,49 @@ export default function Editor() {
     toast({ title: "Texten delades på 2 kort", description: "Överskottet flyttades till ett nytt kort." });
   };
 
+  const autoSplitCard = async (cardId: string) => {
+    if (!user || !manuscript) return;
+    const src = cards.find((c) => c.id === cardId);
+    if (!src) return;
+    const [firstHalf, secondHalf] = splitHtmlInHalf(src.content_html ?? "");
+    if (!secondHalf) {
+      toast({ title: "Kunde inte dela", description: "Texten är för kort eller saknar tydliga delningspunkter.", variant: "destructive" });
+      return;
+    }
+    const idx = cards.findIndex((c) => c.id === cardId);
+    const { data, error } = await supabase
+      .from("cards")
+      .insert({
+        manuscript_id: manuscript.id,
+        user_id: user.id,
+        position: idx + 1,
+        role: src.role,
+        title: src.title ? `${src.title} (forts.)` : "",
+        content_html: secondHalf,
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      toast({ title: "Kunde inte dela kortet", description: error?.message, variant: "destructive" });
+      return;
+    }
+    const next = [...cards];
+    next[idx] = { ...next[idx], content_html: firstHalf };
+    next.splice(idx + 1, 0, data);
+    const renum = next.map((c, i) => ({ ...c, position: i }));
+    setCards(renum);
+    await Promise.all([
+      supabase.from("cards").update({ content_html: firstHalf }).eq("id", cardId),
+      persistPositions(renum),
+    ]);
+    setOverflowingCardIds((prev) => {
+      const n = new Set(prev);
+      n.delete(cardId);
+      return n;
+    });
+    toast({ title: "Kortet delades", description: "Innehållet fördelades på två kort." });
+  };
+
   const mergeUp = (cardId: string) => {
     const idx = cards.findIndex((c) => c.id === cardId);
     if (idx <= 0) return;
@@ -358,10 +414,27 @@ export default function Editor() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => setPrintDialogOpen(true)}
-            className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
+            onClick={() => {
+              if (overflowingCardIds.size > 0) {
+                toast({
+                  title: "Utskrift blockerad",
+                  description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Korta ner texten eller använd "Dela kortet automatiskt".`,
+                  variant: "destructive",
+                });
+                return;
+              }
+              setPrintDialogOpen(true);
+            }}
+            disabled={overflowingCardIds.size > 0}
+            title={overflowingCardIds.size > 0 ? `Blockerad: ${overflowingCardIds.size} kort överskrider radgränsen` : "Skriv ut manus"}
+            className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Printer className="h-3.5 w-3.5" /> Skriv ut
+            {overflowingCardIds.size > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold">
+                {overflowingCardIds.size}
+              </span>
+            )}
           </Button>
         </div>
         </header>
@@ -438,6 +511,8 @@ export default function Editor() {
                     onMergeUp={() => mergeUp(c.id)}
                     onSyncWithPrevious={() => syncWithPrevious(c.id)}
                     onPasteOverflow={(text) => handlePasteOverflow(c.id, text)}
+                    onAutoSplit={() => autoSplitCard(c.id)}
+                    onOverflowStateChange={handleOverflowChange}
                   />
                 ))}
               </div>

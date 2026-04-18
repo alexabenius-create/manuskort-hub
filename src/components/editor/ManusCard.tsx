@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock, X, Scissors, AlertTriangle } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -35,11 +35,14 @@ interface Props {
   onMergeUp: () => void;
   onSyncWithPrevious?: () => void;
   onPasteOverflow?: (overflowText: string) => void;
+  onAutoSplit?: () => void;
+  onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
 }
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
+  onAutoSplit, onOverflowStateChange,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
@@ -48,6 +51,24 @@ export function ManusCard({
   const [currentRows, setCurrentRows] = useState(0);
   const maxRows = MAX_ROWS_BY_SIZE[textSize];
   const isFull = currentRows >= maxRows;
+  const isOver = currentRows > maxRows;
+  const overBy = Math.max(0, currentRows - maxRows);
+
+  // Rapportera över-status uppåt så Editor kan blockera utskrift
+  const lastReportedOver = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lastReportedOver.current === isOver) return;
+    lastReportedOver.current = isOver;
+    onOverflowStateChange?.(card.id, isOver);
+  }, [isOver, card.id, onOverflowStateChange]);
+
+  // Städa upp när kortet unmountas (t.ex. raderas)
+  useEffect(() => {
+    return () => {
+      onOverflowStateChange?.(card.id, false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showPanelistBar = isModerator && panelists.length > 0 && selection.hasSelection;
 
@@ -102,7 +123,8 @@ export function ManusCard({
     <article
       ref={setNodeRef}
       style={style}
-      data-card-full={isFull ? "true" : undefined}
+      data-card-full={isFull && !isOver ? "true" : undefined}
+      data-card-over={isOver ? "true" : undefined}
       className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
       {/* Header panel */}
@@ -254,15 +276,24 @@ export function ManusCard({
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
             <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser." />
             <span
-              className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full ${
-                isFull
-                  ? "bg-destructive/10 text-destructive"
-                  : currentRows >= maxRows - 1
-                    ? "bg-cue-amber/10 text-[hsl(35_85%_38%)]"
-                    : "bg-surface-2 text-muted-foreground"
+              className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                isOver
+                  ? "bg-destructive/15 text-destructive font-semibold"
+                  : isFull
+                    ? "bg-cue-amber/15 text-[hsl(35_85%_38%)]"
+                    : currentRows >= maxRows - 1
+                      ? "bg-cue-amber/10 text-[hsl(35_85%_38%)]"
+                      : "bg-surface-2 text-muted-foreground"
               }`}
-              title={isFull ? "Kortet är fullt — dela upp i två kort." : `Max ${maxRows} rader för storlek ${textSize.toUpperCase()}`}
+              title={
+                isOver
+                  ? `Kortet är ${overBy} ${overBy === 1 ? "rad" : "rader"} för långt. Det går inte att skriva ut eller starta presentationsläge förrän det åtgärdas.`
+                  : isFull
+                    ? "Kortet är fullt — dela upp i två kort."
+                    : `Max ${maxRows} rader för storlek ${textSize.toUpperCase()}`
+              }
             >
+              {isOver && <AlertTriangle className="h-3 w-3" />}
               {currentRows} / {maxRows} rader
             </span>
           </div>
@@ -277,6 +308,23 @@ export function ManusCard({
             onRowCountChange={setCurrentRows}
             onOverflowPaste={onPasteOverflow}
           />
+          {isOver && (
+            <div className="mt-3 flex items-center gap-3 rounded-lg bg-destructive/10 px-3 py-2 border border-destructive/25">
+              <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+              <p className="text-[12px] text-destructive flex-1 leading-snug">
+                Kortet är <strong>{overBy} {overBy === 1 ? "rad" : "rader"}</strong> för långt. Utskrift och presentationsläge är blockerade tills det åtgärdas.
+              </p>
+              {onAutoSplit && (
+                <button
+                  type="button"
+                  onClick={onAutoSplit}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors flex-shrink-0"
+                >
+                  <Scissors className="h-3 w-3" /> Dela kortet automatiskt
+                </button>
+              )}
+            </div>
+          )}
         </div>
         {showNotes && (
           <div className="w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">

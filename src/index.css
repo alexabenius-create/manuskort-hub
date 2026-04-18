@@ -257,8 +257,11 @@
     transition: box-shadow 0.25s ease;
   }
   .manu-card[data-card-full="true"] {
-    box-shadow: 0 0 0 1.5px hsl(var(--destructive) / 0.45) inset;
-    animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both, cardFullPulse 0.5s ease-out;
+    box-shadow: 0 0 0 1.5px hsl(var(--cue-amber) / 0.45) inset;
+  }
+  .manu-card[data-card-over="true"] {
+    box-shadow: 0 0 0 2px hsl(var(--destructive) / 0.6) inset;
+    animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both, cardOverPulse 0.6s ease-out;
   }
 }
 
@@ -267,10 +270,10 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes cardFullPulse {
-  0%   { box-shadow: 0 0 0 0 hsl(var(--destructive) / 0.35) inset; }
-  60%  { box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.25) inset; }
-  100% { box-shadow: 0 0 0 1.5px hsl(var(--destructive) / 0.45) inset; }
+@keyframes cardOverPulse {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--destructive) / 0.5) inset; }
+  60%  { box-shadow: 0 0 0 5px hsl(var(--destructive) / 0.3) inset; }
+  100% { box-shadow: 0 0 0 2px hsl(var(--destructive) / 0.6) inset; }
 }
 
 /* ============================================================
