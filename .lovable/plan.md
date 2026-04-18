@@ -1,57 +1,78 @@
 
 
-## Beslut bekräftade
-- **Radgränser:** Liten 10 / Normal 8 / Stor 6
-- **Paste-overflow:** Auto-dela till nytt kort
-- **Befintliga långa kort:** Bara visuell varning (röd ram + räknare)
+## Mål
+Auto-dela ska splitta exakt vid radgränsen (efter rad 8 vid Normal storlek), inte i mitten. Överskottet kaskaderar nedåt — om kort 2 också blir för fullt fortsätter överskottet till kort 3, osv. Användaren ska kunna ångra hela operationen med ett klick.
 
-## Implementation
+## Beteende
 
-### 1. Ny fil — `src/lib/cardLimits.ts`
-```ts
-export const MAX_ROWS_BY_SIZE = { sm: 10, md: 8, lg: 6 } as const;
-export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
+**Före auto-split (Normal, max 8):**
+- Kort A: 12 rader (4 över)
+- Kort B: 5 rader
 
-export function countVisualRows(el: HTMLElement): number {
-  const cs = getComputedStyle(el);
-  const lh = parseFloat(cs.lineHeight);
-  if (!lh || !isFinite(lh)) return 0;
-  return Math.round(el.scrollHeight / lh);
-}
+**Efter auto-split:**
+- Kort A: 8 rader (rad 1–8)
+- Kort B: 8 rader (rad 9–11 från A + första 5 raderna från B's gamla innehåll)
+- Kort C: 1 rad (kvarvarande från B) — *bara om B blev över max*
+
+Endast så många rader som krävs för att rymma överskottet får "knuffas ner". Om kort B redan har plats räcker det med att lägga till överskottet — inget nytt kort behövs.
+
+**Toast efter split:**
+> "Kortet delades. [Ångra]"
+
+Klick på Ångra återställer alla berörda kort till ursprungligt innehåll och tar bort eventuella nyskapade kort.
+
+## Teknisk approach
+
+### 1. Mät visuella rader exakt — `src/lib/cardLimits.ts`
+Lägg till `splitHtmlAtRow(html, maxRows, sampleEl)`:
+- Skapa dold mät-div som klonar samma typografi (font-size, line-height, bredd) som `sampleEl` (editor-DOM:en).
+- Sätt in HTML stegvis (block för block, sedan ord för ord vid behov) tills mät-divens `countVisualRows` precis når `maxRows`.
+- Returnera `[fitsHtml, overflowHtml]`.
+
+För att undvika att kapa mitt i ett ord eller en mening: föredra split vid blockgräns → meningsslut → mellanslag, inom ±1 rad-tolerans.
+
+### 2. Ny kaskad-funktion — `src/pages/Editor.tsx`
+Ersätt nuvarande `autoSplitCard` med `cascadeSplitFromCard(cardId)`:
+
+```text
+1. Snapshot: spara alla berörda korts {id, content_html, position} + ev. nyskapade card-IDs
+2. Mät editor-DOM:en för startkortet → få sampleEl + maxRows
+3. Loop från startkortet och nedåt:
+   a. Splitta aktuellt kort vid maxRows → [fits, overflow]
+   b. Skriv fits till aktuellt kort
+   c. Om overflow är tomt → klart
+   d. Annars: nästa kort = (cards[idx+1] || skapa nytt)
+      - Sätt nästa korts innehåll = overflow + nästa korts gamla innehåll
+      - idx++, fortsätt loopen
+4. Persistera alla ändringar parallellt + uppdatera positioner
+5. Visa toast med "Ångra"-knapp som anropar restoreSnapshot()
 ```
 
-### 2. `src/components/editor/TiptapEditor.tsx`
-- Lägg till props: `maxRows: number`, `onOverflowPaste?: (overflowText: string) => void`.
-- Mät rader efter varje `onUpdate` via `countVisualRows(editor.view.dom)`.
-- Exponera räkning till parent via ny prop `onRowCountChange?: (rows: number) => void`.
-- I `editorProps.handleKeyDown`: om aktuell rad-räkning ≥ `maxRows` och tangenten är teckeninmatning eller `Enter` → blockera (`event.preventDefault(); return true`). Tillåt alltid Backspace/Delete/piltangenter/modifierade kortkommandon.
-- I `editorProps.handlePaste`: läs `event.clipboardData?.getData("text/plain")`. Sätt in stegvis tills gränsen nås — överskottet skickas till `onOverflowPaste`. Returnera `true` för att blockera default-paste.
+### 3. Ångra-funktion
+- Snapshot lagras i en `useRef<Snapshot | null>` (eller kort-livad state).
+- Toast-knappen "Ångra" anropar `restoreSnapshot()`:
+  - Återställer `content_html` på alla berörda kort.
+  - Tar bort nyskapade kort (deleteCard).
+  - Återställer positioner.
+- Snapshot rensas efter ~30 sek eller vid nästa auto-split.
 
-### 3. `src/components/editor/ManusCard.tsx`
-- Importera `MAX_ROWS_BY_SIZE`.
-- Beräkna `maxRows = MAX_ROWS_BY_SIZE[textSize]`.
-- Ny state `currentRows` uppdateras från editor-callback.
-- Skicka `maxRows`, `onRowCountChange={setCurrentRows}`, och `onOverflowPaste` (som anropar nya prop `onPasteOverflow(overflowText)`) till `TiptapEditor`.
-- Visa rad-räknare i Manus-panelen, bredvid "Manus"-labeln eller i kort-headern: `{currentRows} / {maxRows} rader` — får klassen `text-destructive` när `currentRows >= maxRows`.
-- Lägg `data-card-full="true"` på `<article>` när gränsen nås (för CSS-styling).
-
-### 4. `src/pages/Editor.tsx`
-- Ny prop på `ManusCard`: `onPasteOverflow: (text: string) => void`.
-- Implementera handler: skapa nytt kort direkt efter aktuellt med `content_html = <p>${overflowText}</p>`, samma `role`. Återanvänd befintlig insert/duplicate-logik. Toast: "Texten delades på 2 kort."
-
-### 5. `src/index.css`
-- `.manu-card[data-card-full="true"] { box-shadow: 0 0 0 1px hsl(var(--destructive) / 0.4) inset; }`
-- Liten subtil pulse-animation vid övergång till full (valfritt, kort).
+### 4. Mätning utan att vara i aktiv editor
+För att kaskaden ska kunna mäta efterföljande kort (som har egna editor-instanser men kanske inte är i fokus), använder vi den dolda mät-divens DOM. Vi tar typografi från startkortets editor-DOM (alla kort delar samma `textSize`, så samma styling gäller).
 
 ## Filer som påverkas
 
 | Fil | Ändring |
 |---|---|
-| `src/lib/cardLimits.ts` | **Ny** |
-| `src/components/editor/TiptapEditor.tsx` | maxRows-prop, blockera input, hantera paste-overflow, rapportera rad-antal |
-| `src/components/editor/ManusCard.tsx` | Skicka gräns, visa räknare, propagera paste-overflow |
-| `src/pages/Editor.tsx` | Skapa nytt kort vid paste-overflow |
-| `src/index.css` | Stil för "card-full"-state |
+| `src/lib/cardLimits.ts` | Ny `splitHtmlAtRow(html, maxRows, sampleEl)` med dold mät-div |
+| `src/pages/Editor.tsx` | Ersätt `autoSplitCard` med `cascadeSplitFromCard` + snapshot/restore + toast med Ångra-action |
+| `src/components/editor/ManusCard.tsx` | Ingen ändring — `onAutoSplit` triggar fortfarande samma prop |
+| `src/components/ui/use-toast.ts` (om saknas) | Säkerställ att toast stödjer `action`-prop (shadcn gör det redan) |
 
-Inga DB-ändringar.
+Inga DB-schema-ändringar.
+
+## Edge cases
+- **Sista kortet i listan:** Skapa nytt kort för överskottet.
+- **Innehåll som inte går att splitta** (t.ex. en mycket lång rad utan mellanslag): fall tillbaka på tecken-baserad split.
+- **Flera auto-splits i rad:** Varje ny auto-split ersätter föregående snapshot (Ångra funkar bara på senaste).
+- **Användaren redigerar mellan split och Ångra:** Ångra återställer ändå till snapshot — vi visar inte konflikt-varning (enkelt och förutsägbart).
 
