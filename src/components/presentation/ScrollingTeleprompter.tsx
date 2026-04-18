@@ -139,7 +139,7 @@ export function ScrollingTeleprompter({
         sentences.push(...splitSentences(plain));
       }
     }
-    return { html: htmlParts.join('<p class="teleprompter-card-gap">&nbsp;</p>'), sentences };
+    return { html: htmlParts.join(""), sentences };
   }, [cards, panelists, focusStyle]);
 
   // Mät höjder
