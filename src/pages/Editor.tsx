@@ -246,7 +246,7 @@ export default function Editor() {
     <div className="min-h-screen">
       {/* Sticky topbar-grupp: huvudrad + (villkorlig) tidsformat-rad */}
       <div className="topbar-blur sticky top-0 z-50 border-b-hair">
-        <header className="px-5 sm:px-8 h-14 flex items-center gap-5 flex-wrap">
+        <header className="px-5 sm:px-8 min-h-14 py-2 flex items-center gap-5 flex-wrap">
         <Link
           to="/"
           className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
@@ -317,7 +317,7 @@ export default function Editor() {
 
         {/* Sekundär rad: tidsformat-toggle, visas bara när Tider är på */}
         {manuscript.show_times && (
-          <div className="border-t-hair px-5 sm:px-8 py-2.5 flex items-center gap-3 flex-wrap">
+          <div className="border-t-hair px-5 sm:px-8 py-2.5 flex items-center gap-3 flex-wrap justify-end">
             <span className="text-[12px] text-muted-foreground">
               Ska tiderna visa klockslag eller förfluten tid?
             </span>
