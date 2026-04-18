@@ -306,6 +306,20 @@ export default function Presentation() {
       />
 
       {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
+
+      {menuOpen && (
+        <PresentationStartMenu
+          onStartCountdown={() => {
+            setStartMode("countdown");
+            setMenuOpen(false);
+          }}
+          onStartInstant={() => {
+            setStartMode("instant");
+            setMenuOpen(false);
+          }}
+          onExit={exit}
+        />
+      )}
     </div>
   );
 }
