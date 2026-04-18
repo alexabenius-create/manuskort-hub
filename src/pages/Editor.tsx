@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ManusCard } from "@/components/editor/ManusCard";
+import { ManusCardV2, type NotesPlacement } from "@/components/editor/ManusCardV2";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { PrintDialog } from "@/components/editor/PrintDialog";
@@ -55,6 +56,21 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  // Layout-toggle (mockup): "ny" = ren V2-layout, "klassisk" = nuvarande
+  const [layoutVariant, setLayoutVariant] = useState<"klassisk" | "ny">(() => {
+    if (typeof window === "undefined") return "ny";
+    return (localStorage.getItem("editor.layoutVariant") as "klassisk" | "ny") ?? "ny";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("editor.layoutVariant", layoutVariant);
+  }, [layoutVariant]);
+  const [notesPlacement, setNotesPlacement] = useState<NotesPlacement>(() => {
+    if (typeof window === "undefined") return "side";
+    return (localStorage.getItem("editor.notesPlacement") as NotesPlacement) ?? "side";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("editor.notesPlacement", notesPlacement);
+  }, [notesPlacement]);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
@@ -666,6 +682,44 @@ export default function Editor() {
               Tider
             </button>
           </div>
+
+          {/* Layout-mockup-toggle */}
+          <div className="seg-group" title="Växla mellan klassisk och ny kortlayout (sparas lokalt)">
+            <button
+              data-active={layoutVariant === "klassisk"}
+              onClick={() => setLayoutVariant("klassisk")}
+              className="seg-btn"
+            >
+              Klassisk
+            </button>
+            <button
+              data-active={layoutVariant === "ny"}
+              onClick={() => setLayoutVariant("ny")}
+              className="seg-btn"
+            >
+              Ny layout
+            </button>
+          </div>
+
+          {/* Anteckningsplacering — bara i Ny layout + när anteckningar är på */}
+          {layoutVariant === "ny" && manuscript.show_notes && (
+            <div className="seg-group" title="Var anteckningar visas i nya layouten">
+              <button
+                data-active={notesPlacement === "side"}
+                onClick={() => setNotesPlacement("side")}
+                className="seg-btn"
+              >
+                Sida
+              </button>
+              <button
+                data-active={notesPlacement === "below"}
+                onClick={() => setNotesPlacement("below")}
+                className="seg-btn"
+              >
+                Under
+              </button>
+            </div>
+          )}
           </div>
 
           {isModerator && (
@@ -769,18 +823,20 @@ export default function Editor() {
       </div>
 
       <main className="max-w-[920px] mx-auto px-5 sm:px-8 py-10 sm:py-14 pb-24 flex flex-col gap-6">
-        {/* Legend */}
-        <div className="flex gap-2 flex-wrap">
-          <span className="cue-pill cue-pill-red">
-            <span className="cue-dot cue-red" /> Paus / bromsa
-          </span>
-          <span className="cue-pill cue-pill-amber">
-            <span className="cue-dot cue-amber" /> Avslutningssignal
-          </span>
-          <span className="cue-pill cue-pill-teal">
-            <span className="cue-dot cue-teal" /> Överlämning / nästa talare
-          </span>
-        </div>
+        {/* Cue-legend — bara i klassisk layout (i Ny layout finns ?-tooltip per kort) */}
+        {layoutVariant === "klassisk" && (
+          <div className="flex gap-2 flex-wrap">
+            <span className="cue-pill cue-pill-red">
+              <span className="cue-dot cue-red" /> Paus / bromsa
+            </span>
+            <span className="cue-pill cue-pill-amber">
+              <span className="cue-dot cue-amber" /> Avslutningssignal
+            </span>
+            <span className="cue-pill cue-pill-teal">
+              <span className="cue-dot cue-teal" /> Överlämning / nästa talare
+            </span>
+          </div>
+        )}
 
         {cards.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
@@ -793,30 +849,32 @@ export default function Editor() {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
               <div className="flex flex-col gap-5">
-                {cards.map((c, idx) => (
-                  <ManusCard
-                    key={c.id}
-                    card={c}
-                    number={idx + 1}
-                    textSize={manuscript.text_size as "sm" | "md" | "lg"}
-                    showNotes={manuscript.show_notes}
-                    showTimes={manuscript.show_times}
-                    wpm={manuscript.wpm}
-                    timeFormat={timeFormat}
-                    isModerator={isModerator}
-                    canSyncWithPrevious={idx > 0}
-                    onLocalChange={(patch) => updateCard(c.id, patch)}
-                    onDelete={() => deleteCard(c.id)}
-                    onDuplicate={() => duplicateCard(c.id)}
-                    onSplit={() => splitCard(c.id)}
-                    onMergeUp={() => mergeUp(c.id)}
-                    onSyncWithPrevious={() => syncWithPrevious(c.id)}
-                    onPasteOverflow={(text) => handlePasteOverflow(c.id, text)}
-                    onAutoSplit={() => cascadeSplitFromCard(c.id)}
-                    onOverflowStateChange={handleOverflowChange}
-                    onEditorReady={handleEditorReady}
-                  />
-                ))}
+                {cards.map((c, idx) => {
+                  const commonProps = {
+                    card: c,
+                    number: idx + 1,
+                    textSize: manuscript.text_size as "sm" | "md" | "lg",
+                    showNotes: manuscript.show_notes,
+                    showTimes: manuscript.show_times,
+                    wpm: manuscript.wpm,
+                    timeFormat,
+                    isModerator,
+                    canSyncWithPrevious: idx > 0,
+                    onLocalChange: (patch: Partial<Card>) => updateCard(c.id, patch),
+                    onDelete: () => deleteCard(c.id),
+                    onDuplicate: () => duplicateCard(c.id),
+                    onSplit: () => splitCard(c.id),
+                    onMergeUp: () => mergeUp(c.id),
+                    onSyncWithPrevious: () => syncWithPrevious(c.id),
+                    onPasteOverflow: (text: string) => handlePasteOverflow(c.id, text),
+                    onAutoSplit: () => cascadeSplitFromCard(c.id),
+                    onOverflowStateChange: handleOverflowChange,
+                    onEditorReady: handleEditorReady,
+                  };
+                  return layoutVariant === "ny"
+                    ? <ManusCardV2 key={c.id} {...commonProps} notesPlacement={notesPlacement} />
+                    : <ManusCard key={c.id} {...commonProps} />;
+                })}
               </div>
             </SortableContext>
           </DndContext>

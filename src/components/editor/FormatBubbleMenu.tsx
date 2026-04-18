@@ -1,6 +1,6 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -47,6 +47,13 @@ export function FormatBubbleMenu({ editor }: Props) {
       isActive: () => editor.isActive("highlight"),
       onClick: () => editor.chain().focus().toggleHighlight().run(),
     },
+    {
+      key: "pause",
+      label: "Lägg in paus vid markören",
+      icon: Pause,
+      isActive: () => false,
+      onClick: () => editor.chain().focus().insertPause().run(),
+    },
   ];
 
   return (
@@ -54,9 +61,9 @@ export function FormatBubbleMenu({ editor }: Props) {
       editor={editor}
       options={{ placement: "top" }}
       shouldShow={({ editor, from, to }) => {
-        if (from === to) return false;
-        // Visa inte över tom selektion eller över icke-redigerbart innehåll
-        return editor.isEditable;
+        // Visa även vid tom markering (caret) så pausknappen alltid är nåbar
+        if (!editor.isEditable) return false;
+        return editor.isFocused;
       }}
     >
       <div
@@ -78,6 +85,7 @@ export function FormatBubbleMenu({ editor }: Props) {
                 "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
                 "text-foreground/80 hover:bg-muted hover:text-foreground",
                 active && "bg-foreground text-background hover:bg-foreground hover:text-background",
+                key === "pause" && "text-[hsl(var(--cue-red))] hover:bg-[hsl(var(--cue-red)/0.12)] hover:text-[hsl(var(--cue-red))]",
               )}
             >
               <Icon className="h-4 w-4" />
