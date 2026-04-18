@@ -11,7 +11,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
@@ -268,6 +268,16 @@ export default function Library() {
               </span>
             )}
           </span>
+          {tier === "admin" && (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+            >
+              <a href="/admin"><Shield className="h-3.5 w-3.5" /> Admin</a>
+            </Button>
+          )}
           <Button
             asChild
             variant="ghost"

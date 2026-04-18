@@ -224,6 +224,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_user_tier: {
+        Args: {
+          _new_tier: Database["public"]["Enums"]["app_role"]
+          _target_user_id: string
+        }
+        Returns: undefined
+      }
       get_user_tier: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
