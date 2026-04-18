@@ -209,6 +209,24 @@ export default function Editor() {
     await persistPositions(next);
   };
 
+  const syncWithPrevious = (cardId: string) => {
+    const idx = cards.findIndex((c) => c.id === cardId);
+    if (idx <= 0) return;
+    const prev = cards[idx - 1];
+    const chained = nextStartFromEnd(prev.end_time ?? "");
+    if (chained === null) {
+      toast({ title: "Kan inte synka", description: "Föregående kort saknar giltig sluttid (t.ex. 02:30)." });
+      return;
+    }
+    setCards((list) => list.map((c) => (c.id === cardId ? { ...c, start_time: chained } : c)));
+    setManualStartIds((prev) => {
+      if (!prev.has(cardId)) return prev;
+      const next = new Set(prev);
+      next.delete(cardId);
+      return next;
+    });
+  };
+
   if (loading || !manuscript) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -326,11 +344,13 @@ export default function Editor() {
                     showNotes={manuscript.show_notes}
                     showTimes={manuscript.show_times}
                     wpm={manuscript.wpm}
+                    canSyncWithPrevious={idx > 0}
                     onLocalChange={(patch) => updateCard(c.id, patch)}
                     onDelete={() => deleteCard(c.id)}
                     onDuplicate={() => duplicateCard(c.id)}
                     onSplit={() => splitCard(c.id)}
                     onMergeUp={() => mergeUp(c.id)}
+                    onSyncWithPrevious={() => syncWithPrevious(c.id)}
                   />
                 ))}
               </div>

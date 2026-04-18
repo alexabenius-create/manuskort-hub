@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Link2 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
@@ -21,16 +21,18 @@ interface Props {
   showNotes: boolean;
   showTimes: boolean;
   wpm: number;
+  canSyncWithPrevious?: boolean;
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
   onSplit: () => void;
   onMergeUp: () => void;
+  onSyncWithPrevious?: () => void;
 }
 
 export function ManusCard({
-  card, number, textSize, showNotes, showTimes, wpm,
-  onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp,
+  card, number, textSize, showNotes, showTimes, wpm, canSyncWithPrevious,
+  onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
 
@@ -136,6 +138,23 @@ export function ManusCard({
           </div>
           <TimeField label="Start" value={card.start_time} onChange={(v) => onLocalChange({ start_time: v })} />
           <TimeField label="Slut" value={card.end_time} onChange={(v) => onLocalChange({ end_time: v })} />
+          {canSyncWithPrevious && onSyncWithPrevious && (
+            <Tooltip delayDuration={150}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onSyncWithPrevious}
+                  className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-accent-blue bg-surface-2 hover:bg-accent-blue/10 rounded-full px-2.5 py-1 transition-colors"
+                >
+                  <Link2 className="h-3 w-3" />
+                  Synka med föregående
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-[12px] leading-[1.5] rounded-lg">
+                Sätter starttiden till föregående korts sluttid + 1 sekund.
+              </TooltipContent>
+            </Tooltip>
+          )}
           <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono">
             {words} ord · {formatDuration(seconds)}
           </span>
