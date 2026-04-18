@@ -225,6 +225,23 @@
     font-size: 0.9em;
     font-weight: 500;
   }
+
+  /* Panelist mark — diskret namn-prefix + färgad bakgrund (inline-style sätts av Tiptap) */
+  .ProseMirror .panelist-mark { position: relative; }
+  .ProseMirror .panelist-mark::before {
+    content: "● " attr(data-panelist-name);
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 0.72em;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: hsl(240 6% 25%);
+    opacity: 0.75;
+    vertical-align: 0.12em;
+  }
+  .ProseMirror .panelist-mark + .panelist-mark[data-panelist-id]::before {
+    content: none;
+  }
 }
 
 @layer components {

@@ -9,8 +9,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ManusCard } from "@/components/editor/ManusCard";
 import { SaveIndicator } from "@/components/SaveIndicator";
+import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
-import { ArrowLeft, Plus, Printer } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
 import type { Database } from "@/integrations/supabase/types";
@@ -26,6 +28,7 @@ export default function Editor() {
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
 
