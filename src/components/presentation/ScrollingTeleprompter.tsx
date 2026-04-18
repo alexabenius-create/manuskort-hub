@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Minus, Plus, RotateCcw } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import type { FocusStyle } from "./PresentationStartMenu";
