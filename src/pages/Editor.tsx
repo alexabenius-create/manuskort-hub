@@ -56,6 +56,21 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  // Layout-toggle (mockup): "ny" = ren V2-layout, "klassisk" = nuvarande
+  const [layoutVariant, setLayoutVariant] = useState<"klassisk" | "ny">(() => {
+    if (typeof window === "undefined") return "ny";
+    return (localStorage.getItem("editor.layoutVariant") as "klassisk" | "ny") ?? "ny";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("editor.layoutVariant", layoutVariant);
+  }, [layoutVariant]);
+  const [notesPlacement, setNotesPlacement] = useState<NotesPlacement>(() => {
+    if (typeof window === "undefined") return "side";
+    return (localStorage.getItem("editor.notesPlacement") as NotesPlacement) ?? "side";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("editor.notesPlacement", notesPlacement);
+  }, [notesPlacement]);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
