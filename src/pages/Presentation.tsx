@@ -273,7 +273,7 @@ export default function Presentation() {
         countdownActive={timer.countdown > 0}
       />
 
-      <main className="flex-1 min-h-0 pt-20 pb-24 relative">
+      <main className="flex-1 min-h-0 pt-44 pb-44 relative">
         <PresentationCard
           card={current}
           panelists={panelists}

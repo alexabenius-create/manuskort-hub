@@ -52,8 +52,8 @@ export function PresentationFooter({
   const ringPercent = planned ? Math.min(100, (cardElapsed / planned) * 100) : 0;
   const ringOver = planned !== null && cardElapsed > planned;
 
-  // SVG progress-ring (runt kortnumret)
-  const ringRadius = 18;
+  // SVG progress-ring (runt kortnumret) — 2x storlek
+  const ringRadius = 38;
   const ringCircumference = 2 * Math.PI * ringRadius;
   const ringDashOffset = ringCircumference * (1 - ringPercent / 100);
 
@@ -62,44 +62,44 @@ export function PresentationFooter({
   return (
     <footer className="absolute bottom-0 inset-x-0 z-20 px-6 py-4 pointer-events-none">
       <div className="max-w-5xl mx-auto flex items-end justify-between gap-4">
-        {/* Vänster — A−/A+ */}
-        <div className="flex items-center gap-1 pointer-events-auto opacity-55 hover:opacity-100 transition-opacity">
+        {/* Vänster — A−/A+ (2x storlek) */}
+        <div className="flex items-center gap-2 pointer-events-auto opacity-55 hover:opacity-100 transition-opacity">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
-            className="p-2 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+            className="p-4 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
             aria-label="Mindre text"
           >
-            <ZoomOut className="h-3.5 w-3.5" />
+            <ZoomOut className="h-7 w-7" />
           </button>
           <button
             onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
             disabled={sizeOffset >= SIZE_MAX}
-            className="p-2 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+            className="p-4 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
             aria-label="Större text"
           >
-            <ZoomIn className="h-3.5 w-3.5" />
+            <ZoomIn className="h-7 w-7" />
           </button>
         </div>
 
-        {/* Mitten — kortnummer med progress-ring + nästa-preview */}
-        <div className="flex flex-col items-center gap-2 pointer-events-none">
-          <div className="relative h-12 w-12 flex items-center justify-center">
+        {/* Mitten — kortnummer med progress-ring + nästa-preview (2x storlek) */}
+        <div className="flex flex-col items-center gap-3 pointer-events-none">
+          <div className="relative h-24 w-24 flex items-center justify-center">
             {planned && (
-              <svg className="absolute inset-0 -rotate-90" width="48" height="48" viewBox="0 0 48 48">
+              <svg className="absolute inset-0 -rotate-90" width="96" height="96" viewBox="0 0 96 96">
                 <circle
-                  cx="24"
-                  cy="24"
+                  cx="48"
+                  cy="48"
                   r={ringRadius}
-                  strokeWidth="2.5"
+                  strokeWidth="5"
                   fill="none"
                   className="stroke-zinc-800"
                 />
                 <circle
-                  cx="24"
-                  cy="24"
+                  cx="48"
+                  cy="48"
                   r={ringRadius}
-                  strokeWidth="2.5"
+                  strokeWidth="5"
                   fill="none"
                   strokeLinecap="round"
                   strokeDasharray={ringCircumference}
@@ -109,31 +109,31 @@ export function PresentationFooter({
                 />
               </svg>
             )}
-            <span className="font-mono text-[13px] text-zinc-200 tabular-nums">
+            <span className="font-mono text-[26px] text-zinc-200 tabular-nums">
               {String(index + 1).padStart(2, "0")}
               <span className="text-zinc-600">/{String(total).padStart(2, "0")}</span>
             </span>
           </div>
           {next ? (
-            <p className="text-[11px] text-zinc-600 font-mono uppercase tracking-wider truncate max-w-[300px] text-center">
+            <p className="text-[22px] text-zinc-600 font-mono uppercase tracking-wider truncate max-w-[600px] text-center">
               Nästa: {nextRoleLabel}{next.title ? ` · ${next.title}` : ""}
             </p>
           ) : (
-            <p className="text-[11px] text-zinc-700 font-mono uppercase tracking-wider">
+            <p className="text-[22px] text-zinc-700 font-mono uppercase tracking-wider">
               Sista kortet
             </p>
           )}
         </div>
 
-        {/* Höger — panik-knapp */}
+        {/* Höger — panik-knapp (4x storlek) */}
         <div className="flex items-center pointer-events-auto">
           {hasPanicCards && (
             <button
               onClick={onPanic}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-900/30 hover:bg-amber-900/50 backdrop-blur-md text-amber-300 hover:text-amber-200 border border-amber-700/40 transition-colors text-[12px] font-medium"
+              className="inline-flex items-center gap-4 px-8 py-5 rounded-full bg-amber-900/30 hover:bg-amber-900/50 backdrop-blur-md text-amber-300 hover:text-amber-200 border-2 border-amber-700/40 transition-colors text-[24px] font-medium"
               title="Hoppa till nästa panik-kort (P)"
             >
-              <Triangle className="h-3 w-3 fill-current" strokeWidth={0} />
+              <Triangle className="h-6 w-6 fill-current" strokeWidth={0} />
               Panik
             </button>
           )}
