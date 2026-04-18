@@ -418,6 +418,8 @@ export default function Editor() {
           onClose={() => setPanelistSidebarOpen(false)}
         />
       )}
+
+      <PrintDialog open={printDialogOpen} onOpenChange={setPrintDialogOpen} />
     </div>
     </PanelistsProvider>
   );
