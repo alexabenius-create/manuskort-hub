@@ -587,6 +587,7 @@ export default function Editor() {
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <SaveIndicator />
 
+          <div data-tour="editor.display-settings" className="flex items-center gap-3 flex-wrap">
           {/* Måltid-pill */}
           {(() => {
             const totalSeconds = cards.reduce((sum, c) => sum + estimateSeconds(wordCount(c.content_html), manuscript.wpm), 0);
