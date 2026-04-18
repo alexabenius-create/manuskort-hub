@@ -52,14 +52,7 @@ export default function Landing() {
             >
               Priser
             </Link>
-            {session ? (
-              <Link
-                to="/bibliotek"
-                className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
-              >
-                Bibliotek
-              </Link>
-            ) : (
+            {!session && (
               <Link
                 to="/auth"
                 className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
