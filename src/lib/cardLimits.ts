@@ -234,7 +234,7 @@ export function splitHtmlInHalf(html: string): [string, string] {
     splitAt = Math.max(1, Math.min(blocks.length - 1, splitAt));
     const first = blocks.slice(0, splitAt).map((b) => b.outerHTML).join("");
     const second = blocks.slice(splitAt).map((b) => b.outerHTML).join("");
-    return [first, second];
+    return [first, trimEmptyBlocksHtml(second)];
   }
 
   const block = blocks[0] ?? container;
