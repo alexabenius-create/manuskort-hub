@@ -984,3 +984,17 @@ export default function Editor() {
     </PanelistsProvider>
   );
 }
+
+function ViewSection({
+  label, hint, children,
+}: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">{label}</span>
+        {hint && <span className="text-[10px] text-faint">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
