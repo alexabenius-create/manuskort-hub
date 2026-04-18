@@ -197,11 +197,11 @@ export function splitHtmlAtRow(
       const rest = words.slice(1).join("");
       return [
         `<${tagName}>${escapeHtml(firstWord)}</${tagName}>`,
-        `<${tagName}>${escapeHtml(rest)}</${tagName}>` + remainingBlocks.map((b) => b.outerHTML).join(""),
+        trimEmptyBlocksHtml(`<${tagName}>${escapeHtml(rest)}</${tagName}>` + remainingBlocks.map((b) => b.outerHTML).join("")),
       ];
     }
 
-    return [fitsHtml, overflowHtml];
+    return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
   } finally {
     cleanup();
   }
