@@ -79,12 +79,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const completeTour = useCallback(
     async (id: TourId) => {
       if (!user) return;
-      const flag = TOURS[id].flag;
-      await supabase
-        .from("profiles")
-        .update({ [flag]: true })
-        .eq("user_id", user.id);
-      setFlags((prev) => (prev ? { ...prev, [flag]: true } : prev));
+      const update =
+        id === "bibliotek"
+          ? { bibliotek_tour_completed: true }
+          : { manus_tour_completed: true };
+      await supabase.from("profiles").update(update).eq("user_id", user.id);
+      setFlags((prev) => (prev ? { ...prev, ...update } : prev));
     },
     [user]
   );
@@ -120,12 +120,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const resetTour = useCallback(
     async (id: TourId) => {
       if (!user) return;
-      const flag = TOURS[id].flag;
-      await supabase
-        .from("profiles")
-        .update({ [flag]: false })
-        .eq("user_id", user.id);
-      setFlags((prev) => (prev ? { ...prev, [flag]: false } : prev));
+      const update =
+        id === "bibliotek"
+          ? { bibliotek_tour_completed: false }
+          : { manus_tour_completed: false };
+      await supabase.from("profiles").update(update).eq("user_id", user.id);
+      setFlags((prev) => (prev ? { ...prev, ...update } : prev));
     },
     [user]
   );
