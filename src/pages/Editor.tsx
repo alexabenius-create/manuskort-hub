@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ManusCard } from "@/components/editor/ManusCard";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { PrintDialog } from "@/components/editor/PrintDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
