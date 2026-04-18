@@ -88,13 +88,7 @@ export const MANUS_TOUR: TourDefinition = {
       target: '[data-tour="card.script"]',
       title: "Manustexten",
       body:
-        "Här skriver du det du faktiskt ska säga. Markera text för att få fram formateringsverktyget — fetstil, kursiv, understrykning, gulmarkering.",
-    },
-    {
-      target: '[data-tour="card.script"]',
-      title: "Paus-markören",
-      body:
-        "Markera text i manuset för att få fram formateringsverktyget. Där finns fetstil, kursiv, understrykning, gulmarkering — och en paus-markör (/) som du sätter in där du vill ta ett medvetet andetag. Paus-markören syns tydligt i presentationsläget som en andningspåminnelse.",
+        "Här skriver du det du faktiskt ska säga. Tryck på snedstreck (/) i texten där du vill lägga in en medveten paus — markören syns tydligt i presentationsläget som en andningspåminnelse.",
     },
     {
       target: '[data-tour="card.notes"]',
@@ -111,9 +105,9 @@ export const MANUS_TOUR: TourDefinition = {
     },
     {
       target: '[data-tour="card.cues"]',
-      title: "Cues",
+      title: "Signaler",
       body:
-        "Lägg till en regi-kommentar som syns som en liten färgad prick i presentationsläget — t.ex. \"vänta på applåder\" eller \"signalera till tekniker\". Tappa pricken för att läsa cue:n under framträdandet.",
+        "Skriv korta regi-kommentarer i de tre fälten — t.ex. \"vänta på applåder\" eller \"signalera till tekniker\". I presentationsläget syns de som färgade prickar i kortets hörn; tappa pricken för att läsa signalen under framträdandet.",
     },
     {
       target: '[data-tour="card.menu"]',
