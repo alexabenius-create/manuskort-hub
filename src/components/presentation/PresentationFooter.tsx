@@ -60,14 +60,14 @@ export function PresentationFooter({
   const nextRoleLabel = next?.role === "moderator" ? "Moderator" : "Talare";
 
   return (
-    <footer className="absolute bottom-0 inset-x-0 z-20 px-6 py-4 pointer-events-none">
-      <div className="max-w-5xl mx-auto flex items-end justify-between gap-4">
-        {/* Vänster — A−/A+ (2x storlek) */}
-        <div className="flex items-center gap-2 pointer-events-auto opacity-55 hover:opacity-100 transition-opacity">
+    <footer className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pb-6 pointer-events-none">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+        {/* Vänster — A−/A+ i svart panelkort */}
+        <div className="flex items-center gap-2 pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
-            className="p-4 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+            className="p-4 rounded-2xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             aria-label="Mindre text"
           >
             <ZoomOut className="h-7 w-7" />
@@ -75,15 +75,15 @@ export function PresentationFooter({
           <button
             onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
             disabled={sizeOffset >= SIZE_MAX}
-            className="p-4 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+            className="p-4 rounded-2xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             aria-label="Större text"
           >
             <ZoomIn className="h-7 w-7" />
           </button>
         </div>
 
-        {/* Mitten — kortnummer med progress-ring + nästa-preview (2x storlek) */}
-        <div className="flex flex-col items-center gap-3 pointer-events-none">
+        {/* Mitten — kortnummer + nästa-preview i svart panelkort */}
+        <div className="flex flex-col items-center gap-3 pointer-events-none bg-black rounded-3xl shadow-2xl shadow-black/40 px-8 py-5">
           <div className="relative h-24 w-24 flex items-center justify-center">
             {planned && (
               <svg className="absolute inset-0 -rotate-90" width="96" height="96" viewBox="0 0 96 96">
@@ -115,27 +115,32 @@ export function PresentationFooter({
             </span>
           </div>
           {next ? (
-            <p className="text-[22px] text-zinc-600 font-mono uppercase tracking-wider truncate max-w-[600px] text-center">
+            <p className="text-[18px] text-zinc-500 font-mono uppercase tracking-wider truncate max-w-[600px] text-center">
               Nästa: {nextRoleLabel}{next.title ? ` · ${next.title}` : ""}
             </p>
           ) : (
-            <p className="text-[22px] text-zinc-700 font-mono uppercase tracking-wider">
+            <p className="text-[18px] text-zinc-700 font-mono uppercase tracking-wider">
               Sista kortet
             </p>
           )}
         </div>
 
-        {/* Höger — panik-knapp (4x storlek) */}
-        <div className="flex items-center pointer-events-auto">
-          {hasPanicCards && (
+        {/* Höger — panik-knapp i svart panelkort */}
+        <div className="flex items-center pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
+          {hasPanicCards ? (
             <button
               onClick={onPanic}
-              className="inline-flex items-center gap-4 px-8 py-5 rounded-full bg-amber-900/30 hover:bg-amber-900/50 backdrop-blur-md text-amber-300 hover:text-amber-200 border-2 border-amber-700/40 transition-colors text-[24px] font-medium"
+              className="inline-flex items-center gap-4 px-8 py-5 rounded-2xl bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-200 border-2 border-amber-700/40 transition-colors text-[24px] font-medium"
               title="Hoppa till nästa panik-kort (P)"
             >
               <Triangle className="h-6 w-6 fill-current" strokeWidth={0} />
               Panik
             </button>
+          ) : (
+            // Osynlig spacer så mittsektionen håller centrering
+            <div className="px-8 py-5 opacity-0 pointer-events-none" aria-hidden>
+              <Triangle className="h-6 w-6" />
+            </div>
           )}
         </div>
       </div>
