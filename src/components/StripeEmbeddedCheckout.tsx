@@ -6,8 +6,6 @@ import { getStripeEnvironment } from "@/lib/stripe";
 interface StripeEmbeddedCheckoutProps {
   priceId: string;
   quantity?: number;
-  customerEmail?: string;
-  userId?: string;
   returnUrl?: string;
 }
 
