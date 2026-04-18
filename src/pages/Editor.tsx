@@ -419,9 +419,8 @@ export default function Editor() {
     setCards(renum);
 
     // Persistera ändringar mot DB (innehåll + positioner)
-    const updates: Promise<unknown>[] = [];
+    const updates: PromiseLike<unknown>[] = [];
     for (const c of renum) {
-      // Hitta ursprunglig snapshot för att veta om innehåll ändrats
       const snap = affected.find((s) => s.id === c.id);
       if (snap && !snap.isNew && snap.content_html !== (c.content_html ?? "")) {
         updates.push(supabase.from("cards").update({ content_html: c.content_html }).eq("id", c.id));
