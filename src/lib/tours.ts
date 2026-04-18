@@ -105,9 +105,9 @@ export const MANUS_TOUR: TourDefinition = {
     },
     {
       target: '[data-tour="card.cues"]',
-      title: "Cues",
+      title: "Signaler",
       body:
-        "Lägg till en regi-kommentar som syns som en liten färgad prick i presentationsläget — t.ex. \"vänta på applåder\" eller \"signalera till tekniker\". Tappa pricken för att läsa cue:n under framträdandet.",
+        "Skriv korta regi-kommentarer i de tre fälten — t.ex. \"vänta på applåder\" eller \"signalera till tekniker\". I presentationsläget syns de som färgade prickar i kortets hörn; tappa pricken för att läsa signalen under framträdandet.",
     },
     {
       target: '[data-tour="card.menu"]',
