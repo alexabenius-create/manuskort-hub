@@ -271,3 +271,25 @@ function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
+/**
+ * Tar bort tomma block (<p></p>, <p><br></p>, <p>&nbsp;</p>, whitespace-only)
+ * från BÖRJAN av en HTML-sträng. Bevarar tomma rader i mitten och slutet.
+ */
+export function trimEmptyBlocksHtml(html: string): string {
+  if (!html || !html.trim()) return "";
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  while (container.firstElementChild) {
+    const el = container.firstElementChild as HTMLElement;
+    const text = (el.textContent ?? "").replace(/\u00a0/g, "").trim();
+    // Tomt om ingen text och inga meningsfulla barnnoder (bara <br> räknas som tomt)
+    const onlyBr = Array.from(el.children).every((c) => c.tagName === "BR");
+    if (text === "" && (el.children.length === 0 || onlyBr)) {
+      el.remove();
+    } else {
+      break;
+    }
+  }
+  return container.innerHTML;
+}
