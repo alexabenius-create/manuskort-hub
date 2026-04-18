@@ -190,37 +190,54 @@ export function ManusCard({
       )}
 
       {/* Panelist selection toolbar — visas mellan Tider och Manus när text är markerad */}
-      {showPanelistBar && (
-        <div className="bg-surface rounded-xl shadow-subtle px-5 py-3 flex items-center gap-2 flex-wrap animate-in fade-in slide-in-from-top-1 duration-150">
-          <span className="text-[12px] font-medium text-muted-foreground mr-1">
-            Rikta till:
-          </span>
-          {panelists.map((p) => {
-            const isActive = selection.activePanelistId === p.id;
-            return (
-              <button
-                key={p.id}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => applyPanelist(p)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all ${
-                  isActive ? "ring-2 ring-foreground/30" : "hover:scale-[1.03]"
-                }`}
-                style={{ backgroundColor: p.color, color: "hsl(240 6% 18%)" }}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
-                {p.name || "Namnlös"}
-              </button>
-            );
-          })}
-          {selection.activePanelistId && (
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={clearPanelist}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+      {isModerator && panelists.length > 0 && (
+        <div
+          className={`grid transition-all ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            showPanelistBar
+              ? "grid-rows-[1fr] opacity-100 duration-[320ms]"
+              : "grid-rows-[0fr] opacity-0 duration-[220ms]"
+          }`}
+          aria-hidden={!showPanelistBar}
+        >
+          <div className="overflow-hidden">
+            <div
+              className={`bg-surface rounded-xl shadow-subtle px-5 py-3 flex items-center gap-2 flex-wrap transition-transform ease-[cubic-bezier(0.22,1,0.36,1)] duration-[320ms] ${
+                showPanelistBar ? "translate-y-0" : "-translate-y-1.5"
+              }`}
             >
-              <X className="h-3 w-3" /> Ta bort
-            </button>
-          )}
+              <span className="text-[12px] font-medium text-muted-foreground mr-1">
+                Rikta till:
+              </span>
+              {panelists.map((p) => {
+                const isActive = selection.activePanelistId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => applyPanelist(p)}
+                    tabIndex={showPanelistBar ? 0 : -1}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all duration-200 ${
+                      isActive ? "ring-2 ring-foreground/30" : "hover:scale-[1.03]"
+                    }`}
+                    style={{ backgroundColor: p.color, color: "hsl(240 6% 18%)" }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
+                    {p.name || "Namnlös"}
+                  </button>
+                );
+              })}
+              {selection.activePanelistId && (
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={clearPanelist}
+                  tabIndex={showPanelistBar ? 0 : -1}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                >
+                  <X className="h-3 w-3" /> Ta bort
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
