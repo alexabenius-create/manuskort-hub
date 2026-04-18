@@ -12,3 +12,11 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /bibliotek
+Disallow: /manus/
+Disallow: /installningar
+Disallow: /importera
+Disallow: /admin
+Disallow: /checkout/
+
+Sitemap: https://manuskort.se/sitemap.xml
