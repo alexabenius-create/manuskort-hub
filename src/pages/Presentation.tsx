@@ -123,6 +123,26 @@ export default function Presentation() {
     navigate(`/manus/${id}`);
   }, [id, navigate, timer]);
 
+  // Hastighetskontroll i scroll-läge — delas mellan tangenter och knappar
+  const handleSpeedUp = useCallback(() => {
+    setSpeedFactor((s) => {
+      const next = Math.min(3.0, +(s + 0.1).toFixed(2));
+      setSpeedChip({ value: next, ts: Date.now() });
+      return next;
+    });
+  }, []);
+  const handleSpeedDown = useCallback(() => {
+    setSpeedFactor((s) => {
+      const next = Math.max(0.25, +(s - 0.1).toFixed(2));
+      setSpeedChip({ value: next, ts: Date.now() });
+      return next;
+    });
+  }, []);
+  const handleSpeedReset = useCallback(() => {
+    setSpeedFactor(1.0);
+    setSpeedChip({ value: 1.0, ts: Date.now() });
+  }, []);
+
   // Esc + fullscreenchange
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -148,26 +168,17 @@ export default function Presentation() {
       if (viewMode === "scroll") {
         if (e.key === "+" || e.key === "=") {
           e.preventDefault();
-          setSpeedFactor((s) => {
-            const next = Math.min(3.0, +(s + 0.1).toFixed(2));
-            setSpeedChip({ value: next, ts: Date.now() });
-            return next;
-          });
+          handleSpeedUp();
           return;
         }
         if (e.key === "-" || e.key === "_") {
           e.preventDefault();
-          setSpeedFactor((s) => {
-            const next = Math.max(0.25, +(s - 0.1).toFixed(2));
-            setSpeedChip({ value: next, ts: Date.now() });
-            return next;
-          });
+          handleSpeedDown();
           return;
         }
         if (e.key === "r" || e.key === "R") {
           e.preventDefault();
-          setSpeedFactor(1.0);
-          setSpeedChip({ value: 1.0, ts: Date.now() });
+          handleSpeedReset();
           return;
         }
         if (e.key === "p" || e.key === "P") {
@@ -379,6 +390,9 @@ export default function Presentation() {
               isPaused={timer.isPaused}
               countdownActive={timer.countdown > 0}
               speedFactor={speedFactor}
+              onSpeedUp={handleSpeedUp}
+              onSpeedDown={handleSpeedDown}
+              onSpeedReset={handleSpeedReset}
             />
           )}
         </div>
