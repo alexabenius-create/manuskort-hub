@@ -6,11 +6,48 @@ import { ArrowLeft, Check, Minus } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 type Feature = { label: string; included: boolean };
 type Billing = "month" | "year";
+
+const faqs: { q: string; a: string }[] = [
+  {
+    q: "Kan jag prova gratis innan jag uppgraderar?",
+    a: "Ja. Gratisplanen är gratis för alltid och kräver inget betalkort. Du kan skapa upp till 2 manus med max 15 kort och 5 paneldeltagare per manus, och testa presentationsläget fullt ut.",
+  },
+  {
+    q: "Vad händer med mina manus om jag säger upp PRO?",
+    a: "Inget försvinner. Dina manus, kort och paneldeltagare ligger kvar. Du återgår till gratisplanens gränser, men allt befintligt innehåll behålls och kan läsas och presenteras.",
+  },
+  {
+    q: "Kan jag byta mellan månads- och årsbetalning?",
+    a: "Ja. Du kan när som helst växla plan från inställningarna. Vid byte till årsbetalning sparar du cirka 25 % jämfört med månadspris.",
+  },
+  {
+    q: "Hur fungerar .docx-importen?",
+    a: "Du laddar upp ett Word-dokument och Manuskort delar automatiskt upp texten i kort, identifierar talare och föreslår tider. Du får förhandsgranska och justera innan importen sparas.",
+  },
+  {
+    q: "Är priserna inklusive moms?",
+    a: "Ja, alla priser visas inklusive svensk moms (25 %). Företag kan ange organisationsnummer i kassan för korrekt fakturaunderlag.",
+  },
+  {
+    q: "Vilka betalsätt accepteras?",
+    a: "Vi använder Stripe för säkra betalningar. Du kan betala med Visa, Mastercard, American Express samt Apple Pay och Google Pay där det stöds.",
+  },
+  {
+    q: "Kan jag säga upp prenumerationen när som helst?",
+    a: "Ja. Du säger enkelt upp i inställningarna. PRO är aktivt fram till slutet av nuvarande betalperiod, sedan övergår kontot automatiskt till gratisplanen.",
+  },
+];
 
 const freeFeatures: Feature[] = [
   { label: "Upp till 2 manus", included: true },
