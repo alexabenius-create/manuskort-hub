@@ -258,8 +258,6 @@ export function splitHtmlAtRow(
     }
 
     return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
-  } finally {
-    cleanup();
   }
 }
 
