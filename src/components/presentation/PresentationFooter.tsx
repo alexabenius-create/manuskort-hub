@@ -62,23 +62,23 @@ export function PresentationFooter({
   return (
     <footer className="absolute bottom-0 inset-x-0 z-20 px-6 py-4 pointer-events-none">
       <div className="max-w-5xl mx-auto flex items-end justify-between gap-4">
-        {/* Vänster — A−/A+ */}
-        <div className="flex items-center gap-1 pointer-events-auto opacity-55 hover:opacity-100 transition-opacity">
+        {/* Vänster — A−/A+ (2x storlek) */}
+        <div className="flex items-center gap-2 pointer-events-auto opacity-55 hover:opacity-100 transition-opacity">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
-            className="p-2 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+            className="p-4 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
             aria-label="Mindre text"
           >
-            <ZoomOut className="h-3.5 w-3.5" />
+            <ZoomOut className="h-7 w-7" />
           </button>
           <button
             onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
             disabled={sizeOffset >= SIZE_MAX}
-            className="p-2 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+            className="p-4 rounded-full bg-zinc-900/40 backdrop-blur-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
             aria-label="Större text"
           >
-            <ZoomIn className="h-3.5 w-3.5" />
+            <ZoomIn className="h-7 w-7" />
           </button>
         </div>
 
