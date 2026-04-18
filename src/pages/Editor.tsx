@@ -26,7 +26,6 @@ export default function Editor() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Manus-metadata för autosave
   const meta = useMemo(() => {
     if (!manuscript) return null;
     return {
@@ -125,7 +124,6 @@ export default function Editor() {
     if (error || !data) { toast({ title: "Misslyckades", description: error?.message, variant: "destructive" }); return; }
     const next = [...cards];
     next.splice(idx + 1, 0, data);
-    // Renumrera
     const renum = next.map((c, i) => ({ ...c, position: i }));
     setCards(renum);
     await persistPositions(renum);
@@ -166,7 +164,6 @@ export default function Editor() {
   };
 
   const persistPositions = async (list: Card[]) => {
-    // Bulk-uppdatera positions efter dnd
     await Promise.all(
       list.map((c, i) =>
         supabase.from("cards").update({ position: i }).eq("id", c.id)
@@ -185,7 +182,11 @@ export default function Editor() {
   };
 
   if (loading || !manuscript) {
-    return <div className="min-h-screen flex items-center justify-center"><p className="font-mono text-xs text-faint uppercase tracking-widest">Laddar manus…</p></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[14px] text-muted-foreground">Laddar manus…</p>
+      </div>
+    );
   }
 
   const sizes: ("sm" | "md" | "lg")[] = ["sm", "md", "lg"];
@@ -193,74 +194,101 @@ export default function Editor() {
 
   return (
     <div className="min-h-screen">
-      {/* Topbar enligt dummy */}
-      <header className="topbar-blur sticky top-0 z-50 border-b-hair-strong px-8 py-3 flex items-center gap-6 flex-wrap">
-        <Link to="/" className="text-faint hover:text-foreground" aria-label="Tillbaka till bibliotek">
+      {/* Topbar */}
+      <header className="topbar-blur sticky top-0 z-50 border-b-hair px-5 sm:px-8 h-14 flex items-center gap-5 flex-wrap">
+        <Link
+          to="/"
+          className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+          aria-label="Tillbaka till bibliotek"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="font-serif text-[15px] tracking-tight font-medium">
+
+        <div className="flex items-center gap-2 min-w-0">
           <input
             value={manuscript.title}
             onChange={(e) => updateMeta({ title: e.target.value })}
-            className="bg-transparent border-0 outline-none w-auto min-w-[120px] font-medium"
+            className="font-display text-[17px] font-semibold tracking-tight bg-transparent border-0 outline-none min-w-[120px] max-w-[280px]"
           />
-          <span className="italic font-light text-muted-foreground">
-            {" "}— {manuscript.mode === "moderator" ? "moderator" : "talare"}
+          <span className="text-[13px] text-muted-foreground hidden sm:inline">
+            · {manuscript.mode === "moderator" ? "moderator" : "talare"}
           </span>
-        </h1>
+        </div>
 
-        <div className="flex items-center gap-4 ml-auto flex-wrap">
+        <div className="flex items-center gap-3 ml-auto flex-wrap">
           <SaveIndicator />
 
-          <CtrlGroup label="Text">
+          <div className="seg-group">
             {sizes.map((s) => (
-              <CtrlBtn key={s} active={manuscript.text_size === s} onClick={() => updateMeta({ text_size: s })}>
+              <button
+                key={s}
+                data-active={manuscript.text_size === s}
+                onClick={() => updateMeta({ text_size: s })}
+                className="seg-btn"
+              >
                 {sizeLabels[s]}
-              </CtrlBtn>
+              </button>
             ))}
-          </CtrlGroup>
+          </div>
 
-          <div className="w-px h-7 bg-border" />
+          <div className="seg-group">
+            <button
+              data-active={manuscript.show_notes}
+              onClick={() => updateMeta({ show_notes: !manuscript.show_notes })}
+              className="seg-btn"
+            >
+              Anteckningar
+            </button>
+            <button
+              data-active={manuscript.show_times}
+              onClick={() => updateMeta({ show_times: !manuscript.show_times })}
+              className="seg-btn"
+            >
+              Tider
+            </button>
+          </div>
 
-          <CtrlGroup label="Anteckningar">
-            <CtrlBtn active={manuscript.show_notes} onClick={() => updateMeta({ show_notes: !manuscript.show_notes })}>
-              {manuscript.show_notes ? "Visa" : "Dold"}
-            </CtrlBtn>
-          </CtrlGroup>
-
-          <CtrlGroup label="Tid">
-            <CtrlBtn active={manuscript.show_times} onClick={() => updateMeta({ show_times: !manuscript.show_times })}>
-              {manuscript.show_times ? "Visa" : "Dold"}
-            </CtrlBtn>
-          </CtrlGroup>
-
-          <div className="w-px h-7 bg-border" />
-
-          <Button onClick={addCard} className="font-mono text-xs uppercase tracking-widest gap-1.5 h-8">
-            <Plus className="h-3 w-3" /> Nytt kort
+          <Button
+            onClick={addCard}
+            className="h-9 rounded-full px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" /> Nytt kort
           </Button>
-          <Button variant="outline" onClick={() => window.print()} className="font-mono text-xs uppercase tracking-widest gap-1.5 h-8">
-            <Printer className="h-3 w-3" /> Skriv ut
+          <Button
+            variant="ghost"
+            onClick={() => window.print()}
+            className="h-9 rounded-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 text-[13px] gap-1.5"
+          >
+            <Printer className="h-3.5 w-3.5" /> Skriv ut
           </Button>
         </div>
       </header>
 
-      <main className="max-w-[860px] mx-auto px-8 py-10 pb-20 flex flex-col gap-6">
+      <main className="max-w-[920px] mx-auto px-5 sm:px-8 py-10 sm:py-14 pb-24 flex flex-col gap-6">
         {/* Legend */}
-        <div className="flex gap-5 flex-wrap p-3 px-4 bg-surface border-hair rounded-[10px]">
-          <Legend color="red" text="Paus / bromsa" />
-          <Legend color="amber" text="Avslutningssignal" />
-          <Legend color="teal" text="Överlämning / nästa talare" />
+        <div className="flex gap-2 flex-wrap">
+          <span className="cue-pill cue-pill-red">
+            <span className="cue-dot cue-red" /> Paus / bromsa
+          </span>
+          <span className="cue-pill cue-pill-amber">
+            <span className="cue-dot cue-amber" /> Avslutningssignal
+          </span>
+          <span className="cue-pill cue-pill-teal">
+            <span className="cue-dot cue-teal" /> Överlämning / nästa talare
+          </span>
         </div>
 
         {cards.length === 0 ? (
-          <div className="text-center py-16 font-serif italic text-faint">
-            Inga kort än. <button className="underline not-italic" onClick={addCard}>Lägg till ditt första kort</button>.
+          <div className="text-center py-20 text-muted-foreground">
+            <p className="text-[17px] mb-3">Inga kort än.</p>
+            <button className="text-accent-blue hover:underline font-medium" onClick={addCard}>
+              Lägg till ditt första kort
+            </button>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-5">
                 {cards.map((c, idx) => (
                   <ManusCard
                     key={c.id}
@@ -282,37 +310,6 @@ export default function Editor() {
           </DndContext>
         )}
       </main>
-    </div>
-  );
-}
-
-function CtrlGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex gap-px items-center">
-      <span className="font-mono text-[11px] text-faint mr-1.5 uppercase tracking-widest">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function CtrlBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`font-mono text-xs px-3 py-[5px] border-hair-strong transition-colors first:rounded-l-md last:rounded-r-md only:rounded-md ${
-        active ? "bg-foreground text-background border-foreground" : "text-muted-foreground hover:bg-surface-2"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Legend({ color, text }: { color: "red" | "amber" | "teal"; text: string }) {
-  return (
-    <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
-      <span className={`cue-dot cue-${color}`} aria-hidden />
-      {text}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
@@ -33,7 +33,6 @@ export function ManusCard({
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
 
-  // Autospar per kort
   useAutosave({
     table: "cards",
     id: card.id,
@@ -60,44 +59,54 @@ export function ManusCard({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.4 : 1,
   };
+
+  const roleColor = card.role === "moderator"
+    ? "bg-accent-blue/10 text-accent-blue"
+    : "bg-cue-teal/10 text-[hsl(var(--cue-teal))]";
 
   return (
     <article
       ref={setNodeRef}
       style={style}
-      className="manu-card bg-surface border-hair-strong rounded-[10px] overflow-hidden"
+      className="manu-card bg-surface rounded-2xl shadow-card overflow-hidden"
     >
       {/* Header */}
-      <header className="flex items-stretch border-b-hair">
-        <div className="font-mono text-[26px] font-medium px-[18px] py-[14px] min-w-[58px] border-r-hair flex items-center justify-center text-faint">
-          {number}
-        </div>
-        <div className="flex-1 px-4 py-2.5 flex flex-col gap-[3px]">
-          <select
-            value={card.role}
-            onChange={(e) => onLocalChange({ role: e.target.value as "moderator" | "speaker" })}
-            className="font-mono text-[11px] uppercase tracking-widest text-faint bg-transparent border-0 outline-none w-fit cursor-pointer p-0 appearance-none"
-          >
-            <option value="speaker">Talare</option>
-            <option value="moderator">Moderator</option>
-          </select>
+      <header className="px-6 pt-5 pb-4 flex items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="font-mono text-[11px] text-muted-foreground tracking-wide">
+              Kort {String(number).padStart(2, "0")}
+            </span>
+            <span className="text-faint">·</span>
+            <select
+              value={card.role}
+              onChange={(e) => onLocalChange({ role: e.target.value as "moderator" | "speaker" })}
+              className={`text-[12px] font-medium px-2.5 py-0.5 rounded-full border-0 outline-none cursor-pointer appearance-none ${roleColor}`}
+            >
+              <option value="speaker">Talare</option>
+              <option value="moderator">Moderator</option>
+            </select>
+          </div>
           <input
             value={titleVal}
             onChange={(e) => { setTitleVal(e.target.value); onLocalChange({ title: e.target.value }); }}
-            placeholder="Korttitel…"
-            className="font-serif text-[15px] font-medium bg-transparent border-0 outline-none w-full placeholder:text-faint placeholder:italic placeholder:font-light"
+            placeholder="Korttitel"
+            className="font-display text-[20px] font-semibold tracking-tight bg-transparent border-0 outline-none w-full placeholder:text-faint placeholder:font-normal"
           />
         </div>
-        <div className="flex items-center pr-1">
+        <div className="flex items-center gap-1 -mr-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 text-faint hover:text-foreground" aria-label="Kortmeny">
+              <button
+                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                aria-label="Kortmeny"
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="font-mono text-xs">
+            <DropdownMenuContent align="end" className="rounded-xl">
               <DropdownMenuItem onClick={onDuplicate}>Duplicera kort</DropdownMenuItem>
               <DropdownMenuItem onClick={onSplit}>Dela kort vid markör</DropdownMenuItem>
               <DropdownMenuItem onClick={onMergeUp}>Slå ihop med föregående</DropdownMenuItem>
@@ -108,7 +117,7 @@ export function ManusCard({
           <button
             {...attributes}
             {...listeners}
-            className="px-3 self-stretch flex items-center text-faint cursor-grab active:cursor-grabbing"
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 cursor-grab active:cursor-grabbing transition-colors"
             aria-label="Dra för att flytta"
           >
             <GripVertical className="h-4 w-4" />
@@ -118,19 +127,19 @@ export function ManusCard({
 
       {/* Tider */}
       {showTimes && (
-        <div className="flex gap-3 items-center flex-wrap px-4 py-2 bg-surface-2 border-b-hair font-mono">
+        <div className="px-6 pb-3 flex gap-5 items-center flex-wrap">
           <TimeField label="Start" value={card.start_time} onChange={(v) => onLocalChange({ start_time: v })} />
           <TimeField label="Slut" value={card.end_time} onChange={(v) => onLocalChange({ end_time: v })} />
-          <span className="ml-auto text-[11px] text-muted-foreground bg-surface border-hair rounded-[5px] px-2.5 py-0.5">
+          <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono">
             {words} ord · {formatDuration(seconds)}
           </span>
         </div>
       )}
 
       {/* Body */}
-      <div className="flex">
-        <div className={`flex-1 p-4 ${showNotes ? "border-r-hair" : ""}`}>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-faint mb-2">Manus</p>
+      <div className="flex flex-col md:flex-row gap-px bg-[hsl(var(--border)/0.05)]">
+        <div className="flex-1 px-6 py-5 bg-surface">
+          <p className="text-[12px] font-medium text-muted-foreground mb-3">Manus</p>
           <TiptapEditor
             value={card.content_html}
             onChange={(html) => onLocalChange({ content_html: html })}
@@ -139,23 +148,23 @@ export function ManusCard({
           />
         </div>
         {showNotes && (
-          <div className="w-[200px] p-3.5 bg-surface-2 flex flex-col gap-2">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-faint">Anteckningar</p>
+          <div className="w-full md:w-[220px] px-5 py-5 bg-surface-2 flex flex-col gap-2">
+            <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
             <textarea
               value={card.notes}
               onChange={(e) => onLocalChange({ notes: e.target.value })}
-              placeholder="Egna noter, inte för uppläsning…"
-              className="flex-1 min-h-[90px] w-full font-mono text-xs leading-[1.65] bg-transparent border-0 outline-none resize-none text-muted-foreground placeholder:text-faint placeholder:italic"
+              placeholder="Egna noter, inte för uppläsning"
+              className="flex-1 min-h-[100px] w-full text-[13px] leading-[1.6] bg-transparent border-0 outline-none resize-none text-foreground placeholder:text-faint"
             />
           </div>
         )}
       </div>
 
       {/* Cue footer */}
-      <footer className="border-t-hair px-4 py-2 flex gap-4 flex-wrap items-center bg-surface">
-        <CueField color="red" label="Paus / bromsa" value={card.cue_red} onChange={(v) => onLocalChange({ cue_red: v })} />
-        <CueField color="amber" label="Avslutningssignal" value={card.cue_amber} onChange={(v) => onLocalChange({ cue_amber: v })} />
-        <CueField color="teal" label="Överlämning / nästa" value={card.cue_teal} onChange={(v) => onLocalChange({ cue_teal: v })} />
+      <footer className="px-6 py-4 flex gap-2 flex-wrap items-center bg-surface">
+        <CueField icon={<Pause className="h-3 w-3" />} colorClass="cue-pill-red" placeholder="Paus / bromsa" value={card.cue_red} onChange={(v) => onLocalChange({ cue_red: v })} />
+        <CueField icon={<Flag className="h-3 w-3" />} colorClass="cue-pill-amber" placeholder="Avslutningssignal" value={card.cue_amber} onChange={(v) => onLocalChange({ cue_amber: v })} />
+        <CueField icon={<ArrowRight className="h-3 w-3" />} colorClass="cue-pill-teal" placeholder="Överlämning / nästa" value={card.cue_teal} onChange={(v) => onLocalChange({ cue_teal: v })} />
       </footer>
     </article>
   );
@@ -163,28 +172,29 @@ export function ManusCard({
 
 function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px] uppercase tracking-widest text-faint">{label}</span>
+    <div className="flex items-center gap-2">
+      <span className="text-[12px] text-muted-foreground">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="–"
-        className="text-[14px] font-medium bg-transparent border-0 outline-none w-[60px] border-b-hair-strong pb-px"
+        placeholder="—"
+        className="font-mono text-[13px] bg-surface-2 rounded-md border-0 outline-none w-[72px] px-2.5 py-1 placeholder:text-faint focus:ring-2 focus:ring-accent-blue"
       />
     </div>
   );
 }
 
-function CueField({ color, label, value, onChange }: { color: "red" | "amber" | "teal"; label: string; value: string; onChange: (v: string) => void }) {
+function CueField({
+  icon, colorClass, placeholder, value, onChange,
+}: { icon: React.ReactNode; colorClass: string; placeholder: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className={`cue-dot cue-${color}`} aria-hidden />
-      <span className="font-mono text-[11px] text-faint">{label}</span>
+    <div className={`cue-pill ${colorClass} flex-1 min-w-[180px] !px-3 !py-1.5`}>
+      <span className="opacity-80">{icon}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="–"
-        className="font-mono text-xs bg-transparent border-0 outline-none w-[140px] border-b-hair pb-px"
+        placeholder={placeholder}
+        className="bg-transparent border-0 outline-none w-full text-[13px] placeholder:opacity-60"
       />
     </div>
   );

@@ -46,28 +46,31 @@ export default function Auth() {
     }
   };
 
+  const tabs: [Mode, string][] = [
+    ["magic", "Magisk länk"],
+    ["password", "Logga in"],
+    ["signup", "Skapa konto"],
+  ];
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
-        <header className="text-center mb-10">
-          <h1 className="font-serif text-4xl tracking-tight">Manuskort</h1>
-          <p className="font-serif italic text-faint mt-2">Manus i kortformat. För talare och moderatorer.</p>
+    <div className="min-h-screen flex items-center justify-center px-6 bg-background">
+      <div className="w-full max-w-[420px]">
+        <header className="text-center mb-12">
+          <h1 className="font-display text-5xl font-semibold tracking-tight">Manuskort</h1>
+          <p className="text-muted-foreground mt-3 text-[15px]">
+            Manus i kortformat. För talare och moderatorer.
+          </p>
         </header>
 
-        <div className="bg-surface border-hair-strong rounded-lg p-8 shadow-sm">
-          <div className="flex gap-px font-mono text-xs uppercase tracking-widest mb-6">
-            {([
-              ["magic", "Magisk länk"],
-              ["password", "Logga in"],
-              ["signup", "Skapa konto"],
-            ] as [Mode, string][]).map(([m, label], i, arr) => (
+        <div className="bg-surface rounded-2xl shadow-card p-8">
+          <div className="seg-group w-full mb-7">
+            {tabs.map(([m, label]) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`flex-1 py-2 px-2 border-hair-strong transition-colors ${
-                  mode === m ? "bg-foreground text-background border-foreground" : "text-muted-foreground hover:bg-surface-2"
-                } ${i === 0 ? "rounded-l-md" : ""} ${i === arr.length - 1 ? "rounded-r-md" : ""}`}
+                data-active={mode === m}
+                className="seg-btn flex-1"
               >
                 {label}
               </button>
@@ -75,8 +78,8 @@ export default function Auth() {
           </div>
 
           <form onSubmit={handle} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-mono text-[11px] uppercase tracking-widest text-faint">E-post</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[13px] text-muted-foreground font-medium">E-post</Label>
               <Input
                 id="email"
                 type="email"
@@ -85,13 +88,13 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="du@exempel.se"
-                className="font-serif"
+                className="h-11 rounded-xl bg-surface-2 border-0 text-[15px] focus-visible:ring-2 focus-visible:ring-accent-blue"
               />
             </div>
 
             {mode !== "magic" && (
-              <div className="space-y-2">
-                <Label htmlFor="pwd" className="font-mono text-[11px] uppercase tracking-widest text-faint">Lösenord</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="pwd" className="text-[13px] text-muted-foreground font-medium">Lösenord</Label>
                 <Input
                   id="pwd"
                   type="password"
@@ -100,24 +103,28 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={8}
-                  className="font-mono"
+                  className="h-11 rounded-xl bg-surface-2 border-0 text-[15px] focus-visible:ring-2 focus-visible:ring-accent-blue"
                 />
               </div>
             )}
 
-            <Button type="submit" disabled={busy} className="w-full font-mono text-xs uppercase tracking-widest h-11">
+            <Button
+              type="submit"
+              disabled={busy}
+              className="w-full h-11 rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white font-medium text-[15px] mt-2"
+            >
               {busy ? "Skickar…" : mode === "magic" ? "Skicka länk" : mode === "password" ? "Logga in" : "Skapa konto"}
             </Button>
           </form>
 
           {mode === "signup" && (
-            <p className="font-serif italic text-xs text-faint mt-6 leading-relaxed">
+            <p className="text-[13px] text-muted-foreground mt-6 leading-relaxed">
               Dina manus sparas i molnet och är endast synliga för dig. Du kan när som helst radera ditt konto och all data.
             </p>
           )}
         </div>
 
-        <p className="font-mono text-[10px] uppercase tracking-widest text-faint text-center mt-8">
+        <p className="text-[12px] text-muted-foreground text-center mt-8">
           Du förblir inloggad i 30 dagar
         </p>
       </div>
