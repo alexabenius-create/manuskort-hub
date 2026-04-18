@@ -123,7 +123,8 @@ export function ManusCard({
     <article
       ref={setNodeRef}
       style={style}
-      data-card-full={isFull ? "true" : undefined}
+      data-card-full={isFull && !isOver ? "true" : undefined}
+      data-card-over={isOver ? "true" : undefined}
       className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
       {/* Header panel */}
