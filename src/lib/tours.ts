@@ -88,13 +88,7 @@ export const MANUS_TOUR: TourDefinition = {
       target: '[data-tour="card.script"]',
       title: "Manustexten",
       body:
-        "Här skriver du det du faktiskt ska säga. Markera text för att få fram formateringsverktyget — fetstil, kursiv, understrykning, gulmarkering.",
-    },
-    {
-      target: '[data-tour="card.script"]',
-      title: "Paus-markören",
-      body:
-        "Markera text i manuset för att få fram formateringsverktyget. Där finns fetstil, kursiv, understrykning, gulmarkering — och en paus-markör (/) som du sätter in där du vill ta ett medvetet andetag. Paus-markören syns tydligt i presentationsläget som en andningspåminnelse.",
+        "Här skriver du det du faktiskt ska säga. Tryck på snedstreck (/) i texten där du vill lägga in en medveten paus — markören syns tydligt i presentationsläget som en andningspåminnelse.",
     },
     {
       target: '[data-tour="card.notes"]',
