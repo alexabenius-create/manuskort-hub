@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pause, Flag, ArrowRight } from "lucide-react";
+import { Pause, Flag, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import {
@@ -74,10 +74,29 @@ function transformHtmlForPresentation(html: string, panelists: Panelist[]): stri
   return root.innerHTML;
 }
 
+const NOTES_BASE = 18;
+const NOTES_MIN_OFFSET = -2;
+const NOTES_MAX_OFFSET = 4;
+const NOTES_KEY = "presentation-notes-size-offset";
+
 export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes }: Props) {
   const baseSize = BASE_SIZE[textSize];
   const fontSize = baseSize + sizeOffset * 2;
   const html = useMemo(() => transformHtmlForPresentation(card.content_html ?? "", panelists), [card.content_html, panelists]);
+
+  const [notesOffset, setNotesOffset] = useState(0);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTES_KEY);
+      if (raw) setNotesOffset(parseInt(raw, 10) || 0);
+    } catch { /* ignore */ }
+  }, []);
+  const changeNotesOffset = (next: number) => {
+    const clamped = Math.max(NOTES_MIN_OFFSET, Math.min(NOTES_MAX_OFFSET, next));
+    setNotesOffset(clamped);
+    try { localStorage.setItem(NOTES_KEY, String(clamped)); } catch { /* ignore */ }
+  };
+  const notesFontSize = NOTES_BASE + notesOffset * 2;
 
   const hasNotes = !!card.notes && card.notes.trim().length > 0;
   const hasCueRed = !!card.cue_red?.trim();
@@ -165,18 +184,48 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
 
       {/* Anteckningar — sidokolumn */}
       {showNotes && hasNotes && (
-        <button
-          onClick={onToggleNotes}
-          className="hidden md:flex w-[260px] flex-shrink-0 flex-col items-start text-left bg-zinc-900/40 hover:bg-zinc-900/60 border border-zinc-800/50 rounded-2xl p-5 overflow-y-auto transition-colors"
-          aria-label="Dölj anteckningar"
-        >
-          <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500 mb-3">
-            Anteckningar
-          </span>
-          <p className="font-mono text-[14px] leading-[1.6] text-zinc-300 whitespace-pre-wrap">
-            {card.notes}
-          </p>
-        </button>
+        <div className="hidden md:flex w-[380px] flex-shrink-0 flex-col bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-6 relative">
+          {/* Header med label + zoom + dölj */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+              Anteckningar
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => changeNotesOffset(notesOffset - 1)}
+                disabled={notesOffset <= NOTES_MIN_OFFSET}
+                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+                aria-label="Mindre anteckningstext"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => changeNotesOffset(notesOffset + 1)}
+                disabled={notesOffset >= NOTES_MAX_OFFSET}
+                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-colors disabled:opacity-30"
+                aria-label="Större anteckningstext"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
+              <button
+                onClick={onToggleNotes}
+                className="ml-1 px-2 py-1 rounded-md text-[10px] font-mono uppercase tracking-wider text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-colors"
+                aria-label="Dölj anteckningar"
+              >
+                Dölj
+              </button>
+            </div>
+          </div>
+          {/* Centrerad anteckningstext */}
+          <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center">
+            <p
+              className="font-mono text-zinc-200 whitespace-pre-wrap text-center w-full"
+              style={{ fontSize: `${notesFontSize}px`, lineHeight: 1.6 }}
+            >
+              {card.notes}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Knapp för att visa anteckningar igen om de är dolda men finns */}
