@@ -1,56 +1,30 @@
-## Mål
-Lägga till "Mjuk rullning (Beta)" som alternativ till "Ett kort i taget". Hela manuset rullar kontinuerligt; hastighet räknas auto från måltid men kan justeras live med tangentbord. Användaren väljer fokus-stil i startmenyn.
 
-## Designval
-- **Hastighet**: Auto från måltid + live-justering med `+`/`−` (INTE pil upp/ner — konflikt med presentationsklickare). `R` återställer till 1.0x.
-- **Layout**: Kontinuerlig ström — alla kort under varandra med inline-rubriker.
-- **Växling**: Endast i `PresentationStartMenu`.
-- **Nu-markör**: Användaren väljer i startmenyn — `"line"` (fast läs-linje) eller `"sentence"` (highlight på aktiv mening).
-- **Piltangenter i scroll-läge**: Gör ingenting i v1 (undviker konflikt med klickare och oklart förväntat beteende vid kontinuerlig scroll).
 
-## Ändringar
+## Problem
+Hastighetsändring känns fördröjd av två orsaker:
 
-### 1. `PresentationStartMenu.tsx`
-- Nytt val: **visningsläge** `"cards"` (default) eller `"scroll"` (Beta-badge).
-- När `"scroll"`: undersektion med fokus-stil `"line"` / `"sentence"`.
-- **Auto-speed-varning**: Om `targetSeconds > 0` och estimerad `pixelsPerSecond` skulle kräva `>3.0x` (max clamp) för att hinna igenom manuset vid normal läsfart (~200 WPM som referens), visa diskret varning: *"Manuset är för långt för vald måltid vid normal läsfart — rullningen kapas vid 3.0x."*
-- Skicka via `onStart({ viewMode, focusStyle })`.
+1. **RAF-loopen startar om** vid varje `speedFactor`-ändring. Effekten har `pixelsPerSecond` i deps, så den nuvarande RAF cancelleras och ny startar — `lastTickRef` nollställs, vilket skapar en synlig mikropaus.
+2. **Drift-korrektion motverkar ändringen.** När du höjer hastigheten avviker `offsetRef` snabbt från `expected = elapsedSeconds * pixelsPerSecond`. Vid nästa drift-koll (upp till 5 sek senare) tvingas scrollen tillbaka till "förväntad" position — vilket suddar ut effekten av din hastighetsjustering.
 
-### 2. `Presentation.tsx`
-- State: `viewMode` + `focusStyle`, initieras från startmenyn.
-- Renderar `<PresentationCard>` (cards) eller ny `<ScrollingTeleprompter>` (scroll).
-- `PresentationFooter` döljs i scroll-läge.
-- Tangentbord i scroll-läge: `+`/`−` justerar `speedFactor` (0.25–3.0), `R` återställer till 1.0. Pil-tangenter och space ignoreras (bara Esc + P för panik fungerar).
+## Lösning
 
-### 3. Ny: `ScrollingTeleprompter.tsx`
-- Renderar alla kort som kontinuerlig ström, samma typografi/`textSize` som cards-läget.
-- Inline kort-rubriker (titel + cue-tider, diskret).
-- **Auto-scroll**: `requestAnimationFrame` + `transform: translateY(...)`.
-  - `pixelsPerSecond = totalHeight / targetSeconds * speedFactor`, clampad till `speedFactor ∈ [0.25, 3.0]`.
-  - Pausar vid `isPaused` / `countdownActive`.
-  - **Anti-drift med mjuk interpolation**: var 5:e sekund beräknas `expectedOffset = elapsedSeconds * pixelsPerSecond`. Om `|currentOffset - expectedOffset| > tröskel`, interpoleras korrektionen över ~1 sekund (linjär lerp i RAF-loopen) istället för hårt hopp.
-- **Sentence-detektion (robust)**:
-  - Split på `. ! ?` följt av whitespace + versal.
-  - Ignorera punkt efter enskild versal (initialer: "A. Lindgren").
-  - Skydda vanliga svenska förkortningar via blocklist: `t.ex.`, `dvs.`, `bl.a.`, `m.m.`, `osv.`, `Dr.`, `St.`, `kl.`, `nr.`, `ca.`, `jfr.`, `fr.o.m.`, `t.o.m.` — ersätt temporärt med placeholder före split, återställ efter.
-- **Fokus-stilar**:
-  - `"line"`: fix horisontell läs-linje vid 35% från toppen.
-  - `"sentence"`: aktiv mening (vars rect skär läs-linjen) får full opacity + subtil scale, övriga dimmas.
-- **Speed-chip**: visar `1.5x` etc. vid ändring, fade-out efter 2s.
+### 1. Läs `pixelsPerSecond` via ref i RAF-loopen
+- Behåll `useMemo` för att beräkna värdet, men spegla det i en `pixelsPerSecondRef`.
+- Ta bort `pixelsPerSecond` (och `elapsedSeconds`) från RAF-effektens deps. Effekten startas bara en gång (eller vid `countdownActive`/dimensioner).
+- Resultat: hastighetsändring slår igenom omedelbart i nästa frame utan att RAF startas om.
 
-### 4. CSS i `index.css`
-- Klasser för `.teleprompter-line`, `.teleprompter-sentence-active/dim` med design-tokens.
+### 2. Pausa drift-korrigering en kort stund efter manuell hastighetsändring
+- Ny ref: `manualOverrideUntilRef` (timestamp).
+- Vid hastighetsändring (ny prop-ändring detekteras via `useEffect` på `speedFactor`): sätt `manualOverrideUntilRef = performance.now() + 8000` (8 sek karens).
+- Nollställ även pågående `driftCorrectionRef` direkt.
+- I RAF-loopen: skippa drift-koll om `ts < manualOverrideUntilRef`.
 
-### 5. `PresentationTopbar.tsx`
-- Ingen ändring — Pause funkar redan via `togglePause`.
+### 3. Mindre cleanup
+- Ta bort `elapsedSeconds` från RAF-deps (läses via ref från props i en separat `useEffect` som speglar till `elapsedSecondsRef`).
 
-## Tekniska överväganden
-- `transform: translateY` är GPU-accelererat. SpeedFactor läses från ref för flyt.
-- Höjd mäts vid mount + window resize.
-- Mjuk anti-drift: korrektion lerpas över ~1s för att undvika synliga hopp.
-- Touch: ingen swipe i scroll-läge.
+## Filer som ändras
+- `src/components/presentation/ScrollingTeleprompter.tsx` — refs för `pixelsPerSecond`, `elapsedSeconds`, `manualOverrideUntil`; trimmade RAF-deps; karens efter speed-ändring.
 
 ## Resultat
-- Användaren väljer "Mjuk rullning (Beta)" + fokus-stil i startmenyn, med varning vid för långt manus.
-- Manuset rullar synkat mot måltiden, justerbart live med +/−, R återställer.
-- Pause fryser rullningen. Cards-läget oförändrat.
+Klick på +/− eller tangent triggar omedelbar visuell hastighetsändring. Drift-synken pausas i 8 sekunder så användarens justering hinner kännas innan systemet börjar korrigera igen.
+
