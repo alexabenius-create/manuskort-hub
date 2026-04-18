@@ -203,7 +203,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      import_manuscript: {
+        Args: { p_cards: Json; p_manuscript: Json; p_panelists: Json }
+        Returns: string
+      }
     }
     Enums: {
       card_role: "moderator" | "speaker"
