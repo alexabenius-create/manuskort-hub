@@ -446,7 +446,7 @@ export default function Editor() {
 
       // Kontrollera om nästa kort nu ryms — om ja, klart
       const after = working[idx];
-      const [, overflowAfter] = splitHtmlAtRow(after.content_html ?? "", maxRows, sampleEl);
+      const [, overflowAfter] = splitHtmlAtRow(after.content_html ?? "", maxRows, textSize);
       if (!overflowAfter) break;
       // Annars fortsätt loopen och splitta detta kort i nästa iteration
     }
