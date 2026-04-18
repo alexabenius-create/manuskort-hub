@@ -171,6 +171,7 @@ export function useTourTrigger(id: TourId, condition: boolean, delayMs = 400) {
   const triggeredRef = useRef(false);
 
   useEffect(() => {
+    console.log("[Tour] trigger check", { id, condition, loading, flags, triggered: triggeredRef.current });
     if (loading || !flags || triggeredRef.current || !condition) return;
     const flag = TOURS[id].flag;
     if (flags[flag]) return; // Redan klar
