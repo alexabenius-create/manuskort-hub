@@ -38,8 +38,11 @@ export default function Editor() {
       show_notes: manuscript.show_notes,
       show_times: manuscript.show_times,
       wpm: manuscript.wpm,
+      time_format: manuscript.time_format,
     };
   }, [manuscript]);
+
+  const timeFormat = (manuscript?.time_format === "clock" ? "clock" : "elapsed") as "clock" | "elapsed";
 
   useAutosave({
     table: "manuscripts",
