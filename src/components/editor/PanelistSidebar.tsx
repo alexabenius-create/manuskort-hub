@@ -5,6 +5,9 @@ import { PANELIST_PALETTE } from "@/lib/panelistColors";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTier } from "@/hooks/useTier";
+import { LIMITS } from "@/lib/tierLimits";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 interface Props {
   open: boolean;
@@ -13,6 +16,17 @@ interface Props {
 
 export function PanelistSidebar({ open, onClose }: Props) {
   const { panelists, add, rename, recolor, remove } = usePanelists();
+  const { tier } = useTier();
+  const limits = LIMITS[tier];
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const handleAdd = () => {
+    if (panelists.length >= limits.panelistsPerManuscript) {
+      setUpgradeOpen(true);
+      return;
+    }
+    void add();
+  };
 
   return (
     <>
