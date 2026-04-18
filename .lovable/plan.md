@@ -1,96 +1,57 @@
 
 
-## Mål
-Innan utskrift visa en dialog där användaren väljer:
-- **A4 stående, 2 kort per sida**
-- **A5 stående, 1 kort per sida**
+## Beslut bekräftade
+- **Radgränser:** Liten 10 / Normal 8 / Stor 6
+- **Paste-overflow:** Auto-dela till nytt kort
+- **Befintliga långa kort:** Bara visuell varning (röd ram + räknare)
 
-Sedan utlös `window.print()` med rätt CSS-layout som respekterar valet.
+## Implementation
 
-## Varför en dialog + CSS, inte en separat PDF-generering
-
-Webbläsarens utskriftsdialog kan redan spara som PDF. Genom att styra `@page size` och kort-layout via CSS får vi:
-- Korrekt sidformat (A4/A5) direkt i utskriftsdialogen
-- WYSIWYG — användaren ser exakt rätt antal kort per sida i förhandsvisning
-- Möjlighet att skriva ut direkt **eller** spara som PDF (samma flöde)
-- Ingen extra dependency, inga server-genererade PDF:er som riskerar att avvika visuellt från redigeringsläget
-
-En separat PDF-generator (t.ex. via pdf-lib/reportlab) skulle kräva att vi rebuildar hela kort-renderingen i en annan motor — onödigt komplext när CSS klarar det.
-
-## Ändringar
-
-### 1. Ny dialog-komponent — `src/components/editor/PrintDialog.tsx`
-Använder befintliga `Dialog`-primitiverna. Två stora val-kort:
-
-```text
-┌─────────────────┐  ┌─────────────────┐
-│   A4 stående    │  │   A5 stående    │
-│  2 kort / sida  │  │  1 kort / sida  │
-│  [ikon-skiss]   │  │  [ikon-skiss]   │
-└─────────────────┘  └─────────────────┘
-        [ Avbryt ]   [ Skriv ut ]
-```
-
-State: `format: "a4-2up" | "a5-1up"`. Vid bekräft: sätter `data-print-format` på `<html>`, kallar `window.print()`, rensar attributet efter print (via `afterprint`-event).
-
-### 2. Editor.tsx — koppla knappen till dialogen
-- Ny state `printDialogOpen`
-- "Skriv ut"-knappen öppnar dialogen i stället för `window.print()`
-- Dialogen anropar `window.print()` när användaren bekräftar
-
-### 3. Print-CSS — i `src/index.css`
-Två `@media print`-block, ett per format, valt via attribut på `<html>`:
-
-```css
-@media print {
-  /* Dölj allt som inte tillhör manuset */
-  .topbar-blur, header.sticky, footer-knappar etc. { display: none !important; }
-  body { background: white; }
-  .manu-card { break-inside: avoid; box-shadow: none; }
-  /* Dölj dropdown-meny, drag-handtag, hjälp-prickar */
-  [aria-label="Kortmeny"], [aria-label="Dra för att flytta"], [aria-label="Hjälp"] { display: none !important; }
-}
-
-html[data-print-format="a4-2up"] {
-  @page { size: A4 portrait; margin: 12mm; }
-  /* Två kort per sida: tvinga sidbrytning efter varannan */
-  .manu-card:nth-child(2n) { break-after: page; }
-}
-
-html[data-print-format="a5-1up"] {
-  @page { size: A5 portrait; margin: 10mm; }
-  .manu-card { break-after: page; }
-  /* Lite kompaktare för A5 */
-  .manu-card { padding: 8px; gap: 8px; }
-}
-```
-
-Behåller färgade panelist-markeringar via `print-color-adjust: exact` på `.panelist-mark` och `.cue-pill`.
-
-### 4. Cleanup-logik
-I dialogen:
+### 1. Ny fil — `src/lib/cardLimits.ts`
 ```ts
-const onAfterPrint = () => {
-  document.documentElement.removeAttribute("data-print-format");
-  window.removeEventListener("afterprint", onAfterPrint);
-};
-window.addEventListener("afterprint", onAfterPrint);
-document.documentElement.setAttribute("data-print-format", format);
-window.print();
+export const MAX_ROWS_BY_SIZE = { sm: 10, md: 8, lg: 6 } as const;
+export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
+
+export function countVisualRows(el: HTMLElement): number {
+  const cs = getComputedStyle(el);
+  const lh = parseFloat(cs.lineHeight);
+  if (!lh || !isFinite(lh)) return 0;
+  return Math.round(el.scrollHeight / lh);
+}
 ```
+
+### 2. `src/components/editor/TiptapEditor.tsx`
+- Lägg till props: `maxRows: number`, `onOverflowPaste?: (overflowText: string) => void`.
+- Mät rader efter varje `onUpdate` via `countVisualRows(editor.view.dom)`.
+- Exponera räkning till parent via ny prop `onRowCountChange?: (rows: number) => void`.
+- I `editorProps.handleKeyDown`: om aktuell rad-räkning ≥ `maxRows` och tangenten är teckeninmatning eller `Enter` → blockera (`event.preventDefault(); return true`). Tillåt alltid Backspace/Delete/piltangenter/modifierade kortkommandon.
+- I `editorProps.handlePaste`: läs `event.clipboardData?.getData("text/plain")`. Sätt in stegvis tills gränsen nås — överskottet skickas till `onOverflowPaste`. Returnera `true` för att blockera default-paste.
+
+### 3. `src/components/editor/ManusCard.tsx`
+- Importera `MAX_ROWS_BY_SIZE`.
+- Beräkna `maxRows = MAX_ROWS_BY_SIZE[textSize]`.
+- Ny state `currentRows` uppdateras från editor-callback.
+- Skicka `maxRows`, `onRowCountChange={setCurrentRows}`, och `onOverflowPaste` (som anropar nya prop `onPasteOverflow(overflowText)`) till `TiptapEditor`.
+- Visa rad-räknare i Manus-panelen, bredvid "Manus"-labeln eller i kort-headern: `{currentRows} / {maxRows} rader` — får klassen `text-destructive` när `currentRows >= maxRows`.
+- Lägg `data-card-full="true"` på `<article>` när gränsen nås (för CSS-styling).
+
+### 4. `src/pages/Editor.tsx`
+- Ny prop på `ManusCard`: `onPasteOverflow: (text: string) => void`.
+- Implementera handler: skapa nytt kort direkt efter aktuellt med `content_html = <p>${overflowText}</p>`, samma `role`. Återanvänd befintlig insert/duplicate-logik. Toast: "Texten delades på 2 kort."
+
+### 5. `src/index.css`
+- `.manu-card[data-card-full="true"] { box-shadow: 0 0 0 1px hsl(var(--destructive) / 0.4) inset; }`
+- Liten subtil pulse-animation vid övergång till full (valfritt, kort).
 
 ## Filer som påverkas
+
 | Fil | Ändring |
 |---|---|
-| `src/components/editor/PrintDialog.tsx` | **Ny** — val + trigga utskrift |
-| `src/pages/Editor.tsx` | Ersätt `window.print()` direkt-anrop med dialog-state |
-| `src/index.css` | Lägg till `@media print`-regler för båda formaten |
+| `src/lib/cardLimits.ts` | **Ny** |
+| `src/components/editor/TiptapEditor.tsx` | maxRows-prop, blockera input, hantera paste-overflow, rapportera rad-antal |
+| `src/components/editor/ManusCard.tsx` | Skicka gräns, visa räknare, propagera paste-overflow |
+| `src/pages/Editor.tsx` | Skapa nytt kort vid paste-overflow |
+| `src/index.css` | Stil för "card-full"-state |
 
-Inga DB-, data- eller dependency-ändringar.
-
-## Resultat för användaren
-1. Klick på "Skriv ut" → snygg dialog med två val
-2. Välj format → systemets utskriftsdialog öppnas redan inställd på A4 eller A5
-3. Förhandsvisning visar rätt antal kort per sida
-4. Användaren kan skriva ut direkt eller välja "Spara som PDF" i samma dialog
+Inga DB-ändringar.
 
