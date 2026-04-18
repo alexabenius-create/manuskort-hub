@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Link2 } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, Clock } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
@@ -150,8 +150,8 @@ export function ManusCard({
                   onClick={onSyncWithPrevious}
                   className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-accent-blue bg-surface-2 hover:bg-accent-blue/10 rounded-full px-2.5 py-1 transition-colors"
                 >
-                  <Link2 className="h-3 w-3" />
-                  Synka med föregående
+                  <Clock className="h-3 w-3" />
+                  Synka tid med föregående
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[240px] text-[12px] leading-[1.5] rounded-lg">
