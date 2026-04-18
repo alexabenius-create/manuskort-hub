@@ -177,6 +177,10 @@ export function useTourTrigger(id: TourId, condition: boolean, delayMs = 400) {
 
     triggeredRef.current = true;
     const timer = setTimeout(() => startTour(id), delayMs);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Reset så StrictMode double-mount eller dependency-byten inte permanent blockerar
+      triggeredRef.current = false;
+    };
   }, [id, condition, loading, flags, startTour, delayMs]);
 }
