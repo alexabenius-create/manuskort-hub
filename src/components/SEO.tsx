@@ -32,10 +32,14 @@ export function SEO({
 
   return (
     <Helmet>
+      <html lang="sv-SE" />
       <title>{title}</title>
       {description && <meta name="description" content={description} />}
       {fullCanonical && <link rel="canonical" href={fullCanonical} />}
+      {fullCanonical && <link rel="alternate" hrefLang="sv-SE" href={fullCanonical} />}
+      {fullCanonical && <link rel="alternate" hrefLang="x-default" href={fullCanonical} />}
       <meta name="robots" content={robots} />
+      <meta property="og:locale" content="sv_SE" />
       <meta property="og:title" content={title} />
       {description && <meta property="og:description" content={description} />}
       {fullCanonical && <meta property="og:url" content={fullCanonical} />}

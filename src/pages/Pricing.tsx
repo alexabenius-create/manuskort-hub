@@ -72,9 +72,55 @@ export default function Pricing() {
   return (
     <div className="min-h-screen">
       <SEO
-        title="Priser – Manuskort"
-        description="Jämför Gratis och Pro. Skapa manus, importera dokument, presentera med teleprompter och paniccards. Inget kreditkort krävs för att börja."
+        title="Priser – Manuskort | Gratis och PRO från 74 kr/mån"
+        description="Jämför Gratis och PRO. Skapa manus, importera .docx, presentera med teleprompter och cue-färger. PRO från 74 kr/mån vid årsbetalning. Inget kort krävs för att börja."
         canonical="/priser"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: "Manuskort PRO",
+            description:
+              "Obegränsade manus, kort och paneldeltagare. Inkluderar .docx-import, presentationsläge med cue-färger och prioriterad support.",
+            brand: { "@type": "Brand", name: "Manuskort" },
+            offers: [
+              {
+                "@type": "Offer",
+                name: "PRO – Månad",
+                price: "99",
+                priceCurrency: "SEK",
+                url: "https://manuskort.se/priser",
+                availability: "https://schema.org/InStock",
+              },
+              {
+                "@type": "Offer",
+                name: "PRO – År",
+                price: "890",
+                priceCurrency: "SEK",
+                url: "https://manuskort.se/priser",
+                availability: "https://schema.org/InStock",
+              },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Hem",
+                item: "https://manuskort.se/",
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "Priser",
+                item: "https://manuskort.se/priser",
+              },
+            ],
+          },
+        ]}
       />
       <PaymentTestModeBanner />
       <header className="topbar-blur sticky top-0 z-40 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
