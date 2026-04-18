@@ -1,27 +1,29 @@
 
-## Tillägg till Väg 3: explicita radbrytningar med Shift+Enter
+## Mål
+I klockslagsläget: visa sekunder i både aktuell tid och måltid, och visa "X sek kvar" istället för "<1 min kvar" när det är mindre än en minut kvar.
 
-### Hur det ska fungera
-- **Enter** = nytt stycke (som idag) → räknas som radbrytning i både editor och presentation.
-- **Shift+Enter** = explicit radbrytning (`<br>`) → tvingar fram en ny rad i presentationen, oavsett bredd.
-- **Automatisk wrap** i editorn (när texten tar slut på raden) → påverkar INTE presentationen. Mätningen sker mot presentationsbredden.
+## Ändringar
 
-Tiptap/StarterKit hanterar redan Shift+Enter som hard break (`<br>`) by default, så ingen ny tangentbordslogik behövs — den finns redan.
+### `src/hooks/usePresentationTimer.ts`
+1. **`formatClock(date)`** — lägg till parameter `withSeconds: boolean = false`. När true: returnera `HH:MM:SS` istället för `HH:MM`.
+2. **`formatMinutesLeft(seconds)`** — lägg till sekund-precision när < 60s:
+   - `seconds < 0 && abs < 60` → `"X sek över"`
+   - `seconds < 60 && seconds >= 0` → `"X sek kvar"`
+   - Övrigt: oförändrat (`"X min kvar"` / `"X min över"`)
 
-### Vad som behöver göras
-1. **Mätningen i `cardLimits.ts`** (Väg 3): den nya presentations-mätaren respekterar automatiskt `<br>` eftersom vi sätter in HTML i mät-divven och läser `scrollHeight`. En `<br>` ger en extra rad där, precis som i presentationen.
+### `src/components/presentation/PresentationTopbar.tsx`
+I clock-läget:
+- Använd `formatClock(new Date(now), true)` för aktuell tid → `13:30:24`.
+- Använd `formatClock(new Date(now + remainingSeconds * 1000), true)` för måltid → `13:31:24`.
+- Den lilla raden under (`formatMinutesLeft`) visar nu automatiskt sekunder när < 1 min.
 
-2. **Visuell markör i editorn** (valfritt men rekommenderat): visa en svag pilsymbol (↵) eller liknande där `<br>` finns, så användaren ser skillnad på "auto-wrap" och "tvingad radbrytning". Implementeras via en CSS-regel på `.ProseMirror br::after` eller en custom Tiptap-extension.
+### Måltidsberäkning
+Måltiden räknas redan idag som `now + remainingSeconds * 1000`. Eftersom `remainingSeconds = targetSeconds - elapsedSeconds` och `elapsedSeconds` är 0 vid start, så blir måltiden = starttid + targetSeconds. Med 1 min mål och start 13:30:24 → måltid = 13:31:24. ✓ Inget behöver ändras i logiken.
 
-3. **Hjälptext/tooltip** någonstans i UI:t som förklarar:
-   > Enter = nytt stycke · Shift+Enter = radbrytning som syns i presentationen
+## Resultat
+- Klockslagsläget visar `13:30:24 / 13:31:24` med sekundprecision.
+- Under räknaren: `45 sek kvar` → `23 sek kvar` → `5 sek kvar` → `3 sek över`.
+- Förfluten-läget är oförändrat (visar redan sekunder).
 
-### Resultat
-- Moderatorn skriver fritt i editorn — auto-wrap stör inte presentationen.
-- När moderatorn vill ha en garanterad radbrytning (t.ex. för en lista, citat, eller dramatisk paus) → Shift+Enter.
-- Räknaren "X/8 rader" inkluderar både stycken och explicita `<br>`, eftersom mätningen läser presentationens faktiska höjd.
-
-### Ändringar utöver Väg 3
-- `src/index.css` (eller motsvarande): lägg till diskret visuell markör för `<br>` inom `.ProseMirror`.
-- `src/components/editor/ManusCard.tsx` eller PanelistSidebar: liten hjälptext om Shift+Enter.
-- Ingen ändring i Tiptap-konfig — `<br>` stöds out-of-the-box.
+## Notering om uppdateringsfrekvens
+Tick-intervallet är redan 1 sekund i `usePresentationTimer`, så sekundvisningen uppdateras smidigt utan ändring.
