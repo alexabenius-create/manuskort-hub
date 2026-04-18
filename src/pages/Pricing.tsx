@@ -290,6 +290,30 @@ export default function Pricing() {
             </Button>
           </article>
         </section>
+
+        {/* FAQ */}
+        <section className="flex flex-col gap-6 max-w-[720px] mx-auto w-full pt-4">
+          <header className="flex flex-col gap-2 text-center">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+              Vanliga frågor
+            </h2>
+            <p className="text-[14px] text-muted-foreground">
+              Hittar du inte svaret? Hör av dig så hjälper vi dig.
+            </p>
+          </header>
+          <Accordion type="single" collapsible className="bg-surface rounded-2xl shadow-card px-2 sm:px-4">
+            {faqs.map((f, i) => (
+              <AccordionItem key={f.q} value={`item-${i}`} className="border-b-hair last:border-b-0">
+                <AccordionTrigger className="text-left text-[15px] font-medium hover:no-underline px-3 sm:px-4">
+                  {f.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-[14px] text-muted-foreground px-3 sm:px-4 pb-4 leading-relaxed">
+                  {f.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </section>
       </main>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
