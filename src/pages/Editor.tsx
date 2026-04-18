@@ -12,12 +12,14 @@ import { ManusCard } from "@/components/editor/ManusCard";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { PrintDialog } from "@/components/editor/PrintDialog";
+import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
-import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Users, Play, Target } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
+import { wordCount, estimateSeconds } from "@/lib/wordCount";
 import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE, countVisualRows } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -45,6 +47,9 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [targetDialogOpen, setTargetDialogOpen] = useState(false);
+  const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
+  const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
   // Kort som överskrider sin radgräns — blockerar utskrift
@@ -80,10 +85,12 @@ export default function Editor() {
       show_times: manuscript.show_times,
       wpm: manuscript.wpm,
       time_format: manuscript.time_format,
+      target_duration_seconds: (manuscript as any).target_duration_seconds ?? null,
     };
   }, [manuscript]);
 
   const timeFormat = (manuscript?.time_format === "elapsed" ? "elapsed" : "clock") as "clock" | "elapsed";
+  const targetDurationSeconds = (manuscript as any)?.target_duration_seconds ?? null;
 
   useAutosave({
     table: "manuscripts",
@@ -599,6 +606,42 @@ export default function Editor() {
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <SaveIndicator />
 
+          {/* Måltid-pill */}
+          {(() => {
+            const totalSeconds = cards.reduce((sum, c) => sum + estimateSeconds(wordCount(c.content_html), manuscript.wpm), 0);
+            const diff = targetDurationSeconds !== null ? totalSeconds - targetDurationSeconds : null;
+            const diffText = diff === null ? null : (() => {
+              const abs = Math.abs(diff);
+              const m = Math.floor(abs / 60);
+              const s = abs % 60;
+              const sign = diff > 0 ? "+" : diff < 0 ? "−" : "±";
+              return `${sign}${m}:${String(s).padStart(2, "0")}`;
+            })();
+            const diffColor = diff === null || Math.abs(diff) < 30
+              ? "text-muted-foreground"
+              : diff > 0
+                ? "text-[hsl(35_85%_38%)]"
+                : "text-muted-foreground";
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetDialogIntro(undefined);
+                  setTargetSaveLabel("Spara");
+                  setTargetDialogOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[12px] font-mono bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors"
+                title="Klicka för att ändra måltid"
+              >
+                <Target className="h-3 w-3" />
+                <span>Måltid: {targetDurationSeconds !== null ? formatTargetDuration(targetDurationSeconds) : "—"}</span>
+                {diffText && (
+                  <span className={diffColor}>({diffText})</span>
+                )}
+              </button>
+            );
+          })()}
+
           <div className="seg-group">
             {sizes.map((s) => (
               <button
@@ -668,6 +711,31 @@ export default function Editor() {
                 {overflowingCardIds.size}
               </span>
             )}
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (overflowingCardIds.size > 0) {
+                toast({
+                  title: "Presentationsläge blockerat",
+                  description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Åtgärda först.`,
+                  variant: "destructive",
+                });
+                return;
+              }
+              if (targetDurationSeconds === null) {
+                setTargetDialogIntro("Ange måltid för att starta presentationen.");
+                setTargetSaveLabel("Spara och starta");
+                setTargetDialogOpen(true);
+                return;
+              }
+              navigate(`/manus/${manuscript.id}/presentera`);
+            }}
+            disabled={overflowingCardIds.size > 0}
+            title={overflowingCardIds.size > 0 ? "Blockerad: kort överskrider radgränsen" : "Starta presentationsläge"}
+            className="h-9 rounded-full px-4 bg-foreground hover:bg-foreground/90 text-background text-[13px] font-medium gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Play className="h-3.5 w-3.5" /> Visa
           </Button>
         </div>
         </header>
@@ -763,6 +831,26 @@ export default function Editor() {
       )}
 
       <PrintDialog open={printDialogOpen} onOpenChange={setPrintDialogOpen} />
+
+      <TargetDurationDialog
+        open={targetDialogOpen}
+        onOpenChange={(open) => {
+          setTargetDialogOpen(open);
+          if (!open) {
+            setTargetDialogIntro(undefined);
+            setTargetSaveLabel("Spara");
+          }
+        }}
+        value={targetDurationSeconds}
+        intro={targetDialogIntro}
+        saveLabel={targetSaveLabel}
+        onSave={(seconds) => {
+          updateMeta({ target_duration_seconds: seconds } as Partial<Manuscript>);
+          if (targetSaveLabel === "Spara och starta" && seconds !== null && manuscript) {
+            setTimeout(() => navigate(`/manus/${manuscript.id}/presentera`), 50);
+          }
+        }}
+      />
     </div>
     </PanelistsProvider>
   );
