@@ -3,15 +3,18 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Mic2,
   Users,
   Landmark,
   Timer,
-  Palette,
-  Tag,
-  Monitor,
-  FileUp,
-  Printer,
+  ShieldCheck,
+  Sparkles,
   Check,
   ArrowRight,
 } from "lucide-react";
@@ -28,7 +31,7 @@ export default function Landing() {
   }, []);
 
   const primaryCtaTo = session ? "/bibliotek" : "/auth";
-  const primaryCtaLabel = session ? "Till biblioteket" : "Kom igång gratis";
+  const primaryCtaLabel = session ? "Till biblioteket" : "Skapa konto gratis";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -80,16 +83,16 @@ export default function Landing() {
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-2 text-[12px] font-medium text-muted-foreground mb-7">
               <span className="cue-dot cue-teal" />
-              För retoriker, moderatorer och politiker
+              Manuskort för proffsiga presentationer
             </div>
             <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[72px] leading-[1.02] font-semibold tracking-[-0.03em]">
-              Manus i kortformat.
+              Tala tryggt.
               <br />
-              <span className="text-muted-foreground">Flyt och tid — varje gång.</span>
+              <span className="text-muted-foreground">Håll tiden. Varje gång.</span>
             </h1>
             <p className="mt-7 text-[18px] sm:text-[19px] text-muted-foreground leading-relaxed max-w-[540px]">
-              Förbered, repetera och leverera anföranden och panelsamtal med struktur. Klipp manuset
-              i kort, sätt cue-färger och tidsbudgetar, och presentera med inbyggd teleprompter.
+              Manuskort är det enklaste sättet att förbereda ett anförande eller panelsamtal. Skriv
+              ditt manus, dela upp det i kort med tider och cues — och leverera med ro.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -112,7 +115,7 @@ export default function Landing() {
             </div>
 
             <p className="mt-6 text-[13px] text-muted-foreground">
-              Gratis att börja · Inget kreditkort
+              Gratis att testa · Inget kreditkort · Igång på under en minut
             </p>
           </div>
 
@@ -123,47 +126,74 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Use cases */}
+      {/* Introduction (SEO) */}
+      <section className="px-6 sm:px-10 py-20 sm:py-24 border-t-hair">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="font-display text-[28px] sm:text-[36px] leading-[1.15] font-semibold tracking-tight mb-6">
+            Vad är manuskort — och varför fungerar det?
+          </h2>
+          <div className="space-y-5 text-[16.5px] text-muted-foreground leading-relaxed">
+            <p>
+              Manuskort är korta, strukturerade kort som hjälper dig att hålla röd tråd när du talar
+              inför publik. Istället för att läsa innantill från ett långt manus får du
+              överblickbara avsnitt med stödord, tider och påminnelser — exakt det du behöver för
+              att låta naturlig och säker.
+            </p>
+            <p>
+              Bra presentationsteknik handlar lika mycket om förberedelse som om framförandet. Med
+              ett manus uppdelat i kort kan du repetera mer effektivt, anpassa längden på stående
+              fot och hantera oväntade frågor utan att tappa tråden.
+            </p>
+            <p>
+              Verktyget ger dig stöd vid presentation hela vägen — från första utkastet till själva
+              talarstolen. Skriv direkt i webbläsaren eller importera ett befintligt manus, och
+              presentera sedan med inbyggd teleprompter på valfri skärm.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Värde / nyttor */}
       <section className="px-6 sm:px-10 py-24 sm:py-28 bg-surface-2/60">
         <div className="max-w-6xl mx-auto">
           <div className="max-w-2xl mb-14">
             <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
-              Tänkt för verkliga tillfällen
+              Vad du får ut
             </p>
             <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
-              När det måste sitta — på minuten.
+              Mindre stress. Tydligare budskap. Bättre tajming.
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-5">
-            <UseCaseCard
-              icon={<Users className="h-5 w-5" />}
-              title="Panelsamtal i Almedalen"
-              text="Moderera flera röster, håll tiden och släpp in alla. Tagga inlägg per deltagare och se totaltiden växa i realtid."
+            <BenefitCard
+              icon={<Timer className="h-5 w-5" />}
+              title="Spara tid i förberedelsen"
+              text="Skriv en gång, repetera smart. Tidsbudget per kort räknar ut totaltiden åt dig — du slipper gissa om du ligger rätt."
             />
-            <UseCaseCard
-              icon={<Mic2 className="h-5 w-5" />}
-              title="Anförande på kongress"
-              text="Håll flyt och energi rakt igenom. Cue-färger för paus, tempo och betoning — träffa exakt rätt minut."
+            <BenefitCard
+              icon={<Sparkles className="h-5 w-5" />}
+              title="Bli tydligare på scen"
+              text="Korta avsnitt, cue-färger för paus, tempo och betoning. Du levererar ett budskap som landar — inte ett uppläst manus."
             />
-            <UseCaseCard
-              icon={<Landmark className="h-5 w-5" />}
-              title="Kommunfullmäktige"
-              text="Strukturerade inlägg med tydliga avsnitt. Stor, läsbar text i talarstolen — utan att tappa tråden."
+            <BenefitCard
+              icon={<ShieldCheck className="h-5 w-5" />}
+              title="Känn dig trygg när det gäller"
+              text="Stor läsbar text, mörkt tema och skärm som hålls vaken. Du vet alltid var du är — även om en fråga drar iväg."
             />
           </div>
         </div>
       </section>
 
-      {/* How it works */}
+      {/* Hur det fungerar */}
       <section className="px-6 sm:px-10 py-24 sm:py-28">
         <div className="max-w-6xl mx-auto">
           <div className="max-w-2xl mb-14">
             <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
-              Så funkar det
+              Så fungerar det
             </p>
             <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
-              Från råmanus till scen i tre steg.
+              Från utkast till scen — i tre steg.
             </h2>
           </div>
 
@@ -171,136 +201,195 @@ export default function Landing() {
             <Step
               n={1}
               title="Skriv eller importera"
-              text="Börja från ett tomt manus eller dra in en .docx. Vi känner igen talare och styckar upp automatiskt."
+              text="Börja från ett tomt manus eller dra in en .docx. Talare och stycken känns igen automatiskt."
             />
             <Step
               n={2}
-              title="Klipp i kort, sätt tider och cues"
-              text="Bryt ner i hanterbara kort. Lägg på cue-färger för paus, tempo och betoning. Sätt en tidsbudget per kort."
+              title="Dela upp i kort"
+              text="Bryt ner texten i hanterbara avsnitt. Sätt tider och cue-färger där du vill ha extra fokus."
             />
             <Step
               n={3}
-              title="Presentera med teleprompter"
-              text="Fullskärmsläge med automatisk rullning, tidshjälpare och wake-lock som håller skärmen vaken."
+              title="Presentera"
+              text="Öppna presentationsläget på valfri skärm. Tidshjälpare och teleprompter gör resten."
             />
           </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* Målgrupp */}
       <section className="px-6 sm:px-10 py-24 sm:py-28 bg-surface-2/60">
         <div className="max-w-6xl mx-auto">
           <div className="max-w-2xl mb-14">
             <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
-              Funktioner
+              För dig som talar
             </p>
             <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
-              Allt du behöver — inget mer.
+              Byggt för dig som ofta står på scen.
             </h2>
+            <p className="mt-5 text-[16.5px] text-muted-foreground leading-relaxed">
+              Konsulter, säljare, chefer, moderatorer, politiker och föreläsare — alla som behöver
+              ett pålitligt stöd vid presentation utan att fastna i PowerPoint.
+            </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-5">
-            <Feature
-              icon={<Palette className="h-5 w-5" />}
-              title="Cue-färger"
-              text="Markera paus, tempo och betoning direkt i texten. Ser du vid en blick vad som väntar."
+          <div className="grid md:grid-cols-3 gap-5">
+            <UseCaseCard
+              icon={<Users className="h-5 w-5" />}
+              title="Moderatorn"
+              text="Led panelsamtal med flera röster. Tagga inlägg per deltagare och håll totaltiden i realtid."
             />
-            <Feature
-              icon={<Timer className="h-5 w-5" />}
-              title="Tidsbudget per kort"
-              text="Sätt en mål-tid per kort och få totaltid uträknad automatiskt. Varningar när du dragit över."
+            <UseCaseCard
+              icon={<Mic2 className="h-5 w-5" />}
+              title="Talaren"
+              text="Anförande på kongress, kickoff eller kundevent. Träffa exakt rätt minut, varje gång."
             />
-            <Feature
-              icon={<Tag className="h-5 w-5" />}
-              title="Paneldeltagare med färgkod"
-              text="Tilldela inlägg till deltagare. Färgkodade taggar gör det lätt att moderera flera röster."
-            />
-            <Feature
-              icon={<Monitor className="h-5 w-5" />}
-              title="Presentationsläge"
-              text="Fullskärm, mörkt tema och wake-lock. Teleprompter med jämn rullning eller stegvis."
-            />
-            <Feature
-              icon={<FileUp className="h-5 w-5" />}
-              title="Importera .docx"
-              text="Dra in ett befintligt manus. Vi splitter, sanitiserar och föreslår talare."
-              proBadge
-            />
-            <Feature
-              icon={<Printer className="h-5 w-5" />}
-              title="Utskrift i flera format"
-              text="A4, A5 och kort-format. Snyggt typsatta utskrifter att ha vid sidan av skärmen."
+            <UseCaseCard
+              icon={<Landmark className="h-5 w-5" />}
+              title="Beslutsfattaren"
+              text="Strukturerade inlägg i fullmäktige, styrelsemöten eller pressmöten. Tydligt — under press."
             />
           </div>
         </div>
       </section>
 
-      {/* Quote */}
+      {/* Friktionsreducering */}
       <section className="px-6 sm:px-10 py-24 sm:py-28">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="font-display text-[28px] sm:text-[36px] leading-[1.25] font-medium tracking-tight text-foreground">
-            "Den som inte förbereder sig, förbereder sig på att misslyckas."
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight mb-6">
+            Inga hinder. Bara igång.
+          </h2>
+          <p className="text-[16.5px] text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            Du behöver inga inställningar, inga plug-ins och inget kort. Skapa ett konto, klistra in
+            ditt manus och kör.
           </p>
-          <p className="mt-6 text-[14px] text-muted-foreground">— gammalt retorikordspråk</p>
-        </div>
-      </section>
 
-      {/* Pricing teaser */}
-      <section className="px-6 sm:px-10 py-24 sm:py-28 bg-surface-2/60">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
-              Pris
-            </p>
-            <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
-              Börja gratis. Uppgradera när du vill.
-            </h2>
+          <div className="mt-12 grid sm:grid-cols-3 gap-5">
+            <FrictionCard title="Gratis att testa" text="Använd kärnfunktionerna utan tidsgräns." />
+            <FrictionCard
+              title="Inget kreditkort"
+              text="Skapa konto med e-post — ingen betalning krävs."
+            />
+            <FrictionCard title="Klart på en minut" text="Importera eller börja skriva direkt." />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
-            <div className="bg-surface rounded-2xl shadow-card p-8">
-              <p className="font-display text-[20px] font-semibold">Gratis</p>
-              <p className="mt-1 text-[13px] text-muted-foreground">För att komma igång</p>
-              <p className="mt-6 font-display text-[40px] font-semibold tracking-tight">0 kr</p>
-              <ul className="mt-6 space-y-2.5 text-[14px]">
-                <PriceLi>2 manus</PriceLi>
-                <PriceLi>15 kort per manus</PriceLi>
-                <PriceLi>Presentationsläge</PriceLi>
-              </ul>
-            </div>
-            <div className="bg-surface rounded-2xl shadow-card p-8 ring-2 ring-accent-blue relative">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent-blue text-white text-[11px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full">
-                Rekommenderas
-              </span>
-              <p className="font-display text-[20px] font-semibold">PRO</p>
-              <p className="mt-1 text-[13px] text-muted-foreground">För dig som kör skarpt</p>
-              <p className="mt-6 font-display text-[40px] font-semibold tracking-tight text-muted-foreground">
-                —
-              </p>
-              <ul className="mt-6 space-y-2.5 text-[14px]">
-                <PriceLi>Obegränsade manus och kort</PriceLi>
-                <PriceLi>Importera från .docx</PriceLi>
-                <PriceLi>Alla framtida features</PriceLi>
-              </ul>
-            </div>
-          </div>
-
-          <div className="text-center mt-10">
-            <Button asChild variant="outline" className="h-11 rounded-full px-6 border-hair-strong">
-              <Link to="/priser">Se alla detaljer</Link>
+          <div className="mt-12">
+            <Button
+              asChild
+              className="h-12 rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[15px] px-7"
+            >
+              <Link to={primaryCtaTo}>
+                {primaryCtaLabel}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
       </section>
 
+      {/* Social proof */}
+      <section className="px-6 sm:px-10 py-24 sm:py-28 bg-surface-2/60">
+        <div className="max-w-5xl mx-auto">
+          <div className="max-w-2xl mb-14">
+            <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
+              Vad användare säger
+            </p>
+            <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
+              Talare som litar på sin förberedelse.
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            <Quote
+              text="Första gången jag inte behövde stressa över tiden under ett panelsamtal. Korten gjorde att jag kunde vara närvarande istället."
+              author="Moderator, branschkonferens"
+            />
+            <Quote
+              text="Jag använder Manuskort inför varje större tal nu. Det är som att ha ett lugn jag kan luta mig mot."
+              author="Föreläsare och konsult"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="px-6 sm:px-10 py-24 sm:py-28">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-12 text-center">
+            <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
+              Vanliga frågor
+            </p>
+            <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
+              Allt du undrar — kort förklarat.
+            </h2>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="q1" className="border-hair">
+              <AccordionTrigger className="text-left text-[16px] font-medium py-5">
+                Vad är manuskort?
+              </AccordionTrigger>
+              <AccordionContent className="text-[15px] text-muted-foreground leading-relaxed pb-5">
+                Manuskort är korta, strukturerade avsnitt av ditt manus — med stödord, tider och
+                cues. De gör det lättare att hålla röd tråd när du talar inför publik, jämfört med
+                att läsa från ett långt löpande manus.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="q2" className="border-hair">
+              <AccordionTrigger className="text-left text-[16px] font-medium py-5">
+                Hur hjälper manuskort vid en presentation?
+              </AccordionTrigger>
+              <AccordionContent className="text-[15px] text-muted-foreground leading-relaxed pb-5">
+                Du får överblick, kontroll på tiden och ett tydligt stöd vid presentationen — utan
+                att låsa dig vid ordagrann text. Cue-färger och tidsbudgetar hjälper dig att hitta
+                rätt tempo, hålla pauser och anpassa längden om något oväntat händer.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="q3" className="border-hair">
+              <AccordionTrigger className="text-left text-[16px] font-medium py-5">
+                Är det gratis att använda?
+              </AccordionTrigger>
+              <AccordionContent className="text-[15px] text-muted-foreground leading-relaxed pb-5">
+                Ja. Du kommer igång helt gratis utan kreditkort. Gratisplanen räcker för de flesta
+                enskilda presentationer. För obegränsat antal manus och kort, samt import från
+                .docx, finns en PRO-plan.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="q4" className="border-hair">
+              <AccordionTrigger className="text-left text-[16px] font-medium py-5">
+                Fungerar det i talarstolen och på scen?
+              </AccordionTrigger>
+              <AccordionContent className="text-[15px] text-muted-foreground leading-relaxed pb-5">
+                Ja. Presentationsläget är byggt för riktiga scener: stor läsbar text, mörkt tema,
+                fullskärm och wake-lock som håller skärmen vaken. Det fungerar i webbläsaren på
+                laptop, surfplatta och telefon.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="q5" className="border-hair">
+              <AccordionTrigger className="text-left text-[16px] font-medium py-5">
+                Kan jag importera ett befintligt manus?
+              </AccordionTrigger>
+              <AccordionContent className="text-[15px] text-muted-foreground leading-relaxed pb-5">
+                Ja. Med PRO-planen kan du importera ett .docx-manus. Verktyget känner igen talare
+                och styckar upp texten automatiskt — du behöver bara finjustera.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </section>
+
       {/* Final CTA */}
-      <section className="px-6 sm:px-10 py-28 sm:py-36">
+      <section className="px-6 sm:px-10 py-28 sm:py-36 bg-surface-2/60">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-display text-[40px] sm:text-[56px] leading-[1.05] font-semibold tracking-tight">
-            Redo att hålla tiden?
+            Nästa presentation börjar här.
           </h2>
           <p className="mt-6 text-[17px] text-muted-foreground max-w-xl mx-auto">
-            Skapa ditt första manus på under en minut. Inget kreditkort krävs.
+            Skapa ditt första manus på under en minut. Gratis att testa, inget kreditkort.
           </p>
           <div className="mt-10">
             <Button
@@ -431,6 +520,26 @@ function UseCaseCard({
   );
 }
 
+function BenefitCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="bg-surface rounded-2xl shadow-card p-7">
+      <div className="h-10 w-10 rounded-full bg-accent-blue/10 text-accent-blue flex items-center justify-center mb-5">
+        {icon}
+      </div>
+      <h3 className="font-display text-[19px] font-semibold mb-2">{title}</h3>
+      <p className="text-[14.5px] text-muted-foreground leading-relaxed">{text}</p>
+    </div>
+  );
+}
+
 function Step({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <div>
@@ -443,32 +552,13 @@ function Step({ n, title, text }: { n: number; title: string; text: string }) {
   );
 }
 
-function Feature({
-  icon,
-  title,
-  text,
-  proBadge,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-  proBadge?: boolean;
-}) {
+function FrictionCard({ title, text }: { title: string; text: string }) {
   return (
-    <div className="bg-surface rounded-2xl shadow-card p-7">
-      <div className="flex items-start gap-4">
-        <div className="h-10 w-10 rounded-full bg-accent-blue/10 text-accent-blue flex items-center justify-center shrink-0">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            <h3 className="font-display text-[17px] font-semibold">{title}</h3>
-            {proBadge && (
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-accent-blue bg-accent-blue/10 px-1.5 py-0.5 rounded">
-                PRO
-              </span>
-            )}
-          </div>
+    <div className="bg-surface rounded-2xl shadow-card p-6 text-left">
+      <div className="flex items-start gap-3">
+        <Check className="h-5 w-5 text-accent-blue mt-0.5 shrink-0" />
+        <div>
+          <h3 className="font-display text-[16px] font-semibold mb-1">{title}</h3>
           <p className="text-[14px] text-muted-foreground leading-relaxed">{text}</p>
         </div>
       </div>
@@ -476,11 +566,13 @@ function Feature({
   );
 }
 
-function PriceLi({ children }: { children: React.ReactNode }) {
+function Quote({ text, author }: { text: string; author: string }) {
   return (
-    <li className="flex items-start gap-2.5">
-      <Check className="h-4 w-4 text-accent-blue mt-0.5 shrink-0" />
-      <span>{children}</span>
-    </li>
+    <figure className="bg-surface rounded-2xl shadow-card p-7">
+      <blockquote className="font-display text-[18px] leading-[1.5] text-foreground">
+        "{text}"
+      </blockquote>
+      <figcaption className="mt-4 text-[13px] text-muted-foreground">— {author}</figcaption>
+    </figure>
   );
 }
