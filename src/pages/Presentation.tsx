@@ -121,6 +121,7 @@ export default function Presentation() {
   // Esc + fullscreenchange
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (menuOpen) return; // Menyn hanterar sina egna tangenter
       if (e.key === "Escape") {
         e.preventDefault();
         exit();
@@ -155,7 +156,7 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex]);
+  }, [exit, cards.length, currentIndex, menuOpen]);
 
   // Navigation
   const goNext = useCallback(() => {
