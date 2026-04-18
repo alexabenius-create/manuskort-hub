@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
+import { useTier } from "@/hooks/useTier";
+import { TIER_LABEL } from "@/lib/tierLimits";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, LogOut, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +10,7 @@ import { toast } from "sonner";
 export default function Settings() {
   const { user, signOut } = useAuth();
   const { resetTour } = useTour();
+  const { tier, isFree } = useTier();
 
   const onResetBibliotek = async () => {
     await resetTour("bibliotek");
@@ -52,11 +55,17 @@ export default function Settings() {
           <div className="bg-surface rounded-2xl shadow-card px-5 py-4 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-[12px] text-muted-foreground">Plan</p>
-              <p className="text-[15px] font-medium">Gratis</p>
+              <p className="text-[15px] font-medium">{TIER_LABEL[tier]}</p>
             </div>
-            <Button asChild variant="ghost" className="rounded-full text-[13px] text-accent-blue hover:text-accent-blue hover:bg-accent-blue/10">
-              <Link to="/priser">Uppgradera</Link>
-            </Button>
+            {isFree ? (
+              <Button asChild variant="ghost" className="rounded-full text-[13px] text-accent-blue hover:text-accent-blue hover:bg-accent-blue/10">
+                <Link to="/priser">Uppgradera</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="ghost" className="rounded-full text-[13px] text-muted-foreground hover:text-foreground">
+                <Link to="/priser">Se planer</Link>
+              </Button>
+            )}
           </div>
         </section>
 
