@@ -593,27 +593,295 @@ export default function Editor() {
   return (
     <PanelistsProvider manuscriptId={manuscript.id}>
     <div className="min-h-screen">
-      {/* Sticky topbar-grupp: huvudrad + (villkorlig) tidsformat-rad */}
+      {/* Sticky topbar — kompakt, en rad. Vy-inställningar i popover. */}
       <div className="topbar-blur sticky top-0 z-50 border-b-hair">
-        <header className="px-5 sm:px-8 min-h-14 py-2 flex items-center gap-5 flex-wrap">
-        <Link
-          to="/bibliotek"
-          className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
-          aria-label="Tillbaka till bibliotek"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        <header className="px-4 sm:px-6 min-h-14 py-2 flex items-center gap-2 sm:gap-3">
+          <Link
+            to="/bibliotek"
+            className="flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
+            aria-label="Tillbaka till bibliotek"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
 
-        <div className="flex items-center gap-2 min-w-0">
-          <input
-            value={manuscript.title}
-            onChange={(e) => updateMeta({ title: e.target.value })}
-            className="font-display text-[17px] font-semibold tracking-tight bg-transparent border-0 outline-none min-w-[120px] max-w-[280px]"
-          />
-          <span className="text-[13px] text-muted-foreground hidden sm:inline">
-            · {manuscript.mode === "moderator" ? "moderator" : "talare"}
-          </span>
-        </div>
+          <div className="flex items-center gap-2 min-w-0 flex-shrink">
+            <input
+              value={manuscript.title}
+              onChange={(e) => updateMeta({ title: e.target.value })}
+              className="font-display text-[17px] font-semibold tracking-tight bg-transparent border-0 outline-none min-w-[80px] max-w-[260px] truncate"
+            />
+            <span className="text-[12px] text-muted-foreground hidden md:inline whitespace-nowrap">
+              · {manuscript.mode === "moderator" ? "moderator" : "talare"}
+            </span>
+          </div>
+
+          <SaveIndicator compact />
+
+          {/* Höger sida — primära åtgärder + sekundära ikoner */}
+          <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
+            {/* Måltid — ikon med diff-prick */}
+            {(() => {
+              const totalSeconds = cards.reduce((sum, c) => sum + estimateSeconds(wordCount(c.content_html), manuscript.wpm), 0);
+              const diff = targetDurationSeconds !== null ? totalSeconds - targetDurationSeconds : null;
+              const diffAbs = diff === null ? 0 : Math.abs(diff);
+              const hasWarn = diff !== null && diffAbs >= 30;
+              const overTarget = diff !== null && diff > 0;
+              const diffText = diff === null ? null : (() => {
+                const m = Math.floor(diffAbs / 60);
+                const s = diffAbs % 60;
+                const sign = diff > 0 ? "+" : diff < 0 ? "−" : "±";
+                return `${sign}${m}:${String(s).padStart(2, "0")}`;
+              })();
+              const tipLine = targetDurationSeconds !== null
+                ? `Måltid: ${formatTargetDuration(targetDurationSeconds)}${diffText ? ` (${diffText})` : ""}`
+                : "Måltid ej satt — klicka för att ange";
+              return (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetDialogIntro(undefined);
+                        setTargetSaveLabel("Spara");
+                        setTargetDialogOpen(true);
+                      }}
+                      aria-label={tipLine}
+                      className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                    >
+                      <Target className="h-4 w-4" />
+                      {hasWarn && (
+                        <span
+                          className={`absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full ${overTarget ? "bg-[hsl(35_85%_45%)]" : "bg-accent-blue"}`}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                    {tipLine}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })()}
+
+            {/* Storlek — kvar synlig, men kompaktare */}
+            <div className="seg-group" data-tour="editor.display-settings">
+              {sizes.map((s) => (
+                <button
+                  key={s}
+                  data-active={manuscript.text_size === s}
+                  onClick={() => updateMeta({ text_size: s })}
+                  className="seg-btn"
+                  title={`Textstorlek: ${sizeLabels[s]}`}
+                >
+                  {s.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* Vy-popover — samlar Anteckningar/Tider/Tidsformat/Layout/Notes-placement */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Vy-inställningar"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                    Vy-inställningar
+                  </TooltipContent>
+                </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
+                <div className="flex flex-col gap-4">
+                  <ViewSection label="Visa">
+                    <div className="seg-group w-full">
+                      <button
+                        data-active={manuscript.show_notes}
+                        onClick={() => updateMeta({ show_notes: !manuscript.show_notes })}
+                        className="seg-btn flex-1"
+                      >
+                        Anteckningar
+                      </button>
+                      <button
+                        data-active={manuscript.show_times}
+                        onClick={() => updateMeta({ show_times: !manuscript.show_times })}
+                        className="seg-btn flex-1"
+                      >
+                        Tider
+                      </button>
+                    </div>
+                  </ViewSection>
+
+                  {manuscript.show_times && (
+                    <ViewSection label="Tidsformat">
+                      <div className="seg-group w-full">
+                        <button
+                          data-active={timeFormat === "clock"}
+                          onClick={() => updateMeta({ time_format: "clock" })}
+                          className="seg-btn flex-1"
+                          title="Klockslag på dygnet (HH:MM)"
+                        >
+                          Klockslag
+                        </button>
+                        <button
+                          data-active={timeFormat === "elapsed"}
+                          onClick={() => updateMeta({ time_format: "elapsed" })}
+                          className="seg-btn flex-1"
+                          title="Förfluten tid från programmets start (MM:SS)"
+                        >
+                          Förfluten
+                        </button>
+                      </div>
+                    </ViewSection>
+                  )}
+
+                  <div className="border-t border-border/50 -mx-4" />
+
+                  <ViewSection label="Kortlayout (mockup)" hint="Sparas lokalt i webbläsaren">
+                    <div className="seg-group w-full">
+                      <button
+                        data-active={layoutVariant === "klassisk"}
+                        onClick={() => setLayoutVariant("klassisk")}
+                        className="seg-btn flex-1"
+                      >
+                        Klassisk
+                      </button>
+                      <button
+                        data-active={layoutVariant === "ny"}
+                        onClick={() => setLayoutVariant("ny")}
+                        className="seg-btn flex-1"
+                      >
+                        Ny
+                      </button>
+                    </div>
+                  </ViewSection>
+
+                  {layoutVariant === "ny" && manuscript.show_notes && (
+                    <ViewSection label="Anteckningarnas placering">
+                      <div className="seg-group w-full">
+                        <button
+                          data-active={notesPlacement === "side"}
+                          onClick={() => setNotesPlacement("side")}
+                          className="seg-btn flex-1"
+                        >
+                          Sida
+                        </button>
+                        <button
+                          data-active={notesPlacement === "below"}
+                          onClick={() => setNotesPlacement("below")}
+                          className="seg-btn flex-1"
+                        >
+                          Under
+                        </button>
+                      </div>
+                    </ViewSection>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {isModerator && (
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <button
+                    data-tour="editor.panelists"
+                    type="button"
+                    onClick={() => setPanelistSidebarOpen(true)}
+                    aria-label="Deltagare"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                  >
+                    <Users className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                  Deltagare
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Skriv ut — ikon */}
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (overflowingCardIds.size > 0) {
+                      toast({
+                        title: "Utskrift blockerad",
+                        description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Korta ner texten eller använd "Dela kortet automatiskt".`,
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setPrintDialogOpen(true);
+                  }}
+                  disabled={overflowingCardIds.size > 0}
+                  aria-label="Skriv ut manus"
+                  className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Printer className="h-4 w-4" />
+                  {overflowingCardIds.size > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold">
+                      {overflowingCardIds.size}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                {overflowingCardIds.size > 0
+                  ? `Blockerad: ${overflowingCardIds.size} kort överskrider radgränsen`
+                  : "Skriv ut manus"}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Liten visuell separator */}
+            <span className="hidden sm:block h-5 w-px bg-border/60 mx-1" aria-hidden />
+
+            <div data-tour="editor.add-print" className="flex items-center gap-1.5">
+              <Button
+                onClick={addCard}
+                className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Nytt kort</span>
+              </Button>
+            </div>
+
+            <Button
+              data-tour="editor.present"
+              onClick={() => {
+                if (overflowingCardIds.size > 0) {
+                  toast({
+                    title: "Presentationsläge blockerat",
+                    description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Åtgärda först.`,
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (targetDurationSeconds === null) {
+                  setTargetDialogIntro("Ange måltid för att starta presentationen.");
+                  setTargetSaveLabel("Spara och starta");
+                  setTargetDialogOpen(true);
+                  return;
+                }
+                navigate(`/manus/${manuscript.id}/presentera`);
+              }}
+              disabled={overflowingCardIds.size > 0}
+              title={overflowingCardIds.size > 0 ? "Blockerad: kort överskrider radgränsen" : "Starta presentationsläge"}
+              className="h-9 rounded-full px-3 sm:px-4 bg-foreground hover:bg-foreground/90 text-background text-[13px] font-medium gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Play className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Visa</span>
+            </Button>
+          </div>
+        </header>
+      </div>
 
         <div className="flex items-center gap-3 ml-auto flex-wrap">
           <SaveIndicator />
