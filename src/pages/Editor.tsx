@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ManusCard } from "@/components/editor/ManusCard";
+import { ManusCardV2, type NotesPlacement } from "@/components/editor/ManusCardV2";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { PrintDialog } from "@/components/editor/PrintDialog";
