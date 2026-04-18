@@ -130,7 +130,7 @@ export function ManusCard({
       className="manu-card bg-surface-2 rounded-2xl p-3 flex flex-col gap-3"
     >
       {/* Header panel */}
-      <header className="bg-surface rounded-xl shadow-subtle px-5 pt-4 pb-4 flex items-start gap-4">
+      <header className="card-panel-header bg-surface rounded-xl shadow-subtle px-5 pt-4 pb-4 flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="font-mono text-[11px] text-muted-foreground tracking-wide">
