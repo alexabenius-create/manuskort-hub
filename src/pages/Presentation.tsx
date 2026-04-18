@@ -123,6 +123,26 @@ export default function Presentation() {
     navigate(`/manus/${id}`);
   }, [id, navigate, timer]);
 
+  // Hastighetskontroll i scroll-läge — delas mellan tangenter och knappar
+  const handleSpeedUp = useCallback(() => {
+    setSpeedFactor((s) => {
+      const next = Math.min(3.0, +(s + 0.1).toFixed(2));
+      setSpeedChip({ value: next, ts: Date.now() });
+      return next;
+    });
+  }, []);
+  const handleSpeedDown = useCallback(() => {
+    setSpeedFactor((s) => {
+      const next = Math.max(0.25, +(s - 0.1).toFixed(2));
+      setSpeedChip({ value: next, ts: Date.now() });
+      return next;
+    });
+  }, []);
+  const handleSpeedReset = useCallback(() => {
+    setSpeedFactor(1.0);
+    setSpeedChip({ value: 1.0, ts: Date.now() });
+  }, []);
+
   // Esc + fullscreenchange
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
