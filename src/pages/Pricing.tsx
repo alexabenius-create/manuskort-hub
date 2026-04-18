@@ -153,7 +153,7 @@ export default function Pricing() {
                 <span className="text-[14px] text-muted-foreground">kr/mån</span>
               </div>
               <div className="h-4 text-[12px] text-muted-foreground">
-                {billing === "year" ? "890 kr faktureras årligen" : "\u00A0"}
+                {billing === "year" ? "890 kr faktureras årligen, inkl. moms" : "Inkl. moms"}
               </div>
             </header>
 
