@@ -1,60 +1,40 @@
 
 
-## Importera .docx/.txt — uppdaterad plan
+Plan: prissida `/priser` med två tiers. Ingen betalning ännu — bara UI och navigation. Vi beslutar feature-gränser efter att sidan finns.
 
-### Justeringar mot förra planen
+## Vad som byggs
 
-1. **Postgres-RPC för commit** — ny SQL-funktion `import_manuscript(p_manuscript jsonb, p_panelists jsonb, p_cards jsonb)` som returnerar nya `manuscript_id`. Allt sker i en transaktion server-side. Klienten skickar ett enda anrop, ingen manuell rollback. RPC:n är `SECURITY INVOKER` så RLS gäller, och sätter `user_id = auth.uid()` på alla rader.
+**Ny route:** `/priser` (publik, ej bakom RequireAuth)
 
-2. **Rubriker bevaras alltid** — i `sanitizeHtml` konverteras H1/H2/H3 till `<p><strong>…</strong></p>` när split-strategin är *ordantal* eller *stycke*. Vid *rubriker*-strategin: H1/H2 blir kort-titel, H3 blir `<strong>` i brödtext. Inget innehåll faller bort.
+**Ny fil:** `src/pages/Pricing.tsx`
+- Topbar matchande Settings.tsx (tillbaka-pil → `/`, titel "Priser")
+- Två kort sida vid sida (stack på mobil <768px):
+  - **Gratis** — 0 kr/mån, CTA "Kom igång" → `/auth` (eller `/` om inloggad)
+  - **PRO** — pris-placeholder (t.ex. "—"), CTA "Uppgradera" (disabled, tooltip "Kommer snart")
+- Varje kort: namn, pris, kort beskrivning, feature-lista med check-ikoner (lucide `Check`/`Minus`), CTA-knapp
+- PRO-kortet visuellt framhävt: ring i `accent-blue`, liten "Rekommenderas"-badge
 
-3. **Highlight + länkar i whitelist**
-   - Lägg till `Link`-extension i `TiptapEditor.tsx` (saknas idag) så `<a href>` bevaras vid både import och fortsatt redigering.
-   - `sanitizeHtml` mappar mammoths gulmarkering (`<mark>` eller `style="background-color: yellow"`) till `<mark>` så Highlight-extensionen plockar upp det.
-   - Whitelist uppdateras: `<p><strong><em><u><s><mark><a><br><ul><ol><li><span data-panelist-*>`.
+**Innehåll i v1 (placeholder — fylls i efter diskussion):**
+Listorna lämnas medvetet tomma/markerade `TODO` så vi kan fylla i tillsammans i nästa steg. Jag lägger in 3-4 generiska rader per tier som utgångspunkt:
+- Gratis: X manus, Y kort/manus, grundläggande presentation, .docx-import
+- PRO: Obegränsade manus, alla framtida features, prioriterad support
 
-4. **beforeunload-skydd i steg 2** — `useEffect` i preview-vyn registrerar `beforeunload` när `cards`-state har manuellt justerats (track via en `dirty`-flagga som sätts vid första action som inte är initial build).
+**Routing:** lägg till `<Route path="/priser" element={<Pricing />} />` i App.tsx (publik).
 
-### Två praktiska detaljer
+**Länk till sidan:** lägg till en rad "Plan: Gratis · [Uppgradera]" i `Settings.tsx` under Konto-sektionen, som länkar till `/priser`.
 
-- **State-överlevnad**: liten Zustand-store (`useImportStore`) håller `file`, `rawBlocks`, `previewState`. Överlever micro-navigering i wizarden. Töms vid commit eller "Avbryt".
-- **Filtypsdetektering**: primärt `file.name.endsWith('.docx' / '.txt')`, MIME som sekundär signal. Specialfall för `.doc` (utan x) → tydligt felmeddelande.
+## Vad som INTE görs nu
+- Ingen `subscriptions`-tabell, ingen Stripe/Paddle, ingen feature-gating, inga DB-ändringar
+- Ingen logik som faktiskt begränsar gratisanvändare
+- Beslut om exakt prissättning, gränser och feature-uppdelning tas i nästa runda när du ser sidan
 
-### Filer (uppdaterad lista)
+## Designnoter
+- Följer befintliga tokens: `bg-surface`, `rounded-2xl`, `shadow-card`, `font-display`
+- Inga emojis. Svensk text genomgående.
 
-**Nya:**
-- `src/lib/import/parseDocument.ts`, `sanitizeHtml.ts`, `detectSpeakers.ts`, `splitStrategies.ts`, `buildCards.ts`
-- `src/lib/import/importStore.ts` (Zustand)
-- `src/pages/Import.tsx`
-- `src/components/import/UploadZone.tsx`, `SettingsForm.tsx`, `PreviewCardItem.tsx`, `SpeakerMappingPanel.tsx`
-- Migration: `import_manuscript` RPC
-
-**Ändras:**
-- `src/components/editor/TiptapEditor.tsx` — lägg till `Link`-extension
-- `src/pages/Library.tsx` — "Importera"-knapp + global drop-zone overlay
-- `src/App.tsx` — route `/importera`
-- `package.json` — `mammoth`, `zustand`, `@tiptap/extension-link`
-
-### RPC-skiss
-
-```text
-import_manuscript(p_manuscript jsonb, p_panelists jsonb, p_cards jsonb)
-  → INSERT manuscripts → m_id
-  → INSERT panelists (loopa, returnera map detected_name → new_id)
-  → mappa data-panelist-id i p_cards.content_html med returnerade ID
-  → INSERT cards (batch)
-  → return m_id
-```
-
-Allt i en transaktion. Fel = automatisk rollback i Postgres.
-
-### Byggordning
-
-1. RPC-migration + `Link`-extension
-2. `mammoth` + `parseDocument` + `sanitizeHtml` (med tester)
-3. `splitStrategies` + `detectSpeakers` + `buildCards`
-4. Wizard-route + steg 1 (upload + settings)
-5. Steg 2 (reducer + UI + beforeunload)
-6. Commit via RPC + redirect
-7. Drop-zone på `/`
+## Efter att sidan är byggd
+Jag återkommer med konkreta förslag på:
+1. Hårda gränser för gratis (antal manus, kort, deltagare, importer/mån)
+2. PRO-exklusiva features (t.ex. obegränsat, export-format, samarbete, AI-assist)
+3. Prisförslag
 
