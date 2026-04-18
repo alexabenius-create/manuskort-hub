@@ -316,15 +316,17 @@ export default function Presentation() {
 
       <main className="flex-1 min-h-0 pt-44 pb-44 px-6 md:px-10 relative">
         <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
-          <PresentationCard
-            card={current}
-            panelists={panelists}
-            textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
-            sizeOffset={sizeOffset}
-            showNotes={showNotes}
-            onToggleNotes={() => setShowNotes((s) => !s)}
-            onNotesChange={(notes) => handleNotesChange(current.id, notes)}
-          />
+          {!menuOpen && (
+            <PresentationCard
+              card={current}
+              panelists={panelists}
+              textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+              sizeOffset={sizeOffset}
+              showNotes={showNotes}
+              onToggleNotes={() => setShowNotes((s) => !s)}
+              onNotesChange={(notes) => handleNotesChange(current.id, notes)}
+            />
+          )}
         </div>
       </main>
 
