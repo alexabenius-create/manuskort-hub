@@ -226,6 +226,27 @@
     font-weight: 500;
   }
 
+  /* Teleprompter (mjuk rullning) */
+  .teleprompter-line {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--accent-blue) / 0.6) 20%,
+      hsl(var(--accent-blue) / 0.6) 80%,
+      transparent 100%
+    );
+    box-shadow: 0 0 16px hsl(var(--accent-blue) / 0.4);
+  }
+  .teleprompter-sentence-active {
+    color: hsl(0 0% 98%);
+    transition: color 0.25s ease, opacity 0.25s ease;
+  }
+  .teleprompter-sentence-dim {
+    color: hsl(0 0% 98% / 0.35);
+    transition: color 0.25s ease, opacity 0.25s ease;
+  }
+
   /* Panelist mark — namn-etikett ovanför + färgad bakgrund (inline-style sätts av Tiptap) */
   .ProseMirror p:has(.panelist-mark) { padding-top: 0.55em; }
   .ProseMirror .panelist-mark { position: relative; }
