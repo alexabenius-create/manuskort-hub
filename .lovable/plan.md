@@ -1,55 +1,57 @@
 
-# Tydligare visuell rytm i korten — "kort i kortet"
+Användaren vill ha två justeringar på panelist-markeringen i editorn:
 
-Du är inte svår att tolka alls. Problemet är att kortet just nu är **en enda vit yta** där alla zoner (header, tider, manus, anteckningar, cues) flyter ihop. Ögat får ingen tydlig grupperings­ledtråd.
+1. **Namnet ovanför frågan**, inte inline framför texten (som nu via `::before` på samma rad).
+2. **Mer avrundade hörn** på den färgade bakgrundsrutan.
 
-## Lösning: nested panels
+## Nuläge (från `src/index.css` + `src/lib/panelistMark.ts`)
 
-Behåll det yttre kortet som en lugn "behållare" (lite ljusare bakgrund), och lägg in varje sektion som ett eget mjukt **subkort** med vit yta och liten radie. Det skapar samma effekt som iOS Settings-appen — där varje grupp av rader ligger i en egen rundad ö med luft runtom.
+- `PanelistMark` är en **inline mark** (Tiptap `Mark`) — renderar `<span>` runt den markerade texten.
+- Bakgrundsfärg sätts via inline `style` i `renderHTML` på color-attributet: `border-radius: 4px; padding: 1px 4px`.
+- Namn visas via CSS `::before` med `content: "● " attr(data-panelist-name)` på **samma rad**, inline framför texten.
 
-## Konkret struktur per kort
+För att få namnet **ovanför** texten (som i inspirationsbilden) behöver vi bryta upp inline-flödet visuellt utan att ändra mark-typen (att byta till en node skulle bryta selection/flow i Tiptap markant). Bästa lösningen: behåll inline mark, men gör `::before` till ett **block-liknande element ovanför** med `display: block` + negativ margin, alternativt absolut positionerat.
+
+## Plan
+
+### 1. Uppdatera `src/index.css` — `.panelist-mark` styling
+
+- Gör `::before` (namn-etiketten) till en liten **etikett ovanför** den markerade texten:
+  - `display: inline-block` med `position: absolute`, placerad strax ovanför första raden.
+  - Wrapper får `position: relative` + lite extra `padding-top` så etiketten får plats utan att krocka med raden ovanför.
+  - Mindre fontstorlek (~0.62em), versaler valfritt, samma diskreta gråton.
+  - Ta bort prick-symbolen (`●`) — färgen på bakgrunden räcker som visuell koppling.
+- Öka `border-radius` på själva markeringen från `4px` → `8px` (mjukare, matchar designspråkets `--radius` 14px-känsla).
+- Behåll regeln som döljer `::before` när två panelist-marks ligger direkt efter varandra (samma deltagare i följd).
+
+### 2. Uppdatera `src/lib/panelistMark.ts`
+
+- Ändra inline `style` i `renderHTML` för `color`-attributet:
+  - `border-radius: 8px` (istället för 4px).
+  - Behåll `padding`, men öka eventuellt vertikal padding lätt för att namn-etiketten ska ha luft.
+  - Lägg till `position: relative` så `::before` kan positioneras absolut.
+
+### 3. Editor-radavstånd
+
+- I `src/components/editor/TiptapEditor.tsx`: `sizeClass` använder `leading-[1.6]` / `leading-[1.55]`. Det räcker för att etiketten ovanför ska få plats när vi använder negativ top-positionering + lite padding-top på markeringens första rad.
+- Vi lägger en liten `margin-top` på själva paragrafen som **innehåller** en panelist-mark? Nej — för komplext. Istället låter vi `::before` ligga ovanpå med `top: -0.9em` och förlitar oss på att `line-height: 1.6` ger nog luft. Om det krockar lägger vi till `padding-top: 0.6em` på `.panelist-mark` första instans (acceptabel kompromiss).
+
+### Teknisk sammanfattning
+
+| Fil | Ändring |
+|---|---|
+| `src/lib/panelistMark.ts` | `border-radius: 8px`, `position: relative`, lätt ökad padding |
+| `src/index.css` | `::before` → absolut positionerad etikett ovanför, mindre font, ingen prick |
+
+Inga DB- eller datastrukturändringar. Befintliga markeringar uppdateras automatiskt vid nästa render.
+
+### Visuellt resultat
 
 ```text
-┌─ Yttre kort (bg: surface-2, p-4, rounded-2xl) ───────────┐
-│  ┌─ Header-panel (bg: white, rounded-xl) ─────────────┐  │
-│  │  Kort 01 · [Talare ▾]              ⋯  ⋮⋮          │  │
-│  │  Korttitel                                          │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                                                            │
-│  ┌─ Tider-panel (bg: white, rounded-xl) ──────────────┐  │
-│  │  Start [—]   Slut [—]            42 ord · 0:18    │  │
-│  └─────────────────────────────────────────────────────┘  │
-│                                                            │
-│  ┌─ Manus-panel ──────────────┐  ┌─ Anteckn. ───────┐    │
-│  │  MANUS                      │  │  ANTECKNINGAR    │    │
-│  │  (Tiptap-text)              │  │  (textarea)      │    │
-│  └─────────────────────────────┘  └──────────────────┘    │
-│                                                            │
-│  ┌─ Cues-panel (bg: white, rounded-xl) ───────────────┐  │
-│  │  [● Paus]  [● Avslut]  [● Överlämning]            │  │
-│  └─────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────┘
+   Anna
+  ┌──────────────────────────┐
+  │ Vad tycker du om...      │
+  └──────────────────────────┘
 ```
 
-## Tekniska ändringar
-
-**`src/components/editor/ManusCard.tsx`**
-- Yttre `<article>`: byt `bg-surface` → `bg-surface-2`, lägg till `p-3` så subkorten får marginal
-- Wrappa varje sektion (header, tider, body, cues) i en egen `<div class="bg-surface rounded-xl shadow-sm">`
-- Ta bort de gamla separator-linjerna (`gap-px bg-[hsl(var(--border)/0.05)]`) — subkorten skapar nu separationen
-- Reducera intern padding lite (från `px-6` till `px-5`) eftersom det nu finns extra luft mellan sektionerna
-- Anteckningar: byt från `bg-surface-2` (smälter ihop med behållaren) till egen vit panel med `bg-surface`
-- I mörkt läge: behållaren blir bara en aning ljusare än bg så subkorten syns
-
-**`src/index.css`**
-- Lägg till `.shadow-subtle` (ännu mjukare än `shadow-card`) för subkorten — bara `0 1px 2px rgb(0 0 0 / 0.03)` så de "svävar" diskret
-- Säkerställ att `--surface-2` ger tillräcklig kontrast mot `--surface` i både ljust och mörkt läge (justera vid behov ett snäpp)
-
-**Inga andra filer rörs.** Datamodell, autosave, dnd, alla flöden — oförändrade.
-
-## Resultat
-
-- Tydlig **gruppering** mellan funktionella zoner
-- Ögat hittar snabbare till "var ska jag skriva manustexten"
-- Fortfarande Apple-rent — ingen visuell stöjk, bara mer rytm
-- Anteckningskolumnen får egen identitet istället för att vara "den grå lappen i hörnet"
+Namnet sitter strax ovanför den färgade bakgrunden, i mindre, diskret stil. Mjukare hörn (8px).
