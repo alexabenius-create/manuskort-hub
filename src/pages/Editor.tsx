@@ -12,12 +12,14 @@ import { ManusCard } from "@/components/editor/ManusCard";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { PrintDialog } from "@/components/editor/PrintDialog";
+import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
-import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Users, Play, Target } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
+import { wordCount, estimateSeconds } from "@/lib/wordCount";
 import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE, countVisualRows } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -45,6 +47,9 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [targetDialogOpen, setTargetDialogOpen] = useState(false);
+  const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
+  const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
   // Kort som överskrider sin radgräns — blockerar utskrift
@@ -80,10 +85,12 @@ export default function Editor() {
       show_times: manuscript.show_times,
       wpm: manuscript.wpm,
       time_format: manuscript.time_format,
+      target_duration_seconds: (manuscript as any).target_duration_seconds ?? null,
     };
   }, [manuscript]);
 
   const timeFormat = (manuscript?.time_format === "elapsed" ? "elapsed" : "clock") as "clock" | "elapsed";
+  const targetDurationSeconds = (manuscript as any)?.target_duration_seconds ?? null;
 
   useAutosave({
     table: "manuscripts",
