@@ -157,7 +157,7 @@ export function ScrollingTeleprompter({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [renderedCards, fontSize]);
+  }, [merged, fontSize]);
 
   // Beräkna pixels per sekund (clampad)
   const pixelsPerSecond = useMemo(() => {
