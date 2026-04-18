@@ -49,6 +49,15 @@ export default function Settings() {
               <LogOut className="h-3.5 w-3.5" /> Logga ut
             </Button>
           </div>
+          <div className="bg-surface rounded-2xl shadow-card px-5 py-4 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[12px] text-muted-foreground">Plan</p>
+              <p className="text-[15px] font-medium">Gratis</p>
+            </div>
+            <Button asChild variant="ghost" className="rounded-full text-[13px] text-accent-blue hover:text-accent-blue hover:bg-accent-blue/10">
+              <Link to="/priser">Uppgradera</Link>
+            </Button>
+          </div>
         </section>
 
         {/* Rundturer */}
