@@ -48,7 +48,9 @@ export function SEO({
       {description && <meta name="twitter:description" content={description} />}
       <meta name="twitter:image" content={ogImage} />
       {jsonLd && (
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
       )}
     </Helmet>
   );

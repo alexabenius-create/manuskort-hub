@@ -20,31 +20,9 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (!id.includes("node_modules")) return undefined;
-          // Stripe — only loaded when user opens checkout
-          if (id.includes("@stripe")) return "stripe";
-          // Tiptap editor — only used in /manus/:id
-          if (id.includes("@tiptap") || id.includes("prosemirror")) return "editor";
-          // Radix UI primitives
-          if (id.includes("@radix-ui")) return "radix";
-          // React core
-          if (id.includes("react-dom") || id.includes("scheduler") || id.includes("react/")) {
-            return "react";
-          }
-          // Supabase client
-          if (id.includes("@supabase")) return "supabase";
-          // Form / validation
-          if (id.includes("react-hook-form") || id.includes("zod") || id.includes("@hookform")) {
-            return "forms";
-          }
-          // Misc charting / heavy libs
-          if (id.includes("recharts") || id.includes("d3-")) return "charts";
-          return undefined;
-        },
-      },
-    },
+    // Låt Vite/Rollup hantera code-splitting automatiskt via React.lazy().
+    // Tidigare manualChunks orsakade ett race i produktion där editor-chunken
+    // kördes före react-chunken och kraschade med
+    // "Cannot read properties of undefined (reading 'useState')".
   },
 }));
