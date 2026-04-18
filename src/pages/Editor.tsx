@@ -16,6 +16,7 @@ import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { nextStartFromEnd } from "@/lib/timeChain";
+import { splitHtmlInHalf } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
@@ -33,6 +34,18 @@ export default function Editor() {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
+  // Kort som överskrider sin radgräns — blockerar utskrift
+  const [overflowingCardIds, setOverflowingCardIds] = useState<Set<string>>(new Set());
+
+  const handleOverflowChange = (cardId: string, isOver: boolean) => {
+    setOverflowingCardIds((prev) => {
+      const has = prev.has(cardId);
+      if (isOver === has) return prev;
+      const next = new Set(prev);
+      if (isOver) next.add(cardId); else next.delete(cardId);
+      return next;
+    });
+  };
 
   const meta = useMemo(() => {
     if (!manuscript) return null;
