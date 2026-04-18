@@ -89,6 +89,7 @@ export function ManusCard({
               <option value="speaker">Talare</option>
               <option value="moderator">Moderator</option>
             </select>
+            <HelpDot text="Varje kort är ett avsnitt av manuset — t.ex. en intro, en fråga eller ett ämnesblock. Numret visar ordningen, och rollen avgör vem som talar (moderator eller talare). Titeln hjälper dig hitta rätt kort snabbt under sändning." />
           </div>
           <input
             value={titleVal}
@@ -129,6 +130,10 @@ export function ManusCard({
       {/* Tider panel */}
       {showTimes && (
         <div className="bg-surface rounded-xl shadow-subtle px-5 py-3 flex gap-5 items-center flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] font-medium text-muted-foreground">Tider</span>
+            <HelpDot text="Planerad start- och sluttid för det här avsnittet (t.ex. 12:03 / 12:08). Används för att hålla koll på tempot under sändning. Räknaren till höger visar antal ord och uppskattad uppläsningstid baserat på inställd talhastighet." />
+          </div>
           <TimeField label="Start" value={card.start_time} onChange={(v) => onLocalChange({ start_time: v })} />
           <TimeField label="Slut" value={card.end_time} onChange={(v) => onLocalChange({ end_time: v })} />
           <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono">
@@ -140,7 +145,10 @@ export function ManusCard({
       {/* Body — manus + anteckningar som separata paneler */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
-          <p className="text-[12px] font-medium text-muted-foreground mb-3">Manus</p>
+          <div className="flex items-center gap-1.5 mb-3">
+            <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
+            <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser." />
+          </div>
           <TiptapEditor
             value={card.content_html}
             onChange={(html) => onLocalChange({ content_html: html })}
@@ -150,7 +158,10 @@ export function ManusCard({
         </div>
         {showNotes && (
           <div className="w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
-            <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
+              <HelpDot text="Privata noter till dig själv som inte ska läsas upp — t.ex. ”vänta in applåd”, ”titta upp här”, eller bakgrundsfakta. Syns bara i redigeringsläget, inte i ett framtida presentationsläge." />
+            </div>
             <textarea
               value={card.notes}
               onChange={(e) => onLocalChange({ notes: e.target.value })}
@@ -162,12 +173,37 @@ export function ManusCard({
       </div>
 
       {/* Cue panel */}
-      <footer className="bg-surface rounded-xl shadow-subtle px-5 py-4 flex gap-2 flex-wrap items-center">
-        <CueField icon={<Pause className="h-3 w-3" />} colorClass="cue-pill-red" placeholder="Paus / bromsa" value={card.cue_red} onChange={(v) => onLocalChange({ cue_red: v })} />
-        <CueField icon={<Flag className="h-3 w-3" />} colorClass="cue-pill-amber" placeholder="Avslutningssignal" value={card.cue_amber} onChange={(v) => onLocalChange({ cue_amber: v })} />
-        <CueField icon={<ArrowRight className="h-3 w-3" />} colorClass="cue-pill-teal" placeholder="Överlämning / nästa" value={card.cue_teal} onChange={(v) => onLocalChange({ cue_teal: v })} />
+      <footer className="bg-surface rounded-xl shadow-subtle px-5 py-4 flex flex-col gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] font-medium text-muted-foreground">Signaler</span>
+          <HelpDot text="Korta visuella påminnelser för dig själv under framförandet. Röd = bromsa eller pausa här. Gul = avslutningssignal, börja runda av. Grön = överlämning till nästa person eller nästa kort. Skriv kort och konkret, så de är lätta att skanna i farten." />
+        </div>
+        <div className="flex gap-2 flex-wrap items-center">
+          <CueField icon={<Pause className="h-3 w-3" />} colorClass="cue-pill-red" placeholder="Paus / bromsa" value={card.cue_red} onChange={(v) => onLocalChange({ cue_red: v })} />
+          <CueField icon={<Flag className="h-3 w-3" />} colorClass="cue-pill-amber" placeholder="Avslutningssignal" value={card.cue_amber} onChange={(v) => onLocalChange({ cue_amber: v })} />
+          <CueField icon={<ArrowRight className="h-3 w-3" />} colorClass="cue-pill-teal" placeholder="Överlämning / nästa" value={card.cue_teal} onChange={(v) => onLocalChange({ cue_teal: v })} />
+        </div>
       </footer>
     </article>
+  );
+}
+
+function HelpDot({ text }: { text: string }) {
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Hjälp"
+          className="text-faint hover:text-muted-foreground transition-colors inline-flex items-center justify-center"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[260px] text-[12px] leading-[1.5] rounded-lg">
+        {text}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
