@@ -1,7 +1,33 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EXAMPLE_MANUSCRIPT } from "./exampleManuscript";
+import { hexToRgba, hexToDarkText } from "./panelistColors";
 
 const seededKey = (userId: string) => `manuskort:example_seeded:${userId}`;
+
+// Bygger en panelist-mark span identisk med vad TiptapEditor skulle producera.
+function panelistSpan(panelistId: string, color: string, name: string, label: string): string {
+  const bg = hexToRgba(color, 0.32);
+  const fg = hexToDarkText(color);
+  const style = `background-color: ${bg}; color: ${fg}; --panelist-bg: ${bg}; --panelist-fg: ${fg}; border-radius: 10px; padding: 2px 8px; position: relative; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
+  return `<span class="panelist-mark" data-panelist-id="${panelistId}" data-panelist-color="${color}" data-panelist-name="${name}" style="${style}">${label}</span>`;
+}
+
+// Ersätter [NAMN] och [FULLT NAMN] i HTML mot färgade panelist-markeringar.
+function applyPanelistMarks(
+  html: string,
+  panelists: { id: string; name: string; color: string }[]
+): string {
+  let out = html;
+  for (const p of panelists) {
+    const first = p.name.split(" ")[0]; // "Anna Svensson" -> "Anna"
+    const fullUpper = p.name.toUpperCase();
+    const firstUpper = first.toUpperCase();
+    // Fullt namn först (mer specifikt), sen förnamn
+    out = out.replaceAll(`[${fullUpper}]`, panelistSpan(p.id, p.color, p.name, p.name));
+    out = out.replaceAll(`[${firstUpper}]`, panelistSpan(p.id, p.color, p.name, first));
+  }
+  return out;
+}
 
 /**
  * Seedar exempelmanuset som ett vanligt DB-manus för användaren.
@@ -32,17 +58,24 @@ export async function seedExampleForUser(userId: string): Promise<string | null>
     return null;
   }
 
+  // Insert panelists — vi behöver deras genererade UUIDn för att kunna ersätta
+  // namn-platshållare i kort-HTML:n.
+  let insertedPanelists: { id: string; name: string; color: string }[] = [];
   if (ex.panelists.length) {
-    const { error: pErr } = await supabase.from("panelists").insert(
-      ex.panelists.map((p) => ({
-        manuscript_id: ms.id,
-        user_id: userId,
-        name: p.name,
-        color: p.color,
-        position: p.position,
-      }))
-    );
+    const { data: pData, error: pErr } = await supabase
+      .from("panelists")
+      .insert(
+        ex.panelists.map((p) => ({
+          manuscript_id: ms.id,
+          user_id: userId,
+          name: p.name,
+          color: p.color,
+          position: p.position,
+        }))
+      )
+      .select();
     if (pErr) console.error("seedExampleForUser: panelists insert failed", pErr);
+    insertedPanelists = (pData ?? []).map((p) => ({ id: p.id, name: p.name, color: p.color }));
   }
 
   if (ex.cards.length) {
@@ -53,7 +86,7 @@ export async function seedExampleForUser(userId: string): Promise<string | null>
         position: c.position,
         role: c.role,
         title: c.title,
-        content_html: c.content_html,
+        content_html: applyPanelistMarks(c.content_html, insertedPanelists),
         notes: c.notes,
         start_time: c.start_time,
         end_time: c.end_time,
