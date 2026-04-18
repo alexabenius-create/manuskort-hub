@@ -104,6 +104,9 @@ export function ScrollingTeleprompter({
   isPaused,
   countdownActive,
   speedFactor,
+  onSpeedUp,
+  onSpeedDown,
+  onSpeedReset,
 }: Props) {
   const baseSize = BASE_SIZE[textSize];
   const fontSize = baseSize + sizeOffset * 2;
