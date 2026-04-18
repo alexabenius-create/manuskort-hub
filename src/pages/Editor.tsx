@@ -314,6 +314,33 @@ export default function Editor() {
         </div>
       </header>
 
+      {/* Sekundär rad: tidsformat-toggle, visas bara när Tider är på */}
+      {manuscript.show_times && (
+        <div className="border-b-hair px-5 sm:px-8 py-2.5 flex items-center gap-3 flex-wrap bg-surface/40">
+          <span className="text-[12px] text-muted-foreground">
+            Ska tiderna visa klockslag eller förfluten tid?
+          </span>
+          <div className="seg-group">
+            <button
+              data-active={timeFormat === "clock"}
+              onClick={() => updateMeta({ time_format: "clock" })}
+              className="seg-btn"
+              title="Klockslag på dygnet (HH:MM)"
+            >
+              Klockslag
+            </button>
+            <button
+              data-active={timeFormat === "elapsed"}
+              onClick={() => updateMeta({ time_format: "elapsed" })}
+              className="seg-btn"
+              title="Förfluten tid från programmets start (MM:SS)"
+            >
+              Förfluten
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-[920px] mx-auto px-5 sm:px-8 py-10 sm:py-14 pb-24 flex flex-col gap-6">
         {/* Legend */}
         <div className="flex gap-2 flex-wrap">
