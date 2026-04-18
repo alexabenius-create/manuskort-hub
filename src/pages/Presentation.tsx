@@ -390,6 +390,9 @@ export default function Presentation() {
               isPaused={timer.isPaused}
               countdownActive={timer.countdown > 0}
               speedFactor={speedFactor}
+              onSpeedUp={handleSpeedUp}
+              onSpeedDown={handleSpeedDown}
+              onSpeedReset={handleSpeedReset}
             />
           )}
         </div>
