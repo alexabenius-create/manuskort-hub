@@ -70,41 +70,9 @@ export function countVisualRows(el: HTMLElement): number {
   return Math.max(1, Math.round(el.scrollHeight / lh));
 }
 
-/**
- * Skapar en dold mät-div som efterliknar sampleEl exakt — samma klassnamn,
- * samma föräldra-bredd och samma typografi. På det sättet matchar wrappningen
- * det användaren faktiskt ser i editorn (CSS-regler för .ProseMirror p osv.
- * appliceras korrekt).
- */
-function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
-  const width = sampleEl.clientWidth || sampleEl.getBoundingClientRect().width || 600;
-
-  // Wrappa mät-elementet i en container med exakt samma bredd, så att inre
-  // CSS-regler (font-size, line-height, padding) räknas på samma sätt.
-  const wrapper = document.createElement("div");
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "-99999px";
-  wrapper.style.top = "0";
-  wrapper.style.visibility = "hidden";
-  wrapper.style.pointerEvents = "none";
-  wrapper.style.width = `${width}px`;
-  wrapper.style.boxSizing = "border-box";
-
-  // Klona sampleEl-noden (utan innehåll) — så vi får samma klasser och stilar.
-  const clone = sampleEl.cloneNode(false) as HTMLDivElement;
-  clone.removeAttribute("contenteditable");
-  clone.removeAttribute("id");
-  clone.style.width = "100%";
-  clone.style.minHeight = "0";
-  clone.style.height = "auto";
-  clone.style.maxHeight = "none";
-  clone.style.overflow = "visible";
-  clone.innerHTML = "";
-
-  wrapper.appendChild(clone);
-  document.body.appendChild(wrapper);
-  return { el: clone, cleanup: () => wrapper.remove() };
-}
+// (Tidigare createMeasurer borttagen — vi mäter alltid mot presentations-
+// geometrin via getPresentationMeasurer ovan, för att radantal ska stämma
+// med vad användaren faktiskt ser i presentationsläget.)
 
 
 /**
