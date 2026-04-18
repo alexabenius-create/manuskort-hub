@@ -49,6 +49,16 @@ export default function Editor() {
   const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
   // Kort som överskrider sin radgräns — blockerar utskrift
   const [overflowingCardIds, setOverflowingCardIds] = useState<Set<string>>(new Set());
+  // Refs till varje korts Tiptap-editor — används för att mäta visuella rader exakt vid auto-split
+  const editorRefs = useRef<Map<string, TiptapEditorType>>(new Map());
+  // Senaste auto-split snapshot för Ångra-funktion
+  const lastSnapshotRef = useRef<SplitSnapshot | null>(null);
+  const snapshotTimerRef = useRef<number | null>(null);
+
+  const handleEditorReady = (cardId: string, ed: TiptapEditorType | null) => {
+    if (ed) editorRefs.current.set(cardId, ed);
+    else editorRefs.current.delete(cardId);
+  };
 
   const handleOverflowChange = (cardId: string, isOver: boolean) => {
     setOverflowingCardIds((prev) => {
