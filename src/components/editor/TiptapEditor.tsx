@@ -3,6 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
+import Link from "@tiptap/extension-link";
 import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
@@ -64,6 +65,7 @@ export function TiptapEditor({
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false }),
       Underline,
       Highlight,
+      Link.configure({ openOnClick: false, autolink: false, HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" } }),
       PanelistMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
