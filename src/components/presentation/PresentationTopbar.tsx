@@ -68,8 +68,8 @@ export function PresentationTopbar({
 
   return (
     <header className="absolute top-0 inset-x-0 z-30 flex items-start justify-between px-6 md:px-10 pt-6 gap-4 pointer-events-none">
-      {/* Vänster — X (touch-fade) + wakelock i ett svart panelkort */}
-      <div className="flex items-center gap-3 pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
+      {/* Vänster — X (touch-fade) + wakelock */}
+      <div className="flex items-center gap-3 pointer-events-auto">
         <button
           onClick={onExit}
           className={`p-5 rounded-2xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900 transition-opacity duration-300 ${
@@ -97,8 +97,8 @@ export function PresentationTopbar({
         </div>
       </div>
 
-      {/* Höger — tidsmodul som ett svart panelkort */}
-      <div className="flex items-center gap-3 pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
+      {/* Höger — tidsmodul */}
+      <div className="flex items-center gap-3 pointer-events-auto">
         {/* Mode toggle */}
         <div className="inline-flex bg-zinc-900 rounded-2xl p-2 text-[22px] font-medium">
           <button

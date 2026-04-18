@@ -62,8 +62,8 @@ export function PresentationFooter({
   return (
     <footer className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pb-6 pointer-events-none">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-        {/* Vänster — A−/A+ i svart panelkort */}
-        <div className="flex items-center gap-2 pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
+        {/* Vänster — A−/A+ */}
+        <div className="flex items-center gap-2 pointer-events-auto">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
@@ -82,8 +82,8 @@ export function PresentationFooter({
           </button>
         </div>
 
-        {/* Mitten — kortnummer + nästa-preview i svart panelkort */}
-        <div className="flex flex-col items-center gap-3 pointer-events-none bg-black rounded-3xl shadow-2xl shadow-black/40 px-8 py-5">
+        {/* Mitten — kortnummer + nästa-preview */}
+        <div className="flex flex-col items-center gap-3 pointer-events-none px-8 py-5">
           <div className="relative h-24 w-24 flex items-center justify-center">
             {planned && (
               <svg className="absolute inset-0 -rotate-90" width="96" height="96" viewBox="0 0 96 96">
@@ -125,8 +125,8 @@ export function PresentationFooter({
           )}
         </div>
 
-        {/* Höger — panik-knapp i svart panelkort */}
-        <div className="flex items-center pointer-events-auto bg-black rounded-3xl shadow-2xl shadow-black/40 p-3">
+        {/* Höger — panik-knapp */}
+        <div className="flex items-center pointer-events-auto">
           {hasPanicCards ? (
             <button
               onClick={onPanic}
