@@ -8,6 +8,7 @@ import { PresentationTopbar } from "@/components/presentation/PresentationTopbar
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
+import { PresentationStartMenu } from "@/components/presentation/PresentationStartMenu";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
@@ -33,6 +34,8 @@ export default function Presentation() {
   const [showNotes, setShowNotes] = useState(true);
   const [sizeOffset, setSizeOffset] = useState(0);
   const [xVisible, setXVisible] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(true);
+  const [startMode, setStartMode] = useState<"countdown" | "instant" | null>(null);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
@@ -90,12 +93,13 @@ export default function Presentation() {
   // Tidsmodul
   const targetSeconds = manuscript?.target_duration_seconds ?? 0;
   const timerMode = (manuscript?.time_format === "elapsed" ? "elapsed" : "clock") as "clock" | "elapsed";
-  const timerEnabled = !loading && !!manuscript && targetSeconds > 0;
+  const timerEnabled = !loading && !!manuscript && targetSeconds > 0 && startMode !== null;
   const timer = usePresentationTimer({
     manuscriptId: id ?? "none",
     targetSeconds,
     mode: timerMode,
     enabled: timerEnabled,
+    countdownSeconds: startMode === "instant" ? 0 : 3,
   });
 
   const handleModeChange = useCallback(async (next: "clock" | "elapsed") => {
@@ -117,6 +121,7 @@ export default function Presentation() {
   // Esc + fullscreenchange
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (menuOpen) return; // Menyn hanterar sina egna tangenter
       if (e.key === "Escape") {
         e.preventDefault();
         exit();
@@ -151,7 +156,7 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex]);
+  }, [exit, cards.length, currentIndex, menuOpen]);
 
   // Navigation
   const goNext = useCallback(() => {
@@ -301,6 +306,20 @@ export default function Presentation() {
       />
 
       {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
+
+      {menuOpen && (
+        <PresentationStartMenu
+          onStartCountdown={() => {
+            setStartMode("countdown");
+            setMenuOpen(false);
+          }}
+          onStartInstant={() => {
+            setStartMode("instant");
+            setMenuOpen(false);
+          }}
+          onExit={exit}
+        />
+      )}
     </div>
   );
 }
