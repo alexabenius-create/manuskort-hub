@@ -176,7 +176,30 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       )}
 
       {/* Manustexten — huvudyta */}
-      <div className="flex-1 min-w-0 flex items-center justify-center overflow-y-auto">
+      <div className="flex-1 min-w-0 flex flex-col items-center justify-center overflow-y-auto">
+        {/* Persistenta signal-texter längst upp */}
+        {hasAnyCue && (
+          <div className="w-full max-w-[60ch] mx-auto flex flex-col gap-1.5 mb-6">
+            {hasCueRed && (
+              <div className="flex items-start gap-2 text-[14px] text-[hsl(var(--cue-red))]">
+                <Pause className="h-3.5 w-3.5 mt-1 flex-shrink-0" />
+                <span className="font-medium">{card.cue_red}</span>
+              </div>
+            )}
+            {hasCueAmber && (
+              <div className="flex items-start gap-2 text-[14px] text-[hsl(var(--cue-amber))]">
+                <Flag className="h-3.5 w-3.5 mt-1 flex-shrink-0" />
+                <span className="font-medium">{card.cue_amber}</span>
+              </div>
+            )}
+            {hasCueTeal && (
+              <div className="flex items-start gap-2 text-[14px] text-[hsl(var(--cue-teal))]">
+                <ArrowRight className="h-3.5 w-3.5 mt-1 flex-shrink-0" />
+                <span className="font-medium">{card.cue_teal}</span>
+              </div>
+            )}
+          </div>
+        )}
         <article
           className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
           style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
