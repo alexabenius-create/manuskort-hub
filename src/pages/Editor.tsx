@@ -188,6 +188,39 @@ export default function Editor() {
     await persistPositions(renum);
   };
 
+  const handlePasteOverflow = async (cardId: string, overflowText: string) => {
+    if (!user || !manuscript || !overflowText) return;
+    const src = cards.find((c) => c.id === cardId);
+    if (!src) return;
+    const idx = cards.findIndex((c) => c.id === cardId);
+    const escaped = overflowText
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const html = `<p>${escaped.replace(/\n/g, "<br>")}</p>`;
+    const { data, error } = await supabase
+      .from("cards")
+      .insert({
+        manuscript_id: manuscript.id,
+        user_id: user.id,
+        position: idx + 1,
+        role: src.role,
+        content_html: html,
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      toast({ title: "Kunde inte dela kortet", description: error?.message, variant: "destructive" });
+      return;
+    }
+    const next = [...cards];
+    next.splice(idx + 1, 0, data);
+    const renum = next.map((c, i) => ({ ...c, position: i }));
+    setCards(renum);
+    await persistPositions(renum);
+    toast({ title: "Texten delades på 2 kort", description: "Överskottet flyttades till ett nytt kort." });
+  };
+
   const mergeUp = (cardId: string) => {
     const idx = cards.findIndex((c) => c.id === cardId);
     if (idx <= 0) return;
@@ -404,6 +437,7 @@ export default function Editor() {
                     onSplit={() => splitCard(c.id)}
                     onMergeUp={() => mergeUp(c.id)}
                     onSyncWithPrevious={() => syncWithPrevious(c.id)}
+                    onPasteOverflow={(text) => handlePasteOverflow(c.id, text)}
                   />
                 ))}
               </div>
