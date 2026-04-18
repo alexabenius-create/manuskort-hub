@@ -250,7 +250,21 @@ export function ManusCard({
         <div data-tour="card.script" className="card-panel-script flex-1 bg-surface rounded-xl shadow-subtle px-5 py-5">
           <div className="flex items-center gap-1.5 mb-3">
             <p className="text-[12px] font-medium text-muted-foreground">Manus</p>
-            <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) för att markera medvetna pauser. Tryck Enter för nytt stycke. Tryck Shift+Enter för en radbrytning som syns även i presentationsläget (markeras med ↵ i editorn)." />
+            <HelpDot text="Det här är texten som ska läsas upp eller framföras. Skriv exakt det du vill säga — eller stödord — beroende på din stil. Använd snedstreck (/) eller tryck på Paus-knappen för att markera medvetna pauser. Tryck Enter för nytt stycke. Tryck Shift+Enter för en radbrytning som syns även i presentationsläget (markeras med ↵ i editorn)." />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (!editor) return;
+                editor.chain().focus().insertContent('<span class="pause-mark">paus</span>&nbsp;').run();
+              }}
+              disabled={!editor}
+              title="Lägg in en paus-markör vid markören (kortkommando: /)"
+              className="ml-2 inline-flex items-center gap-1 rounded-full border border-[hsl(var(--cue-red)/0.3)] bg-[hsl(var(--cue-red)/0.1)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--cue-red))] transition-colors hover:bg-[hsl(var(--cue-red)/0.18)] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Pause className="h-3 w-3" />
+              Paus
+            </button>
             <span
               className={`ml-auto font-mono text-[11px] tabular-nums px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                 isOver
