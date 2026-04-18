@@ -208,7 +208,7 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex, menuOpen]);
+  }, [exit, cards.length, currentIndex, menuOpen, viewMode]);
 
   // Navigation
   const goNext = useCallback(() => {
@@ -356,7 +356,7 @@ export default function Presentation() {
 
       <main className="flex-1 min-h-0 pt-44 pb-44 px-6 md:px-10 relative">
         <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
-          {!menuOpen && (
+          {!menuOpen && viewMode === "cards" && (
             <PresentationCard
               card={current}
               panelists={panelists}
@@ -367,32 +367,60 @@ export default function Presentation() {
               onNotesChange={(notes) => handleNotesChange(current.id, notes)}
             />
           )}
+          {!menuOpen && viewMode === "scroll" && (
+            <ScrollingTeleprompter
+              cards={cards}
+              panelists={panelists}
+              textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+              sizeOffset={sizeOffset}
+              focusStyle={focusStyle}
+              elapsedSeconds={timer.elapsedSeconds}
+              targetSeconds={timer.targetSeconds}
+              isPaused={timer.isPaused}
+              countdownActive={timer.countdown > 0}
+              speedFactor={speedFactor}
+            />
+          )}
         </div>
       </main>
 
-      <PresentationFooter
-        current={current}
-        next={next}
-        index={currentIndex}
-        total={cards.length}
-        hasPanicCards={hasPanicCards}
-        onPanic={handlePanic}
-        elapsedSeconds={timer.elapsedSeconds}
-        cardStartedAtElapsedSeconds={cardStartedAtElapsed}
-        timeFormat={timerMode}
-        sizeOffset={sizeOffset}
-        onSizeChange={handleSizeChange}
-      />
+      {viewMode === "cards" && (
+        <PresentationFooter
+          current={current}
+          next={next}
+          index={currentIndex}
+          total={cards.length}
+          hasPanicCards={hasPanicCards}
+          onPanic={handlePanic}
+          elapsedSeconds={timer.elapsedSeconds}
+          cardStartedAtElapsedSeconds={cardStartedAtElapsed}
+          timeFormat={timerMode}
+          sizeOffset={sizeOffset}
+          onSizeChange={handleSizeChange}
+        />
+      )}
+
+      {/* Speed-chip i scroll-läge */}
+      {viewMode === "scroll" && speedChip && Date.now() - speedChip.ts < 2000 && (
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-40 px-6 py-3 rounded-2xl bg-zinc-900/90 backdrop-blur text-zinc-100 font-mono text-[20px] tabular-nums animate-in fade-in duration-200">
+          {speedChip.value.toFixed(2)}×
+        </div>
+      )}
 
       {timerEnabled && timer.countdown > 0 && <CountdownOverlay value={timer.countdown} />}
 
       {menuOpen && (
         <PresentationStartMenu
-          onStartCountdown={() => {
+          estimatedSpeedFactor={1.0}
+          onStartCountdown={(opts) => {
+            setViewMode(opts.viewMode);
+            setFocusStyle(opts.focusStyle);
             setStartMode("countdown");
             setMenuOpen(false);
           }}
-          onStartInstant={() => {
+          onStartInstant={(opts) => {
+            setViewMode(opts.viewMode);
+            setFocusStyle(opts.focusStyle);
             setStartMode("instant");
             setMenuOpen(false);
           }}
