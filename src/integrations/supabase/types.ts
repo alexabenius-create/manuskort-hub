@@ -23,6 +23,7 @@ export type Database = {
           cue_teal: string
           end_time: string
           id: string
+          is_panic_card: boolean
           manuscript_id: string
           notes: string
           position: number
@@ -40,6 +41,7 @@ export type Database = {
           cue_teal?: string
           end_time?: string
           id?: string
+          is_panic_card?: boolean
           manuscript_id: string
           notes?: string
           position?: number
@@ -57,6 +59,7 @@ export type Database = {
           cue_teal?: string
           end_time?: string
           id?: string
+          is_panic_card?: boolean
           manuscript_id?: string
           notes?: string
           position?: number
@@ -84,6 +87,7 @@ export type Database = {
           show_notes: boolean
           show_times: boolean
           tags: string[]
+          target_duration_seconds: number | null
           text_size: string
           time_format: string
           title: string
@@ -98,6 +102,7 @@ export type Database = {
           show_notes?: boolean
           show_times?: boolean
           tags?: string[]
+          target_duration_seconds?: number | null
           text_size?: string
           time_format?: string
           title?: string
@@ -112,6 +117,7 @@ export type Database = {
           show_notes?: boolean
           show_times?: boolean
           tags?: string[]
+          target_duration_seconds?: number | null
           text_size?: string
           time_format?: string
           title?: string
