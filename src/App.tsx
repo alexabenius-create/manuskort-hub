@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Import from "./pages/Import";
 import Pricing from "./pages/Pricing";
 import Admin from "./pages/Admin";
+import CheckoutReturn from "./pages/CheckoutReturn";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
                 <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                 <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+                <Route path="/checkout/return" element={<CheckoutReturn />} />
                 <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
