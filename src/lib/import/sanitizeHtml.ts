@@ -70,7 +70,8 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
     }
   });
 
-  // 3) Walk noder och rensa allt utanför whitelist
+  // 3) Walk noder och rensa allt utanför whitelist.
+  // OBS: anropa ALDRIG walk på root-elementet självt — bara på dess barn.
   const walk = (node: Element) => {
     // Iterera kopia av barn — vi kan modifiera under iteration
     const children = Array.from(node.children);
@@ -127,7 +128,8 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
     unwrap(node);
   };
 
-  walk(root);
+  // Kör walk på rotens barn — INTE på root själv (annars skulle root unwrappas och bli borta)
+  Array.from(root.children).forEach((child) => walk(child));
 
   // 4) Säkerställ att top-level text wrappas i <p>
   const out = doc.createElement("div");
