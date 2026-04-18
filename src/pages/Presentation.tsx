@@ -122,11 +122,27 @@ export default function Presentation() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (menuOpen) return; // Menyn hanterar sina egna tangenter
+
+      // Ignorera tangenter när användaren skriver i ett input/textarea/contentEditable
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        !!target &&
+        (target.tagName === "TEXTAREA" ||
+          target.tagName === "INPUT" ||
+          target.isContentEditable);
+
       if (e.key === "Escape") {
         e.preventDefault();
+        if (isEditable && target) {
+          (target as HTMLElement).blur();
+          return;
+        }
         exit();
         return;
       }
+
+      if (isEditable) return;
+
       // Navigation
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
@@ -177,6 +193,30 @@ export default function Presentation() {
     const target = after ?? panicCards[0];
     setCurrentIndex(target.idx);
   }, [cards, currentIndex]);
+
+  // Anteckningar — debounced spara till Supabase
+  const notesSaveTimers = useRef<Map<string, number>>(new Map());
+  const handleNotesChange = useCallback((cardId: string, notes: string) => {
+    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
+    const timers = notesSaveTimers.current;
+    const existing = timers.get(cardId);
+    if (existing) window.clearTimeout(existing);
+    const t = window.setTimeout(async () => {
+      timers.delete(cardId);
+      const { error } = await supabase.from("cards").update({ notes }).eq("id", cardId);
+      if (error) toast.error("Kunde inte spara anteckningar", { description: error.message });
+    }, 600);
+    timers.set(cardId, t);
+  }, []);
+
+  // Spara väntande anteckningar vid unmount/exit
+  useEffect(() => {
+    const timers = notesSaveTimers.current;
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   // Touch — svep + tap-zoner
   const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -287,6 +327,7 @@ export default function Presentation() {
             sizeOffset={sizeOffset}
             showNotes={showNotes}
             onToggleNotes={() => setShowNotes((s) => !s)}
+            onNotesChange={(notes) => handleNotesChange(current.id, notes)}
           />
         </div>
       </main>

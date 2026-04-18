@@ -20,6 +20,8 @@ interface Props {
   sizeOffset: number;
   showNotes: boolean;
   onToggleNotes: () => void;
+  /** Callback när användaren redigerar anteckningar. */
+  onNotesChange?: (notes: string) => void;
 }
 
 const BASE_SIZE = { sm: 24, md: 30, lg: 38 } as const;
@@ -79,7 +81,7 @@ const NOTES_MIN_OFFSET = -2;
 const NOTES_MAX_OFFSET = 4;
 const NOTES_KEY = "presentation-notes-size-offset";
 
-export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes }: Props) {
+export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes, onNotesChange }: Props) {
   const baseSize = BASE_SIZE[textSize];
   const fontSize = baseSize + sizeOffset * 2;
   const html = useMemo(() => transformHtmlForPresentation(card.content_html ?? "", panelists), [card.content_html, panelists]);
@@ -182,8 +184,8 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
         />
       </div>
 
-      {/* Anteckningar — sidokolumn */}
-      {showNotes && hasNotes && (
+      {/* Anteckningar — sidokolumn (visas alltid när showNotes på desktop, så man kan börja skriva) */}
+      {showNotes && (
         <div className="hidden md:flex w-[380px] flex-shrink-0 flex-col bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-6 relative">
           {/* Header med label + zoom + dölj */}
           <div className="flex items-center justify-between mb-4">
@@ -216,20 +218,23 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
               </button>
             </div>
           </div>
-          {/* Centrerad anteckningstext */}
-          <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center">
-            <p
-              className="font-mono text-zinc-200 whitespace-pre-wrap text-center w-full"
+          {/* Redigerbar, centrerad anteckningstext */}
+          <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center">
+            <textarea
+              value={card.notes ?? ""}
+              onChange={(e) => onNotesChange?.(e.target.value)}
+              placeholder="Skriv anteckningar…"
+              spellCheck={false}
+              className="font-mono text-zinc-200 placeholder:text-zinc-600 whitespace-pre-wrap text-center w-full h-full bg-transparent border-0 outline-none resize-none focus:ring-0 focus:outline-none caret-zinc-300 selection:bg-zinc-700/60"
               style={{ fontSize: `${notesFontSize}px`, lineHeight: 1.6 }}
-            >
-              {card.notes}
-            </p>
+              readOnly={!onNotesChange}
+            />
           </div>
         </div>
       )}
 
-      {/* Knapp för att visa anteckningar igen om de är dolda men finns */}
-      {!showNotes && hasNotes && (
+      {/* Knapp för att visa anteckningar igen om de är dolda */}
+      {!showNotes && (hasNotes || onNotesChange) && (
         <button
           onClick={onToggleNotes}
           className="hidden md:block absolute right-6 top-1/2 -translate-y-1/2 px-2 py-3 rounded-l-full bg-zinc-900/40 hover:bg-zinc-900/60 text-zinc-500 hover:text-zinc-300 transition-colors text-[10px] font-mono uppercase tracking-wider [writing-mode:vertical-rl]"
