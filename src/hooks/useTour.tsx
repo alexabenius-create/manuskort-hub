@@ -171,13 +171,16 @@ export function useTourTrigger(id: TourId, condition: boolean, delayMs = 400) {
   const triggeredRef = useRef(false);
 
   useEffect(() => {
-    console.log("[Tour] trigger check", { id, condition, loading, flags, triggered: triggeredRef.current });
     if (loading || !flags || triggeredRef.current || !condition) return;
     const flag = TOURS[id].flag;
     if (flags[flag]) return; // Redan klar
 
     triggeredRef.current = true;
     const timer = setTimeout(() => startTour(id), delayMs);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Reset så StrictMode double-mount eller dependency-byten inte permanent blockerar
+      triggeredRef.current = false;
+    };
   }, [id, condition, loading, flags, startTour, delayMs]);
 }
