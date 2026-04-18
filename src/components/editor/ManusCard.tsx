@@ -67,6 +67,7 @@ export function ManusCard({
   useEffect(() => {
     return () => {
       onOverflowStateChange?.(card.id, false);
+      onEditorReady?.(card.id, null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
