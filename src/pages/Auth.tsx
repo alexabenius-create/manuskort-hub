@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { SEO } from "@/components/SEO";
 
 type Mode = "magic" | "password" | "signup";
 
@@ -54,6 +55,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 bg-background">
+      <SEO title="Logga in – Manuskort" description="Logga in eller skapa konto." noindex />
       <div className="w-full max-w-[420px]">
         <header className="text-center mb-12">
           <h1 className="font-display text-5xl font-semibold tracking-tight">Manuskort</h1>

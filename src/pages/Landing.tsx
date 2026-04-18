@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 import {
   Accordion,
   AccordionContent,
@@ -35,6 +36,34 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEO
+        title="Manuskort – Manus för presentation, tal och panelsamtal"
+        description="Manuskort hjälper dig skapa manus, hålla tiden och tala tryggt inför publik. Stöd vid presentation, anförande och panelsamtal — gratis att testa."
+        canonical="/"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "Manuskort",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
+            description: "Manus i kortformat för presentationer, tal och panelsamtal. Skriv, repetera och håll tiden.",
+            url: "https://manuskort.se/",
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "SEK",
+            },
+            inLanguage: "sv-SE",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Manuskort",
+            url: "https://manuskort.se/",
+          },
+        ]}
+      />
       {/* Topbar */}
       <header
         className={`sticky top-0 z-50 transition-shadow ${
