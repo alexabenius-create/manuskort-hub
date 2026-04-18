@@ -565,4 +565,20 @@
 }
 
 
+/* Presentationsläge — kortets manustext */
+.presentation-prose p {
+  margin: 0 0 0.75em 0;
+}
+.presentation-prose p:last-child {
+  margin-bottom: 0;
+}
+.presentation-prose strong { font-weight: 700; }
+.presentation-prose em { font-style: italic; }
+.presentation-prose u { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.15em; }
+.presentation-prose mark {
+  background-color: hsl(50 90% 65% / 0.35);
+  color: inherit;
+  padding: 0 0.15em;
+  border-radius: 4px;
+}
 
