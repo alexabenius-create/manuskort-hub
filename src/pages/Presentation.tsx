@@ -133,10 +133,6 @@ export default function Presentation() {
 
       if (e.key === "Escape") {
         e.preventDefault();
-        if (isEditable && target) {
-          (target as HTMLElement).blur();
-          return;
-        }
         exit();
         return;
       }
