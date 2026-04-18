@@ -11,6 +11,7 @@ import Editor from "./pages/Editor";
 import Presentation from "./pages/Presentation";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
+import Import from "./pages/Import";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<RequireAuth><Library /></RequireAuth>} />
               <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
+              <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
               <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
               <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
               <Route path="/index" element={<Navigate to="/" replace />} />
