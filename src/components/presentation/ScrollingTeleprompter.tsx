@@ -117,6 +117,10 @@ export function ScrollingTeleprompter({
   const lastTickRef = useRef<number | null>(null);
   const driftCorrectionRef = useRef<{ start: number; from: number; to: number } | null>(null);
   const lastDriftCheckRef = useRef<number>(0);
+  const pixelsPerSecondRef = useRef(0);
+  const elapsedSecondsRef = useRef(0);
+  const isPausedRef = useRef(false);
+  const manualOverrideUntilRef = useRef(0);
 
   const [, forceTick] = useState(0); // för att tvinga re-render av sentence-highlight
   const [totalHeight, setTotalHeight] = useState(0);
