@@ -1,4 +1,5 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { encode } from "https://deno.land/std@0.168.0/encoding/hex.ts";
 
 export type StripeEnv = "sandbox" | "live";
 
