@@ -295,10 +295,45 @@
     display: none !important;
   }
 
+  /* Tvinga ljust tema och svart text på ALLT — annars blir text osynlig
+     i mörkt läge eller med .text-foreground (som är ljus i dark mode). */
   html, body {
     background: white !important;
     color: black !important;
   }
+  html *,
+  html *::before,
+  html *::after {
+    color: black !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Återställ bakgrunder för element som BEHÖVER bakgrund (panelist-markeringar) */
+  .ProseMirror .panelist-mark[data-panelist-color] {
+    background-color: var(--panelist-bg) !important;
+    color: var(--panelist-fg, black) !important;
+  }
+  .ProseMirror .panelist-mark::before {
+    background-color: var(--panelist-bg) !important;
+    color: var(--panelist-fg, black) !important;
+  }
+
+  /* Inputs och textareas: säkerställ läsbar text */
+  input, textarea, select {
+    color: black !important;
+    background: transparent !important;
+    border: none !important;
+    -webkit-text-fill-color: black !important;
+  }
+
+  /* Tiptap-redigeraren — explicit svart text och normal layout */
+  .ProseMirror {
+    color: black !important;
+    min-height: 0 !important;
+  }
+  .ProseMirror p { line-height: 1.5 !important; margin: 0 0 0.4em 0 !important; }
 
   main {
     max-width: none !important;
@@ -309,13 +344,21 @@
   .manu-card {
     break-inside: avoid;
     page-break-inside: avoid;
-    box-shadow: none !important;
     border: 1px solid hsl(240 6% 80%) !important;
     margin: 0 0 6mm 0 !important;
+    padding: 4mm !important;
     animation: none !important;
+    background: white !important;
   }
 
-  /* Säkerställ att färger skrivs ut */
+  /* Kortpaneler (header/body/footer) ska inte ha egna bakgrunder/skuggor i print */
+  .manu-card > * {
+    background: white !important;
+    box-shadow: none !important;
+    padding: 2mm 0 !important;
+  }
+
+  /* Säkerställ att färger på panelist-markeringar och cue-dots faktiskt skrivs ut */
   .ProseMirror .panelist-mark,
   .ProseMirror .panelist-mark::before,
   .cue-dot {
@@ -336,9 +379,7 @@
     page-break-after: always;
     padding: 6mm !important;
   }
-  html[data-print-format="a5-1up"] .manu-card * {
-    font-size: 0.95em;
-  }
 }
+
 
 
