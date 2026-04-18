@@ -391,6 +391,18 @@ export default function Presentation() {
         countdownActive={timer.countdown > 0}
       />
 
+      {/* Diskret hjälp-knapp */}
+      {!menuOpen && (
+        <button
+          onClick={() => setHelpOpen(true)}
+          className="fixed bottom-6 right-6 z-30 w-11 h-11 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors font-mono text-[16px] shadow-lg shadow-black/40"
+          aria-label="Visa hjälp (?)"
+          title="Visa hjälp (?)"
+        >
+          ?
+        </button>
+      )}
+
       <main className="flex-1 min-h-0 pt-44 pb-44 px-6 md:px-10 relative">
         <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
           {!menuOpen && viewMode === "cards" && (
