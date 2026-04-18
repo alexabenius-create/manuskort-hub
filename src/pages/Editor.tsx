@@ -344,11 +344,13 @@ export default function Editor() {
                     showNotes={manuscript.show_notes}
                     showTimes={manuscript.show_times}
                     wpm={manuscript.wpm}
+                    canSyncWithPrevious={idx > 0}
                     onLocalChange={(patch) => updateCard(c.id, patch)}
                     onDelete={() => deleteCard(c.id)}
                     onDuplicate={() => duplicateCard(c.id)}
                     onSplit={() => splitCard(c.id)}
                     onMergeUp={() => mergeUp(c.id)}
+                    onSyncWithPrevious={() => syncWithPrevious(c.id)}
                   />
                 ))}
               </div>
