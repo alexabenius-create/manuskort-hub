@@ -227,6 +227,11 @@ export function ScrollingTeleprompter({
         }}
       />
 
+      {/* Tangentbordshjälp — diskret pill överst */}
+      <div className="teleprompter-hint pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full bg-zinc-900/70 backdrop-blur text-zinc-400 font-mono text-[12px] tracking-wide">
+        <span className="text-zinc-200">+ / −</span> hastighet · <span className="text-zinc-200">R</span> återställ
+      </div>
+
       {/* Fast läs-linje */}
       {focusStyle === "line" && viewportHeight > 0 && (
         <div
