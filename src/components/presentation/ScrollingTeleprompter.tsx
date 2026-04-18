@@ -117,6 +117,10 @@ export function ScrollingTeleprompter({
   const lastTickRef = useRef<number | null>(null);
   const driftCorrectionRef = useRef<{ start: number; from: number; to: number } | null>(null);
   const lastDriftCheckRef = useRef<number>(0);
+  const pixelsPerSecondRef = useRef(0);
+  const elapsedSecondsRef = useRef(0);
+  const isPausedRef = useRef(false);
+  const manualOverrideUntilRef = useRef(0);
 
   const [, forceTick] = useState(0); // för att tvinga re-render av sentence-highlight
   const [totalHeight, setTotalHeight] = useState(0);
@@ -157,7 +161,18 @@ export function ScrollingTeleprompter({
     return ideal * clampedFactor;
   }, [totalHeight, viewportHeight, targetSeconds, speedFactor]);
 
-  // RAF-loop för smooth scroll
+  // Spegla värden till refs så RAF-loopen kan läsa dem utan att starta om
+  useEffect(() => { pixelsPerSecondRef.current = pixelsPerSecond; }, [pixelsPerSecond]);
+  useEffect(() => { elapsedSecondsRef.current = elapsedSeconds; }, [elapsedSeconds]);
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+
+  // Karens efter manuell hastighetsändring: pausa drift-korrigering 8s
+  useEffect(() => {
+    manualOverrideUntilRef.current = performance.now() + 8000;
+    driftCorrectionRef.current = null;
+  }, [speedFactor]);
+
+  // RAF-loop för smooth scroll — startas en gång (eller när countdown/dimensioner ändras)
   useEffect(() => {
     if (countdownActive) return;
     let raf = 0;
@@ -166,8 +181,11 @@ export function ScrollingTeleprompter({
       lastTickRef.current = ts;
       const dt = last === null ? 0 : (ts - last) / 1000;
 
-      if (!isPaused && pixelsPerSecond > 0) {
-        offsetRef.current += pixelsPerSecond * dt;
+      const pps = pixelsPerSecondRef.current;
+      const paused = isPausedRef.current;
+
+      if (!paused && pps > 0) {
+        offsetRef.current += pps * dt;
       }
 
       // Mjuk drift-korrigering
@@ -179,16 +197,19 @@ export function ScrollingTeleprompter({
           driftCorrectionRef.current = null;
         } else {
           const t = elapsedCorr / DRIFT_LERP_DURATION_MS;
-          // Lägg till delta så att animationen "interpoleras ovanpå" pågående scroll
           const delta = (correction.to - correction.from) * t;
-          offsetRef.current = correction.from + delta + (pixelsPerSecond * (elapsedCorr / 1000));
+          offsetRef.current = correction.from + delta + (pps * (elapsedCorr / 1000));
         }
       }
 
-      // Periodisk drift-koll
-      if (!isPaused && ts - lastDriftCheckRef.current > DRIFT_CHECK_INTERVAL_MS) {
+      // Periodisk drift-koll — skippas under manuell karens
+      if (
+        !paused &&
+        ts > manualOverrideUntilRef.current &&
+        ts - lastDriftCheckRef.current > DRIFT_CHECK_INTERVAL_MS
+      ) {
         lastDriftCheckRef.current = ts;
-        const expected = elapsedSeconds * pixelsPerSecond;
+        const expected = elapsedSecondsRef.current * pps;
         if (Math.abs(offsetRef.current - expected) > DRIFT_THRESHOLD_PX) {
           driftCorrectionRef.current = {
             start: ts,
@@ -219,7 +240,7 @@ export function ScrollingTeleprompter({
       cancelAnimationFrame(raf);
       lastTickRef.current = null;
     };
-  }, [isPaused, countdownActive, pixelsPerSecond, elapsedSeconds, totalHeight, viewportHeight, focusStyle]);
+  }, [countdownActive, totalHeight, viewportHeight, focusStyle]);
 
   // Sentence-highlight: hitta vilken mening som korsar läs-linjen
   const focusLineY = viewportHeight * FOCUS_LINE_RATIO;
