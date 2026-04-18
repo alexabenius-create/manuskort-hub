@@ -16,9 +16,195 @@ export function countVisualRows(el: HTMLElement): number {
 }
 
 /**
+ * Skapar en dold mät-div som kopierar font, line-height och bredd från sampleEl.
+ * Används för att mäta antal visuella rader för ett HTML-fragment utan att rendera in det i DOM:en.
+ */
+function createMeasurer(sampleEl: HTMLElement): { el: HTMLDivElement; cleanup: () => void } {
+  const cs = getComputedStyle(sampleEl);
+  const width = sampleEl.clientWidth;
+  const div = document.createElement("div");
+  div.style.position = "fixed";
+  div.style.left = "-99999px";
+  div.style.top = "0";
+  div.style.visibility = "hidden";
+  div.style.pointerEvents = "none";
+  div.style.width = `${width}px`;
+  div.style.boxSizing = "border-box";
+  // Kopiera typografi
+  const propsToCopy = [
+    "fontFamily", "fontSize", "fontStyle", "fontWeight", "fontVariant",
+    "lineHeight", "letterSpacing", "wordSpacing", "textTransform",
+    "paddingLeft", "paddingRight", "paddingTop", "paddingBottom",
+    "whiteSpace", "wordBreak", "overflowWrap",
+  ] as const;
+  for (const p of propsToCopy) {
+    (div.style as any)[p] = cs[p as any];
+  }
+  document.body.appendChild(div);
+  return { el: div, cleanup: () => div.remove() };
+}
+
+/**
+ * Splitta HTML exakt vid maxRows visuella rader, mätt mot sampleEl.
+ * Returnerar [fitsHtml, overflowHtml]. Om allt får plats: [html, ""].
+ *
+ * Strategi:
+ *  1. Bygg upp innehållet block för block tills vi överskrider maxRows.
+ *  2. Inom det överskridande blocket: splitta vid meningsslut → mellanslag → tecken.
+ *  3. Föredra blockgräns om vi redan ligger nära maxRows (±0 rader marginal).
+ */
+export function splitHtmlAtRow(
+  html: string,
+  maxRows: number,
+  sampleEl: HTMLElement,
+): [string, string] {
+  if (!html || !html.trim()) return [html, ""];
+
+  const { el: measurer, cleanup } = createMeasurer(sampleEl);
+  try {
+    // Kontrollera först om allt får plats
+    measurer.innerHTML = html;
+    if (countVisualRows(measurer) <= maxRows) {
+      return [html, ""];
+    }
+
+    // Parsa HTML till en lista av blockelement
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    const blocks = Array.from(tmp.children) as HTMLElement[];
+
+    // Om det inte finns några block (ren text), wrappa i <p>
+    if (blocks.length === 0) {
+      const p = document.createElement("p");
+      p.innerHTML = html;
+      blocks.push(p);
+    }
+
+    // Steg 1: lägg till block tills vi överskrider
+    const fitBlocks: HTMLElement[] = [];
+    let overflowBlockIdx = -1;
+
+    for (let i = 0; i < blocks.length; i++) {
+      const candidate = [...fitBlocks, blocks[i]];
+      measurer.innerHTML = candidate.map((b) => b.outerHTML).join("");
+      const rows = countVisualRows(measurer);
+      if (rows <= maxRows) {
+        fitBlocks.push(blocks[i]);
+      } else {
+        overflowBlockIdx = i;
+        break;
+      }
+    }
+
+    // Om alla block fick plats men ändå för många rader → fallback: ta bort sista
+    if (overflowBlockIdx === -1) {
+      // Bör inte hända (vi vet att html överskrider), men säkerhetsnät
+      if (fitBlocks.length > 1) {
+        const removed = fitBlocks.pop()!;
+        const fitsHtml = fitBlocks.map((b) => b.outerHTML).join("");
+        const overflowHtml = [removed, ...blocks.slice(blocks.length)].map((b) => b.outerHTML).join("");
+        return [fitsHtml, overflowHtml];
+      }
+      // Enda blocket — gå till ord-split nedan
+      overflowBlockIdx = 0;
+      fitBlocks.length = 0;
+    }
+
+    const overflowBlock = blocks[overflowBlockIdx];
+    const remainingBlocks = blocks.slice(overflowBlockIdx + 1);
+
+    // Steg 2: splitta inuti overflowBlock vid ord/meningsgräns
+    const tagName = overflowBlock.tagName.toLowerCase();
+    // Använd textContent för stabil ordvis splitting (tappar inline-formatering, men håller flödet)
+    const fullText = overflowBlock.textContent ?? "";
+    const words = fullText.split(/(\s+)/); // behåll mellanslag
+
+    let lo = 0;
+    let hi = words.length;
+    let bestFit = 0;
+
+    // Binärsökning: hitta största prefix av words som ryms tillsammans med fitBlocks
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const partialText = words.slice(0, mid).join("");
+      const partialBlock = partialText
+        ? `<${tagName}>${escapeHtml(partialText)}</${tagName}>`
+        : "";
+      const trial = [
+        ...fitBlocks.map((b) => b.outerHTML),
+        partialBlock,
+      ].filter(Boolean).join("");
+      measurer.innerHTML = trial || "<p></p>";
+      const rows = countVisualRows(measurer);
+      if (rows <= maxRows) {
+        bestFit = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+
+    let firstText = words.slice(0, bestFit).join("");
+    let secondText = words.slice(bestFit).join("");
+
+    // Justera till närmaste meningsslut bakåt (inom 25% av första delen)
+    if (firstText && secondText) {
+      const minKeep = Math.floor(firstText.length * 0.75);
+      const sentenceMatch = /[.!?…][\s)"'»]*$/;
+      // Sök bakåt efter meningsslut
+      let cut = firstText.length;
+      const re = /[.!?…][\s)"'»]*\s+/g;
+      let m: RegExpExecArray | null;
+      let lastValid = -1;
+      while ((m = re.exec(firstText)) !== null) {
+        const end = m.index + m[0].length;
+        if (end >= minKeep) lastValid = end;
+      }
+      if (lastValid > 0 && !sentenceMatch.test(firstText)) {
+        const moved = firstText.slice(lastValid);
+        firstText = firstText.slice(0, lastValid);
+        secondText = moved + secondText;
+      }
+    }
+
+    firstText = firstText.replace(/\s+$/, "");
+    secondText = secondText.replace(/^\s+/, "");
+
+    const fitsParts: string[] = fitBlocks.map((b) => b.outerHTML);
+    if (firstText) fitsParts.push(`<${tagName}>${escapeHtml(firstText)}</${tagName}>`);
+
+    const overflowParts: string[] = [];
+    if (secondText) overflowParts.push(`<${tagName}>${escapeHtml(secondText)}</${tagName}>`);
+    overflowParts.push(...remainingBlocks.map((b) => b.outerHTML));
+
+    const fitsHtml = fitsParts.join("");
+    const overflowHtml = overflowParts.join("");
+
+    // Säkerhetsnät: om vi inte fick någon överflödig text alls (allt blev tomt),
+    // returnera originalet (ingen meningsfull split möjlig).
+    if (!overflowHtml.trim()) return [html, ""];
+    if (!fitsHtml.trim()) {
+      // Föredra att ändå splitta — lägg första ordet i fits
+      const firstWord = words[0] ?? "";
+      const rest = words.slice(1).join("");
+      return [
+        `<${tagName}>${escapeHtml(firstWord)}</${tagName}>`,
+        `<${tagName}>${escapeHtml(rest)}</${tagName}>` + remainingBlocks.map((b) => b.outerHTML).join(""),
+      ];
+    }
+
+    return [fitsHtml, overflowHtml];
+  } finally {
+    cleanup();
+  }
+}
+
+/**
  * Delar HTML i två ungefär lika stora delar vid närmaste blockgräns
  * (paragraf eller mening). Returnerar [förstahalva, andrahalva].
  * Om innehållet inte går att dela meningsfullt: returnera [hela, ""].
+ *
+ * Behålls som fallback om ingen sample-DOM är tillgänglig.
  */
 export function splitHtmlInHalf(html: string): [string, string] {
   if (!html || !html.trim()) return [html, ""];
@@ -28,7 +214,6 @@ export function splitHtmlInHalf(html: string): [string, string] {
 
   const blocks = Array.from(container.children) as HTMLElement[];
 
-  // Fall 1: flera blockelement → hitta mittpunkt baserat på textlängd
   if (blocks.length >= 2) {
     const lengths = blocks.map((b) => (b.textContent ?? "").length);
     const total = lengths.reduce((a, b) => a + b, 0);
@@ -44,12 +229,10 @@ export function splitHtmlInHalf(html: string): [string, string] {
     return [first, second];
   }
 
-  // Fall 2: ett enda block (typ <p>) → dela på meningar
   const block = blocks[0] ?? container;
   const text = block.textContent ?? "";
   if (text.length < 40) return [html, ""];
 
-  // Hitta meningsslut närmast mitten
   const mid = Math.floor(text.length / 2);
   const sentenceEnds: number[] = [];
   const re = /[.!?…]\s+/g;
@@ -63,7 +246,6 @@ export function splitHtmlInHalf(html: string): [string, string] {
       Math.abs(p - mid) < Math.abs(best - mid) ? p : best
     , sentenceEnds[0]);
   } else {
-    // Fallback: närmaste mellanslag
     const space = text.lastIndexOf(" ", mid);
     if (space > 0) splitChar = space + 1;
   }

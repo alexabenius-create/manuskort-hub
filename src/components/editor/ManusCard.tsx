@@ -37,12 +37,13 @@ interface Props {
   onPasteOverflow?: (overflowText: string) => void;
   onAutoSplit?: () => void;
   onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
+  onEditorReady?: (cardId: string, editor: Editor | null) => void;
 }
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
-  onAutoSplit, onOverflowStateChange,
+  onAutoSplit, onOverflowStateChange, onEditorReady,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
@@ -66,6 +67,7 @@ export function ManusCard({
   useEffect(() => {
     return () => {
       onOverflowStateChange?.(card.id, false);
+      onEditorReady?.(card.id, null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -302,7 +304,7 @@ export function ManusCard({
             onChange={(html) => onLocalChange({ content_html: html })}
             placeholder={placeholder}
             size={textSize}
-            onEditorReady={setEditor}
+            onEditorReady={(ed) => { setEditor(ed); onEditorReady?.(card.id, ed); }}
             onSelectionChange={setSelection}
             maxRows={maxRows}
             onRowCountChange={setCurrentRows}
