@@ -71,7 +71,20 @@ export default function Editor() {
   );
 
   const updateCard = (cardId: string, patch: Partial<Card>) => {
-    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, ...patch } : c)));
+    setCards((prev) => {
+      const next = prev.map((c) => (c.id === cardId ? { ...c, ...patch } : c));
+      // Kedja: om sluttid ändrats, sätt nästa korts starttid till sluttid + 1 sek
+      if (Object.prototype.hasOwnProperty.call(patch, "end_time")) {
+        const idx = next.findIndex((c) => c.id === cardId);
+        if (idx !== -1 && idx < next.length - 1) {
+          const chained = nextStartFromEnd(next[idx].end_time ?? "");
+          if (chained !== null) {
+            next[idx + 1] = { ...next[idx + 1], start_time: chained };
+          }
+        }
+      }
+      return next;
+    });
   };
 
   const updateMeta = (patch: Partial<Manuscript>) => {
