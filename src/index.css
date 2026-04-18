@@ -217,13 +217,15 @@
   .ProseMirror mark { background: hsl(var(--cue-amber) / 0.22); padding: 1px 3px; border-radius: 3px; }
   .ProseMirror .pause-mark {
     display: inline-block;
-    color: hsl(var(--muted-foreground));
-    background: hsl(var(--surface-2));
+    color: hsl(var(--cue-red));
+    background: hsl(var(--cue-red) / 0.12);
+    border: 1px solid hsl(var(--cue-red) / 0.3);
     border-radius: 9999px;
     padding: 0 8px;
     margin: 0 4px;
     font-size: 0.9em;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
   /* Teleprompter (mjuk rullning) */
@@ -624,5 +626,35 @@
   color: inherit;
   padding: 0 0.15em;
   border-radius: 4px;
+}
+
+/* Paus-markör i presentationsläget — röd pulserande pill */
+.presentation-prose .pause-mark {
+  display: inline-block;
+  color: hsl(var(--cue-red));
+  background: hsl(var(--cue-red) / 0.18);
+  border: 1px solid hsl(var(--cue-red) / 0.5);
+  border-radius: 9999px;
+  padding: 0 0.55em;
+  margin: 0 0.25em;
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 0.08em;
+  animation: pauseMarkPulse 1.6s ease-in-out infinite;
+}
+@keyframes pauseMarkPulse {
+  0%, 100% {
+    background-color: hsl(var(--cue-red) / 0.18);
+    box-shadow: 0 0 0 0 hsl(var(--cue-red) / 0.0);
+  }
+  50% {
+    background-color: hsl(var(--cue-red) / 0.34);
+    box-shadow: 0 0 14px 2px hsl(var(--cue-red) / 0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .presentation-prose .pause-mark { animation: none; }
 }
 
