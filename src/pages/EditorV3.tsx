@@ -468,16 +468,38 @@ export default function EditorV3() {
       ? `Måltid: ${formatTargetDuration(targetDurationSeconds)}${diffText ? ` (${diffText})` : ""}`
       : "Måltid ej satt — klicka för att ange";
 
-  const startPresentation = () => {
+  const startPresentation = (skipChainCheck = false) => {
     if (targetDurationSeconds === null) {
       setTargetDialogIntro("Ange måltid för att starta presentationen.");
       setTargetSaveLabel("Spara och starta");
       setTargetDialogOpen(true);
       return;
     }
+    if (!skipChainCheck) {
+      const ed = editorRef.current;
+      if (ed) {
+        const missing: number[] = [];
+        let hasAnyManual = false;
+        let i = 0;
+        ed.state.doc.forEach((n) => {
+          if (n.type.name !== "cardBlock") return;
+          i++;
+          const attrs = n.attrs as { targetSeconds: number | null; targetSecondsIsManual: boolean };
+          const isManual =
+            attrs.targetSecondsIsManual && attrs.targetSeconds != null && attrs.targetSeconds > 0;
+          if (isManual) hasAnyManual = true;
+          else missing.push(i);
+        });
+        if (hasAnyManual && missing.length > 0) {
+          setMissingTargetCards(missing);
+          setChainBreakOpen(true);
+          return;
+        }
+      }
+    }
     navigate(`/manus/${manuscript.id}/presentera`);
   };
-  startPresentationRef.current = startPresentation;
+  startPresentationRef.current = () => startPresentation();
 
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const shortcutLabel = isMac ? "⌘ Enter" : "Ctrl Enter";
