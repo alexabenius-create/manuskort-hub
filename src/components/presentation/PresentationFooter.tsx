@@ -108,14 +108,26 @@ export function PresentationFooter({
         </div>
 
         {/* Mitten — per-kort-timer (centrerad) */}
-        <div className="flex flex-col items-center gap-2 pointer-events-none justify-self-center">
-          <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
-            {formatMmSs(cardElapsed)}
-            {planned && (
-              <span className="text-zinc-600">
-                {" / "}
-                <span className="text-zinc-400">{formatMmSs(planned)}</span>
-              </span>
+        <div className="flex flex-col items-center gap-2 justify-self-center pointer-events-none">
+          <div className="flex items-center gap-2">
+            <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
+              {formatMmSs(cardElapsed)}
+              {planned && (
+                <span className="text-zinc-600">
+                  {" / "}
+                  <span className="text-zinc-400">{formatMmSs(planned)}</span>
+                </span>
+              )}
+            </div>
+            {rawIsOver && !isOverdueDismissed && (
+              <button
+                onClick={onDismissOverdue}
+                className="pointer-events-auto p-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-100 transition-colors"
+                aria-label="Stäng av övertids-varning för detta kort"
+                title="Stäng av övertids-varning för detta kort"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
           {planned && (
