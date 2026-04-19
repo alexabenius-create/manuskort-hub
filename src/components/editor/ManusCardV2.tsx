@@ -350,6 +350,7 @@ export function ManusCardV2({
                   key={c.id}
                   cue={c}
                   panelists={panelists}
+                  targetSeconds={card.target_seconds ?? seconds}
                   onSave={(next) => updateCues(upsertCue(cues, next))}
                   onRemove={() => updateCues(removeCue(cues, c.id))}
                 />
@@ -391,7 +392,11 @@ export function ManusCardV2({
               )}
 
               {/* "+ Signal"-knappen för att lägga till nya cues */}
-              <AddCueButton panelists={panelists} onAdd={(c) => updateCues(upsertCue(cues, c))} />
+              <AddCueButton
+                panelists={panelists}
+                targetSeconds={card.target_seconds ?? seconds}
+                onAdd={(c) => updateCues(upsertCue(cues, c))}
+              />
 
               {showCues && !hasAnyCue && cues.length === 0 && (
                 <button
