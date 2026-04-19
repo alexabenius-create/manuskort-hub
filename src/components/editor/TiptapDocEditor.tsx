@@ -16,7 +16,7 @@ import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 import { CardBlock } from "@/lib/cardBlockNode";
-import { joinCardBackward, splitCardBlock } from "@/lib/cardBlockCommands";
+import { joinCardBackward, splitCardBlock, moveCardBlockBySteps } from "@/lib/cardBlockCommands";
 import { computeMaxWordsPerCard } from "@/lib/smartPasteThreshold";
 import { splitPastedHtml, plainTextToHtml } from "@/lib/smartPasteSplit";
 
@@ -52,10 +52,27 @@ const CardBlockKeymap = Extension.create({
   name: "cardBlockKeymap",
   priority: 1000,
   addProseMirrorPlugins() {
+    const findCardPos = (state: import("prosemirror-state").EditorState): number | null => {
+      const $from = state.selection.$from;
+      for (let d = $from.depth; d >= 0; d--) {
+        if ($from.node(d).type.name === "cardBlock") return $from.before(d);
+      }
+      return null;
+    };
     return [
       keymap({
         Backspace: (state, dispatch, view) => joinCardBackward(state, dispatch, view),
         "Mod-Enter": (state, dispatch) => splitCardBlock(state, dispatch),
+        "Alt-ArrowUp": (state, dispatch) => {
+          const pos = findCardPos(state);
+          if (pos == null) return false;
+          return moveCardBlockBySteps(state, pos, -1, dispatch);
+        },
+        "Alt-ArrowDown": (state, dispatch) => {
+          const pos = findCardPos(state);
+          if (pos == null) return false;
+          return moveCardBlockBySteps(state, pos, 1, dispatch);
+        },
       }),
     ];
   },
