@@ -26,7 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { nextStartFromEnd, parseTime, formatTime } from "@/lib/timeChain";
 import { wordCount, estimateSeconds } from "@/lib/wordCount";
-import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
+import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE, countPresentationRows } from "@/lib/cardLimits";
 import { useTourTrigger } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
 import { LIMITS } from "@/lib/tierLimits";
