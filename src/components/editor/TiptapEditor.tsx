@@ -167,12 +167,30 @@ export function TiptapEditor({
       attributes: {
         class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
-      handleKeyDown: (_view, event) => {
+      handleKeyDown: (view, event) => {
         // "/" → infoga paus (alltid tillåtet, även över gräns)
         if (event.key === "/" && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
           event.preventDefault();
           editor?.chain().focus().insertPause().run();
           return true;
+        }
+        // Backspace vid doc-start → pull-back från föregående kort.
+        // Endast utan modifier-tangenter och utan markering.
+        if (
+          event.key === "Backspace" &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          onPullBackRef.current
+        ) {
+          const sel = view.state.selection;
+          // ProseMirror: doc-start är pos 1 (pos 0 är före första noden).
+          // Vi triggar om caret är vid pos 1 OCH det inte finns markering.
+          if (sel.empty && sel.from <= 1) {
+            event.preventDefault();
+            onPullBackRef.current();
+            return true;
+          }
         }
         // Inmatning är alltid tillåten — överskott visas som varning, inte spärr.
         return false;
