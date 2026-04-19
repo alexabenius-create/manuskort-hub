@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Pause, Zap, ZoomIn, ZoomOut, Users } from "lucide-react";
+import { Zap, Play, ZoomIn, ZoomOut, Users } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import {
