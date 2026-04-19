@@ -14,11 +14,14 @@ import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
 import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
+import { CardDragHandle, CardDropZone } from "./CardDragHandle";
+import { setDraggingCardPos, useDraggingCardPos } from "@/lib/cardDragStore";
 import {
   duplicateCardBlock,
   deleteCardBlock,
   insertCardBlockAfter,
   insertCardBlockBefore,
+  moveCardBlock,
 } from "@/lib/cardBlockCommands";
 import { X } from "lucide-react";
 
