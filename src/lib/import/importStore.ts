@@ -13,7 +13,12 @@ export interface SpeakerMapping {
   color?: string; // för "new"-display
 }
 
+export type ImportMode = "speaker" | "moderator";
+
 interface ImportState {
+  // Steg 0
+  mode: ImportMode | null;
+
   // Steg 1
   file: File | null;
   fileKind: "docx" | "txt" | null;
@@ -35,6 +40,7 @@ interface ImportState {
   speakerTempIds: Map<string, string>;
   dirty: boolean;
 
+  setMode: (m: ImportMode | null) => void;
   setFile: (f: File | null) => void;
   setFileKind: (k: "docx" | "txt" | null) => void;
   setRawBlocks: (b: ParsedBlock[]) => void;
@@ -57,6 +63,7 @@ interface ImportState {
 }
 
 const initial = {
+  mode: null as ImportMode | null,
   file: null,
   fileKind: null,
   rawBlocks: [],
@@ -79,6 +86,7 @@ const initial = {
 export const useImportStore = create<ImportState>((set) => ({
   ...initial,
 
+  setMode: (m) => set({ mode: m }),
   setFile: (f) => set({ file: f }),
   setFileKind: (k) => set({ fileKind: k }),
   setRawBlocks: (b) => set({ rawBlocks: b }),
