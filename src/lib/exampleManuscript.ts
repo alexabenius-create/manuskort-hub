@@ -125,6 +125,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "låt henne bli klar, avbryt inte",
       cue_amber: "",
       cue_teal: "Thomas — VD-perspektiv",
+      cues: [
+        { kind: "energy", text: "låt henne bli klar, avbryt inte" },
+        { kind: "action", text: "Thomas — VD-perspektiv" },
+      ],
       is_panic_card: false,
     },
     {
