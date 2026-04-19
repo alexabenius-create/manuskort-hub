@@ -990,6 +990,7 @@ export default function Editor() {
                     number: idx + 1,
                     textSize: manuscript.text_size as "sm" | "md" | "lg",
                     showNotes: manuscript.show_notes,
+                    notesDisplay,
                     showTimes: manuscript.show_times,
                     wpm: manuscript.wpm,
                     timeFormat,
