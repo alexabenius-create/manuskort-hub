@@ -1,13 +1,9 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, MessageCircleQuestion, User } from "lucide-react";
-import { useState } from "react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
-
-type PanelistMode = "speaker" | "question";
-const MODE_STORAGE_KEY = "manuskort.bubbleMode";
 
 interface Props {
   editor: Editor | null;
@@ -28,19 +24,6 @@ export function FormatBubbleMenu({ editor }: Props) {
   } catch {
     panelists = [];
   }
-
-  const [mode, setMode] = useState<PanelistMode>(() => {
-    if (typeof window === "undefined") return "speaker";
-    const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
-    return stored === "question" ? "question" : "speaker";
-  });
-
-  const updateMode = (next: PanelistMode) => {
-    setMode(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(MODE_STORAGE_KEY, next);
-    }
-  };
 
   if (!editor) return null;
 
@@ -84,16 +67,6 @@ export function FormatBubbleMenu({ editor }: Props) {
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
     .panelistId ?? null;
-  const activeQuestionId = (editor.getAttributes("questionTo") as { panelistId?: string | null })
-    .panelistId ?? null;
-  const hasAnyMark = !!activePanelistId || !!activeQuestionId;
-
-  // Reflektera markens läge i toggleknappen
-  const effectiveMode: PanelistMode = activeQuestionId
-    ? "question"
-    : activePanelistId
-    ? "speaker"
-    : mode;
 
   // Expandera caret till ord vid behov, returnera chain att köra på
   const ensureSelectionChain = () => {
@@ -115,29 +88,14 @@ export function FormatBubbleMenu({ editor }: Props) {
   };
 
   const applyPanelist = (p: { id: string; color: string; name: string }) => {
-    const isActiveHere =
-      effectiveMode === "speaker"
-        ? activePanelistId === p.id
-        : activeQuestionId === p.id;
-
+    const isActiveHere = activePanelistId === p.id;
     const chain = ensureSelectionChain();
-    // Rensa alltid båda marks först så vi inte staplar konflikterande marks
-    const cleared = chain.unsetPanelist().unsetMark("questionTo");
     if (isActiveHere) {
-      cleared.run();
+      chain.unsetPanelist().run();
       return;
     }
-    if (effectiveMode === "speaker") {
-      cleared.setPanelist({ panelistId: p.id, color: p.color, name: p.name }).run();
-    } else {
-      cleared
-        .setMark("questionTo", { panelistId: p.id, color: p.color, name: p.name })
-        .run();
-    }
+    chain.unsetPanelist().setPanelist({ panelistId: p.id, color: p.color, name: p.name }).run();
   };
-
-  const ModeIcon = effectiveMode === "question" ? MessageCircleQuestion : User;
-  const modeLabel = effectiveMode === "question" ? "Tilltal (fråga till)" : "Replik (talare)";
 
   return (
     <BubbleMenu
@@ -178,61 +136,34 @@ export function FormatBubbleMenu({ editor }: Props) {
           <>
             <div className="mx-1 h-5 w-px bg-border" />
 
-            {/* Lägestoggle: replik ↔ tilltal */}
-            <button
-              type="button"
-              aria-label={`Växla läge — nu: ${modeLabel}`}
-              title={`Läge: ${modeLabel}. Klicka för att växla.`}
-              onClick={() => updateMode(effectiveMode === "speaker" ? "question" : "speaker")}
-              className={cn(
-                "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-                "text-foreground/80 hover:bg-muted hover:text-foreground",
-                effectiveMode === "question" && "text-[hsl(var(--cue-amber,30_90%_50%))]",
-              )}
-            >
-              <ModeIcon className="h-4 w-4" />
-            </button>
-
-            {/* Panelist-pills — applicerar enligt aktivt läge */}
             {panelists.map((p) => {
-              const isActiveHere =
-                effectiveMode === "speaker"
-                  ? activePanelistId === p.id
-                  : activeQuestionId === p.id;
+              const isActiveHere = activePanelistId === p.id;
               return (
                 <button
                   key={p.id}
                   type="button"
-                  aria-label={`${effectiveMode === "question" ? "Fråga till" : "Markera som"} ${p.name || "panelist"}`}
+                  aria-label={`Knyt till ${p.name || "panelist"}`}
                   aria-pressed={isActiveHere}
-                  title={`${effectiveMode === "question" ? "Fråga till" : "Replik:"} ${p.name || "Namnlös"}`}
+                  title={`Panelist: ${p.name || "Namnlös"}`}
                   onClick={() => applyPanelist(p)}
                   className={cn(
                     "inline-flex h-7 items-center justify-center rounded-full px-2.5 text-[12px] font-medium leading-none transition-all max-w-[140px]",
                     "ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
                     isActiveHere && "ring-2 ring-foreground/60 scale-105",
-                    effectiveMode === "question" && "bg-transparent border border-dashed",
                   )}
-                  style={
-                    effectiveMode === "question"
-                      ? { color: p.color, borderColor: p.color }
-                      : { backgroundColor: p.color, color: hexToDarkText(p.color) }
-                  }
+                  style={{ backgroundColor: p.color, color: hexToDarkText(p.color) }}
                 >
                   <span className="truncate">{p.name?.trim() || "Namnlös"}</span>
                 </button>
               );
             })}
 
-            {/* Eraser tar bort båda marks */}
-            {hasAnyMark && (
+            {activePanelistId && (
               <button
                 type="button"
                 aria-label="Ta bort markering"
                 title="Ta bort markering"
-                onClick={() =>
-                  editor.chain().focus().unsetPanelist().unsetMark("questionTo").run()
-                }
+                onClick={() => editor.chain().focus().unsetPanelist().run()}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors text-foreground/60 hover:bg-muted hover:text-foreground"
               >
                 <Eraser className="h-4 w-4" />
