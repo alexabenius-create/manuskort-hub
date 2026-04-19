@@ -1000,6 +1000,39 @@ export default function Editor() {
         title="Du har nått kort-gränsen för Gratis"
         description={`Gratis tillåter ${limits.cardsPerManuscript} kort per manus. Uppgradera till PRO för obegränsat.`}
       />
+
+      <FindReplaceDialog
+        open={findReplaceOpen}
+        onOpenChange={setFindReplaceOpen}
+        cards={cards.map((c) => ({ id: c.id, content_html: c.content_html }))}
+        onApply={async (updates, total) => {
+          if (updates.length === 0) return;
+          // Optimistisk uppdatering lokalt
+          setCards((prev) => {
+            const map = new Map(updates.map((u) => [u.id, u.html]));
+            return prev.map((c) => (map.has(c.id) ? { ...c, content_html: map.get(c.id)! } : c));
+          });
+          // Persistera parallellt
+          const results = await Promise.all(
+            updates.map((u) =>
+              supabase.from("cards").update({ content_html: u.html }).eq("id", u.id),
+            ),
+          );
+          const failed = results.filter((r) => r.error).length;
+          if (failed > 0) {
+            toast({
+              title: "Vissa kort kunde inte uppdateras",
+              description: `${failed} av ${updates.length} kort misslyckades.`,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Ersatt",
+              description: `${total} förekomst${total === 1 ? "" : "er"} i ${updates.length} kort.`,
+            });
+          }
+        }}
+      />
     </div>
     </PanelistsProvider>
   );
