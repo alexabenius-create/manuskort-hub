@@ -1,5 +1,4 @@
-import { Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import type { Style } from "@react-pdf/types";
+import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { renderHtmlToPdf } from "./htmlToPdfNodes";
 import { CUE_COLORS } from "./cueStyles";
 import type { Cue } from "@/lib/cues";
@@ -12,8 +11,8 @@ export interface CardOnPageProps {
   totalCardsLabel: string;       // "Sida 3 / 10" eller "Sida 3a / 10"
   roleLabel: string;             // "TALARE" / "ANNA SJÖBERG"
   roleColor: string;             // hex för vänsterkant
-  startTime: string;
-  endTime: string;
+  cumulativeStartSeconds: number | null;
+  cumulativeEndSeconds: number | null;
   targetSeconds: number | null;
   cues: Cue[];
   contentHtml: string;
@@ -25,88 +24,107 @@ export interface CardOnPageProps {
 }
 
 const PT_PER_MM = 2.8346;
-const CARD_WIDTH_MM = 210;
-const CARD_HEIGHT_MM = 148;
-const PAD_MM = 12;
+const PAD_MM = 10;
+const RAIL_MM = 4;
 
 function formatSec(sec: number | null): string {
   if (sec === null || sec === undefined) return "—";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
+  const total = Math.max(0, Math.floor(sec));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: CARD_WIDTH_MM * PT_PER_MM,
-    height: CARD_HEIGHT_MM * PT_PER_MM,
+    width: "100%",
+    height: "100%",
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     fontFamily: "Helvetica",
-    color: "#111111",
+    color: "#1A1A1A",
   },
   leftRail: {
-    width: 6,
+    width: RAIL_MM * PT_PER_MM,
     height: "100%",
   },
   inner: {
     flex: 1,
     paddingTop: PAD_MM * PT_PER_MM,
     paddingBottom: PAD_MM * PT_PER_MM,
-    paddingLeft: (PAD_MM - 2) * PT_PER_MM,
+    paddingLeft: (PAD_MM - 1) * PT_PER_MM,
     paddingRight: PAD_MM * PT_PER_MM,
     flexDirection: "column",
   },
+
+  // ---- Header ----
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 6,
+    marginBottom: 14,
+  },
+  headerLeft: {
+    flex: 1,
+    paddingRight: 16,
+    flexDirection: "column",
   },
   manuscriptTitle: {
-    fontSize: 9,
-    color: "#666666",
-    flex: 1,
-    paddingRight: 8,
-  },
-  cardNumber: {
-    fontSize: 16,
-    fontFamily: "Helvetica-Bold",
-    color: "#222222",
+    fontSize: 8.5,
+    color: "#888888",
+    letterSpacing: 0.4,
+    marginBottom: 4,
   },
   roleLabel: {
     fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    color: "#444444",
-    letterSpacing: 1.2,
-    marginBottom: 6,
+    letterSpacing: 1.6,
   },
+  headerRight: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+  },
+  cardNumber: {
+    fontSize: 26,
+    fontFamily: "Helvetica-Bold",
+    color: "#111111",
+    letterSpacing: -0.5,
+    lineHeight: 1,
+  },
+  cardNumberCaption: {
+    fontSize: 7,
+    color: "#999999",
+    letterSpacing: 1,
+    marginTop: 4,
+  },
+
+  // ---- Cue chips (trigger row) ----
   cueRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   cueChip: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 0.8,
-    borderRadius: 3,
-    paddingTop: 2,
-    paddingBottom: 2,
-    paddingLeft: 5,
-    paddingRight: 5,
-    marginRight: 5,
-    marginBottom: 4,
+    borderRadius: 10,
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 8,
+    paddingRight: 9,
+    marginRight: 6,
+    marginBottom: 5,
   },
   cueLabel: {
     fontSize: 7.5,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 0.6,
-    marginRight: 4,
+    letterSpacing: 0.8,
+    marginRight: 5,
   },
   cueText: {
-    fontSize: 8.5,
+    fontSize: 9,
   },
+
+  // ---- Body ----
   body: {
     flex: 1,
     flexDirection: "row",
@@ -114,46 +132,70 @@ const styles = StyleSheet.create({
   },
   scriptCol: {
     flex: 1,
-    paddingRight: 8,
+    paddingRight: 14,
   },
   scriptColFull: {
     flex: 1,
   },
   notesCol: {
-    width: "38%",
-    borderLeftWidth: 0.8,
-    borderLeftColor: "#CCCCCC",
-    paddingLeft: 8,
+    width: "36%",
+    borderLeftWidth: 0.6,
+    borderLeftColor: "#D8D8D8",
+    paddingLeft: 12,
   },
   notesLabel: {
-    fontSize: 7.5,
+    fontSize: 7,
     fontFamily: "Helvetica-Bold",
-    color: "#777777",
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    color: "#888888",
+    letterSpacing: 1.2,
+    marginBottom: 6,
   },
   notesText: {
     fontSize: 9,
-    color: "#333333",
-    lineHeight: 1.45,
+    color: "#3A3A3A",
+    lineHeight: 1.5,
   },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-    paddingTop: 4,
+
+  // ---- Footer ----
+  footerWrap: {
+    marginTop: 10,
+    paddingTop: 8,
     borderTopWidth: 0.5,
-    borderTopColor: "#DDDDDD",
+    borderTopColor: "#D8D8D8",
+    flexDirection: "row",
+    alignItems: "center",
   },
-  footerText: {
-    fontSize: 7.5,
-    color: "#777777",
+  footerCell: {
+    flexDirection: "row",
+    alignItems: "baseline",
   },
-  footerStrong: {
-    fontSize: 7.5,
-    color: "#444444",
+  footerLabel: {
+    fontSize: 7,
+    color: "#999999",
     fontFamily: "Helvetica-Bold",
+    letterSpacing: 1,
+    marginRight: 4,
+  },
+  footerValue: {
+    fontSize: 8.5,
+    color: "#444444",
+    fontFamily: "Courier-Bold",
+  },
+  footerSep: {
+    width: 1,
+    height: 10,
+    backgroundColor: "#E0E0E0",
+    marginLeft: 12,
+    marginRight: 12,
+  },
+  footerSpacer: {
+    flex: 1,
+  },
+  footerPage: {
+    fontSize: 8,
+    color: "#666666",
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 0.8,
   },
 });
 
@@ -165,8 +207,8 @@ export function CardOnPage(props: CardOnPageProps) {
     totalCardsLabel,
     roleLabel,
     roleColor,
-    startTime,
-    endTime,
+    cumulativeStartSeconds,
+    cumulativeEndSeconds,
     targetSeconds,
     cues,
     contentHtml,
@@ -183,12 +225,17 @@ export function CardOnPage(props: CardOnPageProps) {
       <View style={styles.inner}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.manuscriptTitle}>{manuscriptTitle}</Text>
-          <Text style={styles.cardNumber}>{cardNumberLabel}</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.manuscriptTitle}>{manuscriptTitle}</Text>
+            <Text style={[styles.roleLabel, { color: roleColor }]}>
+              {roleLabel.toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.cardNumber}>{cardNumberLabel}</Text>
+            <Text style={styles.cardNumberCaption}>KORT</Text>
+          </View>
         </View>
-
-        {/* Roll-etikett */}
-        <Text style={styles.roleLabel}>{roleLabel.toUpperCase()}</Text>
 
         {/* Cue-chippar */}
         {cues.length > 0 && (
@@ -205,12 +252,9 @@ export function CardOnPage(props: CardOnPageProps) {
               return (
                 <View
                   key={cue.id}
-                  style={[
-                    styles.cueChip,
-                    { backgroundColor: palette.bg, borderColor: palette.border },
-                  ]}
+                  style={[styles.cueChip, { backgroundColor: palette.bg }]}
                 >
-                  <Text style={[styles.cueLabel, { color: palette.text }]}>{label}:</Text>
+                  <Text style={[styles.cueLabel, { color: palette.text }]}>{label}</Text>
                   <Text style={[styles.cueText, { color: palette.text }]}>{cue.text}</Text>
                 </View>
               );
@@ -221,7 +265,7 @@ export function CardOnPage(props: CardOnPageProps) {
         {/* Body: script + notes */}
         <View style={styles.body}>
           <View style={hasNotes ? styles.scriptCol : styles.scriptColFull}>
-            {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.45 })}
+            {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.5 })}
           </View>
           {hasNotes && (
             <View style={styles.notesCol}>
@@ -232,20 +276,25 @@ export function CardOnPage(props: CardOnPageProps) {
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            <Text style={styles.footerStrong}>Mål: </Text>
-            {formatSec(targetSeconds)}
-            {"   "}
-            <Text style={styles.footerStrong}>Tid: </Text>
-            {startTime || "—"} → {endTime || "—"}
-          </Text>
-          <Text style={styles.footerText}>
-            <Text style={styles.footerStrong}>Totalt mål: </Text>
-            {formatSec(totalTargetSeconds)}
-            {"   "}
-            {totalCardsLabel}
-          </Text>
+        <View style={styles.footerWrap}>
+          <View style={styles.footerCell}>
+            <Text style={styles.footerLabel}>MÅL</Text>
+            <Text style={styles.footerValue}>{formatSec(targetSeconds)}</Text>
+          </View>
+          <View style={styles.footerSep} />
+          <View style={styles.footerCell}>
+            <Text style={styles.footerLabel}>TID</Text>
+            <Text style={styles.footerValue}>
+              {formatSec(cumulativeStartSeconds)} → {formatSec(cumulativeEndSeconds)}
+            </Text>
+          </View>
+          <View style={styles.footerSep} />
+          <View style={styles.footerCell}>
+            <Text style={styles.footerLabel}>TOTALT</Text>
+            <Text style={styles.footerValue}>{formatSec(totalTargetSeconds)}</Text>
+          </View>
+          <View style={styles.footerSpacer} />
+          <Text style={styles.footerPage}>{totalCardsLabel.toUpperCase()}</Text>
         </View>
       </View>
     </View>
@@ -258,9 +307,9 @@ function buildPanelChipPalette(
 ): { bg: string; border: string; text: string; label: string } {
   const color = colorMap?.get(panelistId) ?? "#C04040";
   return {
-    bg: hexToRgba(color, 0.22),
+    bg: hexToRgba(color, 0.28),
     border: color,
-    text: "#333333",
+    text: "#3A1A1A",
     label: "PANEL",
   };
 }

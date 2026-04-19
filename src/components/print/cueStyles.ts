@@ -2,33 +2,35 @@ import type { CueKind } from "@/lib/cues";
 
 /**
  * Färger för cue-chippar i utskrift.
- * Matchar visuellt med presentationsläget men är optimerade för papper:
- * tydliga ramar + textetiketter så de fungerar både i färg och svartvitt.
+ * Pastell-bakgrund + mörk text för läsbarhet både i färg och svartvitt.
+ * Trigger-chippar (ovanför texten) och inline-chippar (i flödet) använder
+ * samma palett — bara skala och placering skiljer dem åt.
  */
 export const CUE_COLORS: Record<CueKind, { bg: string; border: string; text: string; label: string }> = {
   energy: {
-    bg: "#FFF8DB",
-    border: "#E0B400",
-    text: "#665100",
+    bg: "#FFF4C2",
+    border: "#E6C200",
+    text: "#574500",
     label: "ENERGI",
   },
   action: {
-    bg: "#E0EBFA",
-    border: "#3B6FB6",
-    text: "#1F3F75",
+    bg: "#DDE9FB",
+    border: "#3F73B8",
+    text: "#1B3A6E",
     label: "ACTION",
   },
   panel: {
-    bg: "#FBE3E3",
-    border: "#C04040",
-    text: "#7A1F1F",
+    bg: "#F8DADA",
+    border: "#B83A3A",
+    text: "#6B1818",
     label: "PANEL",
   },
 };
 
+/** Paus = sub-kategori av "energy" (tempo/rytm) — samma färgfamilj. */
 export const PAUSE_STYLE = {
-  bg: "#F2F2F2",
-  border: "#999999",
-  text: "#333333",
+  bg: CUE_COLORS.energy.bg,
+  border: CUE_COLORS.energy.border,
+  text: CUE_COLORS.energy.text,
   label: "PAUS",
 };

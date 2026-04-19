@@ -83,9 +83,9 @@ export function renderHtmlToPdf(html: string, opts: RenderOpts): JSX.Element[] {
 function paragraphStyle(opts: RenderOpts): Style {
   return {
     fontSize: opts.fontSize,
-    lineHeight: opts.lineHeight ?? 1.45,
-    marginBottom: opts.fontSize * 0.35,
-    color: "#111111",
+    lineHeight: opts.lineHeight ?? 1.5,
+    marginBottom: opts.fontSize * 0.45,
+    color: "#1A1A1A",
   };
 }
 
@@ -112,7 +112,7 @@ function renderInline(node: Node, opts: RenderOpts): (JSX.Element | string)[] {
       return;
     }
 
-    // Pause mark — atomic chip
+    // Pause mark — atomic inline-pill, samma designspråk som trigger-cues.
     if (tag === "span" && el.classList.contains("pause-mark")) {
       out.push(
         <Text
@@ -121,13 +121,16 @@ function renderInline(node: Node, opts: RenderOpts): (JSX.Element | string)[] {
             backgroundColor: PAUSE_STYLE.bg,
             color: PAUSE_STYLE.text,
             fontFamily: "Helvetica-Bold",
-            fontSize: opts.fontSize * 0.85,
-            paddingLeft: 4,
-            paddingRight: 4,
-            borderRadius: 3,
+            fontSize: opts.fontSize * 0.82,
+            paddingLeft: 5,
+            paddingRight: 5,
+            paddingTop: 1,
+            paddingBottom: 1,
+            borderRadius: 8,
+            letterSpacing: 0.6,
           }}
         >
-          {" "}paus{" "}
+          {" "}PAUS{" "}
         </Text>,
       );
       return;
@@ -141,9 +144,9 @@ function renderInline(node: Node, opts: RenderOpts): (JSX.Element | string)[] {
         ...inherited,
         backgroundColor: bg,
         color: "#1a1a1a",
-        paddingLeft: 3,
-        paddingRight: 3,
-        borderRadius: 3,
+        paddingLeft: 4,
+        paddingRight: 4,
+        borderRadius: 6,
       };
       Array.from(el.childNodes).forEach((c) => walk(c, childStyle));
       return;
@@ -167,10 +170,6 @@ function renderInline(node: Node, opts: RenderOpts): (JSX.Element | string)[] {
 /**
  * Approximerar antal "rader" som HTML-innehåll tar i en kolumn av given
  * bredd vid given fontSize. Används av usePrintLayout för shrink-to-fit.
- *
- * Heuristik: tecken / (kolumnbredd_pt / (fontSize * 0.5)) per stycke,
- * ceiling per stycke, summera. Inte exakt — men tillräckligt nära för
- * att välja en gemensam fontSize.
  */
 export function estimateLines(html: string, columnWidthPt: number, fontSize: number): number {
   if (!html) return 0;

@@ -16,7 +16,7 @@ interface ManuscriptPDFProps {
 }
 
 const styles = StyleSheet.create({
-  pageA5: {
+  page: {
     padding: 0,
     backgroundColor: "#FFFFFF",
   },
@@ -29,11 +29,55 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "50%",
   },
+  divider: {
+    position: "absolute",
+    left: "5%",
+    right: "5%",
+    top: "50%",
+    height: 0,
+    borderTopWidth: 0.5,
+    borderTopColor: "#E0E0E0",
+    borderTopStyle: "dashed",
+  },
 });
+
+function parseTimeToSeconds(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(":").map((p) => parseInt(p, 10));
+  if (parts.some((n) => Number.isNaN(n))) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
 
 export function ManuscriptPDF({ manuscript, cards, panelists, layout }: ManuscriptPDFProps) {
   const panelistColorById = new Map(panelists.map((p) => [p.id, p.color]));
   const panelistNameById = new Map(panelists.map((p) => [p.id, p.name]));
+
+  // Beräkna kumulativa tider från target_seconds (faller tillbaka till start/end_time-strängar).
+  const cumulativeRanges: Array<{ start: number | null; end: number | null }> = [];
+  let acc = 0;
+  let hasAnyTarget = false;
+  cards.forEach((c) => {
+    const t = c.target_seconds ?? 0;
+    if (c.target_seconds !== null && c.target_seconds !== undefined) hasAnyTarget = true;
+    const start = acc;
+    const end = acc + t;
+    cumulativeRanges.push({ start, end });
+    acc = end;
+  });
+
+  // Om inga target_seconds finns, använd kortens manuella start/end_time (om satta).
+  if (!hasAnyTarget) {
+    cards.forEach((c, i) => {
+      cumulativeRanges[i] = {
+        start: parseTimeToSeconds(c.start_time),
+        end: parseTimeToSeconds(c.end_time),
+      };
+    });
+  }
 
   const inputs: PrintCardInput[] = cards.map((c) => {
     const cues = readCuesWithLegacyFallback(c);
@@ -48,18 +92,20 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
 
   const { fontSize, splits } = usePrintLayout(inputs, layout);
 
-  // Bygg en plan flat lista med alla kort-instanser (en per split)
   type Slot = {
-    cardIndex: number;        // 0-baserat
+    cardIndex: number;
     card: Card;
     cues: ReturnType<typeof readCuesWithLegacyFallback>;
     html: string;
     suffix: string | null;
+    cumStart: number | null;
+    cumEnd: number | null;
   };
 
   const slots: Slot[] = [];
   cards.forEach((card, idx) => {
     const parts = splits.get(card.id) ?? [{ cardId: card.id, suffix: null, html: card.content_html }];
+    const range = cumulativeRanges[idx];
     parts.forEach((part) => {
       slots.push({
         cardIndex: idx,
@@ -67,6 +113,8 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
         cues: readCuesWithLegacyFallback(card),
         html: part.html,
         suffix: part.suffix,
+        cumStart: range.start,
+        cumEnd: range.end,
       });
     });
   });
@@ -74,24 +122,34 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
   const totalCards = cards.length;
 
   const renderSlot = (slot: Slot) => {
-    const { card, cardIndex, cues, html, suffix } = slot;
+    const { card, cardIndex, cues, html, suffix, cumStart, cumEnd } = slot;
     const num = String(cardIndex + 1).padStart(2, "0");
-    const cardNumberLabel = suffix
-      ? `${num}${suffix} / ${String(totalCards).padStart(2, "0")}`
-      : `${num} / ${String(totalCards).padStart(2, "0")}`;
+    const totalNum = String(totalCards).padStart(2, "0");
+    const cardNumberLabel = suffix ? `${num}${suffix} / ${totalNum}` : `${num} / ${totalNum}`;
     const totalCardsLabel = suffix
       ? `Sida ${cardIndex + 1}${suffix} / ${totalCards}`
       : `Sida ${cardIndex + 1} / ${totalCards}`;
 
+    // Hitta panelist för panel-cues — om ett kort har precis en panel-cue använd
+    // dess färg som rail-färg (ger panelist-känsla även för "speaker"-roll).
+    const panelCue = cues.find((c) => c.kind === "panel" && c.panelistId);
+    const panelistColor = panelCue?.panelistId
+      ? panelistColorById.get(panelCue.panelistId)
+      : undefined;
+    const panelistName = panelCue?.panelistId
+      ? panelistNameById.get(panelCue.panelistId)
+      : undefined;
+
     let roleLabel = "TALARE";
-    let roleColor = "#888888";
+    let roleColor = "#4A4A4A";
     if (card.role === "moderator") {
       roleLabel = "MODERATOR";
-      roleColor = "#444444";
+      roleColor = "#2A2A2A";
     }
-    // Om kortet har en panelist-mark inuti texten är användaren en panelist —
-    // men cards-tabellen har ingen direkt panelist_id; vi visar talare/moderator
-    // baserat på role. Färgad rail används för panel-cues istället.
+    if (panelistColor && panelistName) {
+      roleLabel = panelistName;
+      roleColor = panelistColor;
+    }
 
     return (
       <CardOnPage
@@ -101,8 +159,8 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
         totalCardsLabel={totalCardsLabel}
         roleLabel={roleLabel}
         roleColor={roleColor}
-        startTime={card.start_time}
-        endTime={card.end_time}
+        cumulativeStartSeconds={cumStart}
+        cumulativeEndSeconds={cumEnd}
         targetSeconds={card.target_seconds}
         cues={cues}
         contentHtml={html}
@@ -119,7 +177,7 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
     return (
       <Document>
         {slots.map((slot, i) => (
-          <Page key={i} size={{ width: 595.28, height: 419.53 }} orientation="landscape" style={styles.pageA5}>
+          <Page key={i} size="A5" orientation="landscape" style={styles.page}>
             {renderSlot(slot)}
           </Page>
         ))}
@@ -139,6 +197,7 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
         <Page key={i} size="A4" orientation="portrait" style={styles.pageA4}>
           <View style={styles.cardSlot}>{renderSlot(pair[0])}</View>
           {pair[1] && <View style={styles.cardSlot}>{renderSlot(pair[1])}</View>}
+          <View style={styles.divider} />
         </Page>
       ))}
     </Document>
