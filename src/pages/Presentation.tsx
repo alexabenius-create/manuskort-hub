@@ -420,7 +420,15 @@ export default function Presentation() {
       )}
 
       <main className="flex-1 min-h-0 pt-24 pb-24 px-6 md:px-10 relative">
-        <div className="h-full w-full bg-black rounded-3xl shadow-2xl shadow-black/40 overflow-hidden">
+        <div
+          className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
+            typeof current.target_seconds === "number" &&
+            current.target_seconds > 0 &&
+            cardElapsedSeconds > current.target_seconds
+              ? "ring-4 ring-red-500 shadow-red-500/40"
+              : "shadow-black/40"
+          }`}
+        >
           {!menuOpen && viewMode === "cards" && (
             <PresentationCard
               card={current}
