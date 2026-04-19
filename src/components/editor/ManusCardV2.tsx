@@ -61,7 +61,7 @@ export function ManusCardV2({
   notesPlacement = "side",
   notesDisplay = "auto",
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
-  onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow,
+  onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow, onPullBack,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
