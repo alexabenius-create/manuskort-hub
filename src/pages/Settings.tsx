@@ -7,7 +7,7 @@ import { TIER_LABEL } from "@/lib/tierLimits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2, User as UserIcon, Check, Wand2 } from "lucide-react";
+import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2, User as UserIcon, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
