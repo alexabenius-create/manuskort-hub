@@ -17,16 +17,12 @@ interface ToolButton {
 }
 
 export function FormatBubbleMenu({ editor }: Props) {
-  // Hooks måste alltid köras i samma ordning — usePanelists kan kasta
-  // om kontexten inte finns. Vi wrappar med try/catch via fallback.
   let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
   try {
     panelists = usePanelists().panelists;
-  } catch (e) {
-    console.warn("[FormatBubbleMenu] usePanelists missing:", e);
+  } catch {
     panelists = [];
   }
-  console.log("[FormatBubbleMenu] panelists.length=", panelists.length, "selection=", editor?.state.selection.from, "-", editor?.state.selection.to);
 
   if (!editor) return null;
 
@@ -70,7 +66,6 @@ export function FormatBubbleMenu({ editor }: Props) {
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
     .panelistId ?? null;
-  const hasSelection = editor.state.selection.from !== editor.state.selection.to;
 
   return (
     <BubbleMenu
@@ -109,8 +104,8 @@ export function FormatBubbleMenu({ editor }: Props) {
           );
         })}
 
-        {/* Panelist-färgväljare — synlig endast när det finns en selection */}
-        {hasSelection && panelists.length > 0 && (
+        {/* Panelist-färgväljare — synlig när det finns deltagare. Applicerar på selection (eller närmaste ord om caret) */}
+        {panelists.length > 0 && (
           <>
             <div className="mx-1 h-5 w-px bg-border" />
             {panelists.map((p) => {
@@ -123,14 +118,30 @@ export function FormatBubbleMenu({ editor }: Props) {
                   aria-pressed={isActive}
                   title={p.name || "Panelist"}
                   onClick={() => {
+                    const { from, to } = editor.state.selection;
+                    let chain = editor.chain().focus();
+                    if (from === to) {
+                      // Ingen selection → expandera till ordet under caret
+                      chain = chain.setTextSelection({ from, to }).extendMarkRange("panelist");
+                      // Om inget ord finns där, försök selectera närmaste ord via PM
+                      const $pos = editor.state.doc.resolve(from);
+                      const start = $pos.start();
+                      const end = $pos.end();
+                      const text = editor.state.doc.textBetween(start, end, " ");
+                      const rel = from - start;
+                      // hitta ordgränser kring rel
+                      let s = rel;
+                      let e = rel;
+                      while (s > 0 && /\S/.test(text[s - 1] ?? "")) s--;
+                      while (e < text.length && /\S/.test(text[e] ?? "")) e++;
+                      if (e > s) {
+                        chain = editor.chain().focus().setTextSelection({ from: start + s, to: start + e });
+                      }
+                    }
                     if (isActive) {
-                      editor.chain().focus().unsetPanelist().run();
+                      chain.unsetPanelist().run();
                     } else {
-                      editor
-                        .chain()
-                        .focus()
-                        .setPanelist({ panelistId: p.id, color: p.color, name: p.name })
-                        .run();
+                      chain.setPanelist({ panelistId: p.id, color: p.color, name: p.name }).run();
                     }
                   }}
                   className={cn(
