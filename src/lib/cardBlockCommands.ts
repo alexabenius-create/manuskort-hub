@@ -11,7 +11,8 @@
 import type { EditorState, Transaction } from "prosemirror-state";
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
-import type { Node as PMNode, NodeType } from "prosemirror-model";
+import { DOMSerializer, type Node as PMNode, type NodeType } from "prosemirror-model";
+import { countPresentationRows, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
 
 export function joinCardBackward(
   state: EditorState,
