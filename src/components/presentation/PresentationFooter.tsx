@@ -13,10 +13,12 @@ interface Props {
   total: number;
   hasPanicCards: boolean;
   onPanic: () => void;
-  /** Sekunder förflutna sen presentationsstart (för progress-ring per kort). */
+  /** Sekunder förflutna sen presentationsstart. */
   elapsedSeconds: number;
-  /** Sekunder presentationen pågått som inte hör till detta kort, så vi kan beräkna kortets "lokala" elapsed. */
+  /** Sekunder presentationen pågått som inte hör till detta kort. */
   cardStartedAtElapsedSeconds: number;
+  /** Måltid för aktuellt kort (manuellt satt). Fallback till start/end-diff. */
+  cardTargetSeconds: number | null;
   timeFormat: "clock" | "elapsed";
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
@@ -25,8 +27,15 @@ interface Props {
 const SIZE_MIN = -2;
 const SIZE_MAX = 2;
 
-/** Räknar ut hur många sekunder kortet är planerat att ta från start_time/end_time. */
-function cardPlannedSeconds(card: Card, format: "clock" | "elapsed"): number | null {
+function formatMmSs(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const m = Math.floor(safe / 60);
+  const s = safe % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+/** Räknar ut planerad tid från start_time/end_time som fallback. */
+function fallbackPlannedSeconds(card: Card, format: "clock" | "elapsed"): number | null {
   const start = parseTime(card.start_time ?? "", format);
   const end = parseTime(card.end_time ?? "", format);
   if (start === null || end === null) return null;
@@ -43,86 +52,93 @@ export function PresentationFooter({
   onPanic,
   elapsedSeconds,
   cardStartedAtElapsedSeconds,
+  cardTargetSeconds,
   timeFormat,
   sizeOffset,
   onSizeChange,
 }: Props) {
-  const planned = cardPlannedSeconds(current, timeFormat);
+  const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
   const cardElapsed = Math.max(0, elapsedSeconds - cardStartedAtElapsedSeconds);
-  const ringPercent = planned ? Math.min(100, (cardElapsed / planned) * 100) : 0;
-  const ringOver = planned !== null && cardElapsed > planned;
+  const ratio = planned ? cardElapsed / planned : 0;
+  const percent = Math.min(100, ratio * 100);
+  const isOver = planned !== null && cardElapsed > planned;
+  const isWarn = planned !== null && !isOver && ratio >= 0.8;
 
-  // SVG progress-ring (runt kortnumret) — 2x storlek
-  const ringRadius = 38;
-  const ringCircumference = 2 * Math.PI * ringRadius;
-  const ringDashOffset = ringCircumference * (1 - ringPercent / 100);
+  const barColor = isOver
+    ? "bg-red-400"
+    : isWarn
+      ? "bg-amber-400"
+      : "bg-emerald-400";
+  const timeColor = isOver
+    ? "text-red-400"
+    : isWarn
+      ? "text-amber-300"
+      : "text-zinc-200";
 
   const nextRoleLabel = next?.role === "moderator" ? "Moderator" : "Talare";
 
   return (
-    <footer className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pb-6 pointer-events-none">
+    <footer className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pb-5 pointer-events-none">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
         {/* Vänster — A−/A+ */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-1.5 pointer-events-auto">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
-            className="p-4 rounded-2xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            className="p-2.5 rounded-xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             aria-label="Mindre text"
           >
-            <ZoomOut className="h-7 w-7" />
+            <ZoomOut className="h-5 w-5" />
           </button>
           <button
             onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
             disabled={sizeOffset >= SIZE_MAX}
-            className="p-4 rounded-2xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            className="p-2.5 rounded-xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             aria-label="Större text"
           >
-            <ZoomIn className="h-7 w-7" />
+            <ZoomIn className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Mitten — kortnummer + nästa-preview */}
-        <div className="flex flex-col items-center gap-3 pointer-events-none px-8 py-5">
-          <div className="relative h-24 w-24 flex items-center justify-center">
+        {/* Mitten — per-kort-timer + kortnummer + nästa */}
+        <div className="flex items-center gap-5 pointer-events-none">
+          {/* Per-kort-timer */}
+          <div className="flex flex-col items-end gap-1.5 min-w-[140px]">
+            <div className={`font-mono text-[20px] tabular-nums leading-none ${timeColor}`}>
+              {formatMmSs(cardElapsed)}
+              {planned && (
+                <span className="text-zinc-600">
+                  {" / "}
+                  <span className="text-zinc-400">{formatMmSs(planned)}</span>
+                </span>
+              )}
+            </div>
             {planned && (
-              <svg className="absolute inset-0 -rotate-90" width="96" height="96" viewBox="0 0 96 96">
-                <circle
-                  cx="48"
-                  cy="48"
-                  r={ringRadius}
-                  strokeWidth="5"
-                  fill="none"
-                  className="stroke-zinc-800"
+              <div className="h-1 w-[140px] rounded-full bg-zinc-800 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
+                  style={{ width: `${percent}%` }}
                 />
-                <circle
-                  cx="48"
-                  cy="48"
-                  r={ringRadius}
-                  strokeWidth="5"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={ringCircumference}
-                  strokeDashoffset={ringDashOffset}
-                  className={ringOver ? "stroke-red-400 animate-pulse" : "stroke-emerald-400"}
-                  style={{ transition: "stroke-dashoffset 1s linear" }}
-                />
-              </svg>
+              </div>
             )}
-            <span className="font-mono text-[26px] text-zinc-200 tabular-nums">
+          </div>
+
+          {/* Kortnummer */}
+          <div className="flex flex-col items-center px-3">
+            <span className="font-mono text-[20px] text-zinc-200 tabular-nums leading-none">
               {String(index + 1).padStart(2, "0")}
               <span className="text-zinc-600">/{String(total).padStart(2, "0")}</span>
             </span>
+            {next ? (
+              <p className="text-[12px] text-zinc-500 font-mono uppercase tracking-wider truncate max-w-[280px] text-center mt-1.5">
+                Nästa: {nextRoleLabel}{next.title ? ` · ${next.title}` : ""}
+              </p>
+            ) : (
+              <p className="text-[12px] text-zinc-700 font-mono uppercase tracking-wider mt-1.5">
+                Sista kortet
+              </p>
+            )}
           </div>
-          {next ? (
-            <p className="text-[18px] text-zinc-500 font-mono uppercase tracking-wider truncate max-w-[600px] text-center">
-              Nästa: {nextRoleLabel}{next.title ? ` · ${next.title}` : ""}
-            </p>
-          ) : (
-            <p className="text-[18px] text-zinc-700 font-mono uppercase tracking-wider">
-              Sista kortet
-            </p>
-          )}
         </div>
 
         {/* Höger — panik-knapp */}
@@ -130,16 +146,15 @@ export function PresentationFooter({
           {hasPanicCards ? (
             <button
               onClick={onPanic}
-              className="inline-flex items-center gap-4 px-8 py-5 rounded-2xl bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-200 border-2 border-amber-700/40 transition-colors text-[24px] font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-200 border border-amber-700/40 transition-colors text-[14px] font-medium"
               title="Hoppa till nästa panik-kort (P)"
             >
-              <Triangle className="h-6 w-6 fill-current" strokeWidth={0} />
+              <Triangle className="h-4 w-4 fill-current" strokeWidth={0} />
               Panik
             </button>
           ) : (
-            // Osynlig spacer så mittsektionen håller centrering
-            <div className="px-8 py-5 opacity-0 pointer-events-none" aria-hidden>
-              <Triangle className="h-6 w-6" />
+            <div className="px-4 py-2.5 opacity-0 pointer-events-none" aria-hidden>
+              <Triangle className="h-4 w-4" />
             </div>
           )}
         </div>
