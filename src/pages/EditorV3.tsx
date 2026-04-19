@@ -6,7 +6,8 @@ import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
-import { ArrowLeft, Save } from "lucide-react";
+import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { ArrowLeft, Save, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   cardsToDocHtml,
@@ -44,6 +45,7 @@ export default function EditorV3() {
   const [docHtml, setDocHtml] = useState<string>("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [cardCount, setCardCount] = useState(0);
+  const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
 
   const editorRef = useRef<TiptapEditorType | null>(null);
   const saveTimerRef = useRef<number | null>(null);
