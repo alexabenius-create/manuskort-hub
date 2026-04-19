@@ -1,7 +1,8 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePanelists } from "@/hooks/usePanelists";
 
 interface Props {
   editor: Editor | null;
@@ -16,6 +17,16 @@ interface ToolButton {
 }
 
 export function FormatBubbleMenu({ editor }: Props) {
+  // Hooks måste alltid köras i samma ordning — usePanelists kan kasta
+  // om kontexten inte finns. Vi wrappar med try/catch via fallback.
+  let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
+  try {
+    panelists = usePanelists().panelists;
+  } catch {
+    // Editor används utanför PanelistsProvider — ingen panelist-funktionalitet
+    panelists = [];
+  }
+
   if (!editor) return null;
 
   const buttons: ToolButton[] = [
@@ -56,11 +67,15 @@ export function FormatBubbleMenu({ editor }: Props) {
     },
   ];
 
+  const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
+    .panelistId ?? null;
+  const hasSelection = editor.state.selection.from !== editor.state.selection.to;
+
   return (
     <BubbleMenu
       editor={editor}
       options={{ placement: "top" }}
-      shouldShow={({ editor, from, to }) => {
+      shouldShow={({ editor }) => {
         // Visa även vid tom markering (caret) så pausknappen alltid är nåbar
         if (!editor.isEditable) return false;
         return editor.isFocused;
@@ -92,6 +107,53 @@ export function FormatBubbleMenu({ editor }: Props) {
             </button>
           );
         })}
+
+        {/* Panelist-färgväljare — synlig endast när det finns en selection */}
+        {hasSelection && panelists.length > 0 && (
+          <>
+            <div className="mx-1 h-5 w-px bg-border" />
+            {panelists.map((p) => {
+              const isActive = activePanelistId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-label={`Markera som ${p.name || "panelist"}`}
+                  aria-pressed={isActive}
+                  title={p.name || "Panelist"}
+                  onClick={() => {
+                    if (isActive) {
+                      editor.chain().focus().unsetPanelist().run();
+                    } else {
+                      editor
+                        .chain()
+                        .focus()
+                        .setPanelist({ panelistId: p.id, color: p.color, name: p.name })
+                        .run();
+                    }
+                  }}
+                  className={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-full transition-all",
+                    "ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-110",
+                    isActive && "ring-2 ring-foreground/60 scale-110",
+                  )}
+                  style={{ backgroundColor: p.color }}
+                />
+              );
+            })}
+            {activePanelistId && (
+              <button
+                type="button"
+                aria-label="Ta bort panelist-markering"
+                title="Ta bort markering"
+                onClick={() => editor.chain().focus().unsetPanelist().run()}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors text-foreground/60 hover:bg-muted hover:text-foreground"
+              >
+                <Eraser className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        )}
       </div>
     </BubbleMenu>
   );
