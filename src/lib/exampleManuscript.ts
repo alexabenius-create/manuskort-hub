@@ -13,6 +13,11 @@ export interface ExamplePanelist {
   position: number;
 }
 
+export interface ExampleCue {
+  kind: "energy" | "action";
+  text: string;
+}
+
 export interface ExampleCard {
   position: number;
   role: "moderator" | "speaker";
@@ -21,9 +26,12 @@ export interface ExampleCard {
   notes: string;
   start_time: string;
   end_time: string;
+  /** Legacy — behålls för bakåtkompatibilitet/dual-write under Steg 5A. */
   cue_red: string;
   cue_amber: string;
   cue_teal: string;
+  /** Nya cues (Steg 5A): seedas direkt så nya användare ser nya formatet. */
+  cues?: ExampleCue[];
   is_panic_card: boolean;
 }
 
@@ -69,6 +77,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "andas efter \"Välkomna!\"",
       cue_amber: "",
       cue_teal: "Presentation av panelen",
+      cues: [
+        { kind: "energy", text: "andas efter \"Välkomna!\"" },
+        { kind: "action", text: "Presentation av panelen" },
+      ],
       is_panic_card: false,
     },
     {
@@ -82,6 +94,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "",
       cue_teal: "Öppningsfråga till alla",
+      cues: [{ kind: "action", text: "Öppningsfråga till alla" }],
       is_panic_card: false,
     },
     {
@@ -95,6 +108,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "1 min per person",
       cue_teal: "Följdfråga till Maria",
+      cues: [
+        { kind: "energy", text: "1 min per person" },
+        { kind: "action", text: "Följdfråga till Maria" },
+      ],
       is_panic_card: false,
     },
     {
@@ -108,6 +125,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "låt henne bli klar, avbryt inte",
       cue_amber: "",
       cue_teal: "Thomas — VD-perspektiv",
+      cues: [
+        { kind: "energy", text: "låt henne bli klar, avbryt inte" },
+        { kind: "action", text: "Thomas — VD-perspektiv" },
+      ],
       is_panic_card: false,
     },
     {
@@ -121,6 +142,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "tidigt öppet för hela panelen",
       cue_teal: "Följdfråga om kulturen",
+      cues: [
+        { kind: "energy", text: "tidigt öppet för hela panelen" },
+        { kind: "action", text: "Följdfråga om kulturen" },
+      ],
       is_panic_card: false,
     },
     {
@@ -147,6 +172,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "bryt om någon tar över helt",
       cue_teal: "Generationsfrågan",
+      cues: [
+        { kind: "energy", text: "bryt om någon tar över helt" },
+        { kind: "action", text: "Generationsfrågan" },
+      ],
       is_panic_card: false,
     },
     {
@@ -160,6 +189,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "",
       cue_teal: "Publikfrågor",
+      cues: [{ kind: "action", text: "Publikfrågor" }],
       is_panic_card: false,
     },
     {
@@ -173,6 +203,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "max 3 frågor",
       cue_teal: "Sista ordet",
+      cues: [
+        { kind: "energy", text: "max 3 frågor" },
+        { kind: "action", text: "Sista ordet" },
+      ],
       is_panic_card: false,
     },
     {
@@ -199,6 +233,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "30 sek per person",
       cue_teal: "Avslutning",
+      cues: [
+        { kind: "energy", text: "30 sek per person" },
+        { kind: "action", text: "Avslutning" },
+      ],
       is_panic_card: false,
     },
     {
@@ -212,6 +250,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "andas innan \"Tack för ikväll\"",
       cue_amber: "",
       cue_teal: "",
+      cues: [{ kind: "energy", text: "andas innan \"Tack för ikväll\"" }],
       is_panic_card: false,
     },
   ],

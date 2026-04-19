@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EXAMPLE_MANUSCRIPT } from "./exampleManuscript";
 import { hexToRgba, hexToDarkText } from "./panelistColors";
 import { autofillProfilePlaceholders, type ProfileValues } from "./profilePlaceholders";
+import { newCueId, serializeCues, type Cue } from "./cues";
 
 const seededKey = (userId: string) => `manuskort:example_seeded:${userId}`;
 
@@ -104,21 +105,30 @@ export async function seedExampleForUser(userId: string): Promise<string | null>
 
   if (ex.cards.length) {
     const { error: cErr } = await supabase.from("cards").insert(
-      ex.cards.map((c) => ({
-        manuscript_id: ms.id,
-        user_id: userId,
-        position: c.position,
-        role: c.role,
-        title: c.title,
-        content_html: applyPanelistMarks(autofillProfilePlaceholders(c.content_html, profile), insertedPanelists),
-        notes: c.notes,
-        start_time: c.start_time,
-        end_time: c.end_time,
-        cue_red: c.cue_red,
-        cue_amber: c.cue_amber,
-        cue_teal: c.cue_teal,
-        is_panic_card: c.is_panic_card,
-      }))
+      ex.cards.map((c) => {
+        const cuesArray: Cue[] = (c.cues ?? []).map((x) => ({
+          id: newCueId(),
+          kind: x.kind,
+          text: x.text,
+        }));
+        return {
+          manuscript_id: ms.id,
+          user_id: userId,
+          position: c.position,
+          role: c.role,
+          title: c.title,
+          content_html: applyPanelistMarks(autofillProfilePlaceholders(c.content_html, profile), insertedPanelists),
+          notes: c.notes,
+          start_time: c.start_time,
+          end_time: c.end_time,
+          // Dual-write under Steg 5A: behåll legacy-kolumner + skriv nya cues-arrayen.
+          cue_red: c.cue_red,
+          cue_amber: c.cue_amber,
+          cue_teal: c.cue_teal,
+          cues: serializeCues(cuesArray),
+          is_panic_card: c.is_panic_card,
+        };
+      })
     );
     if (cErr) console.error("seedExampleForUser: cards insert failed", cErr);
   }

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Pause, Flag, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
+import { Pause, Zap, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import {
@@ -7,6 +7,7 @@ import {
   darkAttributionBorder,
   darkAttributionLabel,
 } from "@/lib/presentationTheme";
+import { readCuesWithLegacyFallback } from "@/lib/cues";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"] & {
   is_panic_card?: boolean;
@@ -152,34 +153,37 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   const notesFontSize = NOTES_BASE + notesOffset * 2;
 
   const hasNotes = !!card.notes && card.notes.trim().length > 0;
-  const hasCueRed = !!card.cue_red?.trim();
-  const hasCueAmber = !!card.cue_amber?.trim();
-  const hasCueTeal = !!card.cue_teal?.trim();
-  const hasAnyCue = hasCueRed || hasCueAmber || hasCueTeal;
+
+  // Steg 5A: Läs i första hand från nya cues-arrayen, fallback till legacy-kolumner.
+  // I 5A visas bara energy (röd, paus) och action (blå, blixt). Panel/time aktiveras i 5A.2/5A.3.
+  const cues = useMemo(() => readCuesWithLegacyFallback(card), [card]);
+  const energyCues = cues.filter((c) => c.kind === "energy");
+  const actionCues = cues.filter((c) => c.kind === "action");
+  const hasAnyCue = energyCues.length > 0 || actionCues.length > 0;
 
   return (
     <div className="relative flex w-full h-full min-h-0 gap-4 px-6 md:px-12 py-2">
       {/* Persistenta signaler — absolut positionerade i överkant av kortet, centrerat grupperade */}
       {hasAnyCue && (
         <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10">
-          {hasCueRed && (
-            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]">
+          {energyCues.map((c) => (
+            <div
+              key={c.id}
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
+            >
               <Pause className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>{card.cue_red}</span>
+              <span>{c.text}</span>
             </div>
-          )}
-          {hasCueAmber && (
-            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-amber))] bg-[hsl(var(--cue-amber)/0.15)] border border-[hsl(var(--cue-amber)/0.3)]">
-              <Flag className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>{card.cue_amber}</span>
+          ))}
+          {actionCues.map((c) => (
+            <div
+              key={c.id}
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--accent-blue))] bg-[hsl(var(--accent-blue)/0.15)] border border-[hsl(var(--accent-blue)/0.3)]"
+            >
+              <Zap className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{c.text}</span>
             </div>
-          )}
-          {hasCueTeal && (
-            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-teal))] bg-[hsl(var(--cue-teal)/0.15)] border border-[hsl(var(--cue-teal)/0.3)]">
-              <ArrowRight className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>{card.cue_teal}</span>
-            </div>
-          )}
+          ))}
         </div>
       )}
 
