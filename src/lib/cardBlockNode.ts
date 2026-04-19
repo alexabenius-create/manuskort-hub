@@ -11,7 +11,9 @@
  *  - cardId persisteras i attrs så vi kan diff:a mot DB-rader 1:1
  */
 import { Node, mergeAttributes } from "@tiptap/core";
-import { CardBlockNodeView } from "@/components/editor/CardBlockNodeView";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { CardBlockView } from "@/components/editor/CardBlockView";
+import { splitCardBlock } from "@/lib/cardBlockCommands";
 import type { Cue } from "@/lib/cues";
 
 export interface CardBlockAttrs {
@@ -84,7 +86,13 @@ export const CardBlock = Node.create({
   },
 
   addNodeView() {
-    return (props) => new CardBlockNodeView(props);
+    return ReactNodeViewRenderer(CardBlockView);
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Enter": ({ editor }) => splitCardBlock(editor.state, editor.view.dispatch),
+    };
   },
 
   addCommands() {

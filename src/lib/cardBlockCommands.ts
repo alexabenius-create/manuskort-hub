@@ -1,16 +1,16 @@
 /**
- * cardBlockCommands — explicit Backspace-handler för cardBlock-noder.
+ * cardBlockCommands — kommandon för cardBlock-noder.
  *
- * Standard `joinBackward` beter sig oförutsägbart vid kanten av en
- * `defining: true`-nod. Vi tar över för fallet "caret vid första
- * positionen i ett kort" och utför en kontrollerad join med föregående
- * cardBlock.
- *
- * Vid första kortet konsumerar vi händelsen utan ändring (inget krasch,
- * ingen oavsiktlig dokument-mutation).
+ * Innehåller:
+ *   - joinCardBackward: Backspace vid kort-start joinar med föregående kort
+ *   - splitCardBlock:   Cmd+Enter splittar aktuellt kort vid caret
+ *   - duplicateCardBlock: kopiera ett kort, sätt cardId=null på kopian
+ *   - deleteCardBlock:  ta bort ett kort
+ *   - insertCardBlockAfter / insertCardBlockBefore: tomt nytt kort
  */
 import type { EditorState, Transaction } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
+import type { Node as PMNode, NodeType } from "prosemirror-model";
 
 export function joinCardBackward(
   state: EditorState,
@@ -21,7 +21,6 @@ export function joinCardBackward(
   if (!selection.empty) return false;
   const $from = selection.$from;
 
-  // Hitta cardBlock i föräldra-kedjan
   let cardDepth = -1;
   for (let d = $from.depth; d >= 0; d--) {
     if ($from.node(d).type.name === "cardBlock") {
@@ -31,31 +30,163 @@ export function joinCardBackward(
   }
   if (cardDepth < 0) return false;
 
-  // Är vi vid första positionen INNE i kortet?
-  // Kortets content börjar vid $from.start(cardDepth) + 0 (efter wrappens start-tag).
   const cardStart = $from.start(cardDepth);
-  // Caret måste vara vid cardStart OCH i första barnet, vid offset 0.
   const atStartOfFirstChild =
-    $from.parentOffset === 0 &&
-    $from.pos === cardStart + 1; // +1 = inne i första block-barnet
+    $from.parentOffset === 0 && $from.pos === cardStart + 1;
   if (!atStartOfFirstChild) return false;
 
   const cardPos = $from.before(cardDepth);
+  if (cardPos === 0) return true;
 
-  // Första kortet → konsumera, gör inget
-  if (cardPos === 0) {
-    return true;
-  }
-
-  // Hitta föregående cardBlock
   const $card = doc.resolve(cardPos);
-  const prevCardEnd = cardPos; // mellan föregående och denna nod
-  if (prevCardEnd <= 0) return true;
+  if (!$card) return true;
 
-  // Joina via tr.join vid cardPos (slår ihop noden vid cardPos med föregående
-  // syskon). cardBlock har `content: "block+"` så join:en blir laglig.
   if (dispatch) {
     const tr = state.tr.join(cardPos);
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+/**
+ * Splitta aktuellt cardBlock vid caret. Nya kortet får cardId=null så
+ * persist genererar ny rad. Caret hamnar i nya kortet.
+ */
+export function splitCardBlock(
+  state: EditorState,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const { selection, schema } = state;
+  if (!selection.empty) return false;
+  const $from = selection.$from;
+
+  let cardDepth = -1;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "cardBlock") {
+      cardDepth = d;
+      break;
+    }
+  }
+  if (cardDepth < 0) return false;
+
+  const cardBlockType = schema.nodes.cardBlock as NodeType | undefined;
+  if (!cardBlockType) return false;
+
+  if (dispatch) {
+    const newAttrs = {
+      ...$from.node(cardDepth).attrs,
+      cardId: null,
+    };
+    // Splitta vid caret med depth=2 (paragraph + cardBlock).
+    // Nya cardBlock får attrs utan cardId via typesAfter.
+    const tr = state.tr.split($from.pos, $from.depth - cardDepth + 1, [
+      { type: cardBlockType, attrs: newAttrs },
+    ]);
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+/**
+ * Duplicera cardBlock vid pos. Kopian sätts in direkt efter och får cardId=null.
+ */
+export function duplicateCardBlock(
+  state: EditorState,
+  pos: number,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const node = state.doc.nodeAt(pos);
+  if (!node || node.type.name !== "cardBlock") return false;
+
+  if (dispatch) {
+    const copy = node.type.create(
+      { ...node.attrs, cardId: null },
+      node.content,
+      node.marks,
+    );
+    const insertAt = pos + node.nodeSize;
+    const tr = state.tr.insert(insertAt, copy);
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+/**
+ * Ta bort cardBlock vid pos. Om det är sista kvarvarande kortet → konsumera utan ändring
+ * (för att inte lämna doc utan cardBlock).
+ */
+export function deleteCardBlock(
+  state: EditorState,
+  pos: number,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const node = state.doc.nodeAt(pos);
+  if (!node || node.type.name !== "cardBlock") return false;
+
+  let total = 0;
+  state.doc.forEach((n) => {
+    if (n.type.name === "cardBlock") total++;
+  });
+  if (total <= 1) return false;
+
+  if (dispatch) {
+    const tr = state.tr.delete(pos, pos + node.nodeSize);
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+/**
+ * Sätt in tomt cardBlock direkt efter noden vid pos.
+ */
+export function insertCardBlockAfter(
+  state: EditorState,
+  pos: number,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const node = state.doc.nodeAt(pos);
+  if (!node || node.type.name !== "cardBlock") return false;
+  const cardBlockType = state.schema.nodes.cardBlock;
+  const paragraphType = state.schema.nodes.paragraph;
+  if (!cardBlockType || !paragraphType) return false;
+
+  if (dispatch) {
+    const newCard = cardBlockType.create(
+      { ...cardBlockType.spec.attrs, cardId: null },
+      paragraphType.create(),
+    );
+    const insertAt = pos + node.nodeSize;
+    const tr = state.tr.insert(insertAt, newCard);
+    // Sätt selection till början av nya kortet (insertAt + 2 = inne i paragraph)
+    const sel = (tr.doc.resolve(insertAt + 2));
+    tr.setSelection(state.selection.constructor.near(sel) as never);
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+/**
+ * Sätt in tomt cardBlock direkt före noden vid pos.
+ */
+export function insertCardBlockBefore(
+  state: EditorState,
+  pos: number,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const node = state.doc.nodeAt(pos);
+  if (!node || node.type.name !== "cardBlock") return false;
+  const cardBlockType = state.schema.nodes.cardBlock;
+  const paragraphType = state.schema.nodes.paragraph;
+  if (!cardBlockType || !paragraphType) return false;
+
+  if (dispatch) {
+    const newCard = cardBlockType.create(
+      { ...cardBlockType.spec.attrs, cardId: null },
+      paragraphType.create(),
+    );
+    const tr = state.tr.insert(pos, newCard);
+    const sel = tr.doc.resolve(pos + 2);
+    tr.setSelection(state.selection.constructor.near(sel) as never);
     dispatch(tr.scrollIntoView());
   }
   return true;
