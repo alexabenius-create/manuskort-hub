@@ -138,9 +138,15 @@ export function ManusCardV2({
   const hasAnyCue = !!(card.cue_red?.trim() || card.cue_amber?.trim() || card.cue_teal?.trim());
   const hasNotes = !!card.notes?.trim();
   const cuesVisible = hasAnyCue || showCues;
-  const notesVisibleInline = showNotes && (hasNotes || notesOpen);
+  // notesDisplay styr när panelen syns:
+  //   always → alltid (även tom)  | auto → bara om text finns ELLER user öppnat | hidden → aldrig
+  const notesEnabled = showNotes && notesDisplay !== "hidden";
+  const notesVisibleInline =
+    notesEnabled && (notesDisplay === "always" || hasNotes || notesOpen);
   const showSideNotes = notesVisibleInline && notesPlacement === "side";
   const showBelowNotes = notesVisibleInline && notesPlacement === "below";
+  // "+ Anteckning"-knappen i meta-raden ska bara visas när panelen är dold men kan öppnas (auto + tom)
+  const showAddNoteButton = notesEnabled && notesDisplay === "auto" && !hasNotes && !notesOpen;
 
   return (
     <article
