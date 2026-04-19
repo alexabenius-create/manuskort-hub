@@ -88,14 +88,25 @@ function findMatches(text: string, panelists: KnownPanelist[]): Match[] {
     }
 
     // 2. Anrop på slutet: "..., Anna?" / "..., Anna!"
+    //    Utvidgning: gå bakåt till föregående mening-slut så hela frågan
+    //    inkluderas, t.ex. "Vad tycker du om det här, Anna?".
     {
       const re = new RegExp(`(,\\s*)(${name})(\\s*[?!])`, "gu");
       let m: RegExpExecArray | null;
       while ((m = re.exec(text)) !== null) {
-        // Markera ", Anna?" inkl komma och frågetecken
+        const matchEnd = m.index + m[0].length;
+        // Sök bakåt från m.index efter senaste mening-slut (.!?…) följt av space
+        let sentStart = 0;
+        const before = text.slice(0, m.index);
+        const sentBreak = before.match(/[.!?…]\s+(?=\S)(?=[^]*$)/);
+        if (sentBreak && sentBreak.index !== undefined) {
+          sentStart = sentBreak.index + sentBreak[0].length;
+        }
+        // Säkerhetsspärr: max 300 tecken bakåt
+        if (m.index - sentStart > 300) sentStart = m.index;
         matches.push({
-          start: m.index,
-          end: m.index + m[0].length,
+          start: sentStart,
+          end: matchEnd,
           panelist: p,
         });
       }
