@@ -62,7 +62,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       position: 0,
       role: "moderator",
       title: "Välkommen till kvällen",
-      content_html: `<p>Välkommen allesammans till kvällens paneldebatt. <span class="pause-mark" data-pause="true">paus</span>&nbsp;&nbsp;Jag heter <strong>[ditt namn]</strong> och leder samtalet de närmaste 30 minuterna.</p><p>Tema ikväll är framtidens arbetsplats — hur vi ska arbeta, leda och må bra på jobbet. Vi kommer fokusera på tre områden: hybridarbetet, ledarskap i förändring och kulturen som håller ihop allt.</p>`,
+      content_html: `<p>Välkommen allesammans till kvällens paneldebatt här i [publikens ort]. <span class="pause-mark" data-pause="true">paus</span>&nbsp;&nbsp;Jag heter <strong>[ditt namn]</strong>, [din titel] på [din organisation], och leder samtalet de närmaste 30 minuterna.</p><p>Tema ikväll är framtidens arbetsplats — hur vi ska arbeta, leda och må bra på jobbet. Vi kommer fokusera på tre områden: hybridarbetet, ledarskap i förändring och kulturen som håller ihop allt.</p>`,
       notes: "Stå centralt. Le brett. Ögonkontakt med hela panelen under presentationen.",
       start_time: "00:00",
       end_time: "02:00",

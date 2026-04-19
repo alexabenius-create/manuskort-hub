@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EXAMPLE_MANUSCRIPT } from "./exampleManuscript";
 import { hexToRgba, hexToDarkText } from "./panelistColors";
+import { autofillProfilePlaceholders, type ProfileValues } from "./placeholders";
 
 const seededKey = (userId: string) => `manuskort:example_seeded:${userId}`;
 
@@ -50,6 +51,14 @@ function applyPanelistMarks(
  */
 export async function seedExampleForUser(userId: string): Promise<string | null> {
   const ex = EXAMPLE_MANUSCRIPT;
+
+  // Hämta profilvärden för autofyllning av [ditt namn], [din titel], [din organisation]
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("display_name, display_title, display_org")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const profile: ProfileValues = profileRow ?? {};
 
   const { data: ms, error: msErr } = await supabase
     .from("manuscripts")
@@ -101,7 +110,7 @@ export async function seedExampleForUser(userId: string): Promise<string | null>
         position: c.position,
         role: c.role,
         title: c.title,
-        content_html: applyPanelistMarks(c.content_html, insertedPanelists),
+        content_html: applyPanelistMarks(autofillProfilePlaceholders(c.content_html, profile), insertedPanelists),
         notes: c.notes,
         start_time: c.start_time,
         end_time: c.end_time,
