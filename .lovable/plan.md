@@ -1,43 +1,38 @@
 
 
-## Plan: ackumulerad tidschip + kedje-varning vid start
+## Statisk granskning: två buggar som kan klippa innehåll
 
-### Ny piller-knapp i kort-headern (v3)
-Bredvid `CardTargetTimePopover` (mål-ikonen) — en visuellt liknande chip men `disabled`/icke-klickbar — som visar kortets **start–slut** i kedjan av manuella måltider.
+### Bugg 1: header/times/cues räknas inte med i tillgänglig höjd
+`PrintDialog.tsx` använder `availableMm` = hela kortets höjd (128mm för A5, ~130mm för A4-halva). Men kortet innehåller också:
+- `card-panel-header` (~8mm med 12pt rubrik + border)
+- `card-panel-times` (~5mm)
+- `card-panel-cues` (~5mm om cues finns)
 
-**Regler:**
-- Kort 1 har manuell måltid → visa `00:00–MM:SS` (slut = summa måltider − 1s? Nej, enligt exempel: kort 1 (0:45) → `00:00–00:45`).
-- Kort N: start = (summa måltider för kort 1..N-1) **+ N-1 sekunder** (en sek paus mellan varje kort), slut = start + kortets måltid.
-  - Exempel: kort 2 med 1:00 efter kort 1 (0:45) → start `00:46`, slut `01:46`. ✓
-- Om något tidigare kort i kedjan saknar manuell måltid (`targetSeconds == null` eller `targetSecondsIsManual == false`) → kedjan **bryts**. Det kortet och alla efterföljande visar **ingen** ackumulerad chip.
-- Kort utan egen måltid visar inte heller chip (även om kedjan är hel före det).
+Tillsammans tar headers ~15–18mm av kortets höjd. Mätningen jämför `card.scrollHeight` (hela kortet inkl. header) mot `availablePx` (hela kortets boxhöjd). Det ser rätt ut — men `--print-script-scale` påverkar **bara** ProseMirror + textarea, inte rubriken. Resultat: när vi skalar för att klämma in 273mm innehåll i 128mm box, antar vi att hela klonen får krympas — men i verkligheten krymps bara textinnehållet medan headern står still. Skalan blir då för svag.
 
-**Implementation:**
-- Räkna kedjan på doc-nivå i `TiptapDocEditor` (eller härled i `EditorV3` från `cards`/doc) och skicka `chainStart`/`chainEnd` (sek) till varje cardBlock via attrs är OVERKILL — gör det istället som en `useMemo` i `CardBlockView` baserat på `editor.state.doc` och `node`-position. Iterera doc top-level från start tills vi når current cardBlock; ackumulera så länge varje kort har manual target. Om något bryter → returnera `null`.
-- Ny komponent `CardChainTimeChip.tsx` (presenterande, disabled-look som matchar `CardTargetTimePopover`-stilen men gråare/inaktiv).
-- Format: `MM:SS–MM:SS` (samma `fmt` som popovern). Tooltip: "Ackumulerad tid baserat på måltider".
+**Fix:** subtrahera uppskattad header-höjd från `availableMm` innan skalan beräknas, ELLER mät bara `card-panel-script` + `card-panel-notes` istället för hela kortet.
 
-### Varningsdialog vid "Starta"
-I `EditorV3.startPresentation()`, **innan** navigation till `/presentera`:
+### Bugg 2: clamp 0.55 är hård gräns — innehåll klipps tyst
+Om kortet behöver skala 0.40 för att rymmas, clampar koden till 0.55 och `overflow: hidden` klipper resten utan varning. För "mycket långa kort" är det troligt att 0.55 inte räcker.
 
-1. Iterera `editor.state.doc` top-level cardBlocks i ordning.
-2. Hitta **första** kort utan manual måltid (`targetSeconds == null || !targetSecondsIsManual`).
-3. Om sådant finns och det INTE är allra första kortet (dvs kedjan har börjat): samla numren på alla kort från det och framåt som saknar manuell måltid.
-   - **Edge case alt.** Om även det första kortet saknar — då finns ingen kedja alls; ingen varning behövs (användaren har valt att inte använda kort-måltider). *Beslut:* visa varning ändå när NÅGOT kort saknar måltid OCH minst ett kort HAR måltid satt — annars ingen varning.
-4. Visa AlertDialog: 
-   - Titel: "Måltid saknas på vissa kort"
-   - Text: "Följande kort saknar manuell måltid och bryter den ackumulerade tidskedjan: **Kort 03, 05, 07**."
-   - Knappar: `Gå tillbaka och redigera` (stänger dialogen) | `Starta ändå` (fortsätter till presentera).
+**Fix-alternativ:**
+- A) Sänk min till 0.45 (gränsen för läsbarhet på papper).
+- B) Behåll clamp men visa toast: "N kort skalades till minimi-storleken — innehåll kan vara klippt."
+- C) Tillåt valfritt korts overflow att splittas över extra sida (mycket större ändring).
 
-Använd `AlertDialog` från `@/components/ui/alert-dialog`.
+### Bugg 3 (mindre): mätsandbox saknar header-CSS-isolering
+Sandbox-CSS sätter bara ProseMirror + textarea-typografi. Headerns 12pt + paddings ärvs från default. För A5 där baseline är 13pt blir headern relativt mindre i mätningen än i verkligheten. Liten effekt men förstärker bugg 1.
 
-### Filer att ändra
-- **NY:** `src/components/editor/CardChainTimeChip.tsx` — disabled chip-komponent.
-- `src/components/editor/CardBlockView.tsx` — beräkna kedjan via `editor.state.doc`, rendera chip bredvid `CardTargetTimePopover`.
-- `src/pages/EditorV3.tsx` — i `startPresentation()`: hitta brott i kedjan, visa AlertDialog innan `navigate(...)`. Lägg till state `missingTargetCards: number[]` och dialog-rendering.
+### Plan
 
-### Edge cases
-- Om manuset är tomt eller bara har 1 kort utan måltid → ingen chip, ingen varning.
-- Drag/reorder av kort: chipsen beräknas reaktivt från doc → uppdateras automatiskt.
-- Performance: O(N) per render per kort = O(N²) totalt. För typiska manus (<100 kort) inget problem; vid behov: lyfta beräkningen till parent och passa in via context.
+1. **Mät rätt yta.** I `PrintDialog.handlePrint`: subtrahera ~20mm för header/times/cues/notes-padding från `availableMm` innan skalan beräknas. Alternativt: mät bara `clone.querySelector('.card-panel-script')`-höjden + uppskattad notes-höjd.
+2. **Sänk minsta skala** till 0.45 (från 0.55) så fler kort ryms helt.
+3. **Visa toast** efter print om något kort hamnade på minst skala — användaren får veta att hen bör korta texten där.
+4. **Ingen CSS-ändring behövs** — `--print-script-scale` finns redan på rätt selektorer.
+
+### Filer
+- `src/components/editor/PrintDialog.tsx` — justera `availableMm`, sänk clamp, lägg till toast.
+
+### Vad du behöver testa själv efteråt
+Skriv ut ett manus med (a) 3 korta kort, (b) 1 mycket långt kort (>500 ord), (c) ett kort med både script och notes fyllda. Kontrollera i print preview / spara som PDF att inget klipps i A4 2-up och A5 1-up.
 
