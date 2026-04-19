@@ -908,6 +908,23 @@ export default function Editor() {
 
           <SaveIndicator compact />
 
+          {/* Admin-only: öppna experimentell editor v2 */}
+          {tier === "admin" && (
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <Link
+                  to={`/manus/${id}/v2`}
+                  className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-accent-blue/15 text-accent-blue text-[10px] font-mono uppercase tracking-widest border border-accent-blue/30 hover:bg-accent-blue/25 transition-colors"
+                >
+                  v2
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                Testa experimentell editor v2 (admin)
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Höger sida — primära åtgärder + sekundära ikoner */}
           <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
             {/* Måltid — ikon med diff-prick */}

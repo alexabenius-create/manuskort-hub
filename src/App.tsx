@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
 const Library = lazy(() => import("./pages/Library"));
 const Editor = lazy(() => import("./pages/Editor"));
+const EditorV2 = lazy(() => import("./pages/EditorV2"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Import = lazy(() => import("./pages/Import"));
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
                   <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
+                  <Route path="/manus/:id/v2" element={<RequireAuth><EditorV2 /></RequireAuth>} />
                   <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                   <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
                   <Route path="/checkout/return" element={<CheckoutReturn />} />
