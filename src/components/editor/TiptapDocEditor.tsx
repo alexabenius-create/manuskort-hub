@@ -8,12 +8,17 @@ import Blockquote from "@tiptap/extension-blockquote";
 import { useEffect } from "react";
 import { keymap } from "prosemirror-keymap";
 import { Extension, Node } from "@tiptap/core";
+import { DOMParser as PMDOMParser, Fragment, type Node as PMNode } from "prosemirror-model";
+import { TextSelection } from "prosemirror-state";
+import { toast } from "sonner";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 import { CardBlock } from "@/lib/cardBlockNode";
 import { joinCardBackward, splitCardBlock } from "@/lib/cardBlockCommands";
+import { computeMaxWordsPerCard } from "@/lib/smartPasteThreshold";
+import { splitPastedHtml, plainTextToHtml } from "@/lib/smartPasteSplit";
 
 interface Props {
   value: string;
