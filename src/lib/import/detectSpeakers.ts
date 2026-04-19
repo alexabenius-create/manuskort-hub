@@ -31,17 +31,37 @@ const SPEAKER_RE = new RegExp(`^(${NAME_PART})${ROLE_OPT}${SEP}\\s+`);
 const NAME_ONLY_RE = new RegExp(`^(${NAME_PART})${ROLE_OPT}\\s*[:.]?\\s*$`);
 
 // Ord vi NÄSTAN ALDRIG vill behandla som talare även om de matchar mönstret.
-const STOPWORDS = new Set([
-  "Och", "Eller", "Men", "Om", "Att", "Det", "Den", "De", "En", "Ett",
-  "Vi", "Du", "Jag", "Han", "Hon", "Hen", "Ni", "Man",
-  "Kapitel", "Avsnitt", "Del", "Sida", "Sektion",
-  "Obs", "OBS", "Notera", "Anteckning",
+// Inkluderar både gemen- och versal-form (för rubriker som "SAMTAL", "INLEDNING").
+const STOPWORD_LOWER = new Set([
+  // Vanliga småord/pronomen
+  "och", "eller", "men", "om", "att", "det", "den", "de", "en", "ett",
+  "vi", "du", "jag", "han", "hon", "hen", "ni", "man", "så", "nu", "då",
+  // Dokumentstruktur / rubrik-ord (svenska)
+  "kapitel", "avsnitt", "del", "sida", "sektion", "rubrik", "stycke",
+  "inledning", "introduktion", "intro", "bakgrund", "syfte",
+  "samtal", "panelsamtal", "diskussion", "frågor", "fråga",
+  "avslutning", "avrundning", "slutord", "summering", "sammanfattning",
+  "paus", "break", "tack",
+  "manus", "manuskript", "agenda", "program", "innehåll", "översikt",
+  "obs", "notera", "anteckning", "exempel", "övning",
+  "moderator", "talare", "panel", "panelen", "panelist", "deltagare",
 ]);
 
+// Heuristik: ALL-CAPS-ord (>2 tecken) är nästan alltid rubriker, inte namn.
+function isAllCaps(s: string): boolean {
+  if (s.length < 3) return false;
+  // Måste innehålla minst en bokstav och inga gemener.
+  return /[A-ZÅÄÖ]/.test(s) && !/[a-zåäö]/.test(s);
+}
+
 function isLikelyName(name: string): boolean {
-  const first = name.trim().split(/\s+/)[0];
-  if (STOPWORDS.has(first)) return false;
+  const trimmed = name.trim();
+  const parts = trimmed.split(/\s+/);
+  const first = parts[0];
   if (first.length < 2) return false;
+  // ALL-CAPS → behandla som rubrik, inte namn (även "MARIA" på egen rad).
+  if (parts.every(isAllCaps)) return false;
+  if (STOPWORD_LOWER.has(first.toLowerCase())) return false;
   return true;
 }
 
