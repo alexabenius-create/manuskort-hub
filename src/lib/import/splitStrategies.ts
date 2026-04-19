@@ -94,6 +94,7 @@ interface BuildContext {
   panelistTempId: (name: string) => string; // mappa namn → tempId för data-panelist-id
   headingMode: HeadingMode;
   mode?: CardBuildMode;
+  textSize?: TextSize;
 }
 
 /**
@@ -205,7 +206,12 @@ export function splitByHeadings(blocks: ParsedBlock[], ctx: BuildContext): Previ
   return cards.filter((c) => c.contentHtml.trim() || c.title);
 }
 
-// =================== Strategi: Ordantal ===================
+// =================== Strategi: Ordantal (rad-baserad) ===================
+
+// Importera dynamiskt för att undvika cirkulär import med cardLimits.
+// Vi använder rad-mätning som primär signal — ordantalet är kvar som fallback
+// när DOM ej finns (SSR).
+import { countPresentationRows, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 
 export function splitByWordCount(
   blocks: ParsedBlock[],
@@ -215,6 +221,13 @@ export function splitByWordCount(
   const cards: PreviewCard[] = [];
   let currentIndices: number[] = [];
   let currentWords = 0;
+
+  // Mål: fyll till ~80% av max-rader. Tak: 100%. Mätning sker mot
+  // den ackumulerade html-strängen i presentationsgeometri.
+  const hasDom = typeof document !== "undefined";
+  const textSize: TextSize = ctx.textSize ?? "md";
+  const maxRows = MAX_ROWS_BY_SIZE[textSize];
+  const targetRows = Math.max(2, Math.floor(maxRows * 0.8));
 
   const flush = () => {
     if (currentIndices.length === 0) return;
@@ -237,14 +250,45 @@ export function splitByWordCount(
     const txt = blockToPlainText(b);
     currentWords += txt.split(/\s+/).filter(Boolean).length;
 
-    // Stäng vid meningsgräns när vi når målet
-    if (currentWords >= wordsPerCard) {
-      // Eftersom vi alltid stänger på block-gräns och varje block är ett
-      // helt stycke (avslutas typiskt med punkt) bryter vi aldrig en mening.
+    // Om DOM finns: kolla rader. Annars fall tillbaka på ord-mål.
+    if (hasDom) {
+      const html = currentIndices.map((idx) => blockToInlineHtml(blocks[idx])).join("");
+      const rows = countPresentationRows(html, textSize);
+      if (rows >= maxRows) {
+        // Hård gräns nådd — flush
+        flush();
+      } else if (rows >= targetRows) {
+        // Lookahead: skulle nästa block få oss över maxRows? Om ja — flush nu.
+        const next = blocks[i + 1];
+        if (next) {
+          const nextHtml = html + blockToInlineHtml(next);
+          const nextRows = countPresentationRows(nextHtml, textSize);
+          if (nextRows > maxRows) flush();
+        } else {
+          flush();
+        }
+      }
+    } else if (currentWords >= wordsPerCard) {
       flush();
     }
   });
   flush();
+
+  // Post-pass: slå ihop sista kortet med föregående om det blir < 30% av målet
+  if (cards.length >= 2) {
+    const last = cards[cards.length - 1];
+    if (last.wordCount < wordsPerCard * 0.3) {
+      const prev = cards[cards.length - 2];
+      const mergedHtml = prev.contentHtml + last.contentHtml;
+      cards[cards.length - 2] = {
+        ...prev,
+        contentHtml: mergedHtml,
+        paragraphsHtml: [...prev.paragraphsHtml, ...last.paragraphsHtml],
+        wordCount: wordCount(mergedHtml),
+      };
+      cards.pop();
+    }
+  }
 
   return cards;
 }

@@ -95,6 +95,7 @@ export function buildCards(opts: BuildOptions): PreviewCard[] {
     },
     headingMode,
     mode: opts.mode,
+    textSize: opts.textSize,
   };
 
   let cards: PreviewCard[];

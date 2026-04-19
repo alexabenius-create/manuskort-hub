@@ -12,6 +12,7 @@ import { SEO } from "@/components/SEO";
 import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
+import { CardGutter } from "@/components/import/CardGutter";
 import { SpeakerMappingPanel } from "@/components/import/SpeakerMappingPanel";
 import { ModeSelector } from "@/components/import/ModeSelector";
 import { SkippedContentPanel } from "@/components/import/SkippedContentPanel";
@@ -43,6 +44,9 @@ export default function Import() {
   const [step, setStep] = useState<0 | 1 | 2>(store.mode ? 1 : 0);
   const [parsing, setParsing] = useState(false);
   const [committing, setCommitting] = useState(false);
+  // Drag-and-drop på preview-listan
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
 
   const importBlocked = !tierLoading && !limits.docxImport;
 
@@ -281,6 +285,31 @@ export default function Import() {
     };
     const next = [...store.cards];
     next.splice(idx, 1, a, b);
+    store.setCards(next);
+    store.markDirty();
+  };
+
+  const insertEmptyAt = (idx: number) => {
+    const empty: PreviewCard = {
+      id: `pc_empty_${Date.now().toString(36)}`,
+      title: "Nytt kort",
+      contentHtml: "<p></p>",
+      paragraphsHtml: ["<p></p>"],
+      wordCount: 0,
+    };
+    const next = [...store.cards];
+    next.splice(idx, 0, empty);
+    store.setCards(next);
+    store.markDirty();
+  };
+
+  const moveTo = (sourceIdx: number, targetIdx: number) => {
+    if (sourceIdx === targetIdx) return;
+    const next = [...store.cards];
+    const [moved] = next.splice(sourceIdx, 1);
+    // targetIdx är gutter-index; om source låg före target, krymps insättningen
+    const insertAt = sourceIdx < targetIdx ? targetIdx - 1 : targetIdx;
+    next.splice(insertAt, 0, moved);
     store.setCards(next);
     store.markDirty();
   };
@@ -576,24 +605,52 @@ export default function Import() {
 
         <SkippedContentPanel items={store.skippedItems} />
 
-        <div className="space-y-3">
+        <div className="space-y-0">
           {store.cards.map((c, i) => (
-            <PreviewCardItem
-              key={c.id}
-              card={c}
-              index={i}
-              total={store.cards.length}
-              textSize={store.textSize}
-              speakers={store.speakers}
-              onRename={(t) => updateCard(i, { title: t })}
-              onContentChange={(html) => updateCard(i, { contentHtml: html, wordCount: wordCount(html) })}
-              onMergePrev={() => mergeWith(i, i - 1)}
-              onMergeNext={() => mergeWith(i, i + 1)}
-              onRemove={() => removeCard(i)}
-              onMoveUp={() => move(i, -1)}
-              onMoveDown={() => move(i, 1)}
-            />
+            <div key={c.id}>
+              <CardGutter
+                index={i}
+                canMerge={i > 0}
+                onMerge={() => mergeWith(i, i - 1)}
+                onInsertEmpty={() => insertEmptyAt(i)}
+                onDropCard={(src) => moveTo(src, i)}
+              />
+              <PreviewCardItem
+                card={c}
+                index={i}
+                total={store.cards.length}
+                textSize={store.textSize}
+                speakers={store.speakers}
+                isDragging={draggingIdx === i}
+                isDropTarget={dropTargetIdx === i && draggingIdx !== null && draggingIdx !== i}
+                onRename={(t) => updateCard(i, { title: t })}
+                onContentChange={(html) => updateCard(i, { contentHtml: html, wordCount: wordCount(html) })}
+                onMergePrev={() => mergeWith(i, i - 1)}
+                onMergeNext={() => mergeWith(i, i + 1)}
+                onRemove={() => removeCard(i)}
+                onMoveUp={() => move(i, -1)}
+                onMoveDown={() => move(i, 1)}
+                onSplitAt={(p) => splitAt(i, p)}
+                onDragStart={() => setDraggingIdx(i)}
+                onDragEnd={() => { setDraggingIdx(null); setDropTargetIdx(null); }}
+                onDropCard={(src) => {
+                  // Drop på själva kortet → slå ihop med detta kort
+                  if (src !== i) mergeWith(src, i);
+                  setDropTargetIdx(null);
+                }}
+                onDragOverCard={(over) => setDropTargetIdx(over ? i : (dropTargetIdx === i ? null : dropTargetIdx))}
+              />
+            </div>
           ))}
+          {store.cards.length > 0 && (
+            <CardGutter
+              index={store.cards.length}
+              canMerge={false}
+              onMerge={() => {}}
+              onInsertEmpty={() => insertEmptyAt(store.cards.length)}
+              onDropCard={(src) => moveTo(src, store.cards.length)}
+            />
+          )}
         </div>
 
         <div className="rounded-2xl bg-surface p-5 shadow-card">
