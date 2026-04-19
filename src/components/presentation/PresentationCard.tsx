@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Pause, Flag, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
+import { Pause, Zap, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import {
@@ -7,6 +7,7 @@ import {
   darkAttributionBorder,
   darkAttributionLabel,
 } from "@/lib/presentationTheme";
+import { readCuesWithLegacyFallback } from "@/lib/cues";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"] & {
   is_panic_card?: boolean;
