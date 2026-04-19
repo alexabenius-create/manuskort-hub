@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { usePresentationTimer } from "@/hooks/usePresentationTimer";
+import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
