@@ -8,10 +8,13 @@ import { buildCards } from "@/lib/import/buildCards";
 describe("Import end-to-end (test-paneldebatt.docx)", () => {
   it("parses docx, detects speakers, lists skipped content, and builds cards", async () => {
     const buf = readFileSync(resolve(__dirname, "../../test/test-paneldebatt.docx"));
-    // Skapa en File-liknande wrapper (vitest jsdom har File-stöd)
-    const file = new File([buf as unknown as BlobPart], "test-paneldebatt.docx", {
+    // jsdom-File saknar fullt fungerande arrayBuffer för mammoth — wrappa själv
+    const file = {
+      name: "test-paneldebatt.docx",
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    });
+      size: buf.length,
+      arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+    } as unknown as File;
 
     const result = await parseDocxFile(file);
 
