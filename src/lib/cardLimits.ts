@@ -12,9 +12,9 @@ export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
  * fonter — vi använder 0.52 som rimligt medel för Inter Tight.
  */
 const PRESENTATION_GEOMETRY = {
-  sm: { fontSize: 24, lineHeight: 1.7, widthPx: Math.round(60 * 24 * 0.52) },
-  md: { fontSize: 30, lineHeight: 1.7, widthPx: Math.round(60 * 30 * 0.52) },
-  lg: { fontSize: 38, lineHeight: 1.7, widthPx: Math.round(60 * 38 * 0.52) },
+  sm: { fontSize: 24, lineHeight: 1.7, widthPx: Math.round(75 * 24 * 0.52) },
+  md: { fontSize: 30, lineHeight: 1.7, widthPx: Math.round(75 * 30 * 0.52) },
+  lg: { fontSize: 38, lineHeight: 1.7, widthPx: Math.round(75 * 38 * 0.52) },
 } as const;
 
 let presentationMeasurer: HTMLDivElement | null = null;
