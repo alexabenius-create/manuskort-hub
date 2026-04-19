@@ -241,6 +241,9 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
           estimatedSeconds={seconds}
           onSave={handleTargetSave}
         />
+        {chainRange && (
+          <CardChainTimeChip startSeconds={chainRange.start} endSeconds={chainRange.end} />
+        )}
         {a.isPanic && (
           <>
             <span className="opacity-40">·</span>
