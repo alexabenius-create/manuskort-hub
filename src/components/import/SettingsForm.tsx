@@ -9,7 +9,7 @@ import type { SplitStrategy, TextSize } from "@/lib/import/splitStrategies";
 const STRATEGY_HELP: Record<SplitStrategy, { title: string; body: string; best: string }> = {
   headings: {
     title: "Rubriker",
-    body: "Varje rubrik (H1/H2) i dokumentet startar ett nytt kort. Allt under rubriken hamnar på samma kort tills nästa rubrik kommer.",
+    body: "Varje rubrik i dokumentet startar ett nytt kort. Allt under rubriken hamnar på samma kort tills nästa rubrik kommer.",
     best: "Bäst för strukturerade manus med tydliga sektioner (t.ex. Inledning, Problem, Lösning).",
   },
   wordcount: {
@@ -155,6 +155,15 @@ export function SettingsForm({ hasHeadings }: Props) {
                 <span className="font-medium text-foreground">Bengt:</span>) startar alltid ett nytt
                 kort, oavsett val.
               </p>
+              <div className="rounded-md bg-muted/50 p-2.5 space-y-1">
+                <div className="font-semibold text-foreground">Vad är en rubrik?</div>
+                <p className="text-muted-foreground leading-snug">
+                  En text som du i Word eller Google Docs har formaterat som{" "}
+                  <span className="font-medium text-foreground">Rubrik 1</span> eller{" "}
+                  <span className="font-medium text-foreground">Rubrik 2</span> (Format → Stilar).
+                  Det räcker inte att bara göra texten större och fet.
+                </p>
+              </div>
               {strategies.map(([v]) => {
                 const h = STRATEGY_HELP[v];
                 return (
@@ -177,7 +186,7 @@ export function SettingsForm({ hasHeadings }: Props) {
               onClick={() => setStrategy(v)}
               data-active={strategy === v}
               className="seg-btn disabled:opacity-40"
-              title={!enabled ? "Dokumentet saknar rubriker" : undefined}
+              title={!enabled ? "Dokumentet saknar formaterade rubriker (Rubrik 1 / Rubrik 2 i Word eller Google Docs)" : undefined}
             >
               {label}
             </button>
