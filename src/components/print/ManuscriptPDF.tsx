@@ -126,12 +126,15 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
     const num = String(cardIndex + 1).padStart(2, "0");
     const totalNum = String(totalCards).padStart(2, "0");
     const cardNumberLabel = suffix ? `${num}${suffix} / ${totalNum}` : `${num} / ${totalNum}`;
+    const cardNumberShort = suffix
+      ? `${cardIndex + 1}${suffix.toUpperCase()}`
+      : `${cardIndex + 1}`;
     const totalCardsLabel = suffix
       ? `Sida ${cardIndex + 1}${suffix} / ${totalCards}`
       : `Sida ${cardIndex + 1} / ${totalCards}`;
 
     // Hitta panelist för panel-cues — om ett kort har precis en panel-cue använd
-    // dess färg som rail-färg (ger panelist-känsla även för "speaker"-roll).
+    // dess färg som rolletikett (ger panelist-känsla även för "speaker"-roll).
     const panelCue = cues.find((c) => c.kind === "panel" && c.panelistId);
     const panelistColor = panelCue?.panelistId
       ? panelistColorById.get(panelCue.panelistId)
@@ -156,6 +159,7 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
         manuscriptTitle={manuscript.title}
         totalTargetSeconds={manuscript.target_duration_seconds}
         cardNumberLabel={cardNumberLabel}
+        cardNumberShort={cardNumberShort}
         totalCardsLabel={totalCardsLabel}
         roleLabel={roleLabel}
         roleColor={roleColor}
