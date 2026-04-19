@@ -287,6 +287,20 @@ export function TiptapDocEditor({
     return () => onEditorReady?.(null);
   }, [editor, onEditorReady]);
 
+  // Reaktivt: uppdatera storleksklass när `size`-propen ändras
+  useEffect(() => {
+    if (!editor) return;
+    editor.setOptions({
+      editorProps: {
+        ...editor.options.editorProps,
+        attributes: {
+          ...(editor.options.editorProps?.attributes ?? {}),
+          class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
+        },
+      },
+    });
+  }, [size, editor]);
+
   // Synka externt värde (initial laddning) utan att skicka update
   useEffect(() => {
     if (!editor) return;
