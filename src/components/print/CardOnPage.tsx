@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
   },
   scriptColFull: {
     flex: 1,
+    paddingRight: 14,
   },
   notesCol: {
     width: "25%",
