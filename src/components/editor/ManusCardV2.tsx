@@ -334,37 +334,58 @@ export function ManusCardV2({
             </div>
           )}
 
-          {/* Cue-pills inline under manustexten — ingen panel-bg */}
+          {/* Cues — nya systemet (5A.1: energy + action) + legacy fallback */}
           {cuesVisible && (
             <div data-tour="card.cues" className="mt-3 flex gap-2 flex-wrap items-center">
-              <CueInline
-                visible={!!card.cue_red?.trim() || showCues}
-                icon={<Pause className="h-3 w-3" />}
-                colorClass="cue-pill-red"
-                placeholder="Paus / bromsa"
-                value={card.cue_red}
-                onChange={(v) => onLocalChange({ cue_red: v })}
-                category="Paus / bromsa"
-              />
-              <CueInline
-                visible={!!card.cue_amber?.trim() || showCues}
-                icon={<Flag className="h-3 w-3" />}
-                colorClass="cue-pill-amber"
-                placeholder="Avslutningssignal"
-                value={card.cue_amber}
-                onChange={(v) => onLocalChange({ cue_amber: v })}
-                category="Avslutningssignal"
-              />
-              <CueInline
-                visible={!!card.cue_teal?.trim() || showCues}
-                icon={<ArrowRight className="h-3 w-3" />}
-                colorClass="cue-pill-teal"
-                placeholder="Överlämning / nästa"
-                value={card.cue_teal}
-                onChange={(v) => onLocalChange({ cue_teal: v })}
-                category="Överlämning / nästa"
-              />
-              {showCues && !hasAnyCue && (
+              {/* Nya cues från cues-arrayen */}
+              {cues.map((c) => (
+                <CueChip
+                  key={c.id}
+                  cue={c}
+                  onSave={(next) => updateCues(upsertCue(cues, next))}
+                  onRemove={() => updateCues(removeCue(cues, c.id))}
+                />
+              ))}
+
+              {/* Legacy-cues (visas men kan bara redigeras via gamla inline-fälten under övergångsfasen) */}
+              {!!card.cue_red?.trim() && (
+                <CueInline
+                  visible
+                  icon={<Pause className="h-3 w-3" />}
+                  colorClass="cue-pill-red"
+                  placeholder="Paus / bromsa"
+                  value={card.cue_red}
+                  onChange={(v) => onLocalChange({ cue_red: v })}
+                  category="Paus / bromsa (legacy)"
+                />
+              )}
+              {!!card.cue_amber?.trim() && (
+                <CueInline
+                  visible
+                  icon={<Flag className="h-3 w-3" />}
+                  colorClass="cue-pill-amber"
+                  placeholder="Avslutningssignal"
+                  value={card.cue_amber}
+                  onChange={(v) => onLocalChange({ cue_amber: v })}
+                  category="Avslutningssignal (legacy)"
+                />
+              )}
+              {!!card.cue_teal?.trim() && (
+                <CueInline
+                  visible
+                  icon={<ArrowRight className="h-3 w-3" />}
+                  colorClass="cue-pill-teal"
+                  placeholder="Överlämning / nästa"
+                  value={card.cue_teal}
+                  onChange={(v) => onLocalChange({ cue_teal: v })}
+                  category="Överlämning / nästa (legacy)"
+                />
+              )}
+
+              {/* "+ Signal"-knappen för att lägga till nya cues */}
+              <AddCueButton onAdd={(c) => updateCues(upsertCue(cues, c))} />
+
+              {showCues && !hasAnyCue && cues.length === 0 && (
                 <button
                   type="button"
                   onClick={() => setShowCues(false)}
