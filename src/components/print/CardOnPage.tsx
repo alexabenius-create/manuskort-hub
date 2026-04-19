@@ -25,7 +25,6 @@ export interface CardOnPageProps {
 
 const PT_PER_MM = 2.8346;
 const PAD_MM = 10;
-const RAIL_MM = 4;
 const FRAME_MARGIN_MM = 5;
 
 function formatSec(sec: number | null): string {
