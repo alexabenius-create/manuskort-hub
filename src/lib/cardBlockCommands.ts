@@ -78,11 +78,19 @@ export function splitCardBlock(
       ...$from.node(cardDepth).attrs,
       cardId: null,
     };
-    // Splitta vid caret med depth=2 (paragraph + cardBlock).
-    // Nya cardBlock får attrs utan cardId via typesAfter.
-    const tr = state.tr.split($from.pos, $from.depth - cardDepth + 1, [
-      { type: cardBlockType, attrs: newAttrs },
-    ]);
+    // Antal nivåer att splittra. cardDepth = depth där cardBlock ligger.
+    // Vi vill splittra ända upp till och MED cardBlock, så split-djup =
+    // ($from.depth - cardDepth + 1). Men `tr.split(pos, depth, typesAfter)`
+    // tolkar `depth` som antal omslag som ska splittas; för varje nivå kan
+    // vi specificera vilken nodtyp den högra halvan ska få. Index 0 i
+    // typesAfter motsvarar den INNERSTA nivån, index N-1 den yttersta.
+    // Vi vill att den YTTERSTA (cardBlock) ska få nya attrs; inre nivåer
+    // får ärva default (paragraph etc.).
+    const splitDepth = $from.depth - cardDepth + 1;
+    const typesAfter: ({ type: NodeType; attrs?: Record<string, unknown> } | null)[] = [];
+    for (let i = 0; i < splitDepth - 1; i++) typesAfter.push(null);
+    typesAfter.push({ type: cardBlockType, attrs: newAttrs });
+    const tr = state.tr.split($from.pos, splitDepth, typesAfter);
     dispatch(tr.scrollIntoView());
   }
   return true;
