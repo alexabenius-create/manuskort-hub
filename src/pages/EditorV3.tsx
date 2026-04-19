@@ -17,6 +17,16 @@ import {
   formatTargetDuration,
 } from "@/components/editor/TargetDurationDialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Save,
   Users,
@@ -92,6 +102,8 @@ export default function EditorV3() {
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
+  const [chainBreakOpen, setChainBreakOpen] = useState(false);
+  const [missingTargetCards, setMissingTargetCards] = useState<number[]>([]);
 
   const editorRef = useRef<TiptapEditorType | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -456,16 +468,38 @@ export default function EditorV3() {
       ? `Måltid: ${formatTargetDuration(targetDurationSeconds)}${diffText ? ` (${diffText})` : ""}`
       : "Måltid ej satt — klicka för att ange";
 
-  const startPresentation = () => {
+  const startPresentation = (skipChainCheck = false) => {
     if (targetDurationSeconds === null) {
       setTargetDialogIntro("Ange måltid för att starta presentationen.");
       setTargetSaveLabel("Spara och starta");
       setTargetDialogOpen(true);
       return;
     }
+    if (!skipChainCheck) {
+      const ed = editorRef.current;
+      if (ed) {
+        const missing: number[] = [];
+        let hasAnyManual = false;
+        let i = 0;
+        ed.state.doc.forEach((n) => {
+          if (n.type.name !== "cardBlock") return;
+          i++;
+          const attrs = n.attrs as { targetSeconds: number | null; targetSecondsIsManual: boolean };
+          const isManual =
+            attrs.targetSecondsIsManual && attrs.targetSeconds != null && attrs.targetSeconds > 0;
+          if (isManual) hasAnyManual = true;
+          else missing.push(i);
+        });
+        if (hasAnyManual && missing.length > 0) {
+          setMissingTargetCards(missing);
+          setChainBreakOpen(true);
+          return;
+        }
+      }
+    }
     navigate(`/manus/${manuscript.id}/presentera`);
   };
-  startPresentationRef.current = startPresentation;
+  startPresentationRef.current = () => startPresentation();
 
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const shortcutLabel = isMac ? "⌘ Enter" : "Ctrl Enter";
@@ -670,7 +704,7 @@ export default function EditorV3() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={startPresentation}
+                    onClick={() => startPresentation()}
                     className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
@@ -783,6 +817,34 @@ export default function EditorV3() {
             }
           }}
         />
+
+        <AlertDialog open={chainBreakOpen} onOpenChange={setChainBreakOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Måltid saknas på vissa kort</AlertDialogTitle>
+              <AlertDialogDescription>
+                Följande kort saknar manuell måltid och bryter den ackumulerade tidskedjan:{" "}
+                <strong>
+                  {missingTargetCards
+                    .map((n) => `Kort ${String(n).padStart(2, "0")}`)
+                    .join(", ")}
+                </strong>
+                .
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Gå tillbaka och redigera</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setChainBreakOpen(false);
+                  startPresentation(true);
+                }}
+              >
+                Starta ändå
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </PanelistsProvider>
   );

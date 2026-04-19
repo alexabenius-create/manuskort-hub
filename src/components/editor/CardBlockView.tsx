@@ -14,6 +14,7 @@ import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
 import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
+import { CardChainTimeChip } from "./CardChainTimeChip";
 import { CardDragHandle, CardDropZone } from "./CardDragHandle";
 import { setDraggingCardPos, useDraggingCardPos } from "@/lib/cardDragStore";
 import {
@@ -81,6 +82,37 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
   })();
   const myEnd = myPos != null ? myPos + node.nodeSize : null;
   const isBeingDragged = draggingPos != null && draggingPos === myPos;
+
+  // Räkna kedja av manuella måltider från första kortet fram till detta kort.
+  // Returnerar { start, end } i sekunder om kedjan är obruten OCH detta kort
+  // har egen manuell måltid; annars null. +1 sek paus mellan kort.
+  const chainRange = useMemo<{ start: number; end: number } | null>(() => {
+    if (myPos == null) return null;
+    if (!a.targetSecondsIsManual || a.targetSeconds == null || a.targetSeconds <= 0) return null;
+    let acc = 0;
+    let prevCount = 0;
+    let broken = false;
+    let foundSelf = false;
+    editor.state.doc.forEach((n, offset) => {
+      if (broken || foundSelf) return;
+      if (n.type.name !== "cardBlock") return;
+      if (offset === myPos) {
+        foundSelf = true;
+        return;
+      }
+      const attrs = n.attrs as { targetSeconds: number | null; targetSecondsIsManual: boolean };
+      if (!attrs.targetSecondsIsManual || attrs.targetSeconds == null || attrs.targetSeconds <= 0) {
+        broken = true;
+        return;
+      }
+      acc += attrs.targetSeconds;
+      prevCount += 1;
+    });
+    if (broken || !foundSelf) return null;
+    const start = acc + prevCount; // +1 sek paus per tidigare kort
+    const end = start + a.targetSeconds;
+    return { start, end };
+  }, [editor.state.doc, myPos, a.targetSeconds, a.targetSecondsIsManual]);
 
   const runWithPos = (fn: (state: typeof editor.state, pos: number, dispatch: typeof editor.view.dispatch) => boolean) => {
     const pos = getPos();
@@ -209,6 +241,9 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
           estimatedSeconds={seconds}
           onSave={handleTargetSave}
         />
+        {chainRange && (
+          <CardChainTimeChip startSeconds={chainRange.start} endSeconds={chainRange.end} />
+        )}
         {a.isPanic && (
           <>
             <span className="opacity-40">·</span>
