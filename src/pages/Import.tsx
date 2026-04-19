@@ -30,6 +30,7 @@ import {
 } from "@/lib/import/splitStrategies";
 import type { PreviewCard } from "@/lib/import/splitStrategies";
 import { PANELIST_PALETTE } from "@/lib/panelistColors";
+import { recolorQuestionsInHtml } from "@/lib/import/detectQuestions";
 import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wordCount";
 
 export default function Import() {
@@ -66,6 +67,30 @@ export default function Import() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [step, store.dirty]);
+
+  // Synkronisera färger på question/panelist-spans när användaren ändrar
+  // färg i SpeakerMappingPanel — säkerställer att markerade frågor alltid
+  // har samma färg som talaren i panelen.
+  useEffect(() => {
+    if (step !== 2 || store.cards.length === 0) return;
+    const colorMap = new Map<string, string>();
+    for (const s of store.speakers) {
+      if (s.color) colorMap.set(s.tempId, s.color);
+      if (s.action === "existing" && s.existingPanelistId && s.color) {
+        colorMap.set(s.existingPanelistId, s.color);
+      }
+    }
+    if (colorMap.size === 0) return;
+    let anyChanged = false;
+    const next = store.cards.map((c) => {
+      const newHtml = recolorQuestionsInHtml(c.contentHtml, colorMap);
+      if (newHtml === c.contentHtml) return c;
+      anyChanged = true;
+      return { ...c, contentHtml: newHtml };
+    });
+    if (anyChanged) store.setCards(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.speakers, step]);
 
   const handleFileSelected = async (file: File) => {
     setParsing(true);
@@ -120,6 +145,13 @@ export default function Import() {
 
     // Bygg kort + initiera talar-mappning
     const tempIds = new Map<string, string>();
+    // Pre-allokera färger så frågor får rätt färg redan från start
+    const detectedNamesPre = detectedSpeakerNames(store.rawBlocks, store.mode ?? "speaker");
+    const speakerColors = new Map<string, string>();
+    detectedNamesPre.forEach((name, i) => {
+      speakerColors.set(name, PANELIST_PALETTE[i % PANELIST_PALETTE.length]);
+    });
+
     const cards = buildCards({
       blocks: store.rawBlocks,
       strategy: store.strategy,
@@ -127,14 +159,14 @@ export default function Import() {
       textSize: store.textSize,
       speakerTempIds: tempIds,
       mode: store.mode ?? "speaker",
+      speakerColors,
     });
 
-    const detectedNames = detectedSpeakerNames(store.rawBlocks, store.mode ?? "speaker");
-    const speakerMappings = detectedNames.map((name, i) => ({
+    const speakerMappings = detectedNamesPre.map((name, i) => ({
       detectedName: name,
       tempId: tempIds.get(name) || `tmp:${name}`,
       action: "new" as const,
-      color: PANELIST_PALETTE[i % PANELIST_PALETTE.length],
+      color: speakerColors.get(name) || PANELIST_PALETTE[i % PANELIST_PALETTE.length],
     }));
 
     store.speakerTempIds.clear();
@@ -155,6 +187,11 @@ export default function Import() {
         return;
     }
     const tempIds = new Map<string, string>();
+    // Återanvänd existerande färger från speakers så att en re-build behåller färgmappningen
+    const speakerColors = new Map<string, string>();
+    for (const s of store.speakers) {
+      if (s.color) speakerColors.set(s.detectedName, s.color);
+    }
     const cards = buildCards({
       blocks: store.rawBlocks,
       strategy: store.strategy,
@@ -162,6 +199,7 @@ export default function Import() {
       textSize: store.textSize,
       speakerTempIds: tempIds,
       mode: store.mode ?? "speaker",
+      speakerColors,
     });
     store.setCards(cards);
     // Markera ej dirty efter omstart

@@ -15,9 +15,12 @@ declare module "@tiptap/core" {
  * Detta är moderatorns text som vänder sig till en specifik person —
  * t.ex. "Anna, vad tycker du om detta?".
  *
- * Skiljs visuellt från PanelistMark (som markerar panelistens egen replik):
- * - Pil-prefix (→) i panelistens färg
- * - Färgad understruken text, inget bakgrundsfält
+ * Skiljs visuellt från PanelistMark (panelistens egen replik):
+ * - Färgad fet text (ev. pil-prefix om hela meningen markeras)
+ * - Bakgrunds-tint i panelistens färg
+ *
+ * Färg-källa: data-panelist-color (samma attribut som PanelistMark använder)
+ * → frågans färg är ALLTID identisk med talarens färg.
  */
 export const QuestionToMark = Mark.create<{ HTMLAttributes: Record<string, unknown> }>({
   name: "questionTo",
@@ -35,14 +38,16 @@ export const QuestionToMark = Mark.create<{ HTMLAttributes: Record<string, unkno
       },
       color: {
         default: null,
-        parseHTML: (el) => (el as HTMLElement).getAttribute("data-question-color"),
+        // Läs från samma attribut som PanelistMark — en enda färg-källa
+        parseHTML: (el) => (el as HTMLElement).getAttribute("data-panelist-color"),
         renderHTML: (attrs) => {
           if (!attrs.color) return {};
           const fg = hexToDarkText(attrs.color as string);
-          const accent = hexToRgba(attrs.color as string, 0.55);
+          const bg = hexToRgba(attrs.color as string, 0.18);
+          const accent = hexToRgba(attrs.color as string, 0.7);
           return {
-            "data-question-color": attrs.color,
-            style: `--question-fg: ${fg}; --question-accent: ${accent};`,
+            "data-panelist-color": attrs.color,
+            style: `--question-fg: ${fg}; --question-bg: ${bg}; --question-accent: ${accent};`,
           };
         },
       },
