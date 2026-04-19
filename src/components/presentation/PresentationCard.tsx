@@ -171,7 +171,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           {energyCues.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-yellow))] bg-[hsl(var(--cue-yellow)/0.15)] border border-[hsl(var(--cue-yellow)/0.4)]"
             >
               <Zap className="h-3.5 w-3.5 flex-shrink-0" />
               <span>{c.text}</span>
@@ -188,16 +188,10 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           ))}
           {panelCues.map((c) => {
             const p = panelists.find((x) => x.id === c.panelistId);
-            const color = p?.color ?? "#A9C8F0";
             return (
               <div
                 key={c.id}
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium border"
-                style={{
-                  backgroundColor: hexToRgba(color, 0.2),
-                  borderColor: hexToRgba(color, 0.5),
-                  color,
-                }}
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
               >
                 <Users className="h-3.5 w-3.5 flex-shrink-0" />
                 {p?.name && (
