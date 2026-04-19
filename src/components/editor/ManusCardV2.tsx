@@ -316,6 +316,7 @@ export function ManusCardV2({
             onRowCountChange={setCurrentRows}
             onOverflowPaste={onPasteOverflow}
             onOverflow={onAutoOverflow}
+            onPullBack={onPullBack}
           />
 
           {/* Diskret radvarning — visas bara nära/över gränsen */}
