@@ -19,6 +19,7 @@
 //                              är inte ett anrop på slutet → ingen markering.
 
 import type { ParsedBlock } from "./parseDocument";
+import { hexToDarkText, hexToRgba } from "@/lib/panelistColors";
 
 export interface KnownPanelist {
   tempId: string;
@@ -230,15 +231,17 @@ function makeQuestionSpan(
   return span;
 }
 
-function buildInlineStyle(color: string): string {
-  // Lazy-importera färg-helpers för att undvika cykel om denna fil testas isolerat.
-  // I praktiken är panelistColors redan en peer-modul.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { hexToDarkText, hexToRgba } = require("@/lib/panelistColors") as typeof import("@/lib/panelistColors");
+function buildQuestionStyle(color: string): string {
   const fg = hexToDarkText(color);
   const bg = hexToRgba(color, 0.18);
   const accent = hexToRgba(color, 0.7);
   return `--question-fg: ${fg}; --question-bg: ${bg}; --question-accent: ${accent};`;
+}
+
+function buildPanelistStyle(color: string): string {
+  const bg = hexToRgba(color, 0.32);
+  const fg = hexToDarkText(color);
+  return `background-color: ${bg}; color: ${fg}; --panelist-bg: ${bg}; --panelist-fg: ${fg}; border-radius: 10px; padding: 2px 8px; position: relative; box-decoration-break: clone; -webkit-box-decoration-break: clone;`;
 }
 
 /**
