@@ -2,6 +2,7 @@
 
 import type { ParsedBlock } from "./parseDocument";
 import { detectSpeakers, type SpeakerDetection } from "./detectSpeakers";
+import { detectAddressees } from "./detectAddressees";
 import {
   splitByHeadings,
   splitByParagraph,
@@ -35,6 +36,45 @@ export function autoDetectStrategy(blocks: ParsedBlock[]): SplitStrategy {
   return hasHeadings ? "headings" : "wordcount";
 }
 
+/**
+ * Returnerar slutlig panelist-lista i moderator-mode. Kombinerar:
+ *  - explicita talare (Anna: ...)
+ *  - adressater (frågor: "Anna, ...")
+ *  - intro-lista (punkter med fulla namn)
+ * och löser konflikter (förnamn → kanoniskt fullt namn).
+ */
+function resolvePanelistNames(
+  blocks: ParsedBlock[],
+  speakers: SpeakerDetection,
+): { names: string[] } {
+  const addr = detectAddressees(blocks);
+
+  // Slå ihop. Speaker-detekterade namn först (om någon faktiskt talar i manuset),
+  // sen fyll på med adressater. Förnamn-kollisioner uppgraderas till längsta namnet.
+  const seen = new Set<string>(); // lowercase första-ord
+  const names: string[] = [];
+
+  const add = (name: string) => {
+    const first = name.split(/\s+/)[0].toLowerCase();
+    if (seen.has(first)) {
+      const idx = names.findIndex(
+        (n) => n.split(/\s+/)[0].toLowerCase() === first,
+      );
+      if (idx >= 0 && name.split(/\s+/).length > names[idx].split(/\s+/).length) {
+        names[idx] = name;
+      }
+      return;
+    }
+    seen.add(first);
+    names.push(name);
+  };
+
+  for (const n of speakers.names) add(n);
+  for (const n of addr.names) add(n);
+
+  return { names };
+}
+
 export function buildCards(opts: BuildOptions): PreviewCard[] {
   // Speaker-mode: hoppa över talar-detektering helt — det är ett soloföredrag.
   const speakers: SpeakerDetection =
@@ -64,16 +104,32 @@ export function buildCards(opts: BuildOptions): PreviewCard[] {
   else cards = splitByParagraph(opts.blocks, ctx);
 
   // Moderator-mode: annotera frågor TILL panelister i kort-html.
-  if (opts.mode === "moderator" && speakers.names.length > 0) {
-    const known: KnownPanelist[] = speakers.names.map((name, i) => ({
-      tempId: opts.speakerTempIds.get(name) || `tmp:${name.replace(/\s+/g, "_")}`,
-      name,
-      color: opts.speakerColors?.get(name) || PALETTE[i % PALETTE.length],
-    }));
-    cards = cards.map((c) => {
-      const annotated = annotateQuestionsInHtml(c.contentHtml, known);
-      return annotated === c.contentHtml ? c : { ...c, contentHtml: annotated };
-    });
+  // Använd den breda panellist-listan (intro-lista + adressater + ev. talare).
+  if (opts.mode === "moderator") {
+    const resolved = resolvePanelistNames(opts.blocks, speakers);
+    if (resolved.names.length > 0) {
+      // Skapa KnownPanelist-poster med både fullt namn och förnamn-aliases
+      // så att "Anna, ..." matchar "Anna Sjöberg" (samma tempId/färg).
+      const known: KnownPanelist[] = [];
+      resolved.names.forEach((fullName, i) => {
+        const tempId =
+          opts.speakerTempIds.get(fullName) ||
+          `tmp:${fullName.replace(/\s+/g, "_")}`;
+        opts.speakerTempIds.set(fullName, tempId);
+        const color = opts.speakerColors?.get(fullName) || PALETTE[i % PALETTE.length];
+        // Fullt namn först (matchas i sin helhet om det förekommer i texten)
+        known.push({ tempId, name: fullName, color });
+        // Alias för förnamn om det fulla namnet är flerordigt
+        const first = fullName.split(/\s+/)[0];
+        if (first !== fullName) {
+          known.push({ tempId, name: first, color });
+        }
+      });
+      cards = cards.map((c) => {
+        const annotated = annotateQuestionsInHtml(c.contentHtml, known);
+        return annotated === c.contentHtml ? c : { ...c, contentHtml: annotated };
+      });
+    }
   }
 
   // Post-processing: säkerställ att inget kort överskrider radgränsen
@@ -140,5 +196,9 @@ function enforceRowLimit(cards: PreviewCard[], textSize: TextSize): PreviewCard[
 
 export function detectedSpeakerNames(blocks: ParsedBlock[], mode?: ImportMode): string[] {
   if (mode === "speaker") return [];
-  return detectSpeakers(blocks).names;
+  const speakers = detectSpeakers(blocks);
+  if (mode === "moderator") {
+    return resolvePanelistNames(blocks, speakers).names;
+  }
+  return speakers.names;
 }
