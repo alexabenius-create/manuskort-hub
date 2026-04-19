@@ -27,6 +27,9 @@ interface Props {
   maxRows?: number;
   onRowCountChange?: (rows: number) => void;
   onOverflowPaste?: (overflowText: string) => void;
+  /** Auto-reflow vid skrivning: överskott (HTML) skickas till nästa kort.
+   *  caretInOverflow=true → caret ska följa med dit. */
+  onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
 }
 
 const sizeClass = {
