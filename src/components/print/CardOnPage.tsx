@@ -142,9 +142,10 @@ const styles = StyleSheet.create({
   },
   scriptColFull: {
     flex: 1,
+    paddingRight: 14,
   },
   notesCol: {
-    width: "36%",
+    width: "25%",
     borderLeftWidth: 0.6,
     borderLeftColor: "#D8D8D8",
     paddingLeft: 12,
@@ -245,17 +246,15 @@ export function CardOnPage(props: CardOnPageProps) {
             </View>
           )}
 
-          {/* Body: script + notes */}
+          {/* Body: script + notes (notes-yta visas alltid för handskrift) */}
           <View style={styles.body}>
-            <View style={hasNotes ? styles.scriptCol : styles.scriptColFull}>
+            <View style={styles.scriptCol}>
               {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.5 })}
             </View>
-            {hasNotes && (
-              <View style={styles.notesCol}>
-                <Text style={styles.notesLabel}>ANTECKNINGAR</Text>
-                <Text style={styles.notesText}>{notes}</Text>
-              </View>
-            )}
+            <View style={styles.notesCol}>
+              <Text style={styles.notesLabel}>ANTECKNINGAR</Text>
+              {hasNotes && <Text style={styles.notesText}>{notes}</Text>}
+            </View>
           </View>
 
           {/* Footer */}
