@@ -169,39 +169,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderTopColor: "#D8D8D8",
     flexDirection: "row",
-    alignItems: "center",
-  },
-  footerCell: {
-    flexDirection: "row",
     alignItems: "baseline",
+    justifyContent: "space-between",
   },
   footerLabel: {
-    fontSize: 7,
-    color: "#999999",
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 1,
-    marginRight: 4,
-  },
-  footerValue: {
-    fontSize: 8.5,
-    color: "#444444",
-    fontFamily: "Courier-Bold",
-  },
-  footerSep: {
-    width: 1,
-    height: 10,
-    backgroundColor: "#E0E0E0",
-    marginLeft: 12,
-    marginRight: 12,
-  },
-  footerSpacer: {
-    flex: 1,
-  },
-  footerPage: {
     fontSize: 8,
-    color: "#666666",
+    color: "#888888",
     fontFamily: "Helvetica-Bold",
     letterSpacing: 0.8,
+  },
+  footerValue: {
+    fontSize: 11,
+    color: "#1A1A1A",
+    fontFamily: "Courier-Bold",
   },
 });
 
