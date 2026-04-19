@@ -9,6 +9,7 @@ import { useTier } from "@/hooks/useTier";
 import { LIMITS } from "@/lib/tierLimits";
 import { useImportStore } from "@/lib/import/importStore";
 import { SEO } from "@/components/SEO";
+import { HelpButton } from "@/components/HelpButton";
 import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
@@ -456,6 +457,7 @@ export default function Import() {
           <h1 className="font-display text-[17px] font-semibold tracking-tight">
             Importera manus
           </h1>
+          <div className="ml-auto"><HelpButton /></div>
         </header>
 
         <main className="max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
@@ -499,6 +501,7 @@ export default function Import() {
           <h1 className="font-display text-[17px] font-semibold tracking-tight">
             Importera manus · {store.mode === "moderator" ? "Panelsamtal" : "Tal"}
           </h1>
+          <div className="ml-auto"><HelpButton /></div>
         </header>
 
         <main className="max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
@@ -598,6 +601,7 @@ export default function Import() {
           {committing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Skapa manus
         </Button>
+        <HelpButton />
       </header>
 
       <main className="max-w-[900px] mx-auto px-6 sm:px-10 pt-8 pb-20 space-y-5">
