@@ -333,6 +333,7 @@ export default function Settings() {
         </section>
 
         <section className="flex flex-col gap-4">
+          <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>
           <p className="text-[14px] text-muted-foreground -mt-2">
             Återställ rundturerna om du vill se dem igen.
           </p>
