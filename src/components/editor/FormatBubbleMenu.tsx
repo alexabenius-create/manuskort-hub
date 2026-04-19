@@ -66,7 +66,6 @@ export function FormatBubbleMenu({ editor }: Props) {
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
     .panelistId ?? null;
-  const hasSelection = editor.state.selection.from !== editor.state.selection.to;
 
   return (
     <BubbleMenu
