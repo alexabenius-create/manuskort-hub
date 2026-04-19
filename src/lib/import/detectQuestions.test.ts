@@ -78,4 +78,41 @@ describe("annotateQuestionsInHtml", () => {
     const out = annotateQuestionsInHtml(html, panelists);
     expect(countSpans(out)).toBe(1);
   });
+
+  it("inkluderar hela meningen FÖRE namnet vid anrop på slutet", () => {
+    const html = "<p>Vad tycker du om det här, Anna?</p>";
+    const out = annotateQuestionsInHtml(html, panelists);
+    expect(countSpans(out)).toBe(1);
+    const content = spanContent(out);
+    expect(content).toContain("Vad tycker du om det här");
+    expect(content).toContain("Anna");
+    expect(content).toMatch(/\?$/);
+  });
+
+  it("börjar inte före föregående mening vid anrop på slutet", () => {
+    const html = "<p>Det är ett stort ämne. Vad säger du, Anna?</p>";
+    const out = annotateQuestionsInHtml(html, panelists);
+    expect(countSpans(out)).toBe(1);
+    const content = spanContent(out);
+    expect(content).toContain("Vad säger du");
+    expect(content).not.toContain("stort ämne");
+  });
+});
+
+describe("stripQuestionsForTempIds", () => {
+  it("unwrappar question-spans för givna tempIds", () => {
+    const html =
+      '<p><span data-question-to="tmp:Anders" data-question-name="Anders" data-panelist-color="#A8D8B9" class="question-to-mark">Anders, vad tycker du?</span></p>';
+    const out = stripQuestionsForTempIds(html, new Set(["tmp:Anders"]));
+    expect(out).not.toContain("data-question-to");
+    expect(out).not.toContain("question-to-mark");
+    expect(out).toContain("Anders, vad tycker du?");
+  });
+
+  it("lämnar spans för andra tempIds orörda", () => {
+    const html =
+      '<p><span data-question-to="tmp:Anna" data-question-name="Anna" data-panelist-color="#F6D976" class="question-to-mark">Anna?</span></p>';
+    const out = stripQuestionsForTempIds(html, new Set(["tmp:Anders"]));
+    expect(out).toContain("data-question-to");
+  });
 });
