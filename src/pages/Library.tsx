@@ -521,11 +521,19 @@ export default function Library() {
                 >
                   <div className="flex items-stretch">
                     {/* Checkbox-zon — alltid synlig på hover, alltid synlig i selection-mode */}
-                    <button
-                      type="button"
-                      onClick={() => toggleSelect(m.id)}
+                    <div
+                      onClick={(e) => { e.stopPropagation(); toggleSelect(m.id); }}
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === " " || e.key === "Enter") {
+                          e.preventDefault();
+                          toggleSelect(m.id);
+                        }
+                      }}
                       aria-label={isSelected ? "Avmarkera manus" : "Markera manus"}
-                      className={`flex items-center justify-center pl-5 pr-2 transition-opacity ${
+                      className={`flex items-center justify-center pl-5 pr-2 cursor-pointer transition-opacity ${
                         selectionMode || isSelected
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100 focus:opacity-100"
@@ -533,11 +541,11 @@ export default function Library() {
                     >
                       <Checkbox
                         checked={isSelected}
-                        onCheckedChange={() => toggleSelect(m.id)}
-                        className="h-5 w-5"
+                        className="h-5 w-5 pointer-events-none"
+                        tabIndex={-1}
                         aria-hidden
                       />
-                    </button>
+                    </div>
                     <button
                       onClick={() => {
                         if (selectionMode) {
