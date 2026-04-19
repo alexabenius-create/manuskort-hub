@@ -48,6 +48,7 @@ export default function EditorV3() {
   const editorRef = useRef<TiptapEditorType | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
+  const hydratedRef = useRef(false);
 
   // Admin-skydd
   useEffect(() => {
