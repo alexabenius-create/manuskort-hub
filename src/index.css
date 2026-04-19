@@ -279,6 +279,35 @@
   .ProseMirror .panelist-mark + .panelist-mark[data-panelist-id]::before {
     content: none;
   }
+
+  /* Fråga TILL en panelist — moderatorns text riktad till någon.
+     Visuellt: pil-prefix + färgad understruken text i panelistens färg.
+     Skiljs från panelist-mark (panelistens egen replik). */
+  .question-to-mark,
+  .ProseMirror .question-to-mark {
+    color: var(--question-fg, hsl(240 6% 20%));
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--question-accent, hsl(240 6% 50%));
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    padding: 0 2px;
+    border-radius: 4px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .question-to-mark::before,
+  .ProseMirror .question-to-mark::before {
+    content: "→ " attr(data-question-name) ": ";
+    font-size: 0.78em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    margin-right: 0.25em;
+    color: var(--question-fg, hsl(240 6% 20%));
+    opacity: 0.85;
+  }
 }
 
 @layer components {

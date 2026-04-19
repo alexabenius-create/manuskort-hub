@@ -1,7 +1,7 @@
 // Orkestrerar: ParsedBlock[] + valfri talar-detektering + strategi → PreviewCard[].
 
 import type { ParsedBlock } from "./parseDocument";
-import { detectSpeakers } from "./detectSpeakers";
+import { detectSpeakers, type SpeakerDetection } from "./detectSpeakers";
 import {
   splitByHeadings,
   splitByParagraph,
@@ -13,6 +13,8 @@ import {
 import type { HeadingMode } from "./sanitizeHtml";
 import { splitHtmlAtRow, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import { wordCount } from "@/lib/wordCount";
+import { annotateQuestionsInHtml, type KnownPanelist } from "./detectQuestions";
+import type { ImportMode } from "./importStore";
 
 export interface BuildOptions {
   blocks: ParsedBlock[];
@@ -21,6 +23,7 @@ export interface BuildOptions {
   textSize: TextSize;
   // Map: detekterat talar-namn → tempId (skapas av wizarden så den vet vilka som ska bli panelister)
   speakerTempIds: Map<string, string>;
+  mode?: ImportMode;
 }
 
 export function autoDetectStrategy(blocks: ParsedBlock[]): SplitStrategy {
@@ -31,7 +34,12 @@ export function autoDetectStrategy(blocks: ParsedBlock[]): SplitStrategy {
 }
 
 export function buildCards(opts: BuildOptions): PreviewCard[] {
-  const speakers = detectSpeakers(opts.blocks);
+  // Speaker-mode: hoppa över talar-detektering helt — det är ett soloföredrag.
+  const speakers: SpeakerDetection =
+    opts.mode === "speaker"
+      ? { names: [], blockSpeaker: new Map() }
+      : detectSpeakers(opts.blocks);
+
   const headingMode: HeadingMode = opts.strategy === "headings" ? "title" : "strong";
 
   const ctx = {
@@ -52,10 +60,32 @@ export function buildCards(opts: BuildOptions): PreviewCard[] {
     cards = splitByWordCount(opts.blocks, ctx, opts.wordsPerCard);
   else cards = splitByParagraph(opts.blocks, ctx);
 
+  // Moderator-mode: annotera frågor TILL panelister i kort-html.
+  if (opts.mode === "moderator" && speakers.names.length > 0) {
+    const known: KnownPanelist[] = speakers.names.map((name, i) => ({
+      tempId: opts.speakerTempIds.get(name) || `tmp:${name.replace(/\s+/g, "_")}`,
+      name,
+      // Färg matchas senare av wizarden — använd palett-position som default
+      color: PALETTE[i % PALETTE.length],
+    }));
+    cards = cards.map((c) => {
+      const annotated = annotateQuestionsInHtml(c.contentHtml, known);
+      return annotated === c.contentHtml ? c : { ...c, contentHtml: annotated };
+    });
+  }
+
   // Post-processing: säkerställ att inget kort överskrider radgränsen
   // för vald textstorlek. Splitta annars vid ord/meningsgräns.
   return enforceRowLimit(cards, opts.textSize);
 }
+
+// Liten lokal palett — matchar PANELIST_PALETTE i ordning så frågor får samma färg
+// som talaren när wizarden senare mappar dem.
+const PALETTE = [
+  "#F6D976", "#A8D8B9", "#A9C8F0", "#F4B6C2", "#C8B6E2",
+  "#F4C28C", "#9CD0CF", "#E2C9A0", "#D4B5E8", "#B5DDB0",
+];
+
 
 /**
  * Splittar varje kort som överskrider MAX_ROWS_BY_SIZE[textSize] i flera kort.
@@ -106,6 +136,7 @@ function enforceRowLimit(cards: PreviewCard[], textSize: TextSize): PreviewCard[
   return result;
 }
 
-export function detectedSpeakerNames(blocks: ParsedBlock[]): string[] {
+export function detectedSpeakerNames(blocks: ParsedBlock[], mode?: ImportMode): string[] {
+  if (mode === "speaker") return [];
   return detectSpeakers(blocks).names;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Mic, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
 import { SpeakerMappingPanel } from "@/components/import/SpeakerMappingPanel";
+import { ModeSelector } from "@/components/import/ModeSelector";
 import { SkippedContentPanel } from "@/components/import/SkippedContentPanel";
 import {
   detectFileKind,
@@ -38,7 +39,7 @@ export default function Import() {
   const { tier, loading: tierLoading } = useTier();
   const limits = LIMITS[tier];
   const store = useImportStore();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<0 | 1 | 2>(store.mode ? 1 : 0);
   const [parsing, setParsing] = useState(false);
   const [committing, setCommitting] = useState(false);
 
@@ -125,9 +126,10 @@ export default function Import() {
       wordsPerCard: store.wordsPerCard,
       textSize: store.textSize,
       speakerTempIds: tempIds,
+      mode: store.mode ?? "speaker",
     });
 
-    const detectedNames = detectedSpeakerNames(store.rawBlocks);
+    const detectedNames = detectedSpeakerNames(store.rawBlocks, store.mode ?? "speaker");
     const speakerMappings = detectedNames.map((name, i) => ({
       detectedName: name,
       tempId: tempIds.get(name) || `tmp:${name}`,
@@ -159,6 +161,7 @@ export default function Import() {
       wordsPerCard: store.wordsPerCard,
       textSize: store.textSize,
       speakerTempIds: tempIds,
+      mode: store.mode ?? "speaker",
     });
     store.setCards(cards);
     // Markera ej dirty efter omstart
@@ -284,7 +287,7 @@ export default function Import() {
 
     const manuscriptPayload = {
       title: store.title.trim() || "Importerat manus",
-      mode: "speaker",
+      mode: store.mode ?? "speaker",
       text_size: store.textSize,
       target_duration_seconds: store.targetSeconds || null,
       wpm: 140,
@@ -359,8 +362,8 @@ export default function Import() {
     );
   }
 
-  // ============== STEG 1 ==============
-  if (step === 1) {
+  // ============== STEG 0 — Mode-val ==============
+  if (step === 0) {
     return (
       <div className="min-h-screen">
         <SEO title="Importera – Manuskort" noindex nofollow />
@@ -370,6 +373,49 @@ export default function Import() {
           </Button>
           <h1 className="font-display text-[17px] font-semibold tracking-tight">
             Importera manus
+          </h1>
+        </header>
+
+        <main className="max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
+          <div className="mb-8">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
+              Vad ska du genomföra?
+            </h2>
+            <p className="text-muted-foreground text-[15px] mt-2">
+              Vi anpassar importen efter typ av tillfälle. Valet bestämmer hur vi
+              hanterar talare och frågor i texten.
+            </p>
+          </div>
+
+          <ModeSelector
+            value={store.mode}
+            onChange={(m) => {
+              store.setMode(m);
+              setStep(1);
+            }}
+          />
+
+          <div className="flex justify-end gap-3 mt-10">
+            <Button variant="ghost" onClick={cancel} className="rounded-full">
+              Avbryt
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ============== STEG 1 ==============
+  if (step === 1) {
+    return (
+      <div className="min-h-screen">
+        <SEO title="Importera – Manuskort" noindex nofollow />
+        <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setStep(0)} className="rounded-full">
+            <ArrowLeft className="h-4 w-4" /> Byt typ
+          </Button>
+          <h1 className="font-display text-[17px] font-semibold tracking-tight">
+            Importera manus · {store.mode === "moderator" ? "Panelsamtal" : "Tal"}
           </h1>
         </header>
 
@@ -473,7 +519,7 @@ export default function Import() {
       </header>
 
       <main className="max-w-[900px] mx-auto px-6 sm:px-10 pt-8 pb-20 space-y-5">
-        <SpeakerMappingPanel existing={[]} />
+        {store.mode === "moderator" && <SpeakerMappingPanel existing={[]} />}
 
         <SkippedContentPanel items={store.skippedItems} />
 
@@ -485,13 +531,14 @@ export default function Import() {
               index={i}
               total={store.cards.length}
               textSize={store.textSize}
+              speakers={store.speakers}
               onRename={(t) => updateCard(i, { title: t })}
+              onContentChange={(html) => updateCard(i, { contentHtml: html, wordCount: wordCount(html) })}
               onMergePrev={() => mergeWith(i, i - 1)}
               onMergeNext={() => mergeWith(i, i + 1)}
               onRemove={() => removeCard(i)}
               onMoveUp={() => move(i, -1)}
               onMoveDown={() => move(i, 1)}
-              onSplitAt={(p) => splitAt(i, p)}
             />
           ))}
         </div>

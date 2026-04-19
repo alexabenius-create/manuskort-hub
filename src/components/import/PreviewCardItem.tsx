@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, MoreHorizontal, Scissors, Trash2, ArrowUp, ArrowDown, Merge } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreHorizontal, Trash2, ArrowUp, ArrowDown, Merge } from "lucide-react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Highlight from "@tiptap/extension-highlight";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,19 +15,24 @@ import {
 import type { PreviewCard, TextSize } from "@/lib/import/splitStrategies";
 import { exceedsThreshold } from "@/lib/import/splitStrategies";
 import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wordCount";
+import { PanelistMark } from "@/lib/panelistMark";
+import { QuestionToMark } from "@/lib/questionToMark";
+import { PreviewBubbleMenu } from "./PreviewBubbleMenu";
+import type { SpeakerMapping } from "@/lib/import/importStore";
 
 interface Props {
   card: PreviewCard;
   index: number;
   total: number;
   textSize: TextSize;
+  speakers: SpeakerMapping[];
   onRename: (title: string) => void;
+  onContentChange: (html: string) => void;
   onMergePrev: () => void;
   onMergeNext: () => void;
   onRemove: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
-  onSplitAt: (paragraphIdx: number) => void;
 }
 
 export function PreviewCardItem({
@@ -31,18 +40,18 @@ export function PreviewCardItem({
   index,
   total,
   textSize,
+  speakers,
   onRename,
+  onContentChange,
   onMergePrev,
   onMergeNext,
   onRemove,
   onMoveUp,
   onMoveDown,
-  onSplitAt,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const seconds = estimateSeconds(card.wordCount, 140);
   const tooLong = exceedsThreshold(card, textSize);
-
   const preview = stripHtml(card.contentHtml).slice(0, 140);
 
   return (
@@ -112,26 +121,58 @@ export function PreviewCardItem({
       </div>
 
       {expanded && (
-        <div className="px-4 pb-4 pl-[60px] space-y-1 border-t border-border pt-3">
-          {card.paragraphsHtml.map((html, i) => (
-            <div key={i}>
-              <div
-                className="text-[14px] text-foreground leading-relaxed prose-sm"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-              {i < card.paragraphsHtml.length - 1 && (
-                <button
-                  type="button"
-                  onClick={() => onSplitAt(i + 1)}
-                  className="my-2 inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-accent-blue transition-colors"
-                >
-                  <Scissors className="h-3 w-3" /> Splitta här
-                </button>
-              )}
-            </div>
-          ))}
+        <div className="px-4 pb-4 pl-[60px] border-t border-border pt-3">
+          <ExpandedEditor
+            html={card.contentHtml}
+            speakers={speakers}
+            onChange={onContentChange}
+          />
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Markera text för att tilldela talare eller markera som fråga.
+          </p>
         </div>
       )}
     </div>
+  );
+}
+
+function ExpandedEditor({
+  html,
+  speakers,
+  onChange,
+}: {
+  html: string;
+  speakers: SpeakerMapping[];
+  onChange: (html: string) => void;
+}) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        codeBlock: false,
+        blockquote: false,
+        horizontalRule: false,
+      }),
+      Underline,
+      Highlight,
+      PanelistMark,
+      QuestionToMark,
+    ],
+    content: html || "",
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: "prose-sm max-w-none text-[14px] text-foreground leading-relaxed focus:outline-none",
+      },
+    },
+  });
+
+  return (
+    <>
+      <EditorContent editor={editor} />
+      <PreviewBubbleMenu editor={editor} speakers={speakers} />
+    </>
   );
 }
