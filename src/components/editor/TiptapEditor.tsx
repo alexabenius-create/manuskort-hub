@@ -85,8 +85,11 @@ export function TiptapEditor({
     content: value || "",
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
-      // Mät i nästa frame så DOM hinner uppdateras
-      requestAnimationFrame(() => measureAndReport(editor));
+      // Mät i nästa frame så DOM hinner uppdateras, kör sedan ev. auto-reflow
+      requestAnimationFrame(() => {
+        measureAndReport(editor);
+        maybeReflow(editor);
+      });
     },
     onCreate: ({ editor }) => {
       requestAnimationFrame(() => measureAndReport(editor));
