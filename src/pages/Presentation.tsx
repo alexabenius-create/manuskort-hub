@@ -129,7 +129,7 @@ export default function Presentation() {
   // Tidsmodul
   const targetSeconds = manuscript?.target_duration_seconds ?? 0;
   const timerMode = (manuscript?.time_format === "elapsed" ? "elapsed" : "clock") as "clock" | "elapsed";
-  const timerEnabled = !loading && !!manuscript && targetSeconds > 0 && startMode !== null;
+  const timerEnabled = !loading && !!manuscript && startMode !== null;
   const timer = usePresentationTimer({
     manuscriptId: id ?? "none",
     targetSeconds,
