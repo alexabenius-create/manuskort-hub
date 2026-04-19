@@ -50,7 +50,7 @@ export const MANUS_TOUR: TourDefinition = {
       target: '[data-tour="card.script"]',
       title: "Skriv ditt manus",
       body:
-        "Här skriver du det du faktiskt ska säga. Markera text för att formatera. Tryck snedstreck (/) där du vill lägga in en medveten paus.",
+        "Här skriver du det du faktiskt ska säga. Markera text för att formatera. Använd menyn för att lägga in en medveten paus.",
     },
     {
       target: '[data-tour="card.cues"]',
