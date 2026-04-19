@@ -48,15 +48,14 @@ export function PresentationFooter({
   total,
   hasPanicCards,
   onPanic,
-  elapsedSeconds,
-  cardStartedAtElapsedSeconds,
+  cardElapsedSeconds,
   cardTargetSeconds,
   timeFormat,
   sizeOffset,
   onSizeChange,
 }: Props) {
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
-  const cardElapsed = Math.max(0, elapsedSeconds - cardStartedAtElapsedSeconds);
+  const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
   const ratio = planned ? cardElapsed / planned : 0;
   const percent = Math.min(100, ratio * 100);
   const isOver = planned !== null && cardElapsed > planned;
