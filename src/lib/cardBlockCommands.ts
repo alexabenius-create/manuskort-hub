@@ -52,12 +52,16 @@ export function joinCardBackward(
 /**
  * Splitta aktuellt cardBlock vid caret. Nya kortet får cardId=null så
  * persist genererar ny rad. Caret hamnar i nya kortet.
+ *
+ * Implementation: vi bygger två nya cardBlock-noder från nuvarande innehåll,
+ * splittat vid caret-paragrafen, och ersätter originalet via replaceWith.
+ * Detta undviker `tr.split` + `defining: true`-konflikten.
  */
 export function splitCardBlock(
   state: EditorState,
   dispatch?: (tr: Transaction) => void,
 ): boolean {
-  const { selection, schema } = state;
+  const { selection, schema, doc } = state;
   if (!selection.empty) return false;
   const $from = selection.$from;
 
@@ -71,26 +75,55 @@ export function splitCardBlock(
   if (cardDepth < 0) return false;
 
   const cardBlockType = schema.nodes.cardBlock as NodeType | undefined;
-  if (!cardBlockType) return false;
+  const paragraphType = schema.nodes.paragraph as NodeType | undefined;
+  if (!cardBlockType || !paragraphType) return false;
+
+  const cardNode = $from.node(cardDepth);
+  const cardStart = $from.start(cardDepth); // pos efter cardBlock-öppning
+  const cardBefore = $from.before(cardDepth); // pos FÖR cardBlock
+  const cardAfter = cardBefore + cardNode.nodeSize;
+
+  // Index för paragrafen där caret står (relativt cardBlock)
+  const paraIndex = $from.index(cardDepth);
+  const paraNode = cardNode.child(paraIndex);
+  const paraOffsetInCard = (() => {
+    let off = 0;
+    for (let i = 0; i < paraIndex; i++) off += cardNode.child(i).nodeSize;
+    return off;
+  })();
+  const offsetInPara = $from.parentOffset; // 0..paraNode.content.size
+
+  // Bygg vänster och höger paragraf-innehåll genom att splitta paraNode.content
+  const leftParaContent = paraNode.content.cut(0, offsetInPara);
+  const rightParaContent = paraNode.content.cut(offsetInPara);
+
+  const leftPara = paragraphType.create(paraNode.attrs, leftParaContent, paraNode.marks);
+  const rightPara = paragraphType.create(paraNode.attrs, rightParaContent, paraNode.marks);
+
+  // Vänster cardBlock = paragrafer 0..paraIndex-1 + leftPara
+  const leftChildren: PMNode[] = [];
+  for (let i = 0; i < paraIndex; i++) leftChildren.push(cardNode.child(i));
+  leftChildren.push(leftPara);
+
+  // Höger cardBlock = rightPara + paragrafer paraIndex+1..end
+  const rightChildren: PMNode[] = [rightPara];
+  for (let i = paraIndex + 1; i < cardNode.childCount; i++) {
+    rightChildren.push(cardNode.child(i));
+  }
+
+  const leftCard = cardBlockType.create(cardNode.attrs, leftChildren, cardNode.marks);
+  const rightCard = cardBlockType.create(
+    { ...cardNode.attrs, cardId: null },
+    rightChildren,
+    cardNode.marks,
+  );
 
   if (dispatch) {
-    const newAttrs = {
-      ...$from.node(cardDepth).attrs,
-      cardId: null,
-    };
-    // Antal nivåer att splittra. cardDepth = depth där cardBlock ligger.
-    // Vi vill splittra ända upp till och MED cardBlock, så split-djup =
-    // ($from.depth - cardDepth + 1). Men `tr.split(pos, depth, typesAfter)`
-    // tolkar `depth` som antal omslag som ska splittas; för varje nivå kan
-    // vi specificera vilken nodtyp den högra halvan ska få. Index 0 i
-    // typesAfter motsvarar den INNERSTA nivån, index N-1 den yttersta.
-    // Vi vill att den YTTERSTA (cardBlock) ska få nya attrs; inre nivåer
-    // får ärva default (paragraph etc.).
-    const splitDepth = $from.depth - cardDepth + 1;
-    const typesAfter: ({ type: NodeType; attrs?: Record<string, unknown> } | null)[] = [];
-    for (let i = 0; i < splitDepth - 1; i++) typesAfter.push(null);
-    typesAfter.push({ type: cardBlockType, attrs: newAttrs });
-    const tr = state.tr.split($from.pos, splitDepth, typesAfter);
+    const tr = state.tr.replaceWith(cardBefore, cardAfter, [leftCard, rightCard]);
+    // Caret i början av höger cardBlock → första paragrafens start
+    // Position: cardBefore + leftCard.nodeSize + 1 (öppning av rightCard) + 1 (öppning av paragraph)
+    const caretPos = cardBefore + leftCard.nodeSize + 2;
+    tr.setSelection(TextSelection.create(tr.doc, caretPos));
     dispatch(tr.scrollIntoView());
   }
   return true;
