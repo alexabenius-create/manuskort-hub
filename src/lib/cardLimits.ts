@@ -145,7 +145,7 @@ export function splitHtmlAtRow(
 
     for (let i = 0; i < blocks.length; i++) {
       const candidate = [...fitBlocks, blocks[i]];
-      measurer.innerHTML = candidate.map((b) => b.outerHTML).join("");
+      measurer.innerHTML = normalizeForMeasurement(candidate.map((b) => b.outerHTML).join(""));
       const rows = countVisualRows(measurer);
       if (rows <= maxRows) {
         fitBlocks.push(blocks[i]);
