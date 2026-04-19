@@ -47,6 +47,7 @@ export default function Presentation() {
   const [speedFactor, setSpeedFactor] = useState(1.0);
   const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [overdueDismissedIds, setOverdueDismissedIds] = useState<Set<string>>(new Set());
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
