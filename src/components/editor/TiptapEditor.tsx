@@ -9,7 +9,7 @@ import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
-import { countPresentationRows } from "@/lib/cardLimits";
+import { countPresentationRows, splitHtmlAtRow, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 
 export interface SelectionState {
