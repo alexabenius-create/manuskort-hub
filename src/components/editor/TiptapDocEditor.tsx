@@ -7,7 +7,7 @@ import Link from "@tiptap/extension-link";
 import Blockquote from "@tiptap/extension-blockquote";
 import { useEffect } from "react";
 import { keymap } from "prosemirror-keymap";
-import { Extension } from "@tiptap/core";
+import { Extension, Node } from "@tiptap/core";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
@@ -30,20 +30,13 @@ const sizeClass = {
 };
 
 /**
- * Sätter top-level schema till `cardBlock+` så dokumentet ALLTID består av
- * en sekvens av kort. Standard StarterKit har `block+` på doc — vi ersätter.
+ * Custom Document-nod som kräver `cardBlock+` på top-level.
+ * Ersätter StarterKits standard Document.
  */
-const CardBlockDoc = Extension.create({
-  name: "cardBlockDoc",
-  addExtensions() {
-    return [];
-  },
-  extendNodeSchema(extension) {
-    if (extension.name === "doc") {
-      return { content: "cardBlock+" };
-    }
-    return {};
-  },
+const CardBlockDocument = Node.create({
+  name: "doc",
+  topNode: true,
+  content: "cardBlock+",
 });
 
 /** Backspace-handler som joinar kort när caret står vid kort-start. */
@@ -67,7 +60,7 @@ export function TiptapDocEditor({
 }: Props) {
   const editor = useEditor({
     extensions: [
-      CardBlockDoc,
+      CardBlockDocument,
       CardBlock,
       CardBlockKeymap,
       StarterKit.configure({
