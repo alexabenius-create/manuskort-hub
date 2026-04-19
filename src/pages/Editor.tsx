@@ -198,20 +198,25 @@ export default function Editor() {
     };
   }, [overflowingCardIds]);
 
-  // Cmd/Ctrl+F öppnar Hitta & ersätt
+  // Cmd/Ctrl+F öppnar Hitta & ersätt, Cmd/Ctrl+Enter startar presentation
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === "f" || e.key === "F")) {
         const target = e.target as HTMLElement | null;
-        // Tillåt inte i input/textarea där användaren kanske vill söka i webbläsaren
         if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
         e.preventDefault();
         setFindReplaceOpen(true);
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        startPresentationRef.current?.();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Ref till startfunktionen så keyboard-handlern alltid har senaste closure
+  const startPresentationRef = useRef<(() => void) | null>(null);
 
   // Trigger manus-rundturen när exempelmanuset är öppnat och korten är renderade
   const isExampleManuscript = !!manuscript && (manuscript.tags ?? []).includes(EXAMPLE_TAG);
