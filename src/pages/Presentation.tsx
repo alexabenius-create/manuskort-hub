@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { usePresentationTimer } from "@/hooks/usePresentationTimer";
+import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
@@ -347,26 +348,14 @@ export default function Presentation() {
   // Tap på desktop med klick på huvudytan — bara om INTE på interaktiv zon
   // (vi använder bara touch-handlers; mus-klick går via knapparna)
 
-  // Per-kort start-elapsed: summera planerade tider för tidigare kort.
-  // Prioritet: target_seconds > start/end-diff.
-  const cardStartedAtElapsed = useMemo(() => {
-    let sum = 0;
-    for (let i = 0; i < currentIndex; i++) {
-      const c = cards[i];
-      if (typeof c.target_seconds === "number" && c.target_seconds > 0) {
-        sum += c.target_seconds;
-        continue;
-      }
-      const start = c.start_time;
-      const end = c.end_time;
-      if (start && end) {
-        const toSec = (s: string) => s.split(":").reduce((a, p) => a * 60 + parseInt(p, 10), 0);
-        const diff = toSec(end) - toSec(start);
-        if (diff > 0) sum += diff;
-      }
-    }
-    return sum;
-  }, [cards, currentIndex]);
+  // Per-kort faktisk tid — ackumuleras när man bläddrar mellan kort.
+  const currentCardId = cards[currentIndex]?.id;
+  const cardTimers = useCardTimers(
+    currentCardId,
+    timerEnabled && timer.countdown === 0,
+    timer.isPaused,
+  );
+  const cardElapsedSeconds = cardTimers.getCardElapsed(currentCardId);
 
   if (loading || !manuscript) {
     return (
@@ -471,8 +460,7 @@ export default function Presentation() {
           total={cards.length}
           hasPanicCards={hasPanicCards}
           onPanic={handlePanic}
-          elapsedSeconds={timer.elapsedSeconds}
-          cardStartedAtElapsedSeconds={cardStartedAtElapsed}
+          cardElapsedSeconds={cardElapsedSeconds}
           cardTargetSeconds={current.target_seconds ?? null}
           timeFormat={timerMode}
           sizeOffset={sizeOffset}

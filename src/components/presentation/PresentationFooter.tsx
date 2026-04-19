@@ -13,10 +13,8 @@ interface Props {
   total: number;
   hasPanicCards: boolean;
   onPanic: () => void;
-  /** Sekunder förflutna sen presentationsstart. */
-  elapsedSeconds: number;
-  /** Sekunder presentationen pågått som inte hör till detta kort. */
-  cardStartedAtElapsedSeconds: number;
+  /** Faktiskt spenderad tid på detta kort i sekunder. */
+  cardElapsedSeconds: number;
   /** Måltid för aktuellt kort (manuellt satt). Fallback till start/end-diff. */
   cardTargetSeconds: number | null;
   timeFormat: "clock" | "elapsed";
@@ -50,15 +48,14 @@ export function PresentationFooter({
   total,
   hasPanicCards,
   onPanic,
-  elapsedSeconds,
-  cardStartedAtElapsedSeconds,
+  cardElapsedSeconds,
   cardTargetSeconds,
   timeFormat,
   sizeOffset,
   onSizeChange,
 }: Props) {
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
-  const cardElapsed = Math.max(0, elapsedSeconds - cardStartedAtElapsedSeconds);
+  const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
   const ratio = planned ? cardElapsed / planned : 0;
   const percent = Math.min(100, ratio * 100);
   const isOver = planned !== null && cardElapsed > planned;
