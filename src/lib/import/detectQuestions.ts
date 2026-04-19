@@ -296,5 +296,39 @@ export function recolorQuestionsInHtml(
   return changed ? root.innerHTML : html;
 }
 
+/**
+ * Tar bort question-spans för givna tempIds (panelist-IDs) genom att
+ * unwrappa dem till plain text. Används när användaren markerar en
+ * "talare" som "ignore" i wizarden — frågorna ska då inte färgkodas.
+ */
+export function stripQuestionsForTempIds(
+  html: string,
+  tempIds: Set<string>,
+): string {
+  if (tempIds.size === 0 || typeof document === "undefined") return html;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div id="r">${html}</div>`, "text/html");
+  const root = doc.getElementById("r");
+  if (!root) return html;
+
+  let changed = false;
+  const spans = Array.from(
+    root.querySelectorAll("span[data-question-to], span[data-panelist-id]"),
+  );
+  for (const el of spans) {
+    const tid =
+      el.getAttribute("data-question-to") || el.getAttribute("data-panelist-id");
+    if (!tid || !tempIds.has(tid)) continue;
+    // Unwrap: ersätt span med dess text-noder
+    const parent = el.parentNode;
+    if (!parent) continue;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
+    changed = true;
+  }
+  return changed ? root.innerHTML : html;
+}
+
 // Bakåtkompatibel typ-export
 export type { ParsedBlock };
