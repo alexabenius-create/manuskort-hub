@@ -183,5 +183,8 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
     }
   }
 
+  // 5) Smart quotes / typografiska tecken på alla text-noder
+  applySmartQuotesInPlace(out);
+
   return out.innerHTML.trim();
 }
