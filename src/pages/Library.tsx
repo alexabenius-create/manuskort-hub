@@ -50,6 +50,11 @@ export default function Library() {
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
+  // Multi-select för bulk-radering
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   const atManuscriptLimit = items.length >= limits.manuscripts;
 
   const requestNew = () => {
