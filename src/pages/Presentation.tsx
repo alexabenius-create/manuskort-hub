@@ -472,6 +472,14 @@ export default function Presentation() {
           onPanic={handlePanic}
           cardElapsedSeconds={cardElapsedSeconds}
           cardTargetSeconds={current.target_seconds ?? null}
+          isOverdueDismissed={overdueDismissedIds.has(current.id)}
+          onDismissOverdue={() =>
+            setOverdueDismissedIds((prev) => {
+              const next = new Set(prev);
+              next.add(current.id);
+              return next;
+            })
+          }
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
