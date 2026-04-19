@@ -103,12 +103,18 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
       const attrs = Array.from(node.attributes).map((a) => a.name);
       for (const name of attrs) {
         if (tag === "A" && name === "href") {
-          // Validera URL-schema: tillåt endast http(s), mailto, ankare och relativa länkar.
-          // Blockerar javascript:, data:, vbscript: m.fl. för att förhindra self-XSS.
           const href = node.getAttribute("href") || "";
           if (!/^(https?:\/\/|mailto:|#|\/)/i.test(href.trim())) {
             node.removeAttribute("href");
           }
+          continue;
+        }
+        // Behåll <ol start="N" type="..."> så numrerade listor börjar rätt.
+        if (tag === "OL" && (name === "start" || name === "type")) {
+          continue;
+        }
+        // Behåll listnivå på <li> (data-list-level) för indrag av nested listor.
+        if (tag === "LI" && name === "data-list-level") {
           continue;
         }
         if (
@@ -120,7 +126,6 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
             name === "data-question-name" ||
             name === "style")
         ) {
-          // Behåll panelist/question-attribut; style hanteras nedan (vi tar bort om inte specialspan)
           if (
             name === "style" &&
             !node.hasAttribute("data-panelist-id") &&
