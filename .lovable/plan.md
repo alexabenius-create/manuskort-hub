@@ -1,55 +1,89 @@
 
 
-## Diagnos
+## Plan: v3 → NodeView-arkitektur (Fas 1)
 
-V3 är fundamentalt fel byggd. Tre problem:
+### Mål
+Byt ut hela v3:s overlay/decoration-strategi mot riktiga ProseMirror-noder med NodeViews. Återanvänd `/manus/:id/v3`. Minimal men visuellt komplett v1-paritet vid laddning av befintliga manus.
 
-1. **Kan inte redigera**: Chrome-ramen ligger `absolute` ovanpå editorn med `bg-surface/40`. Även med `pointer-events: none` på containern fångar topp-meta och bottenrad (`pointer-events-auto`) en stor del av kort-ytan → klick på text träffar chrome istället för editorn. Dessutom har ramen en bakgrundsfärg som täcker texten visuellt.
+### Arkitektur
 
-2. **Textöverlapp**: Chrome ritas ovanpå texten istället för **runt** den. Editorn vet inget om att det ska finnas tomrum vid varje sidbrytning där meta/notes/cues ska få plats.
+**Schema:**
+- Ny nod `cardBlock` (`group: "block"`, `content: "block+"`, `defining: true`) med attrs: `cardId`, `notes`, `cues`, `targetSeconds`, `targetSecondsIsManual`, `role`, `isPanic`, `startTime`, `endTime`, `title`
+- Dokumentets top-level: `cardBlock+`
 
-3. **Fel mental modell**: V3 försökte vara "v2 + overlay-chrome". Men du ville ha **v1:s layout** (kort som boxar staplade på varandra, med luft mellan, chrome i kanten av varje box) **med v2:s sömlösa textmotor**.
+**NodeView (`CardBlockNodeView`):**
+- `dom` = wrapper-`<article>` med v1:s box-styling (rundade hörn, `bg-surface`, border, shadow)
+- Header (utanför `contentDOM`): kort-nummer, drag-handle, ord-räknare, varaktighet, more-menu-stub
+- `contentDOM` = `<div>` där ProseMirror renderar kortets innehåll (paragraphs etc.)
+- Footer (utanför `contentDOM`): read-only chips för cues + read-only notes-text om finns
+- `update()` re-renderar header/footer när attrs ändras
 
-## Rätt approach: spacer-decorations
+**Persistens:**
+- `cardsToDoc(rows)`: bygger `cardBlock`-noder från DB-rader, parsar varje rads `content_html` via TipTap HTML-parser
+- `docToCards(doc)`: itererar top-level `cardBlock`-noder, extraherar attrs + serialiserar content till HTML, mappar 1:1 mot `cards`-tabellen
+- Ingen mätning, ingen fragment-logik, ingen `planCardSync`
 
-Bygg om `EditorV3` så texten **flyter genom riktiga kort-boxar** istället för att chrome läggs ovanpå:
+**Backspace vid kort-start:**
+- Explicit `joinCardBackward`-kommando: vid `$from.parentOffset === 0` → join med föregående `cardBlock`. Vid första kortet → konsumera händelsen utan ändring.
 
-```text
-┌─ Kort 01 ──────────────[meta]──┐
-│ Lorem ipsum dolor sit amet     │  ← editor-text (DEL 1)
-│ consectetur adipiscing elit    │
-│ [anteckning] [cues]            │
-└────────────────────────────────┘
-   ↓ luft (gap, ej editerbar)
-┌─ Kort 02 ──────────────[meta]──┐
-│ Sed do eiusmod tempor incidi…  │  ← editor-text (DEL 2)
-└────────────────────────────────┘
-```
+### Filer
 
-### Hur det löses tekniskt
+**Nya:**
+- `src/lib/cardBlockNode.ts` — schema-definition för `cardBlock`-nod
+- `src/components/editor/CardBlockNodeView.ts` — NodeView-klass (header + contentDOM + footer)
+- `src/lib/cardBlockCommands.ts` — `joinCardBackward` + helpers
+- `src/lib/cardDocSerialize.ts` — `cardsToDoc` / `docToCards`
 
-**En enda Tiptap-instans** men vid varje virtuell sidbrytning injiceras en **ProseMirror-decoration** (widget) som är ett tomt block med exakt höjd = `chrome_botten + gap + chrome_topp + meta_höjd`. Decorations är **inte del av dokumentet** → caret hoppar över dem automatiskt, ProseMirror räknar dem inte i textflödet. Texten "delas" visuellt utan att vi rör innehållet.
+**Skrivs om:**
+- `src/pages/EditorV3.tsx` — laddar manus → `cardsToDoc` → renderar editor; vid spara → `docToCards` → diff mot DB
+- `src/components/editor/TiptapDocEditor.tsx` — registrerar `cardBlock`-nod + NodeView, tar bort `frameBreaks`-prop
 
-Chrome-boxarna ritas absolut-positionerade per sidbrytning, men **bara meta-raden överst och notes/cues-raden underst** — själva text-zonen mitt i är helt tom (ingen bakgrund, inga pointer-events). Texten i editorn syns rakt igenom.
+**Tas bort (efter Fas 1 verifierad):**
+- `src/lib/docFrameDecorations.ts`
+- `src/components/editor/CardChromeFrame.tsx`
+- `src/lib/docSplit.ts` (`splitDocToCards`, `joinCardsToDoc`, `planCardSync`)
 
-## Konkreta ändringar
+**Orörda:**
+- v1 (`Editor.tsx`) — produktionsversion, ingen ändring
+- v2 (`EditorV2.tsx`) — behålls som referens till Fas 2 är klar
+- `cards`-tabellen — schema oförändrat, persistens 1:1
 
-| Fil | Ändring |
-|-----|---------|
-| `src/lib/docFrameDecorations.ts` | **Ny** — Tiptap-extension som lägger widget-decoration vid varje sidbrytnings-position med konfigurerbar höjd |
-| `src/components/editor/TiptapDocEditor.tsx` | Lägg till prop `breakOffsets: number[]` + `gapHeight: number` som driver decorations |
-| `src/components/editor/CardChromeFrame.tsx` | Ta bort bg-färg på själva ram-containern. Behåll bara meta-rad (top) och notes/cues-rad (bottom) som riktiga DOM-element. Mitten ska vara helt transparent och `pointer-events-none`. Border ritas runt **hela** ramen visuellt men **bryter** för text-zonen (eller använd en outline som inte stör). |
-| `src/pages/EditorV3.tsx` | Beräkna text-offsets för sidbrytningar (inte Y-pixlar). Skicka offsets till editorn för decorations. Skicka meta-höjd + footer-höjd så decorations kan reservera rätt höjd för chromen. |
+### Fas 1-omfång (enligt din precisering)
 
-### Detaljer
+**Med:**
+- Full header (nummer, drag-handle visuellt, ord, varaktighet, more-menu-knapp)
+- Content-area med fungerande Tiptap
+- Read-only footer med cue-chips + notes-text
+- Enter/Backspace/paste mellan kort fungerar
+- Persistens cardsToDoc ↔ docToCards
+- Explicit `joinCardBackward`
 
-- **Sidbrytnings-offsets**: använd `splitDocToCards` för att räkna fram fragment, mät text-längd per fragment, och konvertera till ProseMirror-positioner via `editor.state.doc.resolve()`-walk (text-offset → doc-pos).
-- **Decoration-höjd**: ~28px för meta-topp + ~32px för notes/cues-bottten + 16px gap = ~76px reserverad luft mellan kort.
-- **Klick-zoner**: chrome har `pointer-events: none` överallt utom på `<button>`, `<input>`, `<textarea>`, dropdown-triggers (de får `pointer-events: auto` individuellt).
-- **Editor-bakgrund**: behålls transparent. Kort-boxens bakgrund ritas av chrome-frame, men bara som tunn border + topp/botten-band — inte över text.
+**Utan (skjuts till Fas 2):**
+- Cue-editor, notes-editor, panelist-roll, target-tid, panic, "+"-knapp, Cmd+Enter-split, smart paste, drag-omordning
 
-## Frågor
+### Verifieringsscenarier (Fas 1)
 
-1. **Drag/omordning**: håll inaktiverat i denna iteration också, eller ska jag lägga in "flytta upp/ner"-knappar i more-menu redan nu?
-2. **Notes-placering**: i v1 ligger notes som sidokolumn (höger om texten). I v3 lägger jag dem under texten inom samma kort-box (enklare med decorations). OK?
+1. Öppna existerande manus med 5+ kort → alla renderas som v1-boxar med chrome
+2. Klicka mitt i ett kort → caret hamnar där, går att skriva
+3. Enter mitt i kort → ny paragraph inom samma kort
+4. Backspace vid första tecknet i kort 2 → joinar till kort 1
+5. Backspace vid första tecknet i kort 1 → ingen ändring, ingen krasch
+6. Paste lång text → hamnar i aktuellt kort som paragraphs
+7. Spara → DB-rader uppdaterade korrekt, antal kort kan ändras
+8. Reload → samma struktur tillbaka
+9. Cues/notes från DB visas i footer
+10. Undo/redo över kortgränser: skriv i kort 1, skriv i kort 2, Cmd+Z×N → rullar tillbaka utan caret-jump; Cmd+Shift+Z → rullar fram
+
+### Risker att hantera
+
+- **Schema-migration**: testa mot ≥10 riktiga manus inkl. tomma kort, whitespace-only, kort med PanelistMark/PauseMarkNode
+- **`defining: true`**: kan göra `tr.split` skum vid kanter — håll splits till Fas 2
+- **NodeView-uppdatering**: vid attr-ändring måste `update()` returnera `true` och re-rendera header/footer utan att röra `contentDOM`
+- **Drag-handle visuellt men inaktiv i Fas 1** — markera som disabled så ingen tror den fungerar
+
+### Frågor
+
+1. **NodeView som vanilla TS-klass eller via `ReactNodeViewRenderer`?** Vanilla = lättare, mindre overhead, ingen React-context inuti chrome. React = enklare att återanvända befintliga UI-komponenter (Button, DropdownMenu). Mitt förslag: **vanilla TS** i Fas 1 för tydlighet, byt till React i Fas 2 när vi behöver popovers/dropdowns för cue-editor.
+
+2. **DB-skrivstrategi vid spara**: behåll nuvarande diff-baserade approach (jämför positions, update/insert/delete) eller "delete all + insert all" per spara? Mitt förslag: **diff-baserad** så `cardId` (= row id) bevaras → undviker att förlora referenser och minskar realtime-trafik.
 
