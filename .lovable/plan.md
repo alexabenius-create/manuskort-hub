@@ -1,51 +1,37 @@
 
 
-## Fyra konkreta fixar
+## Diagnos
 
-### 1. Ta bort pil-prefixet `→ Namn`
-- `src/index.css` rad 297–308: ta bort hela `.question-to-mark[data-question-name]::before`-blocket.
-- Frågorna behåller färg/bakgrund/understruken accent, men utan textuellt prefix.
+På skärmbilden ser jag att:
+- Översta meningen ("Anna, om vi börjar...") är klippt halvvägs
+- Nedersta meningen ("som krävs, Anna?") är klippt halvvägs
+- Mittenscrollbaren visar att innehållet är scrollbart, men användaren ser ingen tydlig signal — och i presentationsläge ska man inte behöva scrolla
 
-### 2. Ignorerade "talare" ska inte färgkodas
-Idag rensas `data-panelist-id` för ignorerade talare i `commit()`, men `data-question-to`-spans (där samma tempId används i moderator-mode för frågor) behålls med färg och bubble.
+Roten: `PresentationCard` rad 136–142 har `overflow-y-auto` på textcontainern. När innehållet är längre än kortet visas en del av första/sista raden men resten klipps. Question-marks och panelist-marks med padding/border ökar också radhöjden så längre kort lätt blir för höga.
 
-**Fix i `src/pages/Import.tsx`**:
-- I `useEffect` som re-färgar (rad 74–93): bygg upp ett `Set<string>` av tempIds där `action === "ignore"` och **strippa** `data-question-to`/`data-panelist-color`/`style`/`class="question-to-mark"` från dessa spans (gör dem till plain text).
-- I `commit()` (rad 298–317): gör samma stripp även för `data-question-to`-spans, så att ignorerade frågor inte sparas med färg.
-- Ny helper i `src/lib/import/detectQuestions.ts`: `stripQuestionsForTempIds(html, tempIds: Set<string>): string` som DOM-walkar och unwrappar matchande spans.
+## Lösning: auto-fit textstorlek (rekommenderat)
 
-### 3. Fånga hela frågan, inte bara namnet
-Nuvarande matchning i `detectQuestions.ts`:
-- **Mönster 2** ("..., Anna?") markerar bara `, Anna?` — frågan före namnet ignoreras.
-- **Mönster 1a** markerar tilltalet + ev. frågesats efter, men bara om frågan kommer efter namnet.
+Istället för att förstora svarta rutan (som inte hjälper på små skärmar/projektorer), gör vi att texten **automatiskt krymper** så hela kortet alltid syns utan scroll. Detta är standardpraxis i teleprompter/presentations-appar.
 
-**Förbättring**:
-- **Mönster 2 (utvidgat)**: när vi hittar `,\s*Namn\s*[?!]`, gå bakåt från komma till föregående mening-slut (`.!?…` eller textstart) och inkludera hela meningen i markeringen. Då blir hela "Vad tycker du om det här, Anna?" markerad.
-- **Mönster 1a (oförändrat)**: täcker redan "Anna, vad tycker du?".
-- **Mönster 1b (oförändrat)**: täcker "Anna, låt oss zooma in. Vad är viktigast?".
-- **Test-tillägg** i `detectQuestions.test.ts`: verifiera att hela meningen markeras i båda riktningar.
+**Implementering i `PresentationCard.tsx`**:
+1. Mät containerhöjd och artikelhöjd med `ResizeObserver` + `useLayoutEffect`.
+2. Om `articleHeight > containerHeight`, skala ned `fontSize` iterativt (steg om 1px) tills det får plats, ner till ett golv på `BASE_SIZE - 8` (≈ 16–22px beroende på textSize).
+3. Om det fortfarande inte ryms vid golvet → behåll scroll men lägg på en subtil **fade-mask** (top + bottom gradient) så användaren ser att det finns mer text.
+4. När `card.id` eller `sizeOffset` ändras: återställ till önskad storlek och mät om.
 
-### 4. Måltid — input går inte att redigera
-**Bug**: I `SettingsForm.tsx` rad 103–111 är inputen *controlled* med `formatMmSs(targetSeconds)`, men `onChange` parsar bara om värdet matchar `^\d{1,3}:\d{1,2}$` exakt. Mellan tangenttryck (t.ex. när användaren skriver `1`, `12`, `12:`, `12:0`) failar parse → state uppdateras inte → input visar fortfarande gamla värdet → markör hoppar tillbaka.
-
-**Fix**: gör inputen *uncontrolled draft state*:
-- Lägg `const [draftTime, setDraftTime] = useState(formatMmSs(targetSeconds))`.
-- Synka `draftTime` via `useEffect` när `targetSeconds` ändras externt (t.ex. från preset-knapp).
-- `onChange={(e) => setDraftTime(e.target.value)}` — uppdatera fritt.
-- `onBlur` + `onKeyDown` (Enter): parsa och commit `setTargetSeconds(parsed)`. Om ogiltig: återställ `draftTime` till `formatMmSs(targetSeconds)`.
-- Ge fältet `inputMode="numeric"` och `pattern="\d{1,3}:\d{2}"` för bättre mobilkeyboard.
-
----
+**Bonusfixar i samma pass**:
+- Minska `py-4` på rad 110 till `py-2` så kortet får mer vertikalt utrymme.
+- Sänk `padding` på question-marks i `index.css` från `1px 6px` till `0px 4px` (eller använd negativ vertikal margin) så de inte ökar radhöjden lika mycket — frågorna är ändå tydliga via färg + understruken accent.
+- Justera `lineHeight` från `1.7` till `1.55` när auto-fit har trippats (tätare textsättning vid mindre fontstorlek).
 
 ## Filer som ändras
-- `src/index.css` — ta bort pil-pseudo-element
-- `src/pages/Import.tsx` — strippa ignorerade frågor (useEffect + commit)
-- `src/lib/import/detectQuestions.ts` — utvidga mönster 2 till hel mening + ny `stripQuestionsForTempIds`-helper
-- `src/lib/import/detectQuestions.test.ts` — nya tester för "hel mening före namn" och stripp
-- `src/components/import/SettingsForm.tsx` — draft state för måltid-input
+- `src/components/presentation/PresentationCard.tsx` — auto-fit hook + fade-mask
+- `src/index.css` — minska padding på `.question-to-mark` (rad 286–296)
 
-## Ordning
-1. Måltid-bugg (snabbast, isolerad)
-2. Ta bort pil + utvidga frågedetektering
-3. Strippa ignorerade frågor (kräver helper i detectQuestions + två platser i Import.tsx)
+## Alternativ (om du föredrar)
+- **A. Auto-fit** (ovan) — alltid hel text synlig, ingen scroll
+- **B. Förstora svarta rutan** — minska `pt-44 pb-44` till `pt-24 pb-24` i `Presentation.tsx` rad 290; ger ~40% mer höjd men fungerar bara för medelstora kort
+- **C. Kombinerat** — mindre padding på rutan + auto-fit som säkerhet
+
+Mitt förslag: **C** (kombinerat). Snabb visuell vinst + robust fallback.
 
