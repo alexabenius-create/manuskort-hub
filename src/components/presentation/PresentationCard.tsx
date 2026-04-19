@@ -227,7 +227,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       >
         <article
           ref={articleRef}
-          className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
+          className="presentation-prose max-w-[75ch] mx-auto font-display text-zinc-100"
           style={{ fontSize: `${fontSize}px`, lineHeight }}
           dangerouslySetInnerHTML={{ __html: html }}
         />

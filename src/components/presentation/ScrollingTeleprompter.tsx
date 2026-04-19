@@ -322,7 +322,7 @@ export function ScrollingTeleprompter({
             />
           ) : (
             <article
-              className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
+              className="presentation-prose max-w-[75ch] mx-auto font-display text-zinc-100"
               style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
               dangerouslySetInnerHTML={{ __html: merged.html }}
             />
@@ -378,7 +378,7 @@ function SentenceRenderer({ sentences, fontSize, focusLineY, offsetRef }: Senten
   return (
     <article
       ref={containerRef}
-      className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
+      className="presentation-prose max-w-[75ch] mx-auto font-display text-zinc-100"
       style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
     >
       {sentences.map((s, i) => (

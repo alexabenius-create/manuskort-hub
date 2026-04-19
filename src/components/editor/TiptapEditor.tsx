@@ -32,13 +32,13 @@ interface Props {
   onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
 }
 
-// Editorns textruta speglar presentationsgeometrin (60ch, font-display,
+// Editorns textruta speglar presentationsgeometrin (75ch, font-display,
 // line-height 1.7). Då matchar "X rader" exakt det presentationsläget visar.
 // Värden här ska följa PRESENTATION_GEOMETRY i src/lib/cardLimits.ts.
 const sizeClass = {
-  sm: "font-display text-[24px] leading-[1.7] max-w-[60ch] min-h-[90px]",
-  md: "font-display text-[30px] leading-[1.7] max-w-[60ch] min-h-[120px]",
-  lg: "font-display text-[38px] leading-[1.7] max-w-[60ch] min-h-[150px]",
+  sm: "font-display text-[24px] leading-[1.7] max-w-[75ch] min-h-[90px]",
+  md: "font-display text-[30px] leading-[1.7] max-w-[75ch] min-h-[120px]",
+  lg: "font-display text-[38px] leading-[1.7] max-w-[75ch] min-h-[150px]",
 };
 
 export function TiptapEditor({
