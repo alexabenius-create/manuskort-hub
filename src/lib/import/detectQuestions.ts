@@ -88,14 +88,25 @@ function findMatches(text: string, panelists: KnownPanelist[]): Match[] {
     }
 
     // 2. Anrop på slutet: "..., Anna?" / "..., Anna!"
+    //    Utvidgning: gå bakåt till föregående mening-slut så hela frågan
+    //    inkluderas, t.ex. "Vad tycker du om det här, Anna?".
     {
       const re = new RegExp(`(,\\s*)(${name})(\\s*[?!])`, "gu");
       let m: RegExpExecArray | null;
       while ((m = re.exec(text)) !== null) {
-        // Markera ", Anna?" inkl komma och frågetecken
+        const matchEnd = m.index + m[0].length;
+        // Sök bakåt från m.index efter senaste mening-slut (.!?…) följt av space
+        let sentStart = 0;
+        const before = text.slice(0, m.index);
+        const sentBreak = before.match(/[.!?…]\s+(?=\S)(?=[^]*$)/);
+        if (sentBreak && sentBreak.index !== undefined) {
+          sentStart = sentBreak.index + sentBreak[0].length;
+        }
+        // Säkerhetsspärr: max 300 tecken bakåt
+        if (m.index - sentStart > 300) sentStart = m.index;
         matches.push({
-          start: m.index,
-          end: m.index + m[0].length,
+          start: sentStart,
+          end: matchEnd,
           panelist: p,
         });
       }
@@ -282,6 +293,40 @@ export function recolorQuestionsInHtml(
     changed = true;
   });
 
+  return changed ? root.innerHTML : html;
+}
+
+/**
+ * Tar bort question-spans för givna tempIds (panelist-IDs) genom att
+ * unwrappa dem till plain text. Används när användaren markerar en
+ * "talare" som "ignore" i wizarden — frågorna ska då inte färgkodas.
+ */
+export function stripQuestionsForTempIds(
+  html: string,
+  tempIds: Set<string>,
+): string {
+  if (tempIds.size === 0 || typeof document === "undefined") return html;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div id="r">${html}</div>`, "text/html");
+  const root = doc.getElementById("r");
+  if (!root) return html;
+
+  let changed = false;
+  const spans = Array.from(
+    root.querySelectorAll("span[data-question-to], span[data-panelist-id]"),
+  );
+  for (const el of spans) {
+    const tid =
+      el.getAttribute("data-question-to") || el.getAttribute("data-panelist-id");
+    if (!tid || !tempIds.has(tid)) continue;
+    // Unwrap: ersätt span med dess text-noder
+    const parent = el.parentNode;
+    if (!parent) continue;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
+    changed = true;
+  }
   return changed ? root.innerHTML : html;
 }
 

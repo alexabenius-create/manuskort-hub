@@ -30,7 +30,7 @@ import {
 } from "@/lib/import/splitStrategies";
 import type { PreviewCard } from "@/lib/import/splitStrategies";
 import { PANELIST_PALETTE } from "@/lib/panelistColors";
-import { recolorQuestionsInHtml } from "@/lib/import/detectQuestions";
+import { recolorQuestionsInHtml, stripQuestionsForTempIds } from "@/lib/import/detectQuestions";
 import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wordCount";
 
 export default function Import() {
@@ -74,19 +74,27 @@ export default function Import() {
   useEffect(() => {
     if (step !== 2 || store.cards.length === 0) return;
     const colorMap = new Map<string, string>();
+    const ignoredIds = new Set<string>();
     for (const s of store.speakers) {
+      if (s.action === "ignore") {
+        ignoredIds.add(s.tempId);
+        if (s.existingPanelistId) ignoredIds.add(s.existingPanelistId);
+        continue;
+      }
       if (s.color) colorMap.set(s.tempId, s.color);
       if (s.action === "existing" && s.existingPanelistId && s.color) {
         colorMap.set(s.existingPanelistId, s.color);
       }
     }
-    if (colorMap.size === 0) return;
+    if (colorMap.size === 0 && ignoredIds.size === 0) return;
     let anyChanged = false;
     const next = store.cards.map((c) => {
-      const newHtml = recolorQuestionsInHtml(c.contentHtml, colorMap);
-      if (newHtml === c.contentHtml) return c;
+      let html = c.contentHtml;
+      if (ignoredIds.size > 0) html = stripQuestionsForTempIds(html, ignoredIds);
+      if (colorMap.size > 0) html = recolorQuestionsInHtml(html, colorMap);
+      if (html === c.contentHtml) return c;
       anyChanged = true;
-      return { ...c, contentHtml: newHtml };
+      return { ...c, contentHtml: html };
     });
     if (anyChanged) store.setCards(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -296,8 +304,15 @@ export default function Import() {
     const ignoreMappings = store.speakers.filter((s) => s.action === "ignore");
 
     if (existingMappings.length > 0 || ignoreMappings.length > 0) {
+      const ignoredIds = new Set<string>();
+      for (const m of ignoreMappings) {
+        ignoredIds.add(m.tempId);
+        if (m.existingPanelistId) ignoredIds.add(m.existingPanelistId);
+      }
       cards = cards.map((c) => {
         let html = c.contentHtml;
+        // Strippa question-spans för ignorerade panelister
+        if (ignoredIds.size > 0) html = stripQuestionsForTempIds(html, ignoredIds);
         for (const m of existingMappings) {
           html = html.split(`data-panelist-id="${m.tempId}"`).join(`data-panelist-id="${m.existingPanelistId}"`);
         }
