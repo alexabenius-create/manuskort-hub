@@ -22,8 +22,9 @@ import {
   insertCardBlockAfter,
   insertCardBlockBefore,
   moveCardBlock,
+  moveCardBlockBySteps,
 } from "@/lib/cardBlockCommands";
-import { X } from "lucide-react";
+import { ChevronUp, ChevronDown, X } from "lucide-react";
 
 const CUE_ICON: Record<Cue["kind"], string> = {
   energy: "⚡",
