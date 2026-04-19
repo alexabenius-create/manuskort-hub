@@ -206,6 +206,34 @@ export function insertCardBlockAfter(
 }
 
 /**
+ * Flytta cardBlock från `fromPos` till absolut position `toPos` (innan delete).
+ * `toPos` ska vara en top-level-gränsposition mellan cardBlock-noder
+ * (0 = före första, doc.content.size = efter sista, eller summan av nodeSize för
+ * de N första top-level-noderna).
+ */
+export function moveCardBlock(
+  state: EditorState,
+  fromPos: number,
+  toPos: number,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const node = state.doc.nodeAt(fromPos);
+  if (!node || node.type.name !== "cardBlock") return false;
+  const fromEnd = fromPos + node.nodeSize;
+  // No-op om vi droppar tillbaka på samma plats
+  if (toPos === fromPos || toPos === fromEnd) return false;
+
+  if (dispatch) {
+    const tr = state.tr;
+    tr.delete(fromPos, fromEnd);
+    const mappedTo = tr.mapping.map(toPos, -1);
+    tr.insert(mappedTo, node);
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+
+/**
  * Sätt in tomt cardBlock direkt före noden vid pos.
  */
 export function insertCardBlockBefore(
