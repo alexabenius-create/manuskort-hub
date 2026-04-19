@@ -29,7 +29,18 @@ export function FormatBubbleMenu({ editor }: Props) {
     panelists = [];
   }
 
-  const [questionOpen, setQuestionOpen] = useState(false);
+  const [mode, setMode] = useState<PanelistMode>(() => {
+    if (typeof window === "undefined") return "speaker";
+    const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
+    return stored === "question" ? "question" : "speaker";
+  });
+
+  const updateMode = (next: PanelistMode) => {
+    setMode(next);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(MODE_STORAGE_KEY, next);
+    }
+  };
 
   if (!editor) return null;
 
@@ -77,6 +88,13 @@ export function FormatBubbleMenu({ editor }: Props) {
     .panelistId ?? null;
   const hasAnyMark = !!activePanelistId || !!activeQuestionId;
 
+  // Reflektera markens läge i toggleknappen
+  const effectiveMode: PanelistMode = activeQuestionId
+    ? "question"
+    : activePanelistId
+    ? "speaker"
+    : mode;
+
   // Expandera caret till ord vid behov, returnera chain att köra på
   const ensureSelectionChain = () => {
     const { from, to } = editor.state.selection;
@@ -95,6 +113,31 @@ export function FormatBubbleMenu({ editor }: Props) {
     }
     return editor.chain().focus();
   };
+
+  const applyPanelist = (p: { id: string; color: string; name: string }) => {
+    const isActiveHere =
+      effectiveMode === "speaker"
+        ? activePanelistId === p.id
+        : activeQuestionId === p.id;
+
+    const chain = ensureSelectionChain();
+    // Rensa alltid båda marks först så vi inte staplar konflikterande marks
+    const cleared = chain.unsetPanelist().unsetMark("questionTo");
+    if (isActiveHere) {
+      cleared.run();
+      return;
+    }
+    if (effectiveMode === "speaker") {
+      cleared.setPanelist({ panelistId: p.id, color: p.color, name: p.name }).run();
+    } else {
+      cleared
+        .setMark("questionTo", { panelistId: p.id, color: p.color, name: p.name })
+        .run();
+    }
+  };
+
+  const ModeIcon = effectiveMode === "question" ? MessageCircleQuestion : User;
+  const modeLabel = effectiveMode === "question" ? "Tilltal (fråga till)" : "Replik (talare)";
 
   return (
     <BubbleMenu
@@ -135,73 +178,51 @@ export function FormatBubbleMenu({ editor }: Props) {
           <>
             <div className="mx-1 h-5 w-px bg-border" />
 
-            {/* Panelist-pills (talare) */}
+            {/* Lägestoggle: replik ↔ tilltal */}
+            <button
+              type="button"
+              aria-label={`Växla läge — nu: ${modeLabel}`}
+              title={`Läge: ${modeLabel}. Klicka för att växla.`}
+              onClick={() => updateMode(effectiveMode === "speaker" ? "question" : "speaker")}
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+                "text-foreground/80 hover:bg-muted hover:text-foreground",
+                effectiveMode === "question" && "text-[hsl(var(--cue-amber,30_90%_50%))]",
+              )}
+            >
+              <ModeIcon className="h-4 w-4" />
+            </button>
+
+            {/* Panelist-pills — applicerar enligt aktivt läge */}
             {panelists.map((p) => {
-              const isActive = activePanelistId === p.id;
+              const isActiveHere =
+                effectiveMode === "speaker"
+                  ? activePanelistId === p.id
+                  : activeQuestionId === p.id;
               return (
                 <button
                   key={p.id}
                   type="button"
-                  aria-label={`Markera som ${p.name || "panelist"}`}
-                  aria-pressed={isActive}
-                  title={p.name || "Panelist"}
-                  onClick={() => {
-                    const chain = ensureSelectionChain();
-                    if (isActive) {
-                      chain.unsetPanelist().run();
-                    } else {
-                      chain.setPanelist({ panelistId: p.id, color: p.color, name: p.name }).run();
-                    }
-                  }}
+                  aria-label={`${effectiveMode === "question" ? "Fråga till" : "Markera som"} ${p.name || "panelist"}`}
+                  aria-pressed={isActiveHere}
+                  title={`${effectiveMode === "question" ? "Fråga till" : "Replik:"} ${p.name || "Namnlös"}`}
+                  onClick={() => applyPanelist(p)}
                   className={cn(
                     "inline-flex h-7 items-center justify-center rounded-full px-2.5 text-[12px] font-medium leading-none transition-all max-w-[140px]",
                     "ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
-                    isActive && "ring-2 ring-foreground/60 scale-105",
+                    isActiveHere && "ring-2 ring-foreground/60 scale-105",
+                    effectiveMode === "question" && "bg-transparent border border-dashed",
                   )}
-                  style={{ backgroundColor: p.color, color: hexToDarkText(p.color) }}
+                  style={
+                    effectiveMode === "question"
+                      ? { color: p.color, borderColor: p.color }
+                      : { backgroundColor: p.color, color: hexToDarkText(p.color) }
+                  }
                 >
                   <span className="truncate">{p.name?.trim() || "Namnlös"}</span>
                 </button>
               );
             })}
-
-            {/* Fråga till-dropdown */}
-            <DropdownMenu open={questionOpen} onOpenChange={setQuestionOpen}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Markera som fråga till panelist"
-                  title="Fråga till"
-                  className={cn(
-                    "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[12px] font-medium transition-colors",
-                    "text-foreground/80 hover:bg-muted hover:text-foreground",
-                    activeQuestionId && "bg-foreground text-background hover:bg-foreground hover:text-background",
-                  )}
-                >
-                  <MessageCircleQuestion className="h-3.5 w-3.5" />
-                  Fråga till
-                  <ChevronDown className="h-3 w-3 opacity-60" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="rounded-xl">
-                {panelists.map((p) => (
-                  <DropdownMenuItem
-                    key={p.id}
-                    onClick={() => {
-                      const chain = ensureSelectionChain();
-                      chain.setMark("questionTo", { panelistId: p.id, color: p.color, name: p.name }).run();
-                      setQuestionOpen(false);
-                    }}
-                  >
-                    <span
-                      className="h-3 w-3 rounded-full mr-2"
-                      style={{ backgroundColor: p.color }}
-                    />
-                    {p.name?.trim() || "Namnlös"}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             {/* Eraser tar bort båda marks */}
             {hasAnyMark && (
