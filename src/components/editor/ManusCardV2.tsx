@@ -26,6 +26,7 @@ type Card = Database["public"]["Tables"]["cards"]["Row"] & {
 };
 
 export type NotesPlacement = "side" | "below";
+export type NotesDisplay = "always" | "auto" | "hidden";
 
 interface Props {
   card: Card;
@@ -38,6 +39,7 @@ interface Props {
   isModerator: boolean;
   canSyncWithPrevious?: boolean;
   notesPlacement?: NotesPlacement;
+  notesDisplay?: NotesDisplay;
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -53,6 +55,7 @@ interface Props {
 export function ManusCardV2({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   notesPlacement = "side",
+  notesDisplay = "auto",
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
   onAutoSplit, onOverflowStateChange, onEditorReady,
 }: Props) {
