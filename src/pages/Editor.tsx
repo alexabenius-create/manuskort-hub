@@ -13,6 +13,7 @@ import { ManusCard } from "@/components/editor/ManusCard";
 import { ManusCardV2, type NotesPlacement } from "@/components/editor/ManusCardV2";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { SunsetBanner } from "@/components/editor/SunsetBanner";
 import { PrintDialog } from "@/components/editor/PrintDialog";
 import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
@@ -1266,6 +1267,7 @@ export default function Editor() {
           </div>
         </header>
       </div>
+      <SunsetBanner />
       <main className="max-w-[920px] mx-auto px-5 sm:px-8 py-10 sm:py-14 pb-24 flex flex-col gap-6">
         {/* Cue-legend — bara i klassisk layout (i Ny layout finns ?-tooltip per kort) */}
         {layoutVariant === "klassisk" && (

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
+import { EditorPreferenceProvider } from "@/hooks/useEditorPreference";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -15,7 +16,8 @@ import NotFound from "./pages/NotFound";
 
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
 const Library = lazy(() => import("./pages/Library"));
-const Editor = lazy(() => import("./pages/Editor"));
+const EditorRouter = lazy(() => import("./pages/EditorRouter"));
+const EditorV1 = lazy(() => import("./pages/Editor"));
 const EditorV2 = lazy(() => import("./pages/EditorV2"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
 const Presentation = lazy(() => import("./pages/Presentation"));
@@ -44,29 +46,32 @@ const App = () => (
         <AuthProvider>
           <TourProvider>
             <TierProvider>
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/aterstall-losenord" element={<ResetPassword />} />
-                  <Route path="/priser" element={<Pricing />} />
-                  <Route path="/moderator" element={<Moderator />} />
-                  <Route path="/talare" element={<Talare />} />
-                  <Route path="/panelsamtal" element={<Panelsamtal />} />
-                  <Route path="/forelasning" element={<Forelasning />} />
-                  <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
-                  <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
-                  <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
-                  <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
-                  <Route path="/manus/:id/v2" element={<RequireAuth><EditorV2 /></RequireAuth>} />
-                  <Route path="/manus/:id/v3" element={<RequireAuth><EditorV3 /></RequireAuth>} />
-                  <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
-                  <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
-                  <Route path="/checkout/return" element={<CheckoutReturn />} />
-                  <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+              <EditorPreferenceProvider>
+                <Suspense fallback={<RouteFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/aterstall-losenord" element={<ResetPassword />} />
+                    <Route path="/priser" element={<Pricing />} />
+                    <Route path="/moderator" element={<Moderator />} />
+                    <Route path="/talare" element={<Talare />} />
+                    <Route path="/panelsamtal" element={<Panelsamtal />} />
+                    <Route path="/forelasning" element={<Forelasning />} />
+                    <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
+                    <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
+                    <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
+                    <Route path="/manus/:id" element={<RequireAuth><EditorRouter /></RequireAuth>} />
+                    <Route path="/manus/:id/v1" element={<RequireAuth><EditorV1 /></RequireAuth>} />
+                    <Route path="/manus/:id/v2" element={<RequireAuth><EditorV2 /></RequireAuth>} />
+                    <Route path="/manus/:id/v3" element={<RequireAuth><EditorV3 /></RequireAuth>} />
+                    <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
+                    <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+                    <Route path="/checkout/return" element={<CheckoutReturn />} />
+                    <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </EditorPreferenceProvider>
             </TierProvider>
           </TourProvider>
         </AuthProvider>
