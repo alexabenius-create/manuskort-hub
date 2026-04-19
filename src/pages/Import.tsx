@@ -13,6 +13,7 @@ import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
 import { SpeakerMappingPanel } from "@/components/import/SpeakerMappingPanel";
+import { SkippedContentPanel } from "@/components/import/SkippedContentPanel";
 import {
   detectFileKind,
   parseFile,
@@ -76,6 +77,7 @@ export default function Import() {
       store.setRawBlocks(result.blocks);
       store.setDetectedTitle(result.title);
       store.setSkipped(result.skipped);
+      store.setSkippedItems(result.skippedItems);
 
       // Förfyll titel
       const filename = file.name.replace(/\.(docx|txt)$/i, "");
@@ -473,21 +475,7 @@ export default function Import() {
       <main className="max-w-[900px] mx-auto px-6 sm:px-10 pt-8 pb-20 space-y-5">
         <SpeakerMappingPanel existing={[]} />
 
-        {(store.skipped.images > 0 ||
-          store.skipped.tables > 0 ||
-          store.skipped.footnotes > 0) && (
-          <div className="rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-muted-foreground">
-            Från ditt dokument kunde inte importeras:{" "}
-            {[
-              store.skipped.images && `${store.skipped.images} bilder`,
-              store.skipped.tables && `${store.skipped.tables} tabeller`,
-              store.skipped.footnotes && `${store.skipped.footnotes} fotnoter`,
-            ]
-              .filter(Boolean)
-              .join(", ")}
-            . Lägg till dessa manuellt i redigeringsläget om du behöver dem.
-          </div>
-        )}
+        <SkippedContentPanel items={store.skippedItems} />
 
         <div className="space-y-3">
           {store.cards.map((c, i) => (
