@@ -43,7 +43,7 @@ function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
 
 /**
  * Normalisera HTML så att tomma block får en synlig line-box vid mätning.
- * Tomt <p></p> (eller blockquote/h*/li) har annars scrollHeight = 0 i de
+ * Tomt <p></p> (eller blockquote/heading/li) har annars scrollHeight = 0 i de
  * flesta browsers — då räknas en blank rad inte som rad. Vi injicerar <br>
  * i alla "tomma" block så de bidrar med exakt en rad var.
  *
