@@ -250,6 +250,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "andas innan \"Tack för ikväll\"",
       cue_amber: "",
       cue_teal: "",
+      cues: [{ kind: "energy", text: "andas innan \"Tack för ikväll\"" }],
       is_panic_card: false,
     },
   ],
