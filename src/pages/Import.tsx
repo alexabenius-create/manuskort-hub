@@ -187,6 +187,11 @@ export default function Import() {
         return;
     }
     const tempIds = new Map<string, string>();
+    // Återanvänd existerande färger från speakers så att en re-build behåller färgmappningen
+    const speakerColors = new Map<string, string>();
+    for (const s of store.speakers) {
+      if (s.color) speakerColors.set(s.detectedName, s.color);
+    }
     const cards = buildCards({
       blocks: store.rawBlocks,
       strategy: store.strategy,
@@ -194,6 +199,7 @@ export default function Import() {
       textSize: store.textSize,
       speakerTempIds: tempIds,
       mode: store.mode ?? "speaker",
+      speakerColors,
     });
     store.setCards(cards);
     // Markera ej dirty efter omstart
