@@ -10,6 +10,7 @@ import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
@@ -45,6 +46,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/aterstall-losenord" element={<ResetPassword />} />
                   <Route path="/priser" element={<Pricing />} />
                   <Route path="/moderator" element={<Moderator />} />
                   <Route path="/talare" element={<Talare />} />
