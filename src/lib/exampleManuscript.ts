@@ -108,6 +108,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "1 min per person",
       cue_teal: "Följdfråga till Maria",
+      cues: [
+        { kind: "energy", text: "1 min per person" },
+        { kind: "action", text: "Följdfråga till Maria" },
+      ],
       is_panic_card: false,
     },
     {
