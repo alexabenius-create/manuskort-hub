@@ -16,15 +16,19 @@ import type { Database } from "@/integrations/supabase/types";
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 
 /** Höjd-konstanter — synas av EditorV3 för att räkna spacer-höjd. */
-export const CHROME_HEADER_HEIGHT = 32;
-export const CHROME_FOOTER_BASE_HEIGHT = 8; // tomt minsta-fält
-export const CHROME_GAP_HEIGHT = 24;
+export const CHROME_HEADER_HEIGHT = 40;   // meta-rad + topp-padding
+export const CHROME_FOOTER_HEIGHT = 16;   // botten-padding (växer om notes/cues finns)
+export const CHROME_GAP_HEIGHT = 16;      // luft mellan kort
+/** Horisontell padding på editor-text inom kort-boxen (matchar v1: px-5/sm:px-6) */
+export const CHROME_HORIZONTAL_PADDING = 24;
 
 interface FrameProps {
   card: Card | null;
   number: number;
   total: number;
+  /** Topp-Y för kort-boxen (där header börjar) */
   topPx: number;
+  /** Total höjd på kort-boxen (header + text-zon + footer) */
   heightPx: number;
   isActive: boolean;
   contentHtml: string;
@@ -37,13 +41,13 @@ interface FrameProps {
 }
 
 /**
- * CardChromeFrame — ritar två separata absolut-positionerade element:
- *   1. En topp-meta (header) vid `topPx`
- *   2. En bottenrad (footer) vid `topPx + heightPx`
+ * CardChromeFrame — ritar en hel kort-box (v1-look: bg-surface, rundade hörn,
+ * skugga) bakom motsvarande del av v2:s flödes-editor.
  *
- * Mellan dessa finns INGENTING — text-zonen är helt fri så att editor-
- * texten under är klickbar. En tunn outline ritas också men med
- * `pointer-events: none` så den inte blockerar redigering.
+ * Strategin för pointer-events:
+ *  - Boxen är `pointer-events: none` → klick går genom till editor-text bakom
+ *  - Header och footer (bara där knappar/textarea sitter) får `pointer-events: auto`
+ *  - Editor-text-zonen i mitten har INGET chrome ovanpå → fri klick
  */
 export function CardChromeFrame({
   card, number, total, topPx, heightPx, isActive, contentHtml,
@@ -63,33 +67,29 @@ export function CardChromeFrame({
   const hasNotes = !!card?.notes?.trim();
   const notesVisible = showNotes && (hasNotes || notesOpen);
   const hasAnyCue = cues.length > 0;
-
-  const headerTop = topPx;
-  const footerTop = topPx + heightPx; // footer ligger DIREKT under text-zonen
-  const outlineTop = topPx;
-  const outlineHeight = heightPx + CHROME_HEADER_HEIGHT;
+  const hasFooter = card && (notesVisible || hasAnyCue);
 
   return (
-    <>
-      {/* Visuell outline runt hela kortet — pointer-events: none */}
-      <div
-        className={cn(
-          "absolute left-0 right-0 rounded-2xl border transition-colors pointer-events-none",
-          isActive
-            ? "border-accent-blue/40 ring-1 ring-accent-blue/20"
-            : "border-border/40",
-        )}
-        style={{ top: `${outlineTop}px`, height: `${outlineHeight}px` }}
-        data-card-frame={card?.id ?? "virtual"}
-        aria-hidden="true"
-      />
-
+    <div
+      className={cn(
+        "absolute left-0 right-0 rounded-2xl bg-surface shadow-subtle border transition-colors",
+        // Hela boxen släpper igenom klick — bara header/footer-knappar fångar
+        "pointer-events-none",
+        isActive
+          ? "border-accent-blue/40 ring-1 ring-accent-blue/20"
+          : "border-border/40",
+      )}
+      style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+      data-card-frame={card?.id ?? "virtual"}
+    >
       {/* Header — meta + more-menu */}
       <div
-        className="absolute left-0 right-0 px-5 flex items-center gap-2 flex-wrap text-[12px] font-mono text-muted-foreground pointer-events-auto"
-        style={{ top: `${headerTop}px`, height: `${CHROME_HEADER_HEIGHT}px` }}
+        className="absolute top-0 left-0 right-0 px-5 sm:px-6 pt-3 pb-1 flex items-center gap-2 flex-wrap text-[12px] font-mono text-muted-foreground"
+        style={{ height: `${CHROME_HEADER_HEIGHT}px` }}
       >
-        <span className="px-1 tracking-wide">Kort {String(number).padStart(2, "0")} / {total}</span>
+        <span className="px-1 tracking-wide pointer-events-auto">
+          Kort {String(number).padStart(2, "0")} / {total}
+        </span>
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{words} ord</span>
         <span className="opacity-40">·</span>
@@ -98,14 +98,14 @@ export function CardChromeFrame({
         {card?.is_panic_card && (
           <>
             <span className="opacity-40">·</span>
-            <span className="inline-flex items-center gap-1 text-[hsl(35_85%_38%)]">
+            <span className="inline-flex items-center gap-1 text-[hsl(35_85%_38%)] pointer-events-auto">
               <Triangle className="h-3 w-3 fill-current" strokeWidth={0} />
               <span className="text-[11px] uppercase tracking-wider">panik</span>
             </span>
           </>
         )}
 
-        <div className="ml-auto flex items-center gap-0.5">
+        <div className="ml-auto flex items-center gap-0.5 pointer-events-auto">
           {showNotes && !hasNotes && !notesOpen && (
             <button
               type="button"
@@ -157,42 +157,39 @@ export function CardChromeFrame({
         </div>
       </div>
 
-      {/* Footer — anteckningar + cues, ritas direkt under textzonen */}
-      {card && (notesVisible || hasAnyCue) && (
-        <div
-          className="absolute left-0 right-0 px-5 pointer-events-auto"
-          style={{ top: `${footerTop}px` }}
-        >
+      {/* Footer — anteckningar + cues, ankras vid botten av boxen */}
+      {hasFooter && (
+        <div className="absolute bottom-0 left-0 right-0 px-5 sm:px-6 pb-3">
           {hasAnyCue && (
-            <div className="flex gap-2 flex-wrap items-center mb-1">
+            <div className="flex gap-2 flex-wrap items-center mb-1 pointer-events-auto">
               {cues.map((c) => (
                 <CueChip
                   key={c.id}
                   cue={c}
                   panelists={panelists}
-                  targetSeconds={card.target_seconds ?? seconds}
+                  targetSeconds={card!.target_seconds ?? seconds}
                   onSave={(next) => updateCues(upsertCue(cues, next))}
                   onRemove={() => updateCues(removeCue(cues, c.id))}
                 />
               ))}
               <AddCueButton
                 panelists={panelists}
-                targetSeconds={card.target_seconds ?? seconds}
+                targetSeconds={card!.target_seconds ?? seconds}
                 onAdd={(c) => updateCues(upsertCue(cues, c))}
               />
             </div>
           )}
           {notesVisible && (
             <textarea
-              value={card.notes ?? ""}
+              value={card!.notes ?? ""}
               onChange={(e) => onChange({ notes: e.target.value })}
               placeholder="Anteckning för det här kortet…"
               rows={1}
-              className="w-full resize-none bg-transparent text-[12px] text-muted-foreground border-l-2 border-border/50 pl-2 outline-none focus:text-foreground focus:border-accent-blue/40 transition-colors"
+              className="w-full resize-none bg-transparent text-[12px] text-muted-foreground border-l-2 border-border/50 pl-2 outline-none focus:text-foreground focus:border-accent-blue/40 transition-colors pointer-events-auto"
             />
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }

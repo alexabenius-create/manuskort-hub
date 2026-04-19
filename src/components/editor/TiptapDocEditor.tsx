@@ -5,12 +5,12 @@ import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import Blockquote from "@tiptap/extension-blockquote";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
-import { DocFrameDecorations, type FrameBreak } from "@/lib/docFrameDecorations";
+import { DocFrameDecorations, setFrameBreaks, type FrameBreak } from "@/lib/docFrameDecorations";
 
 interface Props {
   value: string;
@@ -36,10 +36,6 @@ export function TiptapDocEditor({
   onEditorReady,
   frameBreaks = [],
 }: Props) {
-  // Stabil ref till options-objektet — vi muterar `breaks` på det
-  // mellan renderingar utan att skapa om extensionen.
-  const frameOptions = useMemo(() => ({ breaks: [] as FrameBreak[] }), []);
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -60,7 +56,7 @@ export function TiptapDocEditor({
       QuestionToMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
-      DocFrameDecorations.configure(frameOptions),
+      DocFrameDecorations,
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
@@ -68,7 +64,10 @@ export function TiptapDocEditor({
     },
     editorProps: {
       attributes: {
-        class: `${sizeClass[size]} focus:outline-none w-full max-w-[75ch] mx-auto text-foreground px-8 py-12`,
+        // padding-top = HEADER_HEIGHT (40) så första kortets meta-rad får plats
+        // padding-bottom = FOOTER_HEIGHT (16) så sista kortets footer får plats
+        // px-6 matchar v1:s kort-padding (px-5/sm:px-6)
+        class: `${sizeClass[size]} focus:outline-none w-full text-foreground px-6 pt-12 pb-6`,
       },
       handleKeyDown: (_view, event) => {
         if (
@@ -98,13 +97,16 @@ export function TiptapDocEditor({
     editor.commands.setContent(value || "", { emitUpdate: false });
   }, [value, editor]);
 
-  // Uppdatera frame-breaks på extensionen och tvinga ny decoration-pass
+  // Uppdatera frame-breaks via plugin-state. Vi dispatchar i nästa frame
+  // så att React-render hinner committas innan ProseMirror räknar om
+  // decorations — det undviker en mätnings-loop där boxar mäts mot fel Y.
   useEffect(() => {
     if (!editor) return;
-    frameOptions.breaks = frameBreaks;
-    // Trigger decorations-omräkning genom en no-op transaction
-    editor.view.dispatch(editor.state.tr.setMeta("docFrameBreaksUpdated", true));
-  }, [frameBreaks, editor, frameOptions]);
+    const raf = requestAnimationFrame(() => {
+      setFrameBreaks(editor.view, frameBreaks);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [frameBreaks, editor]);
 
   return (
     <div className="relative w-full">
