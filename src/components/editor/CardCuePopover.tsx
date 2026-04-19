@@ -10,17 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { newCueId, type Cue, type CueKind } from "@/lib/cues";
 
 interface Props {
   onAdd: (cue: Cue) => void;
 }
 
-const KIND_OPTIONS: { value: CueKind; label: string; icon: string }[] = [
-  { value: "energy", label: "Energi", icon: "⚡" },
-  { value: "action", label: "Action", icon: "▶" },
-  { value: "panel", label: "Panel", icon: "👥" },
+const KIND_OPTIONS: { value: CueKind; label: string; icon: LucideIcon }[] = [
+  { value: "energy", label: "Energi", icon: Zap },
+  { value: "action", label: "Action", icon: Play },
+  { value: "panel", label: "Panel", icon: Users },
 ];
 
 const PLACEHOLDER: Record<CueKind, string> = {
