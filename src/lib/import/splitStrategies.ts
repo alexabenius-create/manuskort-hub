@@ -94,6 +94,7 @@ interface BuildContext {
   panelistTempId: (name: string) => string; // mappa namn → tempId för data-panelist-id
   headingMode: HeadingMode;
   mode?: CardBuildMode;
+  textSize?: TextSize;
 }
 
 /**
@@ -224,7 +225,7 @@ export function splitByWordCount(
   // Mål: fyll till ~80% av max-rader. Tak: 100%. Mätning sker mot
   // den ackumulerade html-strängen i presentationsgeometri.
   const hasDom = typeof document !== "undefined";
-  const textSize: TextSize = ctx.headingMode === "title" ? "md" : "md"; // approx — den faktiska textSize sätts senare
+  const textSize: TextSize = ctx.textSize ?? "md";
   const maxRows = MAX_ROWS_BY_SIZE[textSize];
   const targetRows = Math.max(2, Math.floor(maxRows * 0.8));
 
