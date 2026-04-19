@@ -1,55 +1,66 @@
 
 
-## Lösning: editerbar måltid per kort
+## Diagnos
 
-Ersätt den auto-uppskattade tiden (`~0:13` baserad på ord×WPM) med en editerbar måltid som lagras per kort.
+Skärmen är överfull med konkurrerande element:
+- **Topbar**: X-knapp, Wake Lock-pill, två stora mode-knappar ("Klockslag"/"Förfluten"), enorm tid-block (56px font, 400px bred), pause-knapp
+- **Footer**: Två stora A−/A+ knappar, stort kortnummer med ring, "Nästa: …", panik-knapp
+- **Per-kort-timer saknas** helt i presentationsläget (vi lade till `cards.target_seconds` men kopplade aldrig in det)
 
-**Ny kolumn:** `cards.target_seconds integer null` — null = ingen explicit måltid satt (visa då uppskattning som fallback eller tom).
+## Lösning: rensad layout + per-kort-timer tillbaka
 
-**UI i kort-meta-raden** (`ManusCardV2.tsx` rad 179–182, samt `ManusCard.tsx` motsvarande):
-Ersätt:
+### 1. Topbar — krympt och hopslagen
+
+**Vänster**: bara X-knappen (mindre, p-3 istället för p-5). Wake Lock-pillen flyttas till en liten prick bredvid X (bara grön/gul/röd dot, label syns vid hover).
+
+**Höger**: ETT enda kompakt tidsblock:
+- Tid på en rad (`text-[40px]` istället för 56px, min-w 280px istället för 400px)
+- Mode-toggle som liten ikonrad UNDER tiden (klocka/timer-ikoner, inga textetiketter — bara ikoner)
+- Pause-knapp integrerad i samma block (bara i förfluten-läge)
+
+Resultat: ~50% mindre yta i toppen.
+
+### 2. Footer — minimalistisk + per-kort-timer
+
+Ny layout, allt på en rad i botten:
+
+```text
+[A− A+]      ⏱ 0:42 / 1:30   ●━━━━━○━━━   01/14   Nästa: Talare · …      [Panik]
 ```
-{words} ord · ~{formatDuration(seconds)}
-```
-Med:
-```
-{words} ord · [⏱ 00:45]   (klickbar pill → popover med mm:ss-input + snabbval)
-```
 
-- Stängd vy: liten pill med ⏱-ikon + tid (t.ex. "0:45"). Tom om inget värde → visa "Sätt tid" i muted färg, fortfarande med uppskattning som hint i tooltip.
-- Klick → popover (samma mönster som befintlig `TimePopover` för start/end):
-  - Input `mm:ss` (eller bara minuter)
-  - Snabbvalsknappar: 30s, 1m, 2m, 5m
-  - "Använd uppskattning ({formatDuration(estimated)})" — fyller i auto-värdet
-  - "Ta bort" — sätter null
+- **Vänster**: A−/A+ kompaktare (p-2.5, h-5 w-5 ikoner)
+- **Mitten-vänster**: NY per-kort-timer
+  - Visar `formatMmSs(cardElapsed) / formatMmSs(card.target_seconds)`
+  - Liten progress-bar (linjär, 120px bred) under siffrorna
+  - Färg: emerald → amber sista 20% → röd när över
+  - Om kortet saknar `target_seconds`: visa bara `formatMmSs(cardElapsed)` utan ring/bar
+- **Mitten**: kortnummer (mindre, 18px font, ingen stor ring runt — ringen ersätts av per-kort-bar:en till vänster)
+- **Mitten-höger**: "Nästa: …" (oförändrat, lite mindre 14px)
+- **Höger**: Panik-knapp kompaktare (px-4 py-2.5, 14px text)
 
-**Datapersistens:** Använd befintlig `onLocalChange({ target_seconds: n })`-mönstret som redan används för `start_time`/`end_time` (autosave hanterar resten).
+### 3. Per-kort-elapsed-beräkning
+
+I `Presentation.tsx` finns redan `cardStartedAtElapsed` (summan av planerade tider för tidigare kort). Vi byter till en bättre källa: **summan av `target_seconds` (eller fallback till start/end-diff) för korten innan currentIndex**. Skicka `cardTargetSeconds = current.target_seconds` ner till footern.
 
 ## Tekniska ändringar
 
-1. **Migration**: `ALTER TABLE cards ADD COLUMN target_seconds integer` (nullable, ingen default).
-2. **`src/components/editor/ManusCardV2.tsx`** (rad ~179–182):
-   - Ny komponent `TargetTimePopover` lokal i filen (mönstret från `TimePopover` som finns längre ner i samma fil rad ~516+).
-   - Ersätt `~{formatDuration(seconds)}`-spannet med `<TargetTimePopover value={card.target_seconds} estimated={seconds} onChange={(v) => onLocalChange({ target_seconds: v })} />`.
-3. **`src/components/editor/ManusCard.tsx`** (motsvarande rad): samma ändring.
-4. **`src/lib/exampleManuscript.ts`**: lägg `target_seconds: null` i exempel-korten (valfritt — fungerar utan).
-5. **`src/integrations/supabase/types.ts`**: regenereras automatiskt efter migration.
+1. **`src/components/presentation/PresentationTopbar.tsx`**:
+   - Krymp X-knapp (p-3, h-7 w-7)
+   - Ersätt Wake Lock-pill med liten dot + tooltip
+   - Slå ihop mode-toggle + tid + pause i ett enda kompakt block. Mode som ikon-only toggle (Clock/Timer-ikoner, inga ord).
+   - Tid: text-[40px], min-w-[280px]
 
-**Inga ändringar i presentationsläget** i denna iteration — fältet lagras men används inte ännu (kan kopplas till countdown per kort i nästa steg). Detta håller scope litet och fokuserar på editor-UX som efterfrågades.
+2. **`src/components/presentation/PresentationFooter.tsx`**:
+   - Krymp A−/A+ knappar (p-2.5)
+   - Lägg till `cardTargetSeconds: number | null` och `cardElapsedSeconds: number` props
+   - Ny vänster-mitten-sektion: per-kort-timer med linjär progress-bar (emerald/amber/röd)
+   - Krymp kortnummer (text-[18px], ta bort stora ringen)
+   - Krymp "Nästa: …" (text-[14px])
+   - Krymp panik-knapp
 
-## Layout (popover öppen)
+3. **`src/pages/Presentation.tsx`**:
+   - Beräkna `cardStartedAtElapsed` med `target_seconds` som primär källa, start/end som fallback
+   - Skicka `cardTargetSeconds={current.target_seconds}` till footern
 
-```text
-┌─────────────────────────┐
-│ Måltid för kortet       │
-│ [  01:30  ]  mm:ss      │
-│                         │
-│ [30s][1m][2m][5m]       │
-│                         │
-│ Uppskattning: ~0:13     │
-│ [Använd uppskattning]   │
-│                         │
-│ [Ta bort]      [Spara]  │
-└─────────────────────────┘
-```
+Inga db-ändringar. Inga nya filer.
 
