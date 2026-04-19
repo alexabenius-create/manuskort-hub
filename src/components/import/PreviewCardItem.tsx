@@ -4,6 +4,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
+import Blockquote from "@tiptap/extension-blockquote";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -251,6 +252,7 @@ function ExpandedEditor({
         blockquote: false,
         horizontalRule: false,
       }),
+      Blockquote,
       Underline,
       Highlight,
       PanelistMark,

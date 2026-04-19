@@ -643,6 +643,57 @@
   border-radius: 4px;
 }
 
+/* Listor i presentationsläget — tydligt indrag, hängande markörer */
+.presentation-prose ul,
+.presentation-prose ol {
+  margin: 0 0 0.75em 0;
+  padding-left: 1.6em;
+}
+.presentation-prose ul { list-style: disc outside; }
+.presentation-prose ol { list-style: decimal outside; }
+.presentation-prose li {
+  margin-bottom: 0.35em;
+  padding-left: 0.25em;
+}
+.presentation-prose li::marker { color: hsl(0 0% 70%); }
+.presentation-prose ul ul,
+.presentation-prose ol ol,
+.presentation-prose ul ol,
+.presentation-prose ol ul {
+  margin: 0.25em 0 0.25em 0;
+  padding-left: 1.4em;
+}
+.presentation-prose ul ul { list-style: circle outside; }
+.presentation-prose ul ul ul { list-style: square outside; }
+
+/* Blockquote i presentationsläget — italik + indrag (utan vänsterborder) */
+.presentation-prose blockquote {
+  margin: 0.5em 0 0.75em 0;
+  padding: 0.1em 0 0.1em 1.6em;
+  font-style: italic;
+  color: hsl(0 0% 88%);
+}
+.presentation-prose blockquote p { margin: 0 0 0.4em 0; }
+.presentation-prose blockquote p:last-child { margin-bottom: 0; }
+
+/* Listor & blockquote i editor (ProseMirror) — speglar presentationsläget i miniatyr */
+.ProseMirror ul,
+.ProseMirror ol {
+  margin: 0.25em 0 0.5em 0;
+  padding-left: 1.5em;
+}
+.ProseMirror ul { list-style: disc outside; }
+.ProseMirror ol { list-style: decimal outside; }
+.ProseMirror li { margin-bottom: 0.2em; }
+.ProseMirror ul ul { list-style: circle outside; }
+.ProseMirror ul ul ul { list-style: square outside; }
+.ProseMirror blockquote {
+  margin: 0.4em 0;
+  padding-left: 1em;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+
 /* Paus-markör i presentationsläget — röd pulserande pill */
 .presentation-prose .pause-mark {
   display: inline-block;

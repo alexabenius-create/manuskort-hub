@@ -7,6 +7,7 @@ import mammoth from "mammoth";
 export type ParsedBlock =
   | { type: "heading"; level: 1 | 2 | 3; text: string; html: string }
   | { type: "paragraph"; html: string; plainText: string }
+  | { type: "blockquote"; html: string; plainText: string }
   | { type: "list"; ordered: boolean; itemsHtml: string[] };
 
 export interface SkippedItem {
@@ -105,6 +106,11 @@ function htmlToParsedBlocks(html: string): { blocks: ParsedBlock[]; skippedItems
     }
     if (tag === "p") {
       blocks.push({ type: "paragraph", html: node.outerHTML, plainText: text });
+      continue;
+    }
+    if (tag === "blockquote") {
+      // Spara hela blockquote-html (inkl. ev. nested <p>) — sanitizeHtml släpper igenom det.
+      blocks.push({ type: "blockquote", html: node.outerHTML, plainText: text });
       continue;
     }
     if (tag === "ul" || tag === "ol") {
