@@ -56,8 +56,10 @@ function htmlToParsedBlocks(html: string): { blocks: ParsedBlock[]; skippedItems
   let currentSection = "Början av dokumentet";
 
   const collectFromContainer = (container: Element) => {
-    // Bilder
-    container.querySelectorAll("img").forEach((img) => {
+    // Bilder — inklusive containern själv om den är en img
+    const imgs: Element[] = Array.from(container.querySelectorAll("img"));
+    if (container.tagName === "IMG") imgs.unshift(container);
+    imgs.forEach((img) => {
       const alt = img.getAttribute("alt") || "";
       const src = img.getAttribute("src") || "";
       let format = "";
@@ -71,13 +73,16 @@ function htmlToParsedBlocks(html: string): { blocks: ParsedBlock[]; skippedItems
       skippedItems.push({ kind: "image", section: currentSection, description: desc });
     });
 
-    // Tabeller
-    container.querySelectorAll("table").forEach((table) => {
+    // Tabeller — inklusive containern själv om den är en table
+    const tables: Element[] = Array.from(container.querySelectorAll("table"));
+    if (container.tagName === "TABLE") tables.unshift(container);
+    tables.forEach((table) => {
       const rows = table.querySelectorAll("tr").length;
       const firstRow = table.querySelector("tr");
       const cols = firstRow ? firstRow.querySelectorAll("td, th").length : 0;
-      // Plocka första cellens text för kontext
-      const firstCell = (table.querySelector("td, th")?.textContent || "").trim().slice(0, 40);
+      const firstCell = (table.querySelector("td, th")?.textContent || "")
+        .trim()
+        .slice(0, 40);
       const desc = `Tabell ${rows}×${cols}${firstCell ? ` — "${firstCell}…"` : ""}`;
       skippedItems.push({ kind: "table", section: currentSection, description: desc });
     });
