@@ -9,6 +9,7 @@ import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import {
   CardChromeFrame,
   CHROME_HEADER_HEIGHT,
+  CHROME_FOOTER_HEIGHT,
   CHROME_GAP_HEIGHT,
 } from "@/components/editor/CardChromeFrame";
 import { ArrowLeft, Save } from "lucide-react";
