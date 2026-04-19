@@ -146,14 +146,13 @@ export default function EditorV3() {
       acc += b;
     }
 
-    // 3) Frame-breaks = position EFTER sista blocket i varje fragment (utom sista)
+    // 3) Frame-breaks = STARTPOSITION för första blocket i varje fragment > 0
+    //    Decoration sätter padding-top på det blocket → reserverar visuell luft.
     const breaks: FrameBreak[] = [];
-    for (let i = 0; i < fragBlockRanges.length - 1; i++) {
-      const endBlockIdx = fragBlockRanges[i].endBlock;
-      const pos = blockEnds[endBlockIdx];
-      if (pos != null) {
-        breaks.push({ pos, heightPx: SPACER_HEIGHT });
-      }
+    for (let i = 1; i < fragBlockRanges.length; i++) {
+      const startBlockIdx = fragBlockRanges[i].startBlock;
+      const pos = startBlockIdx === 0 ? 0 : blockEnds[startBlockIdx - 1];
+      breaks.push({ pos, heightPx: SPACER_HEIGHT });
     }
 
     // 4) Mät pixel-Y för fragmentens text-zon
