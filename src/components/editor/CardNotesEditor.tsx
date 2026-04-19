@@ -58,7 +58,7 @@ export function CardNotesEditor({ value, onChange }: Props) {
         onClick={() => setEditing(true)}
         className="text-left text-[12px] text-muted-foreground border-l-2 border-border/50 pl-2 whitespace-pre-wrap hover:text-foreground transition-colors"
       >
-        {value}
+        {safeValue}
       </button>
     );
   }
