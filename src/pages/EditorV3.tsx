@@ -49,6 +49,7 @@ export default function EditorV3() {
   const saveTimerRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
   const hydratedRef = useRef(false);
+  const pendingExternalHydrateRef = useRef(false);
 
   // Admin-skydd
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function EditorV3() {
       setManuscript(mRes.data);
       const rows = cRes.data ?? [];
       setCards(rows);
+      pendingExternalHydrateRef.current = true;
       setDocHtml(cardsToDocHtml(rows));
       setCardCount(Math.max(1, rows.length));
       setLoading(false);
@@ -143,6 +145,7 @@ export default function EditorV3() {
         requestAnimationFrame(() => {
           if (editorRef.current === ed) {
             hydrateAttrs(ed);
+            pendingExternalHydrateRef.current = false;
             initializedRef.current = true;
             hydratedRef.current = true;
           }
@@ -154,12 +157,13 @@ export default function EditorV3() {
 
   // När docHtml byts (t.ex. efter omladdning från DB), rehydrera attrs
   useEffect(() => {
-    if (!editorRef.current || !manuscript) return;
+    if (!pendingExternalHydrateRef.current || !editorRef.current || !manuscript) return;
     initializedRef.current = false;
     hydratedRef.current = false;
     const t = window.setTimeout(() => {
       if (editorRef.current) {
         hydrateAttrs(editorRef.current);
+        pendingExternalHydrateRef.current = false;
         initializedRef.current = true;
         hydratedRef.current = true;
       }
