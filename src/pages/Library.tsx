@@ -12,7 +12,12 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { HelpButton } from "@/components/HelpButton";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
