@@ -118,8 +118,9 @@ export function splitHtmlAtRow(
   if (!html || !html.trim()) return [html, ""];
 
   const measurer = getPresentationMeasurer(textSize);
-  // Kontrollera först om allt får plats
-  measurer.innerHTML = html;
+  // Kontrollera först om allt får plats — använd samma normalisering som
+  // countPresentationRows så tomma rader räknas konsekvent.
+  measurer.innerHTML = normalizeForMeasurement(html);
   if (countVisualRows(measurer) <= maxRows) {
     return [html, ""];
   }
@@ -144,7 +145,7 @@ export function splitHtmlAtRow(
 
     for (let i = 0; i < blocks.length; i++) {
       const candidate = [...fitBlocks, blocks[i]];
-      measurer.innerHTML = candidate.map((b) => b.outerHTML).join("");
+      measurer.innerHTML = normalizeForMeasurement(candidate.map((b) => b.outerHTML).join(""));
       const rows = countVisualRows(measurer);
       if (rows <= maxRows) {
         fitBlocks.push(blocks[i]);
@@ -192,7 +193,7 @@ export function splitHtmlAtRow(
         ...fitBlocks.map((b) => b.outerHTML),
         partialBlock,
       ].filter(Boolean).join("");
-      measurer.innerHTML = trial || "<p></p>";
+      measurer.innerHTML = normalizeForMeasurement(trial || "<p></p>");
       const rows = countVisualRows(measurer);
       if (rows <= maxRows) {
         bestFit = mid;
