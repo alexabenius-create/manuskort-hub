@@ -160,48 +160,11 @@ export default function Editor() {
     })();
   }, [id, navigate]);
 
-  // Blockera utskrift (Cmd/Ctrl+P, menyutskrift, programmatisk window.print)
-  // när minst ett kort överskrider sin radgräns. Detta är en defense-in-depth
-  // utöver att Skriv ut-knappen är disablad.
+  // Tidigare hård utskriftsspärr borttagen — PrintDialog auto-skalar varje
+  // kort så att det får plats på sin sida. Säkerställ att ev. äldre flagga
+  // rensas vid mount (för användare som har den kvar från tidigare session).
   useEffect(() => {
-    const blocked = overflowingCardIds.size > 0;
-    // Sätt CSS-flagga så print-arket blir tomt även om utskrift på något sätt körs
-    if (blocked) document.documentElement.setAttribute("data-print-blocked", "true");
-    else document.documentElement.removeAttribute("data-print-blocked");
-
-    if (!blocked) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === "p" || e.key === "P")) {
-        e.preventDefault();
-        e.stopPropagation();
-        toast({
-          title: "Utskrift blockerad",
-          description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Korta ner texten eller använd "Dela kortet automatiskt".`,
-          variant: "destructive",
-        });
-      }
-    };
-    const onBeforePrint = () => {
-      toast({
-        title: "Utskrift blockerad",
-        description: "Ett eller flera kort överskrider radgränsen. Åtgärda dem först.",
-        variant: "destructive",
-      });
-    };
-
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    window.addEventListener("beforeprint", onBeforePrint);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown, { capture: true } as EventListenerOptions);
-      window.removeEventListener("beforeprint", onBeforePrint);
-    };
-  }, [overflowingCardIds]);
-
-  // Säkerställ att print-blocked-flaggan ALDRIG ligger kvar globalt när
-  // användaren navigerar bort från legacy-editorn (t.ex. till v3-editorn).
-  // Annars ärver v3 spärren och visar tom utskrift med felmeddelandet.
-  useEffect(() => {
+    document.documentElement.removeAttribute("data-print-blocked");
     return () => {
       document.documentElement.removeAttribute("data-print-blocked");
     };

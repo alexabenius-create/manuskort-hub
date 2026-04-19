@@ -311,19 +311,8 @@
    sidstorlek (@page) injiceras dynamiskt från PrintDialog.
    ============================================================ */
 @media print {
-  /* Hård spärr: om utskrift blockerats (kort över radgränsen) — visa inget alls.
-     Sätts från Editor.tsx via [data-print-blocked="true"] på <html>. */
-  html[data-print-blocked="true"] body * {
-    display: none !important;
-  }
-  html[data-print-blocked="true"] body::before {
-    content: "Utskrift blockerad: ett eller flera kort overskrider radgransen. Atgarda i appen och forsok igen.";
-    display: block !important;
-    padding: 24mm;
-    font-family: system-ui, sans-serif;
-    font-size: 14pt;
-    color: black !important;
-  }
+  /* Tidigare hård spärr borttagen — PrintDialog auto-skalar varje kort så
+     att det får plats på sin sida. data-print-blocked används inte längre. */
 
   /* Dölj UI-chrome */
   .topbar-blur,
@@ -479,24 +468,26 @@
     margin-left: auto !important;
   }
 
-  /* Typografi i manus + notes — skala efter format. Anteckningar mindre än manus. */
+  /* Typografi i manus + notes — skala efter format. Anteckningar mindre än manus.
+     Varje .manu-card kan få --print-script-scale satt av PrintDialog (mät-och-skala)
+     så att långt innehåll automatiskt krymps till att rymmas på sin sida. */
   .manu-card .ProseMirror {
-    font-size: 11pt !important;
-    line-height: 1.5 !important;
+    font-size: calc(11pt * var(--print-script-scale, 1)) !important;
+    line-height: calc(1.5 * var(--print-script-scale, 1)) !important;
     color: black !important;
   }
   .manu-card .card-panel-notes textarea {
-    font-size: 9pt !important;
-    line-height: 1.4 !important;
+    font-size: calc(9pt * var(--print-script-scale, 1)) !important;
+    line-height: calc(1.4 * var(--print-script-scale, 1)) !important;
     color: black !important;
   }
   html[data-print-format="a5-1up"] .manu-card .ProseMirror {
-    font-size: 13pt !important;
-    line-height: 1.55 !important;
+    font-size: calc(13pt * var(--print-script-scale, 1)) !important;
+    line-height: calc(1.55 * var(--print-script-scale, 1)) !important;
   }
   html[data-print-format="a5-1up"] .manu-card .card-panel-notes textarea {
-    font-size: 10pt !important;
-    line-height: 1.45 !important;
+    font-size: calc(10pt * var(--print-script-scale, 1)) !important;
+    line-height: calc(1.45 * var(--print-script-scale, 1)) !important;
   }
 
   /* Dölj felmeddelande/auto-split-knapp i print */
