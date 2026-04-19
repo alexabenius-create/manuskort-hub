@@ -79,9 +79,9 @@ export function PresentationFooter({
 
   return (
     <footer className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pb-5 pointer-events-none">
-      <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+      <div className="max-w-5xl mx-auto grid grid-cols-3 items-center gap-4">
         {/* Vänster — A−/A+ */}
-        <div className="flex items-center gap-1.5 pointer-events-auto">
+        <div className="flex items-center gap-1.5 pointer-events-auto justify-self-start">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
@@ -100,37 +100,36 @@ export function PresentationFooter({
           </button>
         </div>
 
-        {/* Mitten — per-kort-timer + kortnummer + nästa */}
-        <div className="flex items-center gap-5 pointer-events-none">
-          {/* Per-kort-timer */}
-          <div className="flex flex-col items-end gap-1.5 min-w-[140px]">
-            <div className={`font-mono text-[20px] tabular-nums leading-none ${timeColor}`}>
-              {formatMmSs(cardElapsed)}
-              {planned && (
-                <span className="text-zinc-600">
-                  {" / "}
-                  <span className="text-zinc-400">{formatMmSs(planned)}</span>
-                </span>
-              )}
-            </div>
+        {/* Mitten — per-kort-timer (centrerad) */}
+        <div className="flex flex-col items-center gap-2 pointer-events-none justify-self-center">
+          <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
+            {formatMmSs(cardElapsed)}
             {planned && (
-              <div className="h-1 w-[140px] rounded-full bg-zinc-800 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
+              <span className="text-zinc-600">
+                {" / "}
+                <span className="text-zinc-400">{formatMmSs(planned)}</span>
+              </span>
             )}
           </div>
+          {planned && (
+            <div className="h-1.5 w-[200px] rounded-full bg-zinc-800 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          )}
+        </div>
 
-          {/* Kortnummer */}
-          <div className="flex flex-col items-center px-3">
-            <span className="font-mono text-[20px] text-zinc-200 tabular-nums leading-none">
+        {/* Höger — kortnummer + nästa + panik */}
+        <div className="flex items-center gap-3 justify-self-end">
+          <div className="flex flex-col items-end pointer-events-none">
+            <span className="font-mono text-[18px] text-zinc-200 tabular-nums leading-none">
               {String(index + 1).padStart(2, "0")}
               <span className="text-zinc-600">/{String(total).padStart(2, "0")}</span>
             </span>
             {next ? (
-              <p className="text-[12px] text-zinc-500 font-mono uppercase tracking-wider truncate max-w-[280px] text-center mt-1.5">
+              <p className="text-[12px] text-zinc-500 font-mono uppercase tracking-wider truncate max-w-[260px] text-right mt-1.5">
                 Nästa: {nextRoleLabel}{next.title ? ` · ${next.title}` : ""}
               </p>
             ) : (
@@ -139,23 +138,16 @@ export function PresentationFooter({
               </p>
             )}
           </div>
-        </div>
 
-        {/* Höger — panik-knapp */}
-        <div className="flex items-center pointer-events-auto">
-          {hasPanicCards ? (
+          {hasPanicCards && (
             <button
               onClick={onPanic}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-200 border border-amber-700/40 transition-colors text-[14px] font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 hover:text-amber-200 border border-amber-700/40 transition-colors text-[14px] font-medium pointer-events-auto"
               title="Hoppa till nästa panik-kort (P)"
             >
               <Triangle className="h-4 w-4 fill-current" strokeWidth={0} />
               Panik
             </button>
-          ) : (
-            <div className="px-4 py-2.5 opacity-0 pointer-events-none" aria-hidden>
-              <Triangle className="h-4 w-4" />
-            </div>
           )}
         </div>
       </div>
