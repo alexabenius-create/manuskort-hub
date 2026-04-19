@@ -1,3 +1,7 @@
+// TODO: Radera denna fil senast 2026-05-03.
+// v1/v2 är utfasade — v3 är enda aktiva editorn sedan 2026-04-19.
+// Bannern renderas inte längre någonstans (Editor.tsx är frikopplad från routing).
+// Filen ligger kvar som referens under sunset-perioden.
 /**
  * SunsetBanner — visas i v1-editorn för att påminna om att den läggs ner.
  *

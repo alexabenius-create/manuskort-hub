@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useEditorPreference } from "@/hooks/useEditorPreference";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,7 +28,6 @@ import {
   ArrowLeft,
   Save,
   Users,
-  RotateCcw,
   Target,
   Settings2,
   Printer,
@@ -86,7 +84,6 @@ export default function EditorV3() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setPreference } = useEditorPreference();
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -116,16 +113,6 @@ export default function EditorV3() {
     | "clock"
     | "elapsed";
   const targetDurationSeconds = manuscript?.target_duration_seconds ?? null;
-
-  /** Opt-out: spara preferens v1 i DB och navigera till /v1-routen. */
-  const handleUseV1 = useCallback(async () => {
-    await setPreference("v1");
-    toast({
-      title: "Bytt till v1",
-      description: "Inställningen sparas på din profil. Du kan ändra tillbaka i Inställningar.",
-    });
-    navigate(`/manus/${id}/v1`);
-  }, [setPreference, navigate, id]);
 
   // Ladda manus + kort
   useEffect(() => {
@@ -758,18 +745,8 @@ export default function EditorV3() {
 
               <HelpButton />
 
-              {/* Opt-out + sparindikator (sekundära, längst till höger) */}
+              {/* Sparindikator + kortantal (sekundära, längst till höger) */}
               <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-border/40">
-                <button
-                  type="button"
-                  onClick={handleUseV1}
-                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
-                  aria-label="Använd gamla editorn (v1)"
-                  title="Byt tillbaka till v1 — gamla editorn läggs ner inom kort"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  <span>v1</span>
-                </button>
                 <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
                   {cardCount} kort
                 </span>
