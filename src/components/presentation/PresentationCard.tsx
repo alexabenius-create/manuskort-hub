@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Pause, Flag, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
@@ -83,8 +83,59 @@ const NOTES_KEY = "presentation-notes-size-offset";
 
 export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes, onNotesChange }: Props) {
   const baseSize = BASE_SIZE[textSize];
-  const fontSize = baseSize + sizeOffset * 2;
+  const desiredFontSize = baseSize + sizeOffset * 2;
   const html = useMemo(() => transformHtmlForPresentation(card.content_html ?? "", panelists), [card.content_html, panelists]);
+
+  // Auto-fit: krymper fontSize tills hela artikeln ryms i containern.
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const articleRef = useRef<HTMLElement | null>(null);
+  const MIN_FONT = Math.max(14, baseSize - 8);
+  const [fittedFontSize, setFittedFontSize] = useState(desiredFontSize);
+  const [overflowAtMin, setOverflowAtMin] = useState(false);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const article = articleRef.current;
+    if (!container || !article) return;
+
+    let raf = 0;
+    const measure = () => {
+      // Starta från önskad storlek varje pass
+      let size = desiredFontSize;
+      article.style.fontSize = `${size}px`;
+      article.style.lineHeight = "1.7";
+      // Krymp tills det ryms eller golv nås
+      // (max ~30 iterationer för säkerhet)
+      let guard = 0;
+      while (article.scrollHeight > container.clientHeight && size > MIN_FONT && guard < 60) {
+        size -= 1;
+        article.style.fontSize = `${size}px`;
+        if (size <= desiredFontSize - 4) {
+          // Tätare radhöjd när vi tvingats krympa märkbart
+          article.style.lineHeight = "1.55";
+        }
+        guard += 1;
+      }
+      const stillOverflow = article.scrollHeight > container.clientHeight + 1;
+      setFittedFontSize(size);
+      setOverflowAtMin(stillOverflow);
+    };
+
+    raf = requestAnimationFrame(measure);
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    });
+    ro.observe(container);
+    ro.observe(article);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [html, desiredFontSize, MIN_FONT, card.id]);
+
+  const fontSize = fittedFontSize;
+  const lineHeight = fittedFontSize <= desiredFontSize - 4 ? 1.55 : 1.7;
 
   const [notesOffset, setNotesOffset] = useState(0);
   useEffect(() => {
@@ -107,7 +158,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   const hasAnyCue = hasCueRed || hasCueAmber || hasCueTeal;
 
   return (
-    <div className="relative flex w-full h-full min-h-0 gap-4 px-6 md:px-12 py-4">
+    <div className="relative flex w-full h-full min-h-0 gap-4 px-6 md:px-12 py-2">
       {/* Persistenta signaler — absolut positionerade i överkant av kortet, centrerat grupperade */}
       {hasAnyCue && (
         <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10">
@@ -133,10 +184,24 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       )}
 
       {/* Manustexten — huvudyta */}
-      <div className="flex-1 min-w-0 flex flex-col items-center justify-center overflow-y-auto">
+      <div
+        ref={containerRef}
+        className="flex-1 min-w-0 flex flex-col items-center justify-center overflow-y-auto relative"
+        style={
+          overflowAtMin
+            ? {
+                WebkitMaskImage:
+                  "linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)",
+                maskImage:
+                  "linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)",
+              }
+            : undefined
+        }
+      >
         <article
+          ref={articleRef}
           className="presentation-prose max-w-[60ch] mx-auto font-display text-zinc-100"
-          style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}
+          style={{ fontSize: `${fontSize}px`, lineHeight }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>
