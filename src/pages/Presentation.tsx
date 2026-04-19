@@ -460,8 +460,7 @@ export default function Presentation() {
           total={cards.length}
           hasPanicCards={hasPanicCards}
           onPanic={handlePanic}
-          elapsedSeconds={timer.elapsedSeconds}
-          cardStartedAtElapsedSeconds={cardStartedAtElapsed}
+          cardElapsedSeconds={cardElapsedSeconds}
           cardTargetSeconds={current.target_seconds ?? null}
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
