@@ -119,11 +119,17 @@ export function ManusCardV2({
       cue_red: card.cue_red,
       cue_amber: card.cue_amber,
       cue_teal: card.cue_teal,
+      cues: card.cues,
       position: card.position,
       is_panic_card: card.is_panic_card ?? false,
       target_seconds: card.target_seconds ?? null,
     },
   });
+
+  // Parsa cues-arrayen (nytt 5A-system). Helpers håller den immutabel.
+  const cues = useMemo(() => parseCues(card.cues ?? null), [card.cues]);
+  const updateCues = (next: Cue[]) => onLocalChange({ cues: serializeCues(next) });
+
 
   const words = wordCount(card.content_html);
   const seconds = estimateSeconds(words, wpm);
