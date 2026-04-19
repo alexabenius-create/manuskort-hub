@@ -1,34 +1,29 @@
 
+## Plan: fast textstorlek 16pt vid utskrift
 
-## Plan: matcha cue-ikoner i presentationsläget med editorn
+### Nuläge
+Vid utskrift används baseline:
+- A4 2-up: ProseMirror 11pt, notes 9pt
+- A5 1-up: ProseMirror 13pt, notes 10pt
 
-### Nuläge (mismatch)
-| Typ | Editor (`CardBlockView.tsx`) | Presentation (`PresentationCard.tsx`) |
-|---|---|---|
-| energy | ⚡ emoji | `Pause` (lucide) |
-| action | ▶ emoji | `Zap` (lucide) ← **fel ikon** |
-| panel | 👥 emoji | `Users` (lucide) |
+Plus en dynamisk `--print-script-scale` (0.45–1.0) som krymper text när kortet inte ryms.
 
-`Zap` (blixt) används i presentationen för **action** men matchar visuellt editor-emojin ⚡ för **energy** — alltså är de inte bara olika utan delvis ombytta.
+### Önskat
+**16pt** fast skript-text i båda formaten, oavsett kortlängd.
 
-### Lösning
-Byt ut emoji-ikonerna i `CardBlockView.tsx` mot **samma lucide-ikoner** som presentationen, men korrigera mappningen så båda lägena matchar:
+### Frågor först
+Innan jag genomför, två saker värda att klargöra — men jag kan göra ett rimligt antagande om du hellre vill det:
 
-| Typ | Lucide-ikon |
-|---|---|
-| energy | `Zap` (blixt = energi) |
-| action | `Play` (▶ = "gör något") |
-| panel | `Users` |
+1. **Notes-storlek**: ska den också låsas (förslag: 12pt), eller behållas som idag (9–10pt)?
+2. **Auto-skalning vid långt innehåll**: med fast 16pt kommer långa kort garanterat klippas (ingen krympning). Vill du:
+   - (a) ta bort skalningen helt — text klipps vid overflow, varning visas
+   - (b) behålla skalning men höj baseline till 16pt — krympning triggar bara när det verkligen behövs (text går då under 16pt vid behov)
 
-Och i presentationen: byt `Pause`→`Zap` för energy och `Zap`→`Play` för action.
-
-### Ändringar
-- `src/components/editor/CardBlockView.tsx`: ersätt `CUE_ICON`-mappen (emoji-strings) med en map till lucide-komponenter; uppdatera renderingen rad 278.
-- `src/components/editor/CardCuePopover.tsx`: byt emoji-ikoner i `KIND_OPTIONS` till samma lucide-komponenter (för konsistens i popovern).
-- `src/components/presentation/PresentationCard.tsx`: byt `Pause`→`Zap` (energy) och `Zap`→`Play` (action). Behåll `Users` för panel. Uppdatera `lucide-react`-importen.
+### Föreslagna ändringar (om b + notes 12pt)
+- `src/index.css` print-block: ändra `.manu-card .ProseMirror { font-size }` till `16pt` för båda format. Notes till `12pt`.
+- `src/components/editor/PrintDialog.tsx`: uppdatera `baselineCss` i mätsandboxen till samma värden (16pt / 12pt) så mätningen stämmer.
+- Behåll `--print-script-scale` och toast-varningen oförändrade.
 
 ### Filer
-- `src/components/editor/CardBlockView.tsx`
-- `src/components/editor/CardCuePopover.tsx`
-- `src/components/presentation/PresentationCard.tsx`
-
+- `src/index.css`
+- `src/components/editor/PrintDialog.tsx`
