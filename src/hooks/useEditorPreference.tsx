@@ -1,3 +1,7 @@
+// TODO: Radera denna fil senast 2026-05-03.
+// v1/v2 är utfasade — v3 är enda aktiva editorn sedan 2026-04-19.
+// Hooken används inte längre i appen — DB-kolumnen profiles.editor_preference
+// läses/skrivs inte. Filen ligger kvar som referens under sunset-perioden.
 /**
  * useEditorPreference — läser/skriver profiles.editor_preference.
  *
