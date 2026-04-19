@@ -279,21 +279,6 @@
   .ProseMirror .panelist-mark + .panelist-mark[data-panelist-id]::before {
     content: none;
   }
-
-  /* Fråga TILL en panelist — moderatorns text riktad till någon.
-     Visuellt: färgad fet text med mjuk bakgrunds-tint i panelistens färg.
-     Färg-källa: data-panelist-color (samma som .panelist-mark). */
-  .question-to-mark,
-  .ProseMirror .question-to-mark {
-    color: var(--question-fg, hsl(240 6% 15%));
-    background-color: var(--question-bg, hsl(240 9% 92%));
-    font-weight: 600;
-    padding: 0 4px;
-    border-radius: 6px;
-    box-shadow: inset 0 -2px 0 var(--question-accent, hsl(240 6% 60%));
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-  }
 }
 
 @layer components {

@@ -12,7 +12,6 @@ import { DOMParser as PMDOMParser, Fragment, type Node as PMNode } from "prosemi
 import { TextSelection } from "prosemirror-state";
 import { toast } from "sonner";
 import { PanelistMark } from "@/lib/panelistMark";
-import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 import { CardBlock } from "@/lib/cardBlockNode";
@@ -124,7 +123,6 @@ export function TiptapDocEditor({
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       }),
       PanelistMark,
-      QuestionToMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
     ],

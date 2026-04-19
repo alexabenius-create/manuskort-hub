@@ -1,8 +1,11 @@
 // Frågedetektering för moderator-läge.
 //
 // Hittar TILLTAL till en känd panelist och wrappar bara själva tilltalet +
-// (om relevant) den efterföljande frågesatsen i:
-//   <span data-question-to="{tempId}" data-question-name="Anna" data-panelist-color="#xxx">…</span>
+// (om relevant) den efterföljande frågesatsen i en panelist-mark:
+//   <span data-panelist-id="{tempId}" data-panelist-name="Anna" data-panelist-color="#xxx">…</span>
+//
+// Detta är samma mark som används när användaren manuellt markerar text i
+// editorn — det finns ingen separat "fråga till"-mark längre.
 //
 // Tre tydliga mönster (i prioritetsordning):
 //   1. Direkt tilltal i början av mening:
@@ -212,7 +215,7 @@ export function annotateQuestionsInHtml(
       if (m.start > cursor) {
         frag.appendChild(doc.createTextNode(text.slice(cursor, m.start)));
       }
-      const span = makeQuestionSpan(doc, m.panelist, text.slice(m.start, m.end));
+      const span = makePanelistSpan(doc, m.panelist, text.slice(m.start, m.end));
       frag.appendChild(span);
       cursor = m.end;
     }
@@ -225,28 +228,19 @@ export function annotateQuestionsInHtml(
   return root.innerHTML;
 }
 
-function makeQuestionSpan(
+function makePanelistSpan(
   doc: Document,
   panelist: KnownPanelist,
   textContent: string,
 ): HTMLSpanElement {
   const span = doc.createElement("span");
-  span.setAttribute("data-question-to", panelist.tempId);
-  span.setAttribute("data-question-name", panelist.name);
-  // En enda färg-källa: data-panelist-color (samma som PanelistMark använder)
+  span.setAttribute("data-panelist-id", panelist.tempId);
+  span.setAttribute("data-panelist-name", panelist.name);
   span.setAttribute("data-panelist-color", panelist.color);
-  // Inline-style som CSS kan plocka upp via custom properties
-  span.setAttribute("style", buildQuestionStyle(panelist.color));
-  span.className = "question-to-mark";
+  span.setAttribute("style", buildPanelistStyle(panelist.color));
+  span.className = "panelist-mark";
   span.textContent = textContent;
   return span;
-}
-
-function buildQuestionStyle(color: string): string {
-  const fg = hexToDarkText(color);
-  const bg = hexToRgba(color, 0.18);
-  const accent = hexToRgba(color, 0.7);
-  return `--question-fg: ${fg}; --question-bg: ${bg}; --question-accent: ${accent};`;
 }
 
 function buildPanelistStyle(color: string): string {
@@ -274,22 +268,16 @@ export function recolorQuestionsInHtml(
   if (!root) return html;
 
   let changed = false;
-  const spans = root.querySelectorAll("span[data-question-to], span[data-panelist-id]");
+  const spans = root.querySelectorAll("span[data-panelist-id]");
   spans.forEach((el) => {
-    const tempId =
-      el.getAttribute("data-question-to") || el.getAttribute("data-panelist-id");
+    const tempId = el.getAttribute("data-panelist-id");
     if (!tempId) return;
     const newColor = colorByTempId.get(tempId);
     if (!newColor) return;
     const currentColor = el.getAttribute("data-panelist-color");
     if (currentColor === newColor) return;
     el.setAttribute("data-panelist-color", newColor);
-
-    if (el.hasAttribute("data-question-to")) {
-      el.setAttribute("style", buildQuestionStyle(newColor));
-    } else {
-      el.setAttribute("style", buildPanelistStyle(newColor));
-    }
+    el.setAttribute("style", buildPanelistStyle(newColor));
     changed = true;
   });
 
@@ -314,11 +302,10 @@ export function stripQuestionsForTempIds(
 
   let changed = false;
   const spans = Array.from(
-    root.querySelectorAll("span[data-question-to], span[data-panelist-id]"),
+    root.querySelectorAll("span[data-panelist-id]"),
   );
   for (const el of spans) {
-    const tid =
-      el.getAttribute("data-question-to") || el.getAttribute("data-panelist-id");
+    const tid = el.getAttribute("data-panelist-id");
     if (!tid || !tempIds.has(tid)) continue;
     // Unwrap: ersätt span med dess text-noder
     const parent = el.parentNode;
