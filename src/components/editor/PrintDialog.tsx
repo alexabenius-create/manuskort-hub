@@ -168,6 +168,27 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
           </FormatOption>
         </div>
 
+        <div className="flex flex-col gap-2 pb-2">
+          <span className="text-[13px] font-medium text-foreground">Textstorlek</span>
+          <div className="inline-flex rounded-lg border border-hair bg-surface p-1">
+            {FONT_SIZES.map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setFontSize(size)}
+                className={cn(
+                  "flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
+                  fontSize === size
+                    ? "bg-accent-blue text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-surface-2",
+                )}
+              >
+                {size} pt
+              </button>
+            ))}
+          </div>
+        </div>
+
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Avbryt
