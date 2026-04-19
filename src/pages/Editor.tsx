@@ -1,3 +1,7 @@
+// TODO: Radera denna fil senast 2026-05-03.
+// v1/v2 är utfasade — v3 är enda aktiva editorn sedan 2026-04-19.
+// Filen är frikopplad från routing och providers, men ligger kvar som referens
+// under sunset-perioden. Ta bort tillsammans med profiles.editor_preference + enum.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
