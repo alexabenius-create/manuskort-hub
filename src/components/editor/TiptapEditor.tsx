@@ -159,7 +159,7 @@ export function TiptapEditor({
     },
     editorProps: {
       attributes: {
-        class: `font-sans ${sizeClass[size]} focus:outline-none w-full text-foreground`,
+        class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
       handleKeyDown: (_view, event) => {
         // "/" → infoga paus (alltid tillåtet, även över gräns)
