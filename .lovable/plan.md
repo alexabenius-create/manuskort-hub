@@ -1,38 +1,43 @@
 
 
-## Statisk granskning: två buggar som kan klippa innehåll
+## Plan: uppdatera cue-typer
 
-### Bugg 1: header/times/cues räknas inte med i tillgänglig höjd
-`PrintDialog.tsx` använder `availableMm` = hela kortets höjd (128mm för A5, ~130mm för A4-halva). Men kortet innehåller också:
-- `card-panel-header` (~8mm med 12pt rubrik + border)
-- `card-panel-times` (~5mm)
-- `card-panel-cues` (~5mm om cues finns)
+### Nuläge
+`CUE_KINDS_ENABLED` innehåller fyra typer: **energy, action, panel, time**. Du nämner tre — `panel` (riktas till en paneldeltagare med dennes färg) glömdes troligen bort. Den behålls.
 
-Tillsammans tar headers ~15–18mm av kortets höjd. Mätningen jämför `card.scrollHeight` (hela kortet inkl. header) mot `availablePx` (hela kortets boxhöjd). Det ser rätt ut — men `--print-script-scale` påverkar **bara** ProseMirror + textarea, inte rubriken. Resultat: när vi skalar för att klämma in 273mm innehåll i 128mm box, antar vi att hela klonen får krympas — men i verkligheten krymps bara textinnehållet medan headern står still. Skalan blir då för svag.
+Inga *nya cue-typer* har diskuterats i tidigare planer — det vi sparat för framtiden (ULTRA-tier) är **mekanismer** ovanpå befintliga typer:
+- AI-föreslagna cues (5B)
+- Röststyrda cues (5C)
+- Adaptiva/synkade cues (5D)
 
-**Fix:** subtrahera uppskattad header-höjd från `availableMm` innan skalan beräknas, ELLER mät bara `card-panel-script` + `card-panel-notes` istället för hela kortet.
+Inga nya kategorier alltså. Om du vill ha en ny typ behöver du säga vilken — annars håller vi oss till energy/action/panel.
 
-### Bugg 2: clamp 0.55 är hård gräns — innehåll klipps tyst
-Om kortet behöver skala 0.40 för att rymmas, clampar koden till 0.55 och `overflow: hidden` klipper resten utan varning. För "mycket långa kort" är det troligt att 0.55 inte räcker.
+### Ändringar
 
-**Fix-alternativ:**
-- A) Sänk min till 0.45 (gränsen för läsbarhet på papper).
-- B) Behåll clamp men visa toast: "N kort skalades till minimi-storleken — innehåll kan vara klippt."
-- C) Tillåt valfritt korts overflow att splittas över extra sida (mycket större ändring).
+**1. Ta bort `time`-cuen helt**
+- `src/lib/cues.ts`: ta bort `"time"` ur `CueKind`-union, `CUE_KINDS_ENABLED_5A3`, `CUE_KIND_LABEL`, `CUE_KIND_DESCRIPTION`. Behåll `atSeconds`-fältet i interfacet temporärt (för bakåtkompatibel parse → ignoreras tyst), men ta bort från `serializeCues`.
+- `parseCues`: filtrera bort poster med `kind === "time"` (legacy data försvinner vid nästa save).
+- `src/components/editor/CueEditor.tsx`: ta bort hela `time`-grenen — `KIND_STYLE.time`, `Clock`-import, mm:ss-hjälpare, time-input-blocket i `CueForm`, validering i `commit`. Rensa `targetSeconds`-prop som blir oanvänd.
+- `src/components/presentation/TimeCueZone.tsx`: ta bort filen (söker användning först — om den används i Presentation.tsx, ta bort därifrån också).
+- `manuscripts.time_cue_display_seconds`-kolumnen: lämna kvar i DB, oanvänd. Ingen migration nu.
+- `src/components/editor/CardCuePopover.tsx`: ta bort `time` ur `KIND_OPTIONS`.
 
-### Bugg 3 (mindre): mätsandbox saknar header-CSS-isolering
-Sandbox-CSS sätter bara ProseMirror + textarea-typografi. Headerns 12pt + paddings ärvs från default. För A5 där baseline är 13pt blir headern relativt mindre i mätningen än i verkligheten. Liten effekt men förstärker bugg 1.
+**2. Olika exempeltexter per typ**
+I `CueForm`s `placeholder` (rad 414–419) finns redan en switch — den fungerar men varianterna är tunna. Uppdatera till tydligare exempel:
+- `energy` → `"T.ex. Andas, sänk tempo"`
+- `action` → `"T.ex. Visa bild 3, byt plats"`
+- `panel` → `"T.ex. Be om konkret exempel"`
 
-### Plan
-
-1. **Mät rätt yta.** I `PrintDialog.handlePrint`: subtrahera ~20mm för header/times/cues/notes-padding från `availableMm` innan skalan beräknas. Alternativt: mät bara `clone.querySelector('.card-panel-script')`-höjden + uppskattad notes-höjd.
-2. **Sänk minsta skala** till 0.45 (från 0.55) så fler kort ryms helt.
-3. **Visa toast** efter print om något kort hamnade på minst skala — användaren får veta att hen bör korta texten där.
-4. **Ingen CSS-ändring behövs** — `--print-script-scale` finns redan på rätt selektorer.
+Samma uppdatering i `CardCuePopover.tsx` om den har egen placeholder.
 
 ### Filer
-- `src/components/editor/PrintDialog.tsx` — justera `availableMm`, sänk clamp, lägg till toast.
+- `src/lib/cues.ts`
+- `src/components/editor/CueEditor.tsx`
+- `src/components/editor/CardCuePopover.tsx`
+- `src/components/presentation/TimeCueZone.tsx` (radera)
+- `src/pages/Presentation.tsx` (om den använder TimeCueZone)
+- Minne: uppdatera `mem://plans/uxa-2026-04-cues-5a.md` — markera 5A.3 som "borttagen, ej använd".
 
-### Vad du behöver testa själv efteråt
-Skriv ut ett manus med (a) 3 korta kort, (b) 1 mycket långt kort (>500 ord), (c) ett kort med både script och notes fyllda. Kontrollera i print preview / spara som PDF att inget klipps i A4 2-up och A5 1-up.
+### Frågor till dig
+Om du vill ha en *helt ny* cue-typ (utöver de nuvarande tre + panel) — säg till vilken: t.ex. "fråga", "citat", "påminnelse om publik", etc. Annars rullar vi med energy/action/panel.
 
