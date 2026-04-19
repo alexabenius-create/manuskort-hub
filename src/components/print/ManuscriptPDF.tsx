@@ -197,7 +197,6 @@ export function ManuscriptPDF({ manuscript, cards, panelists, layout }: Manuscri
         <Page key={i} size="A4" orientation="portrait" style={styles.pageA4}>
           <View style={styles.cardSlot}>{renderSlot(pair[0])}</View>
           {pair[1] && <View style={styles.cardSlot}>{renderSlot(pair[1])}</View>}
-          <View style={styles.divider} />
         </Page>
       ))}
     </Document>
