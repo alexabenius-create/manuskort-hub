@@ -329,7 +329,7 @@ export default function Landing() {
       <section className="px-6 sm:px-10 py-24 sm:py-28">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight mb-6">
-            Inga hinder. Bara igång.
+            Inga hinder. Bara att köra.
           </h2>
           <p className="text-[16.5px] text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Du behöver inga inställningar, inga plug-ins och inget kort. Skapa ett konto, klistra in
