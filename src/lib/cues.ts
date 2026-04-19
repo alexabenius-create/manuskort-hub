@@ -21,6 +21,10 @@ export interface Cue {
 }
 
 export const CUE_KINDS_ENABLED_5A1: CueKind[] = ["energy", "action"];
+/** 5A.2: panel-cues aktiverade. Time aktiveras i 5A.3. */
+export const CUE_KINDS_ENABLED_5A2: CueKind[] = ["energy", "action", "panel"];
+/** Alias för aktuell fas — bumpa när nästa fas levereras. */
+export const CUE_KINDS_ENABLED = CUE_KINDS_ENABLED_5A2;
 
 export const CUE_KIND_LABEL: Record<CueKind, string> = {
   energy: "Energi",
