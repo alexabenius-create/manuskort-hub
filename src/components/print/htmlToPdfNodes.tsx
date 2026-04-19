@@ -136,42 +136,38 @@ function renderInline(node: Node, opts: RenderOpts): (JSX.Element | string)[] {
       return;
     }
 
-    // Panelist mark — namn-pill (versaler) följt av själva markerade texten,
-    // båda i panelistens färg så de visuellt hänger ihop som i editorn.
+    // Panelist mark — kompakt namn-pill direkt följt av markerad text,
+    // som i editorn: liten färgad pill med namnet, sedan texten i ljus toning.
     if (tag === "span" && el.hasAttribute("data-panelist-id")) {
       const color = el.getAttribute("data-panelist-color") || "#999999";
       const name = el.getAttribute("data-panelist-name") || "";
-      const bg = hexToRgba(color, 0.32);
-      const tagBg = hexToRgba(color, 0.55);
+      const textBg = hexToRgba(color, 0.18);
       if (name) {
         out.push(
           <Text
             key={`i${key++}`}
             style={{
-              backgroundColor: tagBg,
-              color: "#1a1a1a",
+              backgroundColor: color,
+              color: "#FFFFFF",
               fontFamily: "Helvetica-Bold",
-              fontSize: opts.fontSize * 0.7,
-              paddingLeft: 5,
-              paddingRight: 5,
-              paddingTop: 1,
-              paddingBottom: 1,
-              borderRadius: 6,
-              letterSpacing: 0.6,
+              fontSize: opts.fontSize * 0.62,
+              paddingLeft: 4,
+              paddingRight: 4,
+              paddingTop: 0.5,
+              paddingBottom: 0.5,
+              borderRadius: 4,
+              letterSpacing: 0.5,
             }}
           >
             {" "}{name.toUpperCase()}{" "}
           </Text>,
         );
-        out.push(<Text key={`i${key++}`}> </Text>);
+        out.push(<Text key={`i${key++}`}>{" "}</Text>);
       }
       const childStyle: Style = {
         ...inherited,
-        backgroundColor: bg,
+        backgroundColor: textBg,
         color: "#1a1a1a",
-        paddingLeft: 4,
-        paddingRight: 4,
-        borderRadius: 6,
       };
       Array.from(el.childNodes).forEach((c) => walk(c, childStyle));
       return;
