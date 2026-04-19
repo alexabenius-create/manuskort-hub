@@ -25,6 +25,7 @@ import {
   moveCardBlockBySteps,
 } from "@/lib/cardBlockCommands";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { CardBlockErrorBoundary } from "./CardBlockErrorBoundary";
 
 const CUE_ICON: Record<Cue["kind"], string> = {
   energy: "⚡",
