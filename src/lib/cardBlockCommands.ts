@@ -11,7 +11,8 @@
 import type { EditorState, Transaction } from "prosemirror-state";
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
-import type { Node as PMNode, NodeType } from "prosemirror-model";
+import { DOMSerializer, type Node as PMNode, type NodeType } from "prosemirror-model";
+import { countPresentationRows, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
 
 export function joinCardBackward(
   state: EditorState,
@@ -292,3 +293,127 @@ export function insertCardBlockBefore(
   }
   return true;
 }
+
+/**
+ * Resultat från canMergeSelectionWithPrev — används av UI för att avgöra
+ * om merge-knappen ska visas/disablas.
+ */
+export interface MergePrevCheck {
+  hasPrev: boolean;
+  fits: boolean;
+  availableRows: number;
+  selectionRows: number;
+}
+
+function fragmentToHtml(
+  fragment: import("prosemirror-model").Fragment,
+  schema: import("prosemirror-model").Schema,
+): string {
+  const serializer = DOMSerializer.fromSchema(schema);
+  const div = document.createElement("div");
+  div.appendChild(serializer.serializeFragment(fragment));
+  return div.innerHTML;
+}
+
+/**
+ * Kontrollera om aktuell markering kan mergas in i föregående cardBlock.
+ */
+export function canMergeSelectionWithPrev(
+  state: EditorState,
+  textSize: TextSize,
+): MergePrevCheck {
+  const empty: MergePrevCheck = { hasPrev: false, fits: false, availableRows: 0, selectionRows: 0 };
+  const { selection, doc } = state;
+  if (selection.empty) return empty;
+
+  const $from = selection.$from;
+  let cardDepth = -1;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "cardBlock") {
+      cardDepth = d;
+      break;
+    }
+  }
+  if (cardDepth < 0) return empty;
+  const currentCardPos = $from.before(cardDepth);
+
+  let prevCard: PMNode | null = null;
+  let acc = 0;
+  doc.forEach((child) => {
+    if (acc < currentCardPos && child.type.name === "cardBlock") {
+      prevCard = child;
+    }
+    acc += child.nodeSize;
+  });
+  if (!prevCard) return empty;
+
+  const maxRows = MAX_ROWS_BY_SIZE[textSize];
+  const prevHtml = fragmentToHtml((prevCard as PMNode).content, state.schema);
+  const prevRows = countPresentationRows(prevHtml || "<p></p>", textSize);
+  const availableRows = Math.max(0, maxRows - prevRows);
+
+  const slice = doc.slice(selection.from, selection.to);
+  const selHtml = fragmentToHtml(slice.content, state.schema);
+  const combinedRows = countPresentationRows((prevHtml || "") + (selHtml || ""), textSize);
+  const selectionRows = Math.max(1, combinedRows - prevRows);
+
+  return {
+    hasPrev: true,
+    fits: combinedRows <= maxRows,
+    availableRows,
+    selectionRows,
+  };
+}
+
+/**
+ * Flytta markerad text från nuvarande cardBlock till slutet av föregående.
+ * No-op om ingen markering, ingen prev, eller om texten inte får plats radvis.
+ */
+export function mergeSelectionWithPrev(
+  state: EditorState,
+  textSize: TextSize,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const check = canMergeSelectionWithPrev(state, textSize);
+  if (!check.hasPrev || !check.fits) return false;
+
+  const { selection, doc } = state;
+  const $from = selection.$from;
+  let cardDepth = -1;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "cardBlock") {
+      cardDepth = d;
+      break;
+    }
+  }
+  if (cardDepth < 0) return false;
+  const currentCardPos = $from.before(cardDepth);
+
+  let prevCardPos = -1;
+  let prevCardNode: PMNode | null = null;
+  let acc = 0;
+  doc.forEach((child) => {
+    if (acc < currentCardPos && child.type.name === "cardBlock") {
+      prevCardPos = acc;
+      prevCardNode = child;
+    }
+    acc += child.nodeSize;
+  });
+  if (prevCardPos < 0 || !prevCardNode) return false;
+
+  if (dispatch) {
+    const slice = doc.slice(selection.from, selection.to);
+    const selFragment = slice.content;
+    const insertAt = prevCardPos + (prevCardNode as PMNode).nodeSize - 1;
+
+    const tr = state.tr;
+    tr.delete(selection.from, selection.to);
+    const mappedInsert = tr.mapping.map(insertAt);
+    tr.insert(mappedInsert, selFragment);
+    const caretPos = mappedInsert + selFragment.size;
+    tr.setSelection(TextSelection.near(tr.doc.resolve(caretPos)));
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+}
+

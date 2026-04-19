@@ -1,13 +1,16 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical, ArrowUpToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
-import { splitCardBlock } from "@/lib/cardBlockCommands";
+import { splitCardBlock, mergeSelectionWithPrev, canMergeSelectionWithPrev } from "@/lib/cardBlockCommands";
+import type { TextSize } from "@/lib/cardLimits";
 
 interface Props {
   editor: Editor | null;
+  /** Textstorlek för rad-mätning vid merge med föregående kort. Default "md". */
+  textSize?: TextSize;
 }
 
 interface ToolButton {
@@ -18,7 +21,7 @@ interface ToolButton {
   onClick: () => void;
 }
 
-export function FormatBubbleMenu({ editor }: Props) {
+export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
   let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
   try {
     panelists = usePanelists().panelists;
@@ -27,6 +30,9 @@ export function FormatBubbleMenu({ editor }: Props) {
   }
 
   if (!editor) return null;
+
+  // Kolla merge-möjlighet: kräver markering + föregående cardBlock + ryms radvis.
+  const mergeCheck = canMergeSelectionWithPrev(editor.state, textSize);
 
   const buttons: ToolButton[] = [
     {
@@ -76,6 +82,24 @@ export function FormatBubbleMenu({ editor }: Props) {
     },
   ];
 
+  if (mergeCheck.hasPrev) {
+    const fits = mergeCheck.fits;
+    buttons.push({
+      key: "merge-prev",
+      label: fits
+        ? `Slå ihop med föregående kort (${mergeCheck.selectionRows}/${mergeCheck.availableRows} rader lediga)`
+        : `Får inte plats i föregående kort (behöver ${mergeCheck.selectionRows} rader, ${mergeCheck.availableRows} lediga)`,
+      icon: ArrowUpToLine,
+      isActive: () => false,
+      onClick: () => {
+        if (!fits) return;
+        mergeSelectionWithPrev(editor.state, textSize, editor.view.dispatch);
+        editor.view.focus();
+      },
+    });
+  }
+
+
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
     .panelistId ?? null;
 
@@ -123,12 +147,14 @@ export function FormatBubbleMenu({ editor }: Props) {
       >
         {buttons.map(({ key, label, icon: Icon, isActive, onClick }) => {
           const active = isActive();
+          const isMergeDisabled = key === "merge-prev" && !mergeCheck.fits;
           return (
             <button
               key={key}
               type="button"
               aria-label={label}
               aria-pressed={active}
+              aria-disabled={isMergeDisabled}
               title={label}
               onClick={onClick}
               className={cn(
@@ -136,6 +162,7 @@ export function FormatBubbleMenu({ editor }: Props) {
                 "text-foreground/80 hover:bg-muted hover:text-foreground",
                 active && "bg-foreground text-background hover:bg-foreground hover:text-background",
                 key === "pause" && "text-[hsl(var(--cue-red))] hover:bg-[hsl(var(--cue-red)/0.12)] hover:text-[hsl(var(--cue-red))]",
+                isMergeDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-foreground/80",
               )}
             >
               <Icon className="h-4 w-4" />
