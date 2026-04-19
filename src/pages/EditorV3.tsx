@@ -17,6 +17,16 @@ import {
   formatTargetDuration,
 } from "@/components/editor/TargetDurationDialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Save,
   Users,
@@ -92,6 +102,8 @@ export default function EditorV3() {
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
+  const [chainBreakOpen, setChainBreakOpen] = useState(false);
+  const [missingTargetCards, setMissingTargetCards] = useState<number[]>([]);
 
   const editorRef = useRef<TiptapEditorType | null>(null);
   const saveTimerRef = useRef<number | null>(null);
