@@ -7,7 +7,7 @@ import { buildCards } from "@/lib/import/buildCards";
 
 describe("Import end-to-end (test-paneldebatt.docx)", () => {
   it("parses docx, detects speakers, lists skipped content, and builds cards", async () => {
-    const buf = readFileSync(resolve(__dirname, "test-paneldebatt.docx"));
+    const buf = readFileSync(resolve(__dirname, "../../test/test-paneldebatt.docx"));
     // Skapa en File-liknande wrapper (vitest jsdom har File-stöd)
     const file = new File([buf as unknown as BlobPart], "test-paneldebatt.docx", {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
