@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { nextStartFromEnd } from "@/lib/timeChain";
+import { nextStartFromEnd, parseTime, formatTime } from "@/lib/timeChain";
 import { wordCount, estimateSeconds } from "@/lib/wordCount";
 import { splitHtmlAtRow, splitHtmlInHalf, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import { useTourTrigger } from "@/hooks/useTour";
