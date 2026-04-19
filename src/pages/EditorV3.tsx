@@ -10,6 +10,7 @@ import { CardChromeFrame } from "@/components/editor/CardChromeFrame";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { joinCardsToDoc, splitDocToCards, planCardSync } from "@/lib/docSplit";
+import { PanelistsProvider } from "@/hooks/usePanelists";
 import type { TextSize } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 import type { Editor as TiptapEditorType } from "@tiptap/react";
@@ -281,7 +282,7 @@ export default function EditorV3() {
   }[saving];
 
   return (
-    <>
+    <PanelistsProvider manuscriptId={manuscript.id}>
       <SEO title={`${manuscript.title} – Editor v3 (experiment)`} />
 
       <div className="min-h-screen bg-background flex flex-col">
