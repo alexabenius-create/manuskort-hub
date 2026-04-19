@@ -141,23 +141,23 @@ export function detectAddressees(blocks: ParsedBlock[]): AddresseeDetection {
     firstNameToCanonical.set(full.split(/\s+/)[0].toLowerCase(), full);
   }
 
+  // Om vi har en intro-lista är vi liberala — alla extra adressater (count≥1) tas med.
+  // Annars kräver vi count≥1 men totalt ≥3 träffar och ≥2 unika namn.
+  const uniqueAddrCount = addressCounts.size;
+  const totalAddr = Array.from(addressCounts.values()).reduce((a, b) => a + b, 0);
+  const liberalThreshold = introNames.length >= 2;
+  const passesAOnly = uniqueAddrCount >= 2 && totalAddr >= 3;
+
   for (const [first, count] of addressCounts) {
     const lower = first.toLowerCase();
     if (introFirstSet.has(lower)) continue; // redan med via intro-listan
-    if (count < 2) continue; // brusfilter
+    if (!liberalThreshold && !passesAOnly) continue;
+    if (!liberalThreshold && count < 1) continue;
     names.push(first);
     firstNameToCanonical.set(lower, first);
   }
 
-  // Tröskel: räkna källor — om vi har en intro-lista räcker det med ≥2 namn.
-  // Annars (bara A): kräv ≥2 unika namn med count ≥2 totalt ≥3.
-  if (introNames.length >= 2) {
-    return { names, firstNameToCanonical };
-  }
-  const aOnly = names.filter((n) => !introFirstSet.has(n.toLowerCase()));
-  const total = aOnly.reduce((sum, n) => sum + (addressCounts.get(n) || 0), 0);
-  if (aOnly.length >= 2 && total >= 3) {
-    return { names, firstNameToCanonical };
-  }
+  if (introNames.length >= 2) return { names, firstNameToCanonical };
+  if (passesAOnly) return { names, firstNameToCanonical };
   return { names: [], firstNameToCanonical: new Map() };
 }
