@@ -569,7 +569,6 @@ export default function Editor() {
     }
 
     // Beräkna lediga rader i prev
-    const { countPresentationRows } = await import("@/lib/cardLimits");
     const prevRows = countPresentationRows(prev.content_html ?? "", textSize);
     const available = maxRows - prevRows;
 
