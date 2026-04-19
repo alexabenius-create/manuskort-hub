@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EXAMPLE_MANUSCRIPT } from "./exampleManuscript";
 import { hexToRgba, hexToDarkText } from "./panelistColors";
 import { autofillProfilePlaceholders, type ProfileValues } from "./profilePlaceholders";
+import { newCueId, serializeCues, type Cue } from "./cues";
 
 const seededKey = (userId: string) => `manuskort:example_seeded:${userId}`;
 
