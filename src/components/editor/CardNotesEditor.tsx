@@ -36,7 +36,7 @@ export function CardNotesEditor({ value, onChange }: Props) {
     setEditing(false);
   };
 
-  if (!editing && !value.trim()) {
+  if (!editing && !safeValue.trim()) {
     return (
       <button
         type="button"
