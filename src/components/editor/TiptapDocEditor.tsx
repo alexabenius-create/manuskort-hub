@@ -5,19 +5,12 @@ import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import Blockquote from "@tiptap/extension-blockquote";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
-
-/**
- * TiptapDocEditor — en enda Tiptap-instans för HELA manuset.
- *
- * Skillnaden mot vanliga TiptapEditor: ingen reflow, ingen radmätning,
- * inga gränser. Vi låter ProseMirror sköta caret/undo/paste/markering
- * helt utan inblandning. Sidbrytningar visas som overlay ovanpå.
- */
+import { DocFrameDecorations, type FrameBreak } from "@/lib/docFrameDecorations";
 
 interface Props {
   value: string;
@@ -25,6 +18,8 @@ interface Props {
   size: "sm" | "md" | "lg";
   placeholder?: string;
   onEditorReady?: (editor: Editor | null) => void;
+  /** Spacer-positioner i dokumentet där kort-chrome ska få plats. */
+  frameBreaks?: FrameBreak[];
 }
 
 const sizeClass = {
@@ -39,7 +34,12 @@ export function TiptapDocEditor({
   size,
   placeholder = "Börja skriva ditt manus…",
   onEditorReady,
+  frameBreaks = [],
 }: Props) {
+  // Stabil ref till options-objektet — vi muterar `breaks` på det
+  // mellan renderingar utan att skapa om extensionen.
+  const frameOptions = useMemo(() => ({ breaks: [] as FrameBreak[] }), []);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -60,6 +60,7 @@ export function TiptapDocEditor({
       QuestionToMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
+      DocFrameDecorations.configure(frameOptions),
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
@@ -70,7 +71,6 @@ export function TiptapDocEditor({
         class: `${sizeClass[size]} focus:outline-none w-full max-w-[75ch] mx-auto text-foreground px-8 py-12`,
       },
       handleKeyDown: (_view, event) => {
-        // "/" → infoga paus (samma kortkommando som v1)
         if (
           event.key === "/" &&
           !event.shiftKey &&
@@ -91,12 +91,20 @@ export function TiptapDocEditor({
     return () => onEditorReady?.(null);
   }, [editor, onEditorReady]);
 
-  // Synka externt värde (t.ex. vid initial laddning) utan att skicka update
+  // Synka externt värde (initial laddning) utan att skicka update
   useEffect(() => {
     if (!editor) return;
     if (editor.getHTML() === value) return;
     editor.commands.setContent(value || "", { emitUpdate: false });
   }, [value, editor]);
+
+  // Uppdatera frame-breaks på extensionen och tvinga ny decoration-pass
+  useEffect(() => {
+    if (!editor) return;
+    frameOptions.breaks = frameBreaks;
+    // Trigger decorations-omräkning genom en no-op transaction
+    editor.view.dispatch(editor.state.tr.setMeta("docFrameBreaksUpdated", true));
+  }, [frameBreaks, editor, frameOptions]);
 
   return (
     <div className="relative w-full">
