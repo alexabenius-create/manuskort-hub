@@ -88,7 +88,6 @@ export function TiptapDocEditor({
       PanelistMark,
       QuestionToMark,
       PauseMarkNode,
-      PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
     ],
     content: value || `<article data-card-block="true"><p></p></article>`,
