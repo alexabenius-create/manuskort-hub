@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -20,6 +20,8 @@ import { usePanelists, type Panelist } from "@/hooks/usePanelists";
 import { MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
+import { parseCues, serializeCues, upsertCue, removeCue, type Cue } from "@/lib/cues";
+import { CueChip, AddCueButton } from "./CueEditor";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"] & {
   is_panic_card?: boolean;
