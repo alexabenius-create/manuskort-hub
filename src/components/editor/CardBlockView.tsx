@@ -25,13 +25,13 @@ import {
   moveCardBlock,
   moveCardBlockBySteps,
 } from "@/lib/cardBlockCommands";
-import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { ChevronUp, ChevronDown, X, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { CardBlockErrorBoundary } from "./CardBlockErrorBoundary";
 
-const CUE_ICON: Record<Cue["kind"], string> = {
-  energy: "⚡",
-  action: "▶",
-  panel: "👤",
+const CUE_ICON: Record<Cue["kind"], LucideIcon> = {
+  energy: Zap,
+  action: Play,
+  panel: Users,
 };
 
 export function CardBlockView(props: NodeViewProps) {
