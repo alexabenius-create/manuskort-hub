@@ -13,7 +13,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { CardBlockView } from "@/components/editor/CardBlockView";
-import { splitCardBlock } from "@/lib/cardBlockCommands";
 import type { Cue } from "@/lib/cues";
 
 export interface CardBlockAttrs {
@@ -89,11 +88,6 @@ export const CardBlock = Node.create({
     return ReactNodeViewRenderer(CardBlockView);
   },
 
-  addKeyboardShortcuts() {
-    return {
-      "Mod-Enter": ({ editor }) => splitCardBlock(editor.state, editor.view.dispatch),
-    };
-  },
 
   addCommands() {
     return {
