@@ -359,6 +359,16 @@ export default function EditorV3() {
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setPanelistSidebarOpen(true)}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-surface-2 border border-border/40 transition-colors"
+                aria-label="Paneldeltagare"
+                title="Paneldeltagare"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Paneldeltagare</span>
+              </button>
               <span className="text-[12px] text-muted-foreground font-mono">
                 {cardCount} kort
               </span>
