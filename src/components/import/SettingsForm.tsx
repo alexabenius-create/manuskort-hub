@@ -63,16 +63,21 @@ export function SettingsForm({ hasHeadings }: Props) {
     ["paragraph", "En per stycke", true],
   ];
 
-  const formatMmSs = (s: number) => {
-    const m = Math.floor(s / 60);
-    const r = s % 60;
-    return `${m}:${r.toString().padStart(2, "0")}`;
+  const hours = Math.floor(targetSeconds / 3600);
+  const minutes = Math.floor((targetSeconds % 3600) / 60);
+  const seconds = targetSeconds % 60;
+
+  const updateParts = (h: number, m: number, s: number) => {
+    setTargetSeconds(h * 3600 + m * 60 + s);
   };
 
-  const parseMmSs = (raw: string): number | null => {
-    const m = raw.match(/^(\d{1,3}):(\d{1,2})$/);
-    if (!m) return null;
-    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const formatTotal = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    if (h > 0) return `${h}:${pad(m)}:${pad(sec)}`;
+    return `${m}:${pad(sec)}`;
   };
 
   return (
@@ -87,7 +92,7 @@ export function SettingsForm({ hasHeadings }: Props) {
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label className="text-[13px] text-muted-foreground font-medium">Måltid</Label>
         <div className="flex flex-wrap gap-2">
           {presets.map(([s, label]) => (
@@ -101,15 +106,48 @@ export function SettingsForm({ hasHeadings }: Props) {
               {label}
             </button>
           ))}
-          <Input
-            value={formatMmSs(targetSeconds)}
-            onChange={(e) => {
-              const v = parseMmSs(e.target.value);
-              if (v !== null) setTargetSeconds(v);
-            }}
-            placeholder="mm:ss"
-            className="w-24 h-9 rounded-full bg-surface-2 border-0 text-[13px] text-center"
-          />
+        </div>
+
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-3">
+            <Label className="text-[12px] text-muted-foreground w-20 shrink-0">Timmar</Label>
+            <Slider
+              min={0}
+              max={8}
+              step={1}
+              value={[hours]}
+              onValueChange={([h]) => updateParts(h, minutes, seconds)}
+              className="flex-1"
+            />
+            <span className="text-[12px] text-foreground font-medium w-14 text-right tabular-nums">{hours} h</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Label className="text-[12px] text-muted-foreground w-20 shrink-0">Minuter</Label>
+            <Slider
+              min={0}
+              max={59}
+              step={1}
+              value={[minutes]}
+              onValueChange={([m]) => updateParts(hours, m, seconds)}
+              className="flex-1"
+            />
+            <span className="text-[12px] text-foreground font-medium w-14 text-right tabular-nums">{minutes} min</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Label className="text-[12px] text-muted-foreground w-20 shrink-0">Sekunder</Label>
+            <Slider
+              min={0}
+              max={55}
+              step={5}
+              value={[seconds - (seconds % 5)]}
+              onValueChange={([s]) => updateParts(hours, minutes, s)}
+              className="flex-1"
+            />
+            <span className="text-[12px] text-foreground font-medium w-14 text-right tabular-nums">{seconds} s</span>
+          </div>
+          <div className="text-[12px] text-muted-foreground pt-1">
+            Totalt: <span className="font-medium text-foreground tabular-nums">{formatTotal(targetSeconds)}</span>
+          </div>
         </div>
       </div>
 
