@@ -20,8 +20,14 @@ interface Props {
 const KIND_OPTIONS: { value: CueKind; label: string; icon: string }[] = [
   { value: "energy", label: "Energi", icon: "⚡" },
   { value: "action", label: "Action", icon: "▶" },
-  { value: "time", label: "Tid", icon: "⏱" },
+  { value: "panel", label: "Panel", icon: "👥" },
 ];
+
+const PLACEHOLDER: Record<CueKind, string> = {
+  energy: "T.ex. Andas, sänk tempo",
+  action: "T.ex. Visa bild 3, byt plats",
+  panel: "T.ex. Be om konkret exempel",
+};
 
 export function CardCuePopover({ onAdd }: Props) {
   const [open, setOpen] = useState(false);
@@ -83,7 +89,7 @@ export function CardCuePopover({ onAdd }: Props) {
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="t.ex. ta paus, andas"
+              placeholder={PLACEHOLDER[kind]}
               className="mt-1.5 min-h-[60px] text-[13px]"
               autoFocus
               onKeyDown={(e) => {

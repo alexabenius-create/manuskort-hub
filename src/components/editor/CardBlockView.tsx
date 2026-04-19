@@ -32,7 +32,6 @@ const CUE_ICON: Record<Cue["kind"], string> = {
   energy: "⚡",
   action: "▶",
   panel: "👤",
-  time: "⏱",
 };
 
 export function CardBlockView(props: NodeViewProps) {
