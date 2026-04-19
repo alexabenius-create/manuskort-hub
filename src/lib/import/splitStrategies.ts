@@ -22,6 +22,11 @@ export interface PreviewCard {
   speakerName?: string;
 }
 
+// Mode forwardas in så vi kan styra wrap-beteende. I moderator-läge
+// är texten i grunden moderatorns egna ord — vi vill INTE färga hela
+// stycken som "talare", bara markera frågor riktade till panelister.
+export type CardBuildMode = "moderator" | "speaker" | undefined;
+
 export const WORDS_PER_CARD_DEFAULT: Record<TextSize, number> = {
   sm: 180,
   md: 130,
@@ -88,6 +93,7 @@ interface BuildContext {
   speakers: SpeakerDetection;
   panelistTempId: (name: string) => string; // mappa namn → tempId för data-panelist-id
   headingMode: HeadingMode;
+  mode?: CardBuildMode;
 }
 
 /**
@@ -131,7 +137,12 @@ function buildCard(
     if (sp) {
       html = sp.restHtml;
       textForCount = sp.restText;
-      html = withSpeakerWrap(html, ctx, sp.name);
+      // I moderator-läge: hoppa över talar-wrap helt. Texten betraktas
+      // som moderatorns egna ord; frågor TILL panelister markeras
+      // separat via annotateQuestionsInHtml och får då panelistens färg.
+      if (ctx.mode !== "moderator") {
+        html = withSpeakerWrap(html, ctx, sp.name);
+      }
       if (!speakerName) speakerName = sp.name;
     }
 

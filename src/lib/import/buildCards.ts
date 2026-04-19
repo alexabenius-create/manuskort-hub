@@ -54,6 +54,7 @@ export function buildCards(opts: BuildOptions): PreviewCard[] {
       return id;
     },
     headingMode,
+    mode: opts.mode,
   };
 
   let cards: PreviewCard[];
