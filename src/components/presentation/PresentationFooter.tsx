@@ -78,7 +78,10 @@ export function PresentationFooter({
   const nextRoleLabel = next?.role === "moderator" ? "Moderator" : "Talare";
 
   return (
-    <footer className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pb-5 pointer-events-none">
+    <footer
+      className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pointer-events-none"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)" }}
+    >
       <div className="max-w-5xl mx-auto grid grid-cols-3 items-center gap-4">
         {/* Vänster — A−/A+ */}
         <div className="flex items-center gap-1.5 pointer-events-auto justify-self-start">

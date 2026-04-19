@@ -1,0 +1,1 @@
+ALTER TABLE public.manuscripts ALTER COLUMN time_format SET DEFAULT 'elapsed';
