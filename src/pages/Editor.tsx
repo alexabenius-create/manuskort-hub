@@ -515,6 +515,124 @@ export default function Editor() {
     }
   };
 
+  /**
+   * Pull-back vid Backspace i början av ett kort: drar tillbaka text från
+   * nuvarande kort upp till föregående kort så långt det får plats där.
+   * Spegelbild av handleAutoOverflow.
+   *
+   * Beteende:
+   * - Föregångaren full (8/8) → bara caret-flytt till slutet av prev.
+   * - Aktuellt kort tomt → ta bort kortet, caret → slutet av prev.
+   * - Annars → splitta current vid lediga rader, lägg fits sist i prev,
+   *   låt resten ligga kvar i current. Caret hoppar till prev där den
+   *   inflyttade texten börjar (där föregångaren slutade tidigare).
+   */
+  const handlePullBack = async (cardId: string) => {
+    if (!user || !manuscript) return;
+    const currentIdx = cards.findIndex((c) => c.id === cardId);
+    if (currentIdx <= 0) return; // Första kortet → inget att dra till
+
+    const prev = cards[currentIdx - 1];
+    const current = cards[currentIdx];
+    const textSize = (manuscript.text_size as "sm" | "md" | "lg") ?? "md";
+    const maxRows = MAX_ROWS_BY_SIZE[textSize];
+
+    // Mät prev:s docSize INNAN merge — det blir caret-måltid.
+    const prevEditor = editorRefs.current.get(prev.id);
+    const prevDocSize = prevEditor?.state.doc.content.size ?? 0;
+    const focusPrevAtEnd = () => {
+      requestAnimationFrame(() => {
+        const ed = editorRefs.current.get(prev.id);
+        if (!ed) return;
+        ed.commands.focus(ed.state.doc.content.size, { scrollIntoView: true });
+      });
+    };
+
+    const currentHtml = (current.content_html ?? "").trim();
+    const isCurrentEmpty =
+      currentHtml === "" ||
+      currentHtml === "<p></p>" ||
+      currentHtml === "<p><br></p>";
+
+    // Fall 1: aktuellt kort tomt → ta bort det
+    if (isCurrentEmpty) {
+      const next = cards.filter((_, i) => i !== currentIdx).map((c, i) => ({ ...c, position: i }));
+      setCards(next);
+      const { error: delErr } = await supabase.from("cards").delete().eq("id", current.id);
+      if (delErr) {
+        toast({ title: "Kunde inte radera kort", description: delErr.message, variant: "destructive" });
+        return;
+      }
+      void persistPositions(next);
+      focusPrevAtEnd();
+      return;
+    }
+
+    // Beräkna lediga rader i prev
+    const { countPresentationRows } = await import("@/lib/cardLimits");
+    const prevRows = countPresentationRows(prev.content_html ?? "", textSize);
+    const available = maxRows - prevRows;
+
+    // Fall 2: prev fullt → bara caret-flytt
+    if (available <= 0) {
+      focusPrevAtEnd();
+      return;
+    }
+
+    // Fall 3: splitta current vid available rader, flytta första delen till prev
+    const [fitsInPrev, restStaysHere] = splitHtmlAtRow(current.content_html ?? "", available, textSize);
+
+    // Om split inte gav något flyttbart (t.ex. första blocket spränger redan available)
+    // → bara caret-flytt
+    if (!fitsInPrev || !fitsInPrev.trim()) {
+      focusPrevAtEnd();
+      return;
+    }
+
+    const newPrevHtml = (prev.content_html ?? "") + fitsInPrev;
+    const newCurrentHtml = restStaysHere;
+
+    // Om resten är tom efter split → ta bort current också (allt fick plats)
+    const restEmpty = !newCurrentHtml || !newCurrentHtml.trim() ||
+      newCurrentHtml === "<p></p>" || newCurrentHtml === "<p><br></p>";
+
+    if (restEmpty) {
+      const next = cards
+        .map((c, i) => i === currentIdx - 1 ? { ...c, content_html: newPrevHtml } : c)
+        .filter((_, i) => i !== currentIdx)
+        .map((c, i) => ({ ...c, position: i }));
+      setCards(next);
+      void supabase.from("cards").update({ content_html: newPrevHtml }).eq("id", prev.id);
+      const { error: delErr } = await supabase.from("cards").delete().eq("id", current.id);
+      if (delErr) {
+        toast({ title: "Kunde inte radera kort", description: delErr.message, variant: "destructive" });
+      }
+      void persistPositions(next);
+    } else {
+      const next = cards.map((c, i) => {
+        if (i === currentIdx - 1) return { ...c, content_html: newPrevHtml };
+        if (i === currentIdx) return { ...c, content_html: newCurrentHtml };
+        return c;
+      });
+      setCards(next);
+      void Promise.all([
+        supabase.from("cards").update({ content_html: newPrevHtml }).eq("id", prev.id),
+        supabase.from("cards").update({ content_html: newCurrentHtml }).eq("id", current.id),
+      ]);
+    }
+
+    // Caret → prev vid den punkt där den inflyttade texten börjar.
+    // Använder prevDocSize från innan merge (minus 1 för att hamna före closing tag).
+    const targetPos = Math.max(1, prevDocSize - 1);
+    requestAnimationFrame(() => {
+      const ed = editorRefs.current.get(prev.id);
+      if (!ed) return;
+      const safePos = Math.min(ed.state.doc.content.size, targetPos);
+      ed.commands.focus(safePos, { scrollIntoView: true });
+    });
+  };
+
+
   const restoreSnapshot = async (snap: SplitSnapshot) => {
     // Återställ content_html på alla berörda kort som inte är nyskapade
     const toRestore = snap.affected.filter((s) => !s.isNew);
