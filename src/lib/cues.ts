@@ -1,14 +1,14 @@
 import type { Json } from "@/integrations/supabase/types";
 
 /**
- * Cue-systemet (Steg 5A).
+ * Cue-systemet.
  *
- * Schemat stöder fyra kategorier från start. UI/AI exponerar bara delmängd per fas:
- *   - 5A.1 (nu):    energy + action
- *   - 5A.2 (nästa): panel
- *   - 5A.3 (sen):   time
+ * Aktiva typer: energy, action, panel.
+ * `time` är borttagen — använd "tid-per-kort"-funktionen istället.
+ * Schemat behåller `atSeconds` på interfacet för bakåtkompatibel parse av legacy-data
+ * (ignoreras tyst, försvinner vid nästa save).
  */
-export type CueKind = "energy" | "action" | "panel" | "time";
+export type CueKind = "energy" | "action" | "panel";
 
 export interface Cue {
   id: string;
@@ -16,29 +16,22 @@ export interface Cue {
   text: string;
   /** Endast för kind === "panel". */
   panelistId?: string | null;
-  /** Endast för kind === "time" — sekund i kortet då cue:n triggas. */
+  /** Legacy: tidigare time-cues. Behålls i typen för bakåtkompatibilitet, ej längre använt. */
   atSeconds?: number | null;
 }
 
-export const CUE_KINDS_ENABLED_5A1: CueKind[] = ["energy", "action"];
-export const CUE_KINDS_ENABLED_5A2: CueKind[] = ["energy", "action", "panel"];
-/** 5A.3: time-cues aktiverade. */
-export const CUE_KINDS_ENABLED_5A3: CueKind[] = ["energy", "action", "panel", "time"];
-/** Alias för aktuell fas — bumpa när nästa fas levereras. */
-export const CUE_KINDS_ENABLED = CUE_KINDS_ENABLED_5A3;
+export const CUE_KINDS_ENABLED: CueKind[] = ["energy", "action", "panel"];
 
 export const CUE_KIND_LABEL: Record<CueKind, string> = {
   energy: "Energi",
   action: "Action",
   panel: "Panel",
-  time: "Tid",
 };
 
 export const CUE_KIND_DESCRIPTION: Record<CueKind, string> = {
   energy: "Paus, lugn, ta ton — påminnelse om tempo/rytm",
   action: "Gör något konkret — gest, bild, byt plats",
   panel: "Rikta till en panelist",
-  time: "Triggas vid en specifik sekund i kortet",
 };
 
 /** Genererar ett kort id för nya cues (kollisionsrisk försumbar för vår användning). */
@@ -58,18 +51,14 @@ export function parseCues(raw: Json | null | undefined): Cue[] {
     const obj = item as Record<string, unknown>;
     const kind = obj.kind;
     const text = obj.text;
-    if (
-      typeof text !== "string" ||
-      (kind !== "energy" && kind !== "action" && kind !== "panel" && kind !== "time")
-    ) {
-      continue;
-    }
+    if (typeof text !== "string") continue;
+    // Filtrera bort legacy "time"-cues — de är borttagna ur produkten.
+    if (kind !== "energy" && kind !== "action" && kind !== "panel") continue;
     out.push({
       id: typeof obj.id === "string" && obj.id.length > 0 ? obj.id : newCueId(),
       kind,
       text,
       panelistId: typeof obj.panelistId === "string" ? obj.panelistId : null,
-      atSeconds: typeof obj.atSeconds === "number" ? obj.atSeconds : null,
     });
   }
   return out;
@@ -82,7 +71,6 @@ export function serializeCues(cues: Cue[]): Json {
     kind: c.kind,
     text: c.text,
     ...(c.panelistId ? { panelistId: c.panelistId } : {}),
-    ...(typeof c.atSeconds === "number" ? { atSeconds: c.atSeconds } : {}),
   })) as unknown as Json;
 }
 
