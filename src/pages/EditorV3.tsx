@@ -523,20 +523,7 @@ export default function EditorV3() {
                 </TooltipContent>
               </Tooltip>
 
-              {/* Storlek */}
-              <div className="seg-group">
-                {sizes.map((s) => (
-                  <button
-                    key={s}
-                    data-active={manuscript.text_size === s}
-                    onClick={() => updateMeta({ text_size: s })}
-                    className="seg-btn"
-                    title={`Textstorlek: ${s.toUpperCase()}`}
-                  >
-                    {s.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+              {/* Storlek flyttad till Vy-popover nedan */}
 
               {/* Vy-popover */}
               <Tooltip delayDuration={200}>
@@ -557,6 +544,22 @@ export default function EditorV3() {
                   </TooltipContent>
                   <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
                     <div className="flex flex-col gap-4">
+                      <ViewSection label="Textstorlek">
+                        <div className="seg-group w-full">
+                          {sizes.map((s) => (
+                            <button
+                              key={s}
+                              data-active={manuscript.text_size === s}
+                              onClick={() => updateMeta({ text_size: s })}
+                              className="seg-btn flex-1"
+                              title={`Textstorlek: ${s.toUpperCase()}`}
+                            >
+                              {s.toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
+                      </ViewSection>
+
                       <ViewSection label="Anteckningar">
                         <div className="seg-group w-full">
                           <button
