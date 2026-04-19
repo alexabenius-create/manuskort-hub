@@ -41,14 +41,19 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
     const MM_TO_PX = 3.7795275591; // 1mm @ 96dpi
     // A4 portrait: 297mm − 24mm marginal = 273mm för 2 kort (med ~12mm gap).
     // A5 landscape: 148mm höjd − 20mm marginal = 128mm för 1 kort.
-    const availableMm = format === "a5-1up" ? 128 - 4 : (273 - 12) / 2;
+    // Subtrahera ~20mm för header/times/cues/notes-padding som INTE skalas av --print-script-scale.
+    const HEADER_OVERHEAD_MM = 20;
+    const rawAvailableMm = format === "a5-1up" ? 128 - 4 : (273 - 12) / 2;
+    const availableMm = rawAvailableMm - HEADER_OVERHEAD_MM;
     const availablePx = availableMm * MM_TO_PX;
     const cardWidthMm = format === "a5-1up" ? 190 : 186;
+    const MIN_SCALE = 0.45;
 
     const cards = Array.from(
       document.querySelectorAll<HTMLElement>(".manu-card"),
     );
     const scaledCards: HTMLElement[] = [];
+    let clampedCount = 0;
 
     if (cards.length > 0) {
       const sandbox = document.createElement("div");
@@ -84,10 +89,15 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
           clone.style.overflow = "visible";
           sandbox.innerHTML = "";
           sandbox.appendChild(clone);
-          const measured = clone.scrollHeight;
+          // Mät endast skalbara delar (script + notes), inte hela kortet.
+          const script = clone.querySelector<HTMLElement>(".card-panel-script");
+          const notes = clone.querySelector<HTMLElement>(".card-panel-notes");
+          const measured =
+            (script?.scrollHeight ?? 0) + (notes?.scrollHeight ?? 0);
           if (measured > availablePx && measured > 0) {
             const raw = availablePx / measured;
-            const scale = Math.max(0.55, Math.min(1, raw));
+            const scale = Math.max(MIN_SCALE, Math.min(1, raw));
+            if (raw < MIN_SCALE) clampedCount += 1;
             card.style.setProperty("--print-script-scale", scale.toFixed(3));
             scaledCards.push(card);
           }
