@@ -476,7 +476,7 @@ export default function Import() {
       </header>
 
       <main className="max-w-[900px] mx-auto px-6 sm:px-10 pt-8 pb-20 space-y-5">
-        <SpeakerMappingPanel existing={[]} />
+        {store.mode === "moderator" && <SpeakerMappingPanel existing={[]} />}
 
         <SkippedContentPanel items={store.skippedItems} />
 
@@ -488,13 +488,14 @@ export default function Import() {
               index={i}
               total={store.cards.length}
               textSize={store.textSize}
+              speakers={store.speakers}
               onRename={(t) => updateCard(i, { title: t })}
+              onContentChange={(html) => updateCard(i, { contentHtml: html, wordCount: wordCount(html) })}
               onMergePrev={() => mergeWith(i, i - 1)}
               onMergeNext={() => mergeWith(i, i + 1)}
               onRemove={() => removeCard(i)}
               onMoveUp={() => move(i, -1)}
               onMoveDown={() => move(i, 1)}
-              onSplitAt={(p) => splitAt(i, p)}
             />
           ))}
         </div>
