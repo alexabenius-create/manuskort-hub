@@ -14,6 +14,7 @@ import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
 import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
+import { CardChainTimeChip } from "./CardChainTimeChip";
 import { CardDragHandle, CardDropZone } from "./CardDragHandle";
 import { setDraggingCardPos, useDraggingCardPos } from "@/lib/cardDragStore";
 import {
