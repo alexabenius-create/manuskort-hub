@@ -225,7 +225,7 @@ function makeQuestionSpan(
   // En enda färg-källa: data-panelist-color (samma som PanelistMark använder)
   span.setAttribute("data-panelist-color", panelist.color);
   // Inline-style som CSS kan plocka upp via custom properties
-  span.setAttribute("style", buildInlineStyle(panelist.color));
+  span.setAttribute("style", buildQuestionStyle(panelist.color));
   span.className = "question-to-mark";
   span.textContent = textContent;
   return span;
@@ -275,17 +275,9 @@ export function recolorQuestionsInHtml(
     el.setAttribute("data-panelist-color", newColor);
 
     if (el.hasAttribute("data-question-to")) {
-      el.setAttribute("style", buildInlineStyle(newColor));
+      el.setAttribute("style", buildQuestionStyle(newColor));
     } else {
-      // PanelistMark-style: bg + fg
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { hexToDarkText, hexToRgba } = require("@/lib/panelistColors") as typeof import("@/lib/panelistColors");
-      const bg = hexToRgba(newColor, 0.32);
-      const fg = hexToDarkText(newColor);
-      el.setAttribute(
-        "style",
-        `background-color: ${bg}; color: ${fg}; --panelist-bg: ${bg}; --panelist-fg: ${fg}; border-radius: 10px; padding: 2px 8px; position: relative; box-decoration-break: clone; -webkit-box-decoration-break: clone;`,
-      );
+      el.setAttribute("style", buildPanelistStyle(newColor));
     }
     changed = true;
   });
