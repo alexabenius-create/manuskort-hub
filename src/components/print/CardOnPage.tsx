@@ -8,9 +8,10 @@ export interface CardOnPageProps {
   manuscriptTitle: string;
   totalTargetSeconds: number | null;
   cardNumberLabel: string;       // "03 / 10" eller "03a / 10"
+  cardNumberShort: string;       // "1" eller "1A" (för sidfot)
   totalCardsLabel: string;       // "Sida 3 / 10" eller "Sida 3a / 10"
   roleLabel: string;             // "TALARE" / "ANNA SJÖBERG"
-  roleColor: string;             // hex för vänsterkant
+  roleColor: string;             // hex för rolletikett
   cumulativeStartSeconds: number | null;
   cumulativeEndSeconds: number | null;
   targetSeconds: number | null;
@@ -25,7 +26,6 @@ export interface CardOnPageProps {
 
 const PT_PER_MM = 2.8346;
 const PAD_MM = 10;
-const RAIL_MM = 4;
 const FRAME_MARGIN_MM = 5;
 
 function formatSec(sec: number | null): string {
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    flexDirection: "row",
+    flexDirection: "column",
     fontFamily: "Helvetica",
     color: "#1A1A1A",
     borderWidth: 0.75,
@@ -54,15 +54,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
   },
-  leftRail: {
-    width: RAIL_MM * PT_PER_MM,
-    height: "100%",
-  },
   inner: {
     flex: 1,
     paddingTop: PAD_MM * PT_PER_MM,
     paddingBottom: PAD_MM * PT_PER_MM,
-    paddingLeft: (PAD_MM - 1) * PT_PER_MM,
+    paddingLeft: PAD_MM * PT_PER_MM,
     paddingRight: PAD_MM * PT_PER_MM,
     flexDirection: "column",
   },
@@ -173,52 +169,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderTopColor: "#D8D8D8",
     flexDirection: "row",
-    alignItems: "center",
-  },
-  footerCell: {
-    flexDirection: "row",
     alignItems: "baseline",
+    justifyContent: "space-between",
   },
   footerLabel: {
-    fontSize: 7,
-    color: "#999999",
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 1,
-    marginRight: 4,
-  },
-  footerValue: {
-    fontSize: 8.5,
-    color: "#444444",
-    fontFamily: "Courier-Bold",
-  },
-  footerSep: {
-    width: 1,
-    height: 10,
-    backgroundColor: "#E0E0E0",
-    marginLeft: 12,
-    marginRight: 12,
-  },
-  footerSpacer: {
-    flex: 1,
-  },
-  footerPage: {
     fontSize: 8,
-    color: "#666666",
+    color: "#888888",
     fontFamily: "Helvetica-Bold",
     letterSpacing: 0.8,
+  },
+  footerValue: {
+    fontSize: 11,
+    color: "#1A1A1A",
+    fontFamily: "Courier-Bold",
   },
 });
 
 export function CardOnPage(props: CardOnPageProps) {
   const {
     manuscriptTitle,
-    totalTargetSeconds,
     cardNumberLabel,
-    totalCardsLabel,
+    cardNumberShort,
     roleLabel,
     roleColor,
-    cumulativeStartSeconds,
-    cumulativeEndSeconds,
     targetSeconds,
     cues,
     contentHtml,
@@ -232,82 +205,67 @@ export function CardOnPage(props: CardOnPageProps) {
   return (
     <View style={styles.frame} wrap={false}>
       <View style={styles.card}>
-      <View style={[styles.leftRail, { backgroundColor: roleColor }]} />
-      <View style={styles.inner}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.manuscriptTitle}>{manuscriptTitle}</Text>
-            <Text style={[styles.roleLabel, { color: roleColor }]}>
-              {roleLabel.toUpperCase()}
-            </Text>
+        <View style={styles.inner}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.manuscriptTitle}>{manuscriptTitle}</Text>
+              <Text style={[styles.roleLabel, { color: roleColor }]}>
+                {roleLabel.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Text style={styles.cardNumber}>{cardNumberLabel}</Text>
+              <Text style={styles.cardNumberCaption}>KORT</Text>
+            </View>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.cardNumber}>{cardNumberLabel}</Text>
-            <Text style={styles.cardNumberCaption}>KORT</Text>
-          </View>
-        </View>
 
-        {/* Cue-chippar */}
-        {cues.length > 0 && (
-          <View style={styles.cueRow}>
-            {cues.map((cue) => {
-              const palette =
-                cue.kind === "panel" && cue.panelistId
-                  ? buildPanelChipPalette(cue.panelistId, panelistColorById)
-                  : CUE_COLORS[cue.kind];
-              const label =
-                cue.kind === "panel" && cue.panelistId && panelistNameById?.get(cue.panelistId)
-                  ? panelistNameById.get(cue.panelistId)!.toUpperCase()
-                  : palette.label;
-              return (
-                <View
-                  key={cue.id}
-                  style={[styles.cueChip, { backgroundColor: palette.bg }]}
-                >
-                  <Text style={[styles.cueLabel, { color: palette.text }]}>{label}</Text>
-                  <Text style={[styles.cueText, { color: palette.text }]}>{cue.text}</Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Body: script + notes */}
-        <View style={styles.body}>
-          <View style={hasNotes ? styles.scriptCol : styles.scriptColFull}>
-            {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.5 })}
-          </View>
-          {hasNotes && (
-            <View style={styles.notesCol}>
-              <Text style={styles.notesLabel}>ANTECKNINGAR</Text>
-              <Text style={styles.notesText}>{notes}</Text>
+          {/* Cue-chippar */}
+          {cues.length > 0 && (
+            <View style={styles.cueRow}>
+              {cues.map((cue) => {
+                const palette =
+                  cue.kind === "panel" && cue.panelistId
+                    ? buildPanelChipPalette(cue.panelistId, panelistColorById)
+                    : CUE_COLORS[cue.kind];
+                const label =
+                  cue.kind === "panel" && cue.panelistId && panelistNameById?.get(cue.panelistId)
+                    ? panelistNameById.get(cue.panelistId)!.toUpperCase()
+                    : palette.label;
+                return (
+                  <View
+                    key={cue.id}
+                    style={[styles.cueChip, { backgroundColor: palette.bg }]}
+                  >
+                    <Text style={[styles.cueLabel, { color: palette.text }]}>{label}</Text>
+                    <Text style={[styles.cueText, { color: palette.text }]}>{cue.text}</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
-        </View>
 
-        {/* Footer */}
-        <View style={styles.footerWrap}>
-          <View style={styles.footerCell}>
-            <Text style={styles.footerLabel}>MÅL</Text>
+          {/* Body: script + notes */}
+          <View style={styles.body}>
+            <View style={hasNotes ? styles.scriptCol : styles.scriptColFull}>
+              {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.5 })}
+            </View>
+            {hasNotes && (
+              <View style={styles.notesCol}>
+                <Text style={styles.notesLabel}>ANTECKNINGAR</Text>
+                <Text style={styles.notesText}>{notes}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footerWrap}>
+            <Text style={styles.footerLabel}>
+              TID FÖR DETTA KORTET (KORT {cardNumberShort.toUpperCase()})
+            </Text>
             <Text style={styles.footerValue}>{formatSec(targetSeconds)}</Text>
           </View>
-          <View style={styles.footerSep} />
-          <View style={styles.footerCell}>
-            <Text style={styles.footerLabel}>TID</Text>
-            <Text style={styles.footerValue}>
-              {formatSec(cumulativeStartSeconds)} → {formatSec(cumulativeEndSeconds)}
-            </Text>
-          </View>
-          <View style={styles.footerSep} />
-          <View style={styles.footerCell}>
-            <Text style={styles.footerLabel}>TOTALT</Text>
-            <Text style={styles.footerValue}>{formatSec(totalTargetSeconds)}</Text>
-          </View>
-          <View style={styles.footerSpacer} />
-          <Text style={styles.footerPage}>{totalCardsLabel.toUpperCase()}</Text>
         </View>
-      </View>
       </View>
     </View>
   );
