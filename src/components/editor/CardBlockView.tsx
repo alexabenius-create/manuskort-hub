@@ -12,6 +12,7 @@ import { CardCuePopover } from "./CardCuePopover";
 import { CardNotesEditor } from "./CardNotesEditor";
 import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
+import { CardRolePopover } from "./CardRolePopover";
 import {
   duplicateCardBlock,
   deleteCardBlock,
@@ -36,6 +37,7 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
     notes: string;
     cues: Cue[];
     showNotes: boolean;
+    role: "moderator" | "speaker";
   };
 
   const text = useMemo(
@@ -70,6 +72,9 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   const handleTogglePanic = () => {
     updateAttributes({ isPanic: !a.isPanic });
   };
+  const handleRoleChange = (next: "moderator" | "speaker") => {
+    updateAttributes({ role: next });
+  };
 
   const hasCues = cues.length > 0;
   const hasNotes = showNotes && a.notes.trim().length > 0;
@@ -99,6 +104,8 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
         className="px-5 sm:px-6 pt-3 pb-1 flex items-center gap-2 flex-wrap text-[12px] font-mono text-muted-foreground border-b border-border/30"
       >
         <span className="px-1 tracking-wide">Kort {num} / {a.totalCards}</span>
+        <span className="opacity-40">·</span>
+        <CardRolePopover role={a.role ?? "speaker"} onChange={handleRoleChange} />
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{words} ord</span>
         <span className="opacity-40">·</span>
