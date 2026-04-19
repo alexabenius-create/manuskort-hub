@@ -228,30 +228,57 @@ export default function Editor() {
   );
 
   const updateCard = (cardId: string, patch: Partial<Card>) => {
-    // Markera nästa korts starttid som "manuellt redigerad" om användaren ändrar den direkt
-    if (Object.prototype.hasOwnProperty.call(patch, "start_time")) {
-      setManualStartIds((prev) => {
-        const next = new Set(prev);
-        next.add(cardId);
-        return next;
-      });
-    }
     setCards((prev) => {
-      const next = prev.map((c) => (c.id === cardId ? { ...c, ...patch } : c));
-      // Kedja: om sluttid ändrats, sätt nästa korts starttid till sluttid + 1 sek
-      // — men bara om användaren inte själv har redigerat den starttiden manuellt
+      const idx = prev.findIndex((c) => c.id === cardId);
+      if (idx === -1) return prev;
+      const next = prev.slice();
+      const merged: Card = { ...next[idx], ...patch };
+
+      // Bidirektionell sync mellan end_time och target_seconds (gemensam start = merged.start_time)
+      const startSec = parseTime(merged.start_time ?? "", timeFormat);
+
+      // Fall A: end_time ändrat → räkna om target_seconds (manuell)
       if (Object.prototype.hasOwnProperty.call(patch, "end_time")) {
-        const idx = next.findIndex((c) => c.id === cardId);
-        if (idx !== -1 && idx < next.length - 1) {
-          const nextCard = next[idx + 1];
-          if (!manualStartIds.has(nextCard.id)) {
-            const chained = nextStartFromEnd(next[idx].end_time ?? "", timeFormat);
-            if (chained !== null) {
-              next[idx + 1] = { ...nextCard, start_time: chained };
-            }
-          }
+        const endSec = parseTime(merged.end_time ?? "", timeFormat);
+        if (startSec !== null && endSec !== null && endSec > startSec) {
+          merged.target_seconds = endSec - startSec;
+          merged.target_seconds_is_manual = true;
         }
       }
+      // Fall B: target_seconds ändrat manuellt → räkna om end_time
+      else if (
+        Object.prototype.hasOwnProperty.call(patch, "target_seconds") &&
+        merged.target_seconds_is_manual &&
+        typeof merged.target_seconds === "number" &&
+        startSec !== null
+      ) {
+        merged.end_time = formatTime(startSec + merged.target_seconds, timeFormat);
+      }
+      // Fall C: start_time ändrat → behåll target_seconds, räkna om end_time
+      else if (
+        Object.prototype.hasOwnProperty.call(patch, "start_time") &&
+        typeof merged.target_seconds === "number" &&
+        startSec !== null
+      ) {
+        merged.end_time = formatTime(startSec + merged.target_seconds, timeFormat);
+      }
+
+      next[idx] = merged;
+
+      // Tvinga alltid auto-kedja: nästa korts start_time = detta korts sluttid + 1
+      if (idx < next.length - 1) {
+        const chained = nextStartFromEnd(merged.end_time ?? "", timeFormat);
+        if (chained !== null && chained !== next[idx + 1].start_time) {
+          const nextCard = { ...next[idx + 1], start_time: chained };
+          // Om nästa kort har target_seconds → räkna om även dess end_time
+          const nextStartSec = parseTime(chained, timeFormat);
+          if (typeof nextCard.target_seconds === "number" && nextStartSec !== null) {
+            nextCard.end_time = formatTime(nextStartSec + nextCard.target_seconds, timeFormat);
+          }
+          next[idx + 1] = nextCard;
+        }
+      }
+
       return next;
     });
   };
