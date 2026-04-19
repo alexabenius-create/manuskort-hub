@@ -48,6 +48,7 @@ export default function EditorV3() {
   const editorRef = useRef<TiptapEditorType | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const initializedRef = useRef(false);
+  const hydratedRef = useRef(false);
 
   // Admin-skydd
   useEffect(() => {
@@ -68,6 +69,7 @@ export default function EditorV3() {
     (async () => {
       setLoading(true);
       initializedRef.current = false;
+      hydratedRef.current = false;
       const [mRes, cRes] = await Promise.all([
         supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
         supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
@@ -142,6 +144,7 @@ export default function EditorV3() {
           if (editorRef.current === ed) {
             hydrateAttrs(ed);
             initializedRef.current = true;
+            hydratedRef.current = true;
           }
         });
       }
@@ -153,10 +156,12 @@ export default function EditorV3() {
   useEffect(() => {
     if (!editorRef.current || !manuscript) return;
     initializedRef.current = false;
+    hydratedRef.current = false;
     const t = window.setTimeout(() => {
       if (editorRef.current) {
         hydrateAttrs(editorRef.current);
         initializedRef.current = true;
+        hydratedRef.current = true;
       }
     }, 16);
     return () => window.clearTimeout(t);
@@ -204,6 +209,8 @@ export default function EditorV3() {
   // Debounced autosave
   const handleDocChange = (html: string) => {
     setDocHtml(html);
+    // Skydd mot race: triggar inte spara förrän hydrering är klar
+    if (!hydratedRef.current) return;
     setSaving("idle");
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
