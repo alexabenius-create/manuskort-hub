@@ -21,7 +21,7 @@ interface ToolButton {
   onClick: () => void;
 }
 
-export function FormatBubbleMenu({ editor }: Props) {
+export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
   let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
   try {
     panelists = usePanelists().panelists;
@@ -30,6 +30,9 @@ export function FormatBubbleMenu({ editor }: Props) {
   }
 
   if (!editor) return null;
+
+  // Kolla merge-möjlighet: kräver markering + föregående cardBlock + ryms radvis.
+  const mergeCheck = canMergeSelectionWithPrev(editor.state, textSize);
 
   const buttons: ToolButton[] = [
     {
@@ -78,6 +81,24 @@ export function FormatBubbleMenu({ editor }: Props) {
       },
     },
   ];
+
+  if (mergeCheck.hasPrev) {
+    const fits = mergeCheck.fits;
+    buttons.push({
+      key: "merge-prev",
+      label: fits
+        ? `Slå ihop med föregående kort (${mergeCheck.selectionRows}/${mergeCheck.availableRows} rader lediga)`
+        : `Får inte plats i föregående kort (behöver ${mergeCheck.selectionRows} rader, ${mergeCheck.availableRows} lediga)`,
+      icon: ArrowUpToLine,
+      isActive: () => false,
+      onClick: () => {
+        if (!fits) return;
+        mergeSelectionWithPrev(editor.state, textSize, editor.view.dispatch);
+        editor.view.focus();
+      },
+    });
+  }
+
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
     .panelistId ?? null;
