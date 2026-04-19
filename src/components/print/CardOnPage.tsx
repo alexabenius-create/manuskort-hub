@@ -208,13 +208,10 @@ const styles = StyleSheet.create({
 export function CardOnPage(props: CardOnPageProps) {
   const {
     manuscriptTitle,
-    totalTargetSeconds,
     cardNumberLabel,
-    totalCardsLabel,
+    cardNumberShort,
     roleLabel,
     roleColor,
-    cumulativeStartSeconds,
-    cumulativeEndSeconds,
     targetSeconds,
     cues,
     contentHtml,
@@ -228,82 +225,67 @@ export function CardOnPage(props: CardOnPageProps) {
   return (
     <View style={styles.frame} wrap={false}>
       <View style={styles.card}>
-      <View style={[styles.leftRail, { backgroundColor: roleColor }]} />
-      <View style={styles.inner}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.manuscriptTitle}>{manuscriptTitle}</Text>
-            <Text style={[styles.roleLabel, { color: roleColor }]}>
-              {roleLabel.toUpperCase()}
-            </Text>
+        <View style={styles.inner}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.manuscriptTitle}>{manuscriptTitle}</Text>
+              <Text style={[styles.roleLabel, { color: roleColor }]}>
+                {roleLabel.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Text style={styles.cardNumber}>{cardNumberLabel}</Text>
+              <Text style={styles.cardNumberCaption}>KORT</Text>
+            </View>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.cardNumber}>{cardNumberLabel}</Text>
-            <Text style={styles.cardNumberCaption}>KORT</Text>
-          </View>
-        </View>
 
-        {/* Cue-chippar */}
-        {cues.length > 0 && (
-          <View style={styles.cueRow}>
-            {cues.map((cue) => {
-              const palette =
-                cue.kind === "panel" && cue.panelistId
-                  ? buildPanelChipPalette(cue.panelistId, panelistColorById)
-                  : CUE_COLORS[cue.kind];
-              const label =
-                cue.kind === "panel" && cue.panelistId && panelistNameById?.get(cue.panelistId)
-                  ? panelistNameById.get(cue.panelistId)!.toUpperCase()
-                  : palette.label;
-              return (
-                <View
-                  key={cue.id}
-                  style={[styles.cueChip, { backgroundColor: palette.bg }]}
-                >
-                  <Text style={[styles.cueLabel, { color: palette.text }]}>{label}</Text>
-                  <Text style={[styles.cueText, { color: palette.text }]}>{cue.text}</Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Body: script + notes */}
-        <View style={styles.body}>
-          <View style={hasNotes ? styles.scriptCol : styles.scriptColFull}>
-            {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.5 })}
-          </View>
-          {hasNotes && (
-            <View style={styles.notesCol}>
-              <Text style={styles.notesLabel}>ANTECKNINGAR</Text>
-              <Text style={styles.notesText}>{notes}</Text>
+          {/* Cue-chippar */}
+          {cues.length > 0 && (
+            <View style={styles.cueRow}>
+              {cues.map((cue) => {
+                const palette =
+                  cue.kind === "panel" && cue.panelistId
+                    ? buildPanelChipPalette(cue.panelistId, panelistColorById)
+                    : CUE_COLORS[cue.kind];
+                const label =
+                  cue.kind === "panel" && cue.panelistId && panelistNameById?.get(cue.panelistId)
+                    ? panelistNameById.get(cue.panelistId)!.toUpperCase()
+                    : palette.label;
+                return (
+                  <View
+                    key={cue.id}
+                    style={[styles.cueChip, { backgroundColor: palette.bg }]}
+                  >
+                    <Text style={[styles.cueLabel, { color: palette.text }]}>{label}</Text>
+                    <Text style={[styles.cueText, { color: palette.text }]}>{cue.text}</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
-        </View>
 
-        {/* Footer */}
-        <View style={styles.footerWrap}>
-          <View style={styles.footerCell}>
-            <Text style={styles.footerLabel}>MÅL</Text>
+          {/* Body: script + notes */}
+          <View style={styles.body}>
+            <View style={hasNotes ? styles.scriptCol : styles.scriptColFull}>
+              {renderHtmlToPdf(contentHtml, { fontSize, lineHeight: 1.5 })}
+            </View>
+            {hasNotes && (
+              <View style={styles.notesCol}>
+                <Text style={styles.notesLabel}>ANTECKNINGAR</Text>
+                <Text style={styles.notesText}>{notes}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footerWrap}>
+            <Text style={styles.footerLabel}>
+              TID FÖR DETTA KORTET (KORT {cardNumberShort.toUpperCase()})
+            </Text>
             <Text style={styles.footerValue}>{formatSec(targetSeconds)}</Text>
           </View>
-          <View style={styles.footerSep} />
-          <View style={styles.footerCell}>
-            <Text style={styles.footerLabel}>TID</Text>
-            <Text style={styles.footerValue}>
-              {formatSec(cumulativeStartSeconds)} → {formatSec(cumulativeEndSeconds)}
-            </Text>
-          </View>
-          <View style={styles.footerSep} />
-          <View style={styles.footerCell}>
-            <Text style={styles.footerLabel}>TOTALT</Text>
-            <Text style={styles.footerValue}>{formatSec(totalTargetSeconds)}</Text>
-          </View>
-          <View style={styles.footerSpacer} />
-          <Text style={styles.footerPage}>{totalCardsLabel.toUpperCase()}</Text>
         </View>
-      </View>
       </View>
     </View>
   );
