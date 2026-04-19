@@ -61,8 +61,25 @@ export const CardBlock = Node.create({
       totalCards: { default: 1 },
       notes: { default: "" },
       cues: { default: [] as Cue[] },
-      targetSeconds: { default: null as number | null },
-      targetSecondsIsManual: { default: false },
+      targetSeconds: {
+        default: null as number | null,
+        parseHTML: (el) => {
+          const v = el.getAttribute("data-target-seconds");
+          if (!v) return null;
+          const n = parseInt(v, 10);
+          return Number.isFinite(n) ? n : null;
+        },
+        renderHTML: (attrs) =>
+          attrs.targetSeconds != null
+            ? { "data-target-seconds": String(attrs.targetSeconds) }
+            : {},
+      },
+      targetSecondsIsManual: {
+        default: false,
+        parseHTML: (el) => el.getAttribute("data-target-manual") === "true",
+        renderHTML: (attrs) =>
+          attrs.targetSecondsIsManual ? { "data-target-manual": "true" } : {},
+      },
       role: {
         default: "speaker" as "speaker" | "moderator",
         parseHTML: (el) => {

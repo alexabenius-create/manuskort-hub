@@ -54,7 +54,10 @@ export function cardsToDocHtml(rows: CardRow[]): string {
       const inner = r.content_html?.trim() || "<p></p>";
       const roleAttr = ` data-role="${r.role === "moderator" ? "moderator" : "speaker"}"`;
       const panicAttr = r.is_panic_card ? ` data-panic="true"` : "";
-      return `<article data-card-block="true" data-card-id="${escapeAttr(r.id)}"${roleAttr}${panicAttr}>${inner}</article>`;
+      const targetAttr =
+        r.target_seconds != null ? ` data-target-seconds="${r.target_seconds}"` : "";
+      const manualAttr = r.target_seconds_is_manual ? ` data-target-manual="true"` : "";
+      return `<article data-card-block="true" data-card-id="${escapeAttr(r.id)}"${roleAttr}${panicAttr}${targetAttr}${manualAttr}>${inner}</article>`;
     })
     .join("");
 }

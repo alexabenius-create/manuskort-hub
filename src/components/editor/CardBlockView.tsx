@@ -13,6 +13,7 @@ import { CardNotesEditor } from "./CardNotesEditor";
 import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
 import { CardRolePopover } from "./CardRolePopover";
+import { CardTargetTimePopover } from "./CardTargetTimePopover";
 import {
   duplicateCardBlock,
   deleteCardBlock,
@@ -38,6 +39,8 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
     cues: Cue[];
     showNotes: boolean;
     role: "moderator" | "speaker";
+    targetSeconds: number | null;
+    targetSecondsIsManual: boolean;
   };
 
   const text = useMemo(
@@ -75,6 +78,12 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   const handleRoleChange = (next: "moderator" | "speaker") => {
     updateAttributes({ role: next });
   };
+  const handleTargetSave = (next: { targetSeconds: number | null; isManual: boolean }) => {
+    updateAttributes({
+      targetSeconds: next.targetSeconds,
+      targetSecondsIsManual: next.isManual,
+    });
+  };
 
   const hasCues = cues.length > 0;
   const hasNotes = showNotes && a.notes.trim().length > 0;
@@ -110,6 +119,12 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
         <span className="tabular-nums">{words} ord</span>
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{formatDuration(seconds)}</span>
+        <CardTargetTimePopover
+          targetSeconds={a.targetSeconds ?? null}
+          isManual={a.targetSecondsIsManual === true}
+          estimatedSeconds={seconds}
+          onSave={handleTargetSave}
+        />
         {a.isPanic && (
           <>
             <span className="opacity-40">·</span>
