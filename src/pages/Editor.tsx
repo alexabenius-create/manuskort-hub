@@ -1292,8 +1292,6 @@ export default function Editor() {
         />
       )}
 
-      <PrintDialog open={printDialogOpen} onOpenChange={setPrintDialogOpen} />
-
       <TargetDurationDialog
         open={targetDialogOpen}
         onOpenChange={(open) => {
