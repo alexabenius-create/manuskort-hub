@@ -33,7 +33,7 @@ export default function Landing() {
   }, []);
 
   const primaryCtaTo = session ? "/bibliotek" : "/auth";
-  const primaryCtaLabel = session ? "Till biblioteket" : "Skapa konto gratis";
+  const primaryCtaLabel = session ? "Till biblioteket" : "Testa gratis nu";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
