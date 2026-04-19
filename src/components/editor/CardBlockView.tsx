@@ -57,7 +57,20 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   const cues = a.cues ?? [];
   const showNotes = a.showNotes !== false;
   const isFirst = a.cardNumber === 1;
+  const isLast = a.cardNumber === a.totalCards;
   const canDelete = a.totalCards > 1;
+  const canDrag = a.totalCards > 1;
+
+  const draggingPos = useDraggingCardPos();
+  const isDragActive = draggingPos !== null;
+
+  // Aktuell pos & end för detta kort (best-effort — getPos kan returnera undefined)
+  const myPos = (() => {
+    const p = getPos();
+    return typeof p === "number" ? p : null;
+  })();
+  const myEnd = myPos != null ? myPos + node.nodeSize : null;
+  const isBeingDragged = draggingPos != null && draggingPos === myPos;
 
   const runWithPos = (fn: (state: typeof editor.state, pos: number, dispatch: typeof editor.view.dispatch) => boolean) => {
     const pos = getPos();
@@ -87,21 +100,41 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
       targetSecondsIsManual: next.isManual,
     });
   };
+  const handleDrop = (fromPos: number, toPos: number) => {
+    setDraggingCardPos(null);
+    moveCardBlock(editor.state, fromPos, toPos, editor.view.dispatch);
+    editor.view.focus();
+  };
 
   const hasCues = cues.length > 0;
   const hasNotes = showNotes && a.notes.trim().length > 0;
   const showFooter = true; // visa alltid footer (för "+ lägg till"-CTA:er)
+  const showInsertPills = !isDragActive;
 
   return (
     <NodeViewWrapper
       as="article"
       data-card-block="true"
-      className={`card-block relative rounded-2xl border bg-surface shadow-subtle mb-4 transition-colors ${
+      className={`card-block relative rounded-2xl border bg-surface shadow-subtle mb-4 transition-all ${
         a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"
-      }`}
+      } ${isBeingDragged ? "opacity-40" : ""}`}
     >
+      {/* Drop-zon ovanför kortet */}
+      {canDrag && myPos != null && (
+        <div className="absolute -top-2 inset-x-0">
+          <CardDropZone
+            insertPos={myPos}
+            ownCardPos={myPos}
+            ownCardEnd={myEnd}
+            isActive={isDragActive}
+            draggingPos={draggingPos}
+            onDrop={handleDrop}
+          />
+        </div>
+      )}
+
       {/* Insert-pill ovanför första kortet */}
-      {isFirst && (
+      {isFirst && showInsertPills && (
         <div contentEditable={false} className="absolute -top-3 inset-x-0 z-10">
           <CardInsertButton
             position="above"
@@ -115,6 +148,13 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
         contentEditable={false}
         className="px-5 sm:px-6 pt-3 pb-1 flex items-center gap-2 flex-wrap text-[12px] font-mono text-muted-foreground border-b border-border/30"
       >
+        {canDrag && myPos != null && (
+          <CardDragHandle
+            cardPos={myPos}
+            onDragStart={(p) => setDraggingCardPos(p)}
+            onDragEnd={() => setDraggingCardPos(null)}
+          />
+        )}
         <span className="px-1 tracking-wide">Kort {num} / {a.totalCards}</span>
         <span className="opacity-40">·</span>
         <CardRolePopover role={a.role ?? "speaker"} onChange={handleRoleChange} />
@@ -181,12 +221,28 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
       )}
 
       {/* Insert-pill under (mellan kort, eller efter sista) */}
-      <div contentEditable={false} className="absolute -bottom-3 inset-x-0 z-10">
-        <CardInsertButton
-          position="below"
-          onClick={() => runWithPos(insertCardBlockAfter)}
-        />
-      </div>
+      {showInsertPills && (
+        <div contentEditable={false} className="absolute -bottom-3 inset-x-0 z-10">
+          <CardInsertButton
+            position="below"
+            onClick={() => runWithPos(insertCardBlockAfter)}
+          />
+        </div>
+      )}
+
+      {/* Drop-zon under kortet (endast för sista — övriga kort täcks av nästa korts top-zon) */}
+      {canDrag && isLast && myEnd != null && (
+        <div className="absolute -bottom-2 inset-x-0">
+          <CardDropZone
+            insertPos={myEnd}
+            ownCardPos={myPos}
+            ownCardEnd={myEnd}
+            isActive={isDragActive}
+            draggingPos={draggingPos}
+            onDrop={handleDrop}
+          />
+        </div>
+      )}
     </NodeViewWrapper>
   );
 }
