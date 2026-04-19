@@ -119,6 +119,12 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
         <span className="tabular-nums">{words} ord</span>
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{formatDuration(seconds)}</span>
+        <CardTargetTimePopover
+          targetSeconds={a.targetSeconds ?? null}
+          isManual={a.targetSecondsIsManual === true}
+          estimatedSeconds={seconds}
+          onSave={handleTargetSave}
+        />
         {a.isPanic && (
           <>
             <span className="opacity-40">·</span>
