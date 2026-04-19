@@ -1,23 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Pause, Zap, X, Plus } from "lucide-react";
+import { Pause, Zap, X, Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type Cue,
   type CueKind,
-  CUE_KINDS_ENABLED_5A1,
+  CUE_KINDS_ENABLED,
   CUE_KIND_LABEL,
   CUE_KIND_DESCRIPTION,
   newCueId,
 } from "@/lib/cues";
+import { hexToRgba, hexToDarkText } from "@/lib/panelistColors";
+import type { Panelist } from "@/hooks/usePanelists";
 
 interface CueChipProps {
   cue: Cue;
+  panelists?: Panelist[];
   onSave: (next: Cue) => void;
   onRemove: () => void;
 }
 
-const KIND_STYLE: Record<CueKind, { chip: string; icon: React.ReactNode }> = {
+const KIND_STYLE: Record<Exclude<CueKind, "panel">, { chip: string; icon: React.ReactNode }> = {
   energy: {
     chip: "bg-[hsl(var(--cue-red)/0.12)] text-[hsl(var(--cue-red))] border-[hsl(var(--cue-red)/0.35)] hover:bg-[hsl(var(--cue-red)/0.18)]",
     icon: <Pause className="h-3 w-3" />,
@@ -26,49 +29,82 @@ const KIND_STYLE: Record<CueKind, { chip: string; icon: React.ReactNode }> = {
     chip: "bg-[hsl(var(--accent-blue)/0.12)] text-[hsl(var(--accent-blue))] border-[hsl(var(--accent-blue)/0.35)] hover:bg-[hsl(var(--accent-blue)/0.18)]",
     icon: <Zap className="h-3 w-3" />,
   },
-  // 5A.2/5A.3 — placeholder-stil tills aktiverade
-  panel: { chip: "bg-muted text-muted-foreground border-border", icon: null },
   time: { chip: "bg-muted text-muted-foreground border-border", icon: null },
 };
 
+function panelChipStyle(color: string | null | undefined): React.CSSProperties {
+  if (!color) {
+    return {};
+  }
+  return {
+    backgroundColor: hexToRgba(color, 0.18),
+    color: hexToDarkText(color),
+    borderColor: hexToRgba(color, 0.45),
+  };
+}
+
 /** Klickbar chip som öppnar popover för redigering. */
-export function CueChip({ cue, onSave, onRemove }: CueChipProps) {
+export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(cue.text);
   const [kind, setKind] = useState<CueKind>(cue.kind);
+  const [panelistId, setPanelistId] = useState<string | null>(cue.panelistId ?? null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setText(cue.text);
       setKind(cue.kind);
+      setPanelistId(cue.panelistId ?? null);
       setTimeout(() => inputRef.current?.select(), 50);
     }
-  }, [open, cue.text, cue.kind]);
+  }, [open, cue.text, cue.kind, cue.panelistId]);
 
   const commit = () => {
     const trimmed = text.trim();
     if (!trimmed) {
       onRemove();
-    } else if (trimmed !== cue.text || kind !== cue.kind) {
-      onSave({ ...cue, text: trimmed, kind });
+    } else if (
+      trimmed !== cue.text ||
+      kind !== cue.kind ||
+      (kind === "panel" && panelistId !== (cue.panelistId ?? null))
+    ) {
+      onSave({
+        ...cue,
+        text: trimmed,
+        kind,
+        panelistId: kind === "panel" ? panelistId : null,
+      });
     }
     setOpen(false);
   };
 
-  const style = KIND_STYLE[cue.kind];
+  // Render chip — panel uses panelist color
+  let chipClass = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors";
+  let chipStyle: React.CSSProperties = {};
+  let icon: React.ReactNode = null;
+
+  if (cue.kind === "panel") {
+    const p = panelists.find((x) => x.id === cue.panelistId);
+    chipClass = cn(chipClass, "border");
+    chipStyle = panelChipStyle(p?.color);
+    icon = <Users className="h-3 w-3" />;
+  } else if (cue.kind === "energy" || cue.kind === "action") {
+    const s = KIND_STYLE[cue.kind];
+    chipClass = cn(chipClass, s.chip);
+    icon = s.icon;
+  }
+
+  const panelName = cue.kind === "panel"
+    ? (panelists.find((x) => x.id === cue.panelistId)?.name || "Namnlös")
+    : null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors",
-            style.chip,
-          )}
-        >
-          {style.icon}
+        <button type="button" className={chipClass} style={chipStyle}>
+          {icon}
+          {panelName && <span className="opacity-70 font-mono text-[10px] uppercase tracking-wider">{panelName}</span>}
           <span>{cue.text}</span>
         </button>
       </PopoverTrigger>
@@ -76,8 +112,11 @@ export function CueChip({ cue, onSave, onRemove }: CueChipProps) {
         <CueForm
           kind={kind}
           text={text}
+          panelistId={panelistId}
+          panelists={panelists}
           onKindChange={setKind}
           onTextChange={setText}
+          onPanelistChange={setPanelistId}
           inputRef={inputRef}
           onCommit={commit}
           onCancel={() => setOpen(false)}
@@ -93,28 +132,36 @@ export function CueChip({ cue, onSave, onRemove }: CueChipProps) {
 }
 
 interface AddCueButtonProps {
+  panelists?: Panelist[];
   onAdd: (cue: Cue) => void;
 }
 
 /** "+ Signal"-knapp som öppnar popover för att skapa ny cue. */
-export function AddCueButton({ onAdd }: AddCueButtonProps) {
+export function AddCueButton({ panelists = [], onAdd }: AddCueButtonProps) {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<CueKind>("energy");
   const [text, setText] = useState("");
+  const [panelistId, setPanelistId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setText("");
       setKind("energy");
+      setPanelistId(panelists[0]?.id ?? null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [open]);
+  }, [open, panelists]);
 
   const commit = () => {
     const trimmed = text.trim();
     if (trimmed) {
-      onAdd({ id: newCueId(), kind, text: trimmed });
+      onAdd({
+        id: newCueId(),
+        kind,
+        text: trimmed,
+        ...(kind === "panel" ? { panelistId } : {}),
+      });
     }
     setOpen(false);
   };
@@ -134,8 +181,11 @@ export function AddCueButton({ onAdd }: AddCueButtonProps) {
         <CueForm
           kind={kind}
           text={text}
+          panelistId={panelistId}
+          panelists={panelists}
           onKindChange={setKind}
           onTextChange={setText}
+          onPanelistChange={setPanelistId}
           inputRef={inputRef}
           onCommit={commit}
           onCancel={() => setOpen(false)}
@@ -148,8 +198,11 @@ export function AddCueButton({ onAdd }: AddCueButtonProps) {
 interface CueFormProps {
   kind: CueKind;
   text: string;
+  panelistId: string | null;
+  panelists: Panelist[];
   onKindChange: (k: CueKind) => void;
   onTextChange: (t: string) => void;
+  onPanelistChange: (id: string | null) => void;
   inputRef: React.RefObject<HTMLInputElement>;
   onCommit: () => void;
   onCancel: () => void;
@@ -157,13 +210,19 @@ interface CueFormProps {
   showRemove?: boolean;
 }
 
-function CueForm({ kind, text, onKindChange, onTextChange, inputRef, onCommit, onCancel, onRemove, showRemove }: CueFormProps) {
+function CueForm({
+  kind, text, panelistId, panelists,
+  onKindChange, onTextChange, onPanelistChange,
+  inputRef, onCommit, onCancel, onRemove, showRemove,
+}: CueFormProps) {
+  const panelDisabled = kind === "panel" && panelists.length === 0;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Kategori</span>
         <div className="inline-flex bg-surface-2 rounded-lg p-1 gap-1">
-          {CUE_KINDS_ENABLED_5A1.map((k) => (
+          {CUE_KINDS_ENABLED.map((k) => (
             <button
               key={k}
               type="button"
@@ -179,6 +238,43 @@ function CueForm({ kind, text, onKindChange, onTextChange, inputRef, onCommit, o
         </div>
         <p className="text-[11px] text-muted-foreground">{CUE_KIND_DESCRIPTION[kind]}</p>
       </div>
+
+      {kind === "panel" && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Riktas till</span>
+          {panelists.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground italic">
+              Lägg till paneldeltagare i sidopanelen först.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {panelists.map((p) => {
+                const active = panelistId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => onPanelistChange(p.id)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] border transition-all",
+                      active ? "ring-2 ring-foreground/30" : "hover:opacity-80",
+                    )}
+                    style={{
+                      backgroundColor: hexToRgba(p.color, 0.18),
+                      color: hexToDarkText(p.color),
+                      borderColor: hexToRgba(p.color, 0.45),
+                    }}
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+                    {p.name || "Namnlös"}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Text</span>
         <input
@@ -195,7 +291,12 @@ function CueForm({ kind, text, onKindChange, onTextChange, inputRef, onCommit, o
               onCancel();
             }
           }}
-          placeholder={kind === "energy" ? "T.ex. Andas, paus" : "T.ex. Visa bild 3"}
+          placeholder={
+            kind === "energy" ? "T.ex. Andas, paus" :
+            kind === "action" ? "T.ex. Visa bild 3" :
+            kind === "panel" ? "T.ex. Fråga om bakgrund" :
+            "T.ex. checkpoint"
+          }
           className="w-full px-3 py-2 rounded-md bg-background border border-border text-[14px] focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
@@ -222,7 +323,8 @@ function CueForm({ kind, text, onKindChange, onTextChange, inputRef, onCommit, o
           <button
             type="button"
             onClick={onCommit}
-            className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-foreground text-background hover:bg-foreground/90"
+            disabled={panelDisabled}
+            className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Spara
           </button>

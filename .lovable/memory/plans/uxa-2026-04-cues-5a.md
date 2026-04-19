@@ -13,7 +13,7 @@ type: feature
 
 ## Faser (UI/AI)
 - **5A.1 (klar):** UI + AI-förslag för `energy` (röd) och `action` (blå). Härleds direkt ur manustext. Presentation läser nya `cues` med legacy-fallback. Exempelmanus seedas med nya formatet (dual-write).
-- **5A.2:** Bygg datamodell för paneldeltagare (namn → färg per manus). Aktivera `panel`-cues i UI.
+- **5A.2 (klar):** Paneldeltagar-datamodell (`panelists`-tabellen) finns sedan tidigare. `panel`-cues aktiverade i CueEditor med panelist-väljare; chip + presentationsrendering använder panelistens färg. `CUE_KINDS_ENABLED` exponerar nu `["energy","action","panel"]`.
 - **5A.3:** Bygg tidsmodell per kort (uppskattad talartid + checkpoints). Aktivera `time`-cues i UI.
 
 ## Dual-write

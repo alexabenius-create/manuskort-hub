@@ -342,6 +342,7 @@ export function ManusCardV2({
                 <CueChip
                   key={c.id}
                   cue={c}
+                  panelists={panelists}
                   onSave={(next) => updateCues(upsertCue(cues, next))}
                   onRemove={() => updateCues(removeCue(cues, c.id))}
                 />
@@ -383,7 +384,7 @@ export function ManusCardV2({
               )}
 
               {/* "+ Signal"-knappen för att lägga till nya cues */}
-              <AddCueButton onAdd={(c) => updateCues(upsertCue(cues, c))} />
+              <AddCueButton panelists={panelists} onAdd={(c) => updateCues(upsertCue(cues, c))} />
 
               {showCues && !hasAnyCue && cues.length === 0 && (
                 <button

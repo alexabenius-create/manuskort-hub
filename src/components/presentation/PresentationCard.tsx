@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Pause, Zap, ZoomIn, ZoomOut } from "lucide-react";
+import { Pause, Zap, ZoomIn, ZoomOut, Users } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import {
@@ -8,6 +8,7 @@ import {
   darkAttributionLabel,
 } from "@/lib/presentationTheme";
 import { readCuesWithLegacyFallback } from "@/lib/cues";
+import { hexToRgba } from "@/lib/panelistColors";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"] & {
   is_panic_card?: boolean;
@@ -154,12 +155,13 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
 
   const hasNotes = !!card.notes && card.notes.trim().length > 0;
 
-  // Steg 5A: Läs i första hand från nya cues-arrayen, fallback till legacy-kolumner.
-  // I 5A visas bara energy (röd, paus) och action (blå, blixt). Panel/time aktiveras i 5A.2/5A.3.
+  // Steg 5A.2: Läs nya cues-arrayen med legacy-fallback. Energy + action visas
+  // som färgkodade pillar; panel använder panelistens färg. Time aktiveras i 5A.3.
   const cues = useMemo(() => readCuesWithLegacyFallback(card), [card]);
   const energyCues = cues.filter((c) => c.kind === "energy");
   const actionCues = cues.filter((c) => c.kind === "action");
-  const hasAnyCue = energyCues.length > 0 || actionCues.length > 0;
+  const panelCues = cues.filter((c) => c.kind === "panel");
+  const hasAnyCue = energyCues.length > 0 || actionCues.length > 0 || panelCues.length > 0;
 
   return (
     <div className="relative flex w-full h-full min-h-0 gap-4 px-6 md:px-12 py-2">
@@ -184,6 +186,27 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
               <span>{c.text}</span>
             </div>
           ))}
+          {panelCues.map((c) => {
+            const p = panelists.find((x) => x.id === c.panelistId);
+            const color = p?.color ?? "#A9C8F0";
+            return (
+              <div
+                key={c.id}
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium border"
+                style={{
+                  backgroundColor: hexToRgba(color, 0.2),
+                  borderColor: hexToRgba(color, 0.5),
+                  color,
+                }}
+              >
+                <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                {p?.name && (
+                  <span className="font-mono text-[10px] uppercase tracking-wider opacity-80">{p.name}</span>
+                )}
+                <span className="text-zinc-100">{c.text}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
