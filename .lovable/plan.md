@@ -1,37 +1,55 @@
 
 
-## Lösning: tre reglage (timmar / minuter / sekunder)
+## Lösning: editerbar måltid per kort
 
-Ersätt textinputen i Måltid-sektionen med tre slidrar staplade vertikalt. Snabbvalsknapparna behålls ovanför.
+Ersätt den auto-uppskattade tiden (`~0:13` baserad på ord×WPM) med en editerbar måltid som lagras per kort.
 
-**Reglage-spec:**
-- **Timmar**: 0–8, steg 1
-- **Minuter**: 0–59, steg 1
-- **Sekunder**: 0–59, steg 5 (jämnare drag, räcker för måltid)
-- Varje slider visar sitt aktuella värde till höger (t.ex. "1 h", "23 min", "30 s")
-- Total tid visas som sammanfattning under: "Totalt: 1:23:30"
-- Snabbvalsknappar (3/5/10/15/20 min) sätter alla tre värden (timmar=0, sek=0)
+**Ny kolumn:** `cards.target_seconds integer null` — null = ingen explicit måltid satt (visa då uppskattning som fallback eller tom).
 
-**Layout:**
-```text
-Måltid
-[3 min] [5 min] [10 min] [15 min] [20 min]
-
-Timmar    [●━━━━━━━━━]   0 h
-Minuter   [━━━●━━━━━━]   5 min
-Sekunder  [●━━━━━━━━━]   0 s
-
-Totalt: 5:00
+**UI i kort-meta-raden** (`ManusCardV2.tsx` rad 179–182, samt `ManusCard.tsx` motsvarande):
+Ersätt:
+```
+{words} ord · ~{formatDuration(seconds)}
+```
+Med:
+```
+{words} ord · [⏱ 00:45]   (klickbar pill → popover med mm:ss-input + snabbval)
 ```
 
-## Ändringar
+- Stängd vy: liten pill med ⏱-ikon + tid (t.ex. "0:45"). Tom om inget värde → visa "Sätt tid" i muted färg, fortfarande med uppskattning som hint i tooltip.
+- Klick → popover (samma mönster som befintlig `TimePopover` för start/end):
+  - Input `mm:ss` (eller bara minuter)
+  - Snabbvalsknappar: 30s, 1m, 2m, 5m
+  - "Använd uppskattning ({formatDuration(estimated)})" — fyller i auto-värdet
+  - "Ta bort" — sätter null
 
-**`src/components/import/SettingsForm.tsx`** (Måltid-blocket, rad ~84–107):
-- Ta bort `formatMmSs`/`parseMmSs` och `<Input>`-fältet
-- Importera `Slider` från `@/components/ui/slider`
-- Härled `hours`, `minutes`, `seconds` från `targetSeconds`
-- Tre `<Slider>` som vid `onValueChange` räknar om och anropar `setTargetSeconds(h*3600 + m*60 + s)`
-- Sammanfattningsrad under som visar total tid via befintlig logik (mm:ss eller h:mm:ss)
+**Datapersistens:** Använd befintlig `onLocalChange({ target_seconds: n })`-mönstret som redan används för `start_time`/`end_time` (autosave hanterar resten).
 
-Inga andra filer påverkas. `targetSeconds` i store fortsätter fungera identiskt — bara UI ändras.
+## Tekniska ändringar
+
+1. **Migration**: `ALTER TABLE cards ADD COLUMN target_seconds integer` (nullable, ingen default).
+2. **`src/components/editor/ManusCardV2.tsx`** (rad ~179–182):
+   - Ny komponent `TargetTimePopover` lokal i filen (mönstret från `TimePopover` som finns längre ner i samma fil rad ~516+).
+   - Ersätt `~{formatDuration(seconds)}`-spannet med `<TargetTimePopover value={card.target_seconds} estimated={seconds} onChange={(v) => onLocalChange({ target_seconds: v })} />`.
+3. **`src/components/editor/ManusCard.tsx`** (motsvarande rad): samma ändring.
+4. **`src/lib/exampleManuscript.ts`**: lägg `target_seconds: null` i exempel-korten (valfritt — fungerar utan).
+5. **`src/integrations/supabase/types.ts`**: regenereras automatiskt efter migration.
+
+**Inga ändringar i presentationsläget** i denna iteration — fältet lagras men används inte ännu (kan kopplas till countdown per kort i nästa steg). Detta håller scope litet och fokuserar på editor-UX som efterfrågades.
+
+## Layout (popover öppen)
+
+```text
+┌─────────────────────────┐
+│ Måltid för kortet       │
+│ [  01:30  ]  mm:ss      │
+│                         │
+│ [30s][1m][2m][5m]       │
+│                         │
+│ Uppskattning: ~0:13     │
+│ [Använd uppskattning]   │
+│                         │
+│ [Ta bort]      [Spara]  │
+└─────────────────────────┘
+```
 
