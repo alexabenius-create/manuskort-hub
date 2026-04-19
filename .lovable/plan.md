@@ -1,89 +1,126 @@
 
 
-## Plan: v3 → NodeView-arkitektur (Fas 1)
+## Fas 2 — interaktiv chrome + operationer
 
 ### Mål
-Byt ut hela v3:s overlay/decoration-strategi mot riktiga ProseMirror-noder med NodeViews. Återanvänd `/manus/:id/v3`. Minimal men visuellt komplett v1-paritet vid laddning av befintliga manus.
+v3 får full v1-paritet för redigering: cue-editor (popover), notes-editor (inline), more-menu (duplicate/delete/panic), "+"-knapp mellan kort, Cmd+Enter split. NodeView migreras till React för att kunna återanvända befintliga UI-komponenter (Popover, DropdownMenu, Textarea, Button).
+
+Roll för v3: **fortfarande admin-only experiment**, ingen cutover-flagga ännu.
 
 ### Arkitektur
 
-**Schema:**
-- Ny nod `cardBlock` (`group: "block"`, `content: "block+"`, `defining: true`) med attrs: `cardId`, `notes`, `cues`, `targetSeconds`, `targetSecondsIsManual`, `role`, `isPanic`, `startTime`, `endTime`, `title`
-- Dokumentets top-level: `cardBlock+`
+**NodeView → React via `ReactNodeViewRenderer`**
+- `CardBlockNodeView.ts` (vanilla TS) tas bort
+- Ny komponent `src/components/editor/CardBlockView.tsx` — React-komponent som tar emot `NodeViewProps`
+- `NodeViewWrapper` runt hela kort-boxen, `NodeViewContent` för contentDOM
+- `cardBlockNode.ts` byter `addNodeView` till `ReactNodeViewRenderer(CardBlockView)`
+- Header och footer renderas som vanlig React → kan använda Popover/DropdownMenu från shadcn
 
-**NodeView (`CardBlockNodeView`):**
-- `dom` = wrapper-`<article>` med v1:s box-styling (rundade hörn, `bg-surface`, border, shadow)
-- Header (utanför `contentDOM`): kort-nummer, drag-handle, ord-räknare, varaktighet, more-menu-stub
-- `contentDOM` = `<div>` där ProseMirror renderar kortets innehåll (paragraphs etc.)
-- Footer (utanför `contentDOM`): read-only chips för cues + read-only notes-text om finns
-- `update()` re-renderar header/footer när attrs ändras
+**Attribut-uppdateringar från NodeView**
+- React-komponenten får `updateAttributes(patch)` från Tiptap → vi använder den för cue-add/remove, notes-edit, role-toggle, panic-toggle
+- Ingen extern bridge behövs — Tiptap's editor + getPos() ger oss allt
 
-**Persistens:**
-- `cardsToDoc(rows)`: bygger `cardBlock`-noder från DB-rader, parsar varje rads `content_html` via TipTap HTML-parser
-- `docToCards(doc)`: itererar top-level `cardBlock`-noder, extraherar attrs + serialiserar content till HTML, mappar 1:1 mot `cards`-tabellen
-- Ingen mätning, ingen fragment-logik, ingen `planCardSync`
+**Cue-editor (popover)**
+- Footer-rad: render alla cues som chips via `<Badge>` med ta-bort-knapp
+- En enda **`+ Lägg till cue`**-knapp till höger → öppnar `<Popover>`
+- Popover innehåller: typ-väljare (energy/action/time som tre tabs eller radiogroup) + textarea + spara-knapp
+- På spara: `updateAttributes({ cues: [...node.attrs.cues, newCue] })`
+- Ny modul: `src/components/editor/CardCuePopover.tsx`
 
-**Backspace vid kort-start:**
-- Explicit `joinCardBackward`-kommando: vid `$from.parentOffset === 0` → join med föregående `cardBlock`. Vid första kortet → konsumera händelsen utan ändring.
+**Notes-editor (inline)**
+- Footer: om `notes` är tom → liten "+ Lägg till notes"-länk
+- Om notes har innehåll → inline `<Textarea>` med autosave på blur (debounced via `updateAttributes`)
+- Compact, "anteckning"-styling matchar v1
+- Ny modul: `src/components/editor/CardNotesEditor.tsx`
+
+**More-menu (⋯)**
+- Header höger: `<DropdownMenu>` med Trigger = ⋯-knapp
+- Items: **Duplicera**, **Ta bort**, **Markera som panik-kort** (toggle med checkmark)
+- Implementeras via editor-kommandon:
+  - `duplicateCardBlock(pos)` — infogar en kopia av noden direkt efter aktuell pos
+  - `deleteCardBlock(pos)` — `tr.delete(pos, pos + nodeSize)`
+  - Toggle panic: `updateAttributes({ isPanic: !node.attrs.isPanic })`
+- Duplicate sätter `cardId: null` på den nya noden så persist skapar en ny rad
+- Lägg till i `src/lib/cardBlockCommands.ts`
+
+**"+"-knapp mellan kort**
+- Renderas av `CardBlockView` som en svävande pill mellan denna kort-box och nästa, synlig vid hover på området mellan korten
+- Klick → `insertCardBlockAfter(getPos())` — infogar tom cardBlock med `cardId: null`
+- För att synas även **före** första kortet: vi renderar pillen "ovanför" varje kort, plus en extra ovanför första kortet. Enklare lösning: rendera pill **under** varje kort, så får vi automatiskt insert-mellan-alla; för första-position lägger vi den även ovanför första kortet.
+- Animation: scale-in vid hover, transition
+
+**Cmd+Enter split**
+- Keyboard shortcut i `cardBlockNode.ts` via `addKeyboardShortcuts`
+- `Mod-Enter`: `splitCardBlock` — splittar aktuell cardBlock vid caret. Caret hamnar i nya kortet (efter).
+- Implementation: `tr.split($from.pos, 2)` med rätt `typesAfter` så nya delen blir ett nytt cardBlock med `cardId: null`
+- Hörnfall: caret längst i slutet → splittar och nya kortet blir tomt med caret
+- Hörnfall: caret längst i början → splittar; första kortet blir tomt, caret hamnar i andra (= ursprungs-innehållet)
+
+**Persist-konsekvenser**
+- Duplicate, "+"-insert, split skapar alla noder med `cardId: null` → vid nästa autosave genererar `persist()` UUID:n och upsertar (existerande logik från Fas 1, oförändrad)
+- Delete tas omhand av befintlig diff-logik (`plan.deletes`)
+- Panic/role/notes/cues-uppdateringar går genom updates-vägen (befintligt)
 
 ### Filer
 
 **Nya:**
-- `src/lib/cardBlockNode.ts` — schema-definition för `cardBlock`-nod
-- `src/components/editor/CardBlockNodeView.ts` — NodeView-klass (header + contentDOM + footer)
-- `src/lib/cardBlockCommands.ts` — `joinCardBackward` + helpers
-- `src/lib/cardDocSerialize.ts` — `cardsToDoc` / `docToCards`
+- `src/components/editor/CardBlockView.tsx` — React-NodeView (ersätter CardBlockNodeView.ts)
+- `src/components/editor/CardCuePopover.tsx` — popover för att lägga till/redigera cues
+- `src/components/editor/CardNotesEditor.tsx` — inline notes-editor
+- `src/components/editor/CardMoreMenu.tsx` — DropdownMenu med duplicate/delete/panic
+- `src/components/editor/CardInsertButton.tsx` — "+"-pill mellan kort
 
-**Skrivs om:**
-- `src/pages/EditorV3.tsx` — laddar manus → `cardsToDoc` → renderar editor; vid spara → `docToCards` → diff mot DB
-- `src/components/editor/TiptapDocEditor.tsx` — registrerar `cardBlock`-nod + NodeView, tar bort `frameBreaks`-prop
+**Ändras:**
+- `src/lib/cardBlockNode.ts` — byter till `ReactNodeViewRenderer`, lägger till `addKeyboardShortcuts` (Cmd+Enter)
+- `src/lib/cardBlockCommands.ts` — nya kommandon: `splitCardBlock`, `duplicateCardBlock`, `deleteCardBlock`, `insertCardBlockAfter`, `insertCardBlockBefore`
+- `src/pages/EditorV3.tsx` — ingen större förändring; persist hanterar redan nya kort utan cardId
 
-**Tas bort (efter Fas 1 verifierad):**
-- `src/lib/docFrameDecorations.ts`
-- `src/components/editor/CardChromeFrame.tsx`
-- `src/lib/docSplit.ts` (`splitDocToCards`, `joinCardsToDoc`, `planCardSync`)
+**Tas bort:**
+- `src/components/editor/CardBlockNodeView.ts` — ersatt av React-versionen
 
-**Orörda:**
-- v1 (`Editor.tsx`) — produktionsversion, ingen ändring
-- v2 (`EditorV2.tsx`) — behålls som referens till Fas 2 är klar
-- `cards`-tabellen — schema oförändrat, persistens 1:1
-
-### Fas 1-omfång (enligt din precisering)
+### Fas 2-omfång (allt nedan)
 
 **Med:**
-- Full header (nummer, drag-handle visuellt, ord, varaktighet, more-menu-knapp)
-- Content-area med fungerande Tiptap
-- Read-only footer med cue-chips + notes-text
-- Enter/Backspace/paste mellan kort fungerar
-- Persistens cardsToDoc ↔ docToCards
-- Explicit `joinCardBackward`
+- Cue-editor popover (typ-väljare + text)
+- Notes-editor (inline textarea, autosave på blur)
+- More-menu: duplicera, ta bort, toggle panik
+- "+"-knapp mellan kort (vid hover)
+- Cmd+Enter split (caret i nya kortet)
+- Migration till React NodeView
 
-**Utan (skjuts till Fas 2):**
-- Cue-editor, notes-editor, panelist-roll, target-tid, panic, "+"-knapp, Cmd+Enter-split, smart paste, drag-omordning
+**Inte med (Fas 3+):**
+- Drag-omordning av kort
+- Roll-selector (moderator/speaker)
+- Target-tid-popover
+- Panelist-mark/färg-system inuti karteditor
+- Smart paste (auto-split)
+- Keyboard shortcuts utöver Cmd+Enter
 
-### Verifieringsscenarier (Fas 1)
+### Verifieringsscenarier (Fas 2)
 
-1. Öppna existerande manus med 5+ kort → alla renderas som v1-boxar med chrome
-2. Klicka mitt i ett kort → caret hamnar där, går att skriva
-3. Enter mitt i kort → ny paragraph inom samma kort
-4. Backspace vid första tecknet i kort 2 → joinar till kort 1
-5. Backspace vid första tecknet i kort 1 → ingen ändring, ingen krasch
-6. Paste lång text → hamnar i aktuellt kort som paragraphs
-7. Spara → DB-rader uppdaterade korrekt, antal kort kan ändras
-8. Reload → samma struktur tillbaka
-9. Cues/notes från DB visas i footer
-10. Undo/redo över kortgränser: skriv i kort 1, skriv i kort 2, Cmd+Z×N → rullar tillbaka utan caret-jump; Cmd+Shift+Z → rullar fram
+1. Klick på "+ Lägg till cue" → popover öppnas → välj energy → skriv text → spara → chip visas i footer
+2. Klick på X på en cue-chip → cuen försvinner, sparat
+3. Klick på "+ Lägg till notes" → textarea visas → skriv → blur → notes-text visas, sparat
+4. Klick på ⋯ → "Duplicera" → ny identisk kort-box dyker upp direkt under, ny rad i DB efter spara
+5. Klick på ⋯ → "Ta bort" → kortet försvinner, raden borta i DB
+6. Klick på ⋯ → "Markera som panik-kort" → kortet får panik-styling, attr sparat
+7. Hover mellan två kort → "+"-pill visas → klick → tomt kort sätts in mellan, ny DB-rad
+8. Hover ovanför första kortet → "+"-pill → klick → nytt kort blir första
+9. Cmd+Enter mitt i text → kortet splittas, caret i nya kortet, två rader i DB efter spara
+10. Cmd+Enter i tomt slut av kort → nytt tomt kort skapas, caret där
+11. Undo: skapa via "+", Cmd+Z → kortet borta, Cmd+Shift+Z → tillbaka
+12. Persist är idempotent: snabb redigering + duplicering → exakt rätt antal rader
 
-### Risker att hantera
+### Risker
 
-- **Schema-migration**: testa mot ≥10 riktiga manus inkl. tomma kort, whitespace-only, kort med PanelistMark/PauseMarkNode
-- **`defining: true`**: kan göra `tr.split` skum vid kanter — håll splits till Fas 2
-- **NodeView-uppdatering**: vid attr-ändring måste `update()` returnera `true` och re-rendera header/footer utan att röra `contentDOM`
-- **Drag-handle visuellt men inaktiv i Fas 1** — markera som disabled så ingen tror den fungerar
+- **React NodeView re-renders**: ProseMirror kan kalla `update()` ofta. React-versionen måste returnera `true` från sin `shouldComponentUpdate` (eller använda memo) annars stutter. Vi använder hela attrs som dependency.
+- **`NodeViewContent` styling**: contentDOM måste vara editable, all chrome runt om får inte vara editable (`contenteditable={false}` på header/footer-wrappers).
+- **Popover inuti NodeView**: Radix Popover måste portala till body — bekräfta att fokus-trapping fungerar utan att stjäla från Tiptap.
+- **Split + `defining: true`**: behöver `tr.split(pos, depth=2)` med korrekt `typesAfter: [{type: cardBlock}]`. Om vi misslyckas hamnar splittringen utanför cardBlock → korrupt doc.
+- **Duplicate och cardId**: glömmer vi att nolla `cardId` på kopian → upsert overwriter originalet. Test: duplicera, redigera kopian, verifiera att originalet är orört.
+- **Insert-pill z-index**: får inte ligga över bubble menus eller popovers.
 
 ### Frågor
 
-1. **NodeView som vanilla TS-klass eller via `ReactNodeViewRenderer`?** Vanilla = lättare, mindre overhead, ingen React-context inuti chrome. React = enklare att återanvända befintliga UI-komponenter (Button, DropdownMenu). Mitt förslag: **vanilla TS** i Fas 1 för tydlighet, byt till React i Fas 2 när vi behöver popovers/dropdowns för cue-editor.
-
-2. **DB-skrivstrategi vid spara**: behåll nuvarande diff-baserade approach (jämför positions, update/insert/delete) eller "delete all + insert all" per spara? Mitt förslag: **diff-baserad** så `cardId` (= row id) bevaras → undviker att förlora referenser och minskar realtime-trafik.
+Inga öppna frågor — dina svar täcker allt jag behövde. Kör.
 
