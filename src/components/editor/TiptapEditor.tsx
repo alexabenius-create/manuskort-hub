@@ -9,7 +9,7 @@ import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
-import { countPresentationRows } from "@/lib/cardLimits";
+import { countPresentationRows, splitHtmlAtRow, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 
 export interface SelectionState {
@@ -27,6 +27,9 @@ interface Props {
   maxRows?: number;
   onRowCountChange?: (rows: number) => void;
   onOverflowPaste?: (overflowText: string) => void;
+  /** Auto-reflow vid skrivning: överskott (HTML) skickas till nästa kort.
+   *  caretInOverflow=true → caret ska följa med dit. */
+  onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
 }
 
 const sizeClass = {
@@ -45,6 +48,7 @@ export function TiptapEditor({
   maxRows,
   onRowCountChange,
   onOverflowPaste,
+  onOverflow,
 }: Props) {
   // Ref till senaste rad-räkning så handleKeyDown alltid läser färskt värde
   const rowsRef = useRef(0);
@@ -52,6 +56,10 @@ export function TiptapEditor({
   maxRowsRef.current = maxRows;
   const sizeRef = useRef(size);
   sizeRef.current = size;
+  const onOverflowRef = useRef(onOverflow);
+  onOverflowRef.current = onOverflow;
+  // Skydd mot rekursiv reflow (när vi själva sätter content efter split)
+  const reflowingRef = useRef(false);
 
   const measureAndReport = (editor: Editor) => {
     // Mät mot presentations-geometrin, INTE editorns egen DOM.
@@ -60,6 +68,47 @@ export function TiptapEditor({
     const rows = countPresentationRows(editor.getHTML(), sizeRef.current);
     rowsRef.current = rows;
     onRowCountChange?.(rows);
+  };
+
+  /** Auto-reflow: om innehållet överstiger maxRows → splitta och skicka
+   *  överskott uppåt via onOverflow. Caret följer med om användaren skrev
+   *  i den del som flyttades. */
+  const maybeReflow = (editor: Editor) => {
+    const cb = onOverflowRef.current;
+    const max = maxRowsRef.current;
+    if (!cb || !max || reflowingRef.current) return;
+    const html = editor.getHTML();
+    const rows = countPresentationRows(html, sizeRef.current);
+    if (rows <= max) return;
+
+    const [fits, overflow] = splitHtmlAtRow(html, max, sizeRef.current);
+    if (!overflow || !overflow.trim() || fits === html) return;
+
+    // Beräkna om caret hamnade i overflow-delen.
+    // Heuristik: om caret-position i doc:en är större än textlängden av "fits",
+    // så skrev användaren i den del som flyttas → följ med.
+    const tmp = document.createElement("div");
+    tmp.innerHTML = fits;
+    const fitsTextLen = (tmp.textContent ?? "").length;
+    const caretPos = editor.state.selection.from;
+    // ProseMirror-pos räknar noder/tokens — inte exakt textindex. Vi
+    // approximerar: jämför med totala docs textstorlek.
+    tmp.innerHTML = html;
+    const totalTextLen = (tmp.textContent ?? "").length;
+    const caretRatio = totalTextLen > 0 ? caretPos / editor.state.doc.content.size : 1;
+    const caretInOverflow = caretRatio * totalTextLen >= fitsTextLen - 1;
+
+    reflowingRef.current = true;
+    try {
+      editor.commands.setContent(fits, { emitUpdate: false });
+      onChange(fits);
+      rowsRef.current = countPresentationRows(fits, sizeRef.current);
+      onRowCountChange?.(rowsRef.current);
+      cb(overflow, caretInOverflow);
+    } finally {
+      // Släpp i nästa tick så vi inte triggar oss själva
+      requestAnimationFrame(() => { reflowingRef.current = false; });
+    }
   };
 
   const editor = useEditor({
@@ -77,8 +126,11 @@ export function TiptapEditor({
     content: value || "",
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
-      // Mät i nästa frame så DOM hinner uppdateras
-      requestAnimationFrame(() => measureAndReport(editor));
+      // Mät i nästa frame så DOM hinner uppdateras, kör sedan ev. auto-reflow
+      requestAnimationFrame(() => {
+        measureAndReport(editor);
+        maybeReflow(editor);
+      });
     },
     onCreate: ({ editor }) => {
       requestAnimationFrame(() => measureAndReport(editor));

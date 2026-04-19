@@ -398,6 +398,85 @@ export default function Editor() {
     toast({ title: "Texten delades på 2 kort", description: "Överskottet flyttades till ett nytt kort." });
   };
 
+  /**
+   * Auto-reflow vid skrivning: text som flödar över kortets radgräns knuffas
+   * till nästa kort (eller ett nytt om sista). Caret följer med om användaren
+   * skrev i den del som flyttades. Beter sig som sidbrytning i Word.
+   */
+  const handleAutoOverflow = async (cardId: string, overflowHtml: string, moveCaret: boolean) => {
+    if (!user || !manuscript || !overflowHtml || !overflowHtml.trim()) return;
+    const idx = cards.findIndex((c) => c.id === cardId);
+    if (idx === -1) return;
+    const src = cards[idx];
+    const nextCard = cards[idx + 1];
+
+    if (nextCard) {
+      // Prepend overflow till nästa kort
+      const merged = overflowHtml + (nextCard.content_html ?? "");
+      setCards((prev) => {
+        const out = prev.slice();
+        out[idx + 1] = { ...out[idx + 1], content_html: merged };
+        return out;
+      });
+      // Persistera direkt så autosave-snapshot håller jämna steg
+      void supabase.from("cards").update({ content_html: merged }).eq("id", nextCard.id);
+      if (moveCaret) {
+        // Vänta på att TiptapEditor renderat det nya innehållet, fokusera vid
+        // slutet av den inflyttade texten (= efter overflow-delen).
+        requestAnimationFrame(() => {
+          const ed = editorRefs.current.get(nextCard.id);
+          if (!ed) return;
+          // Mät tokenlängd av overflow inom det nya doc:et
+          const tmp = document.createElement("div");
+          tmp.innerHTML = overflowHtml;
+          const overflowTextLen = (tmp.textContent ?? "").length;
+          // Approximera ProseMirror-position: textens längd + 2 (för doc/para-wrappers)
+          const target = Math.min(ed.state.doc.content.size, overflowTextLen + 2);
+          ed.commands.focus(target, { scrollIntoView: true });
+        });
+      }
+    } else {
+      // Skapa nytt sista kort med overflow som innehåll
+      if (cards.length >= limits.cardsPerManuscript) {
+        // Tier-spärr → backa: lägg tillbaka i src så användaren ser texten
+        setCards((prev) => {
+          const out = prev.slice();
+          out[idx] = { ...out[idx], content_html: (out[idx].content_html ?? "") + overflowHtml };
+          return out;
+        });
+        setUpgradeOpen(true);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("cards")
+        .insert({
+          manuscript_id: manuscript.id,
+          user_id: user.id,
+          position: idx + 1,
+          role: src.role,
+          content_html: overflowHtml,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        toast({ title: "Kunde inte skapa nytt kort", description: error?.message, variant: "destructive" });
+        return;
+      }
+      setCards((prev) => {
+        const out = [...prev];
+        out.splice(idx + 1, 0, data);
+        return out.map((c, i) => ({ ...c, position: i }));
+      });
+      if (moveCaret) {
+        requestAnimationFrame(() => {
+          const ed = editorRefs.current.get(data.id);
+          if (!ed) return;
+          ed.commands.focus("end", { scrollIntoView: true });
+        });
+      }
+    }
+  };
+
   const restoreSnapshot = async (snap: SplitSnapshot) => {
     // Återställ content_html på alla berörda kort som inte är nyskapade
     const toRestore = snap.affected.filter((s) => !s.isNew);
@@ -1047,6 +1126,8 @@ export default function Editor() {
                     onAutoSplit: () => cascadeSplitFromCard(c.id),
                     onOverflowStateChange: handleOverflowChange,
                     onEditorReady: handleEditorReady,
+                    onAutoOverflow: (html: string, moveCaret: boolean) =>
+                      handleAutoOverflow(c.id, html, moveCaret),
                   };
                   return layoutVariant === "ny"
                     ? <ManusCardV2 key={c.id} {...commonProps} notesPlacement={notesPlacement} />
