@@ -653,3 +653,129 @@ function NotesField({
     </div>
   );
 }
+
+function formatMmSs(total: number): string {
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function parseMmSs(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (/^\d+$/.test(trimmed)) {
+    const n = parseInt(trimmed, 10);
+    if (Number.isFinite(n) && n >= 0) return n;
+    return null;
+  }
+  const m = trimmed.match(/^(\d+)[:.](\d{1,2})$/);
+  if (!m) return null;
+  const mins = parseInt(m[1], 10);
+  const secs = parseInt(m[2], 10);
+  if (!Number.isFinite(mins) || !Number.isFinite(secs) || secs >= 60) return null;
+  return mins * 60 + secs;
+}
+
+function TargetTimePopover({
+  value, estimated, onChange,
+}: {
+  value: number | null;
+  estimated: number;
+  onChange: (v: number | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<string>(value != null ? formatMmSs(value) : "");
+
+  useEffect(() => {
+    setDraft(value != null ? formatMmSs(value) : "");
+  }, [value, open]);
+
+  const hasValue = value != null;
+  const display = hasValue ? formatMmSs(value!) : `~${formatDuration(estimated)}`;
+
+  const commit = () => {
+    const parsed = parseMmSs(draft);
+    if (parsed == null) {
+      if (draft.trim() === "") onChange(null);
+      return;
+    }
+    onChange(parsed);
+  };
+
+  const setAndClose = (n: number | null) => {
+    onChange(n);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title={hasValue ? "Klicka för att ändra måltid" : `Sätt måltid (uppskattning: ~${formatDuration(estimated)})`}
+          className={cn(
+            "px-1 tabular-nums inline-flex items-center gap-1 hover:underline rounded",
+            hasValue ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          <Clock className="h-3 w-3 opacity-60" />
+          {display}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[260px] p-3 rounded-xl">
+        <p className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider mb-2">
+          Måltid för kortet
+        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { commit(); setOpen(false); }
+              if (e.key === "Escape") setOpen(false);
+            }}
+            placeholder="mm:ss"
+            autoFocus
+            className="font-mono text-[13px] bg-surface-2 rounded-md border-0 outline-none w-[96px] px-2.5 py-1 placeholder:text-faint focus:ring-2 focus:ring-accent-blue"
+          />
+          <span className="text-[11px] text-muted-foreground">mm:ss</span>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {[30, 60, 120, 300].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setAndClose(s)}
+              className="text-[11px] font-mono px-2 py-1 rounded-md bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors tabular-nums"
+            >
+              {s < 60 ? `${s}s` : `${s / 60}m`}
+            </button>
+          ))}
+        </div>
+
+        <div className="text-[11px] text-muted-foreground mb-2">
+          Uppskattning: ~{formatDuration(estimated)}
+        </div>
+        <button
+          type="button"
+          onClick={() => setAndClose(estimated)}
+          className="w-full text-[12px] px-2.5 py-1.5 rounded-md bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors mb-2"
+        >
+          Använd uppskattning
+        </button>
+
+        {hasValue && (
+          <button
+            type="button"
+            onClick={() => setAndClose(null)}
+            className="w-full text-[11px] text-muted-foreground hover:text-destructive inline-flex items-center justify-center gap-1 py-1"
+          >
+            <X className="h-3 w-3" /> Ta bort måltid
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
