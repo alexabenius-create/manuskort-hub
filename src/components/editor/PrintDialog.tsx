@@ -71,10 +71,10 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
       // triggas utanför utskrift, så vi simulerar den medan vi mäter.
       const baselineCss =
         format === "a5-1up"
-          ? `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 13pt; line-height: 1.55; }
-             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 10pt; line-height: 1.45; }`
-          : `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 11pt; line-height: 1.5; }
-             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 9pt; line-height: 1.4; }`;
+          ? `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 16pt; line-height: 1.55; }
+             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 12pt; line-height: 1.45; }`
+          : `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 16pt; line-height: 1.5; }
+             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 12pt; line-height: 1.4; }`;
       const measureStyle = document.createElement("style");
       measureStyle.id = "print-measure-style";
       measureStyle.textContent = baselineCss;
