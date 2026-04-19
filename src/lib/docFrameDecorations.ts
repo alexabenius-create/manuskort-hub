@@ -1,9 +1,10 @@
 /**
  * docFrameDecorations — Tiptap-extension som lägger spacer-decorations
- * på block-noder vid givna positioner. Vi använder `Decoration.node`
- * istället för widget-decoration eftersom widgets vid blockgränser ofta
- * ignoreras eller blir inline. Node-decorations sätter en CSS-attribut
- * på blocket som följer brytpunkten → CSS adderar `padding-top`.
+ * på block-noder vid givna positioner. Vi använder `Decoration.node` så
+ * brytpunkten resulterar i `padding-top` på blocket som följer.
+ *
+ * State hålls i ProseMirror-plugin (inte i Tiptap-options) så att
+ * uppdateringar via dispatch (`setMeta`) faktiskt ändrar decorations.
  */
 
 import { Extension } from "@tiptap/core";
@@ -11,62 +12,77 @@ import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 
 export interface FrameBreak {
-  /** ProseMirror-position där spacern ska gälla — STARTEN på nästa block. */
+  /** ProseMirror-position på det block där spacern ska sättas (eller direkt innan). */
   pos: number;
-  /** Total höjd i px som ska reserveras (footer + gap + header). */
+  /** Total höjd i px att reservera (footer + gap + header). */
   heightPx: number;
 }
 
-interface FrameBreakOptions {
+interface PluginState {
   breaks: FrameBreak[];
+  decos: DecorationSet;
 }
 
-const pluginKey = new PluginKey<DecorationSet>("docFrameDecorations");
+const META_KEY = "docFrameBreaksUpdate";
+export const docFrameDecorationsKey = new PluginKey<PluginState>("docFrameDecorations");
 
-export const DocFrameDecorations = Extension.create<FrameBreakOptions>({
+function buildDecos(doc: import("prosemirror-model").Node, breaks: FrameBreak[]): DecorationSet {
+  if (!breaks.length) return DecorationSet.empty;
+  const decos: Decoration[] = [];
+  for (const b of breaks) {
+    if (b.pos < 0 || b.pos >= doc.content.size) continue;
+    const $pos = doc.resolve(b.pos);
+    let nodePos = b.pos;
+    try {
+      if ($pos.depth >= 1) nodePos = $pos.before(1);
+    } catch {
+      // ignore
+    }
+    const node = doc.nodeAt(nodePos);
+    if (!node || !node.isBlock) continue;
+    decos.push(
+      Decoration.node(nodePos, nodePos + node.nodeSize, {
+        style: `padding-top: ${b.heightPx}px;`,
+        "data-frame-break-spacer": "true",
+      }),
+    );
+  }
+  return DecorationSet.create(doc, decos);
+}
+
+export const DocFrameDecorations = Extension.create({
   name: "docFrameDecorations",
 
-  addOptions() {
-    return { breaks: [] };
-  },
-
   addProseMirrorPlugins() {
-    const ext = this;
     return [
-      new Plugin({
-        key: pluginKey,
+      new Plugin<PluginState>({
+        key: docFrameDecorationsKey,
+        state: {
+          init: (_config, state) => ({ breaks: [], decos: DecorationSet.empty }),
+          apply: (tr, prev, _oldState, newState) => {
+            const meta = tr.getMeta(META_KEY) as { breaks: FrameBreak[] } | undefined;
+            if (meta) {
+              const breaks = meta.breaks;
+              return { breaks, decos: buildDecos(newState.doc, breaks) };
+            }
+            // Doc ändrades → räkna om decorations på nya doc
+            if (tr.docChanged && prev.breaks.length) {
+              return { breaks: prev.breaks, decos: buildDecos(newState.doc, prev.breaks) };
+            }
+            return prev;
+          },
+        },
         props: {
           decorations(state) {
-            const breaks = ext.options.breaks;
-            if (!breaks || breaks.length === 0) return DecorationSet.empty;
-            const decos: Decoration[] = [];
-            for (const b of breaks) {
-              if (b.pos < 0 || b.pos >= state.doc.content.size) continue;
-              // Hitta blocket som STARTAR vid pos (eller direkt efter)
-              const $pos = state.doc.resolve(b.pos);
-              // Gå till start av närmsta top-level block efter pos
-              let nodePos = b.pos;
-              try {
-                // resolve(pos).start(1) ger startpositionen för det block som innehåller pos
-                if ($pos.depth >= 1) {
-                  nodePos = $pos.before(1);
-                }
-              } catch {
-                // ignorera
-              }
-              const node = state.doc.nodeAt(nodePos);
-              if (!node || !node.isBlock) continue;
-              decos.push(
-                Decoration.node(nodePos, nodePos + node.nodeSize, {
-                  style: `padding-top: ${b.heightPx}px;`,
-                  "data-frame-break-spacer": "true",
-                }),
-              );
-            }
-            return DecorationSet.create(state.doc, decos);
+            return docFrameDecorationsKey.getState(state)?.decos ?? DecorationSet.empty;
           },
         },
       }),
     ];
   },
 });
+
+/** Hjälpare för att uppdatera breaks utifrån. */
+export function setFrameBreaks(view: import("prosemirror-view").EditorView, breaks: FrameBreak[]) {
+  view.dispatch(view.state.tr.setMeta(META_KEY, { breaks }));
+}
