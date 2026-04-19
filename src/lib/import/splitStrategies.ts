@@ -93,6 +93,7 @@ interface BuildContext {
   speakers: SpeakerDetection;
   panelistTempId: (name: string) => string; // mappa namn → tempId för data-panelist-id
   headingMode: HeadingMode;
+  mode?: CardBuildMode;
 }
 
 /**
@@ -136,7 +137,12 @@ function buildCard(
     if (sp) {
       html = sp.restHtml;
       textForCount = sp.restText;
-      html = withSpeakerWrap(html, ctx, sp.name);
+      // I moderator-läge: hoppa över talar-wrap helt. Texten betraktas
+      // som moderatorns egna ord; frågor TILL panelister markeras
+      // separat via annotateQuestionsInHtml och får då panelistens färg.
+      if (ctx.mode !== "moderator") {
+        html = withSpeakerWrap(html, ctx, sp.name);
+      }
       if (!speakerName) speakerName = sp.name;
     }
 
