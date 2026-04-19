@@ -13,6 +13,11 @@ import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/compone
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
 import { HelpOverlay } from "@/components/presentation/HelpOverlay";
 import { SEO } from "@/components/SEO";
+import { scanCardsForPlaceholders } from "@/lib/profilePlaceholders";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const HELP_SEEN_KEY = "presentation-help-seen-v1";
 import { toast } from "sonner";
@@ -48,6 +53,12 @@ export default function Presentation() {
   const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [overdueDismissedIds, setOverdueDismissedIds] = useState<Set<string>>(new Set());
+  const [pendingStart, setPendingStart] = useState<null | {
+    mode: "countdown" | "instant";
+    viewMode: ViewMode;
+    focusStyle: FocusStyle;
+    placeholders: string[];
+  }>(null);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 

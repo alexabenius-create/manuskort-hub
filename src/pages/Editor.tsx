@@ -186,6 +186,21 @@ export default function Editor() {
     };
   }, [overflowingCardIds]);
 
+  // Cmd/Ctrl+F öppnar Hitta & ersätt
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "f" || e.key === "F")) {
+        const target = e.target as HTMLElement | null;
+        // Tillåt inte i input/textarea där användaren kanske vill söka i webbläsaren
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+        e.preventDefault();
+        setFindReplaceOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // Trigger manus-rundturen när exempelmanuset är öppnat och korten är renderade
   const isExampleManuscript = !!manuscript && (manuscript.tags ?? []).includes(EXAMPLE_TAG);
   useTourTrigger("manus", isExampleManuscript && !loading && cards.length > 0);
