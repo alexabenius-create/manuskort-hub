@@ -13,6 +13,11 @@ export interface ExamplePanelist {
   position: number;
 }
 
+export interface ExampleCue {
+  kind: "energy" | "action";
+  text: string;
+}
+
 export interface ExampleCard {
   position: number;
   role: "moderator" | "speaker";
@@ -21,9 +26,12 @@ export interface ExampleCard {
   notes: string;
   start_time: string;
   end_time: string;
+  /** Legacy — behålls för bakåtkompatibilitet/dual-write under Steg 5A. */
   cue_red: string;
   cue_amber: string;
   cue_teal: string;
+  /** Nya cues (Steg 5A): seedas direkt så nya användare ser nya formatet. */
+  cues?: ExampleCue[];
   is_panic_card: boolean;
 }
 
