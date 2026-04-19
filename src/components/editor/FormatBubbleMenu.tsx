@@ -17,16 +17,12 @@ interface ToolButton {
 }
 
 export function FormatBubbleMenu({ editor }: Props) {
-  // Hooks måste alltid köras i samma ordning — usePanelists kan kasta
-  // om kontexten inte finns. Vi wrappar med try/catch via fallback.
   let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
   try {
     panelists = usePanelists().panelists;
-  } catch (e) {
-    console.warn("[FormatBubbleMenu] usePanelists missing:", e);
+  } catch {
     panelists = [];
   }
-  console.log("[FormatBubbleMenu] panelists.length=", panelists.length, "selection=", editor?.state.selection.from, "-", editor?.state.selection.to);
 
   if (!editor) return null;
 
