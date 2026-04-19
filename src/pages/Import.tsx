@@ -120,6 +120,13 @@ export default function Import() {
 
     // Bygg kort + initiera talar-mappning
     const tempIds = new Map<string, string>();
+    // Pre-allokera färger så frågor får rätt färg redan från start
+    const detectedNamesPre = detectedSpeakerNames(store.rawBlocks, store.mode ?? "speaker");
+    const speakerColors = new Map<string, string>();
+    detectedNamesPre.forEach((name, i) => {
+      speakerColors.set(name, PANELIST_PALETTE[i % PANELIST_PALETTE.length]);
+    });
+
     const cards = buildCards({
       blocks: store.rawBlocks,
       strategy: store.strategy,
@@ -127,14 +134,14 @@ export default function Import() {
       textSize: store.textSize,
       speakerTempIds: tempIds,
       mode: store.mode ?? "speaker",
+      speakerColors,
     });
 
-    const detectedNames = detectedSpeakerNames(store.rawBlocks, store.mode ?? "speaker");
-    const speakerMappings = detectedNames.map((name, i) => ({
+    const speakerMappings = detectedNamesPre.map((name, i) => ({
       detectedName: name,
       tempId: tempIds.get(name) || `tmp:${name}`,
       action: "new" as const,
-      color: PANELIST_PALETTE[i % PANELIST_PALETTE.length],
+      color: speakerColors.get(name) || PANELIST_PALETTE[i % PANELIST_PALETTE.length],
     }));
 
     store.speakerTempIds.clear();
