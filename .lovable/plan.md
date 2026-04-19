@@ -1,44 +1,27 @@
 
 
-## Plan: Fix H1 mellanslag-bugg
+## Plan: Dynamisk primär-CTA på landningssidan
 
-### Problem
-H1 i `src/pages/Landing.tsx` (rad 157-160):
-```jsx
-<h1>
-  Tala tryggt.
-  <br />
-  <span>Håll tiden. Varje&nbsp;gång.</span>
-</h1>
+### Nuläge
+`src/pages/Landing.tsx` rad 35–36:
+```ts
+const primaryCtaTo = session ? "/bibliotek" : "/auth";
+const primaryCtaLabel = session ? "Till biblioteket" : "Skapa konto gratis";
 ```
-
-`innerText` blir `"Tala tryggt.\nHåll tiden. Varje gång."` — men i textrepresentation utan radbrytning blir det `"Tala tryggt.Håll tiden..."` (ingen mellanslag före `<br>`).
+Variablerna används redan i topbar (rad 143), hero (rad 173) och bottenbanner (rad 354 + 472). Utloggad-label är "Skapa konto gratis" — ska bytas till "Testa gratis nu". Inloggad är redan "Till biblioteket".
 
 ### Fix
-Lägg till ett mellanslag efter `Tala tryggt.` så textnoden blir `"Tala tryggt. "`:
-
-```jsx
-<h1 ...>
-  Tala tryggt.{" "}
-  <br />
-  <span className="text-muted-foreground">Håll tiden. Varje&nbsp;gång.</span>
-</h1>
+Ändra rad 36:
+```ts
+const primaryCtaLabel = session ? "Till biblioteket" : "Testa gratis nu";
 ```
 
-Detta motsvarar exakt det användaren bett om: `<h1>Tala tryggt. <br>Håll tiden. Varje gång.</h1>`.
+Det räcker — alla CTA-instanser (topbar, hero, mid-section, bottenbanner) använder samma variabel och uppdateras automatiskt.
 
-### Filer
-- `src/pages/Landing.tsx` — rad 157-161 (en liten edit).
+### Fil
+- `src/pages/Landing.tsx` — en rad ändras (rad 36).
 
-### Verifiering efter deploy
-Kör i konsolen:
-```js
-document.querySelector('h1').innerText
-```
-Ska returnera:
-```
-Tala tryggt. 
-Håll tiden. Varje gång.
-```
-(två rader, mellanslag efter första punkten).
+### Verifiering
+- Utloggad: hero + bottenbanner visar "Testa gratis nu" → leder till `/auth`.
+- Inloggad: visar "Till biblioteket" → leder till `/bibliotek`.
 
