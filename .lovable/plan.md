@@ -2,95 +2,92 @@
 
 ## Mål
 
-Bygga en **dummy-editor v2** parallellt med befintlig editor. Endast admin når den. Här börjar vi om med radflödet mellan kort så det känns som Word: skriv, radera, klistra, navigera — utan kantfall.
+Behåll v1:s kort-layout (boxar med chrome: nummer, drag-handle, anteckning, cues, tider, more-menu) men byt ut den interna text-motorn mot v2:s "en lång editor + virtuella sidbrytningar". Resultat: Word-flöde mellan kort, men varje kort ser ut och fungerar som idag.
 
-## Princip: "en lång text, virtuella sidbrytningar"
-
-Istället för dagens push/pull mellan separata Tiptap-instanser per kort:
-
-- **En enda Tiptap-instans** håller hela manuset.
-- Sidbrytningar är **virtuella** (beräknade från presentations-geometrin), inte fysiska kort i DB.
-- När användaren skriver/raderar: ProseMirror sköter caret, undo, paste, markering — gratis.
-- Vid spara: vi delar upp dokumentet på beräknade brytpunkter och persisterar till `cards`-tabellen i samma format som idag (bakåtkompatibelt).
-
-Det löser grundproblemet: dagens buggar kommer från att vi försöker synka caret/innehåll mellan N separata editorer. Word har inga sådana gränser — de visualiseras bara.
-
-## Arkitektur
+## Princip
 
 ```text
-┌─────────────────────────────────────────────┐
-│  EditorV2 (admin-only route)                │
-│                                             │
-│  ┌─ TiptapDocEditor (1 instans) ────────┐  │
-│  │                                       │  │
-│  │  [Kort 1 innehåll]                    │  │
-│  │  ─── virtuell sidbrytning (8 rader) ──│  │
-│  │  [Kort 2 innehåll]                    │  │
-│  │  ─── virtuell sidbrytning ────────────│  │
-│  │  [Kort 3 innehåll]                    │  │
-│  └───────────────────────────────────────┘  │
-│                                             │
-│  PageBreakOverlay (visar linjer + nummer)   │
-└─────────────────────────────────────────────┘
-         │
-         ▼ (autosave)
-   splitDocByRows() → cards[]  →  Supabase
+┌─ Kort 01 ─ [drag] ─ [⏸ ⚑ ⏰] ─ [⋯] ─┐
+│  En enda Tiptap-instans renderar     │
+│  HELA manuset. CSS/overlay klipper   │
+│  visuellt vid varje virtuell         │
+│  sidbrytning och ritar chrome runt.  │
+└──────────────────────────────────────┘
+       ↓ flödar sömlöst
+┌─ Kort 02 ─ [drag] ─ [⏸ ⚑ ⏰] ─ [⋯] ─┐
+│  ...samma editor, fortsättning       │
+└──────────────────────────────────────┘
 ```
 
-## Plan
+Inget caret-hopp mellan editorer, ingen push/pull-logik. ProseMirror sköter allt.
 
-**1. Routing & access**
-- Ny route `/manus/:id/v2` skyddad av `RequireAuth` + admin-check (`useTier().isAdmin`).
-- Liten "v2"-knapp på vanliga editorn synlig endast för admin → öppnar v2 för samma manus.
+## Två lager
 
-**2. Ny editor-komponent: `EditorV2.tsx`**
-- Laddar manus + kort som idag.
-- Slår ihop alla `cards[].content_html` till **ett HTML-dokument** med en osynlig markör mellan korten (t.ex. `<!-- card-break -->`) bara som hint vid första laddning.
-- Renderar `<TiptapDocEditor>` med samma extensions som dagens editor (PanelistMark, PauseMarkNode, etc.) — inga reflow-callbacks.
+**Lager 1 — Editor (en enda instans)**
+- `TiptapDocEditor` (från v2) renderas absolut-positionerad över hela kort-stacken.
+- Bakgrund transparent. Padding/spacing matchar kort-chromen så texten landar rätt.
 
-**3. Virtuella sidbrytningar**
-- Efter varje `onUpdate`: kör `computePageBreaks(html, size, maxRows)` som returnerar lista med ProseMirror-positioner där brytningar ska ritas.
-- Bygger på befintliga `countPresentationRows` + `splitHtmlAtRow` (återanvänds).
-- Overlay-komponent ritar horisontella linjer + "Kort N / M" badges absolut-positionerat ovanpå editorn vid dessa positioner.
+**Lager 2 — Kort-chrome (DOM-rader)**
+- För varje virtuell sidbrytning renderas en "kort-frame" med:
+  - Topp-rad: nummer, drag-handle, paus/flagga/klocka, more-menu, +Signal
+  - Botten-rad: anteckningsfält, cues, tider, ord-räknare, varningar
+- Frame-höjden styrs av `MAX_ROWS_BY_SIZE * lineHeight` så texten inuti exakt fyller boxen.
 
-**4. Spara → kort**
-- Vid autosave: dela `editor.getHTML()` på de beräknade brytpunkterna → `cards[]`.
-- Diff:a mot befintliga rader, `upsert` ändrade, `delete` överflödiga. Bevarar `id` på oförändrade kort där det går (matcha på position + innehållshash).
-- Notes/cues/times per kort: i v2-prototypen lägger vi dessa i en **högerpanel** kopplad till "aktivt kort" (det där caret står). Sparas på det matchade kort-id:t.
+## Plan (steg)
 
-**5. Presentation 1:1**
-- Presentation-läget rör vi inte — det läser samma `cards`-tabell.
-- Eftersom vi splittar med samma `splitHtmlAtRow` + presentations-geometri som presentationsläget mäter mot → garanterad 1:1.
+**1. `EditorV3.tsx` (admin-only, parallellt med v1 och v2)**
+- Route `/manus/:id/v3`. Knapp "v3" i v1-topbar för admin (bredvid v2-knappen).
+- Laddar manus + kort + panelister som v1.
 
-**6. Bakåtkompatibelt**
-- Samma DB-schema, samma `cards`-rader. Användaren kan växla mellan v1 och v2 på samma manus.
-- Inga migrations behövs.
+**2. `CardFrameStack.tsx` (ny)**
+- Tar `pageBreaks: number[]` (Y-positioner från PageBreakOverlay-logik) + `cards: Card[]`.
+- Renderar N stycken `<CardFrame>` i en kolumn. Varje frame har v1:s chrome (kopierad från `ManusCardV2.tsx`) men ingen Tiptap-editor inuti — bara en tom `<div>` med rätt höjd som "håller plats" för texten.
 
-## Vad vi INTE bygger nu
+**3. `DocEditorOverlay.tsx` (ny, eller utbyggd PageBreakOverlay)**
+- En enda `TiptapDocEditor` placeras `position: absolute` ovanpå hela frame-stacken.
+- CSS gap mellan frames + padding inuti frames ger naturlig "luft" mellan korten där editor-texten visuellt avbryts. (Tricket: editor-DOM:en har transparent bakgrund och `padding-block` som matchar gap+chrome-höjd vid varje sidbrytning — vi injicerar detta via decorations.)
+- Alternativ enklare metod: använd ProseMirror **Decorations** för att injicera en osynlig spacer-div vid varje sidbrytning som puttar ner nästa stycke exakt så mycket att det landar i nästa frame.
 
-- Ingen reflow-mellan-editorer-logik (hela poängen).
-- Ingen panelist-sidebar i v2 första iterationen — fokus på textflödet. Markering + bubble-menu för panelist funkar via befintlig FormatBubbleMenu.
-- Ingen drag-omordning av kort i v2 — ordning följer textflödet.
+**4. Aktivt kort + chrome-actions**
+- Spåra vilken sidbrytnings-region caret befinner sig i → markera den frame som "aktiv".
+- Anteckning/cues/tider/notes redigeras i den aktiva framen och sparas till motsvarande `cards`-rad (matchad via `planCardSync` från `docSplit.ts`).
+- More-menu (radera, duplicera, dela): manipulerar texten i editorn (ta bort range, infoga break-marker, etc).
+
+**5. Drag-omordning**
+- Eftersom korten är virtuella måste drag flytta **textintervall** i editorn.
+- I v3 första iterationen: **drag inaktiverat** (motiveras med "korten följer textflödet"). Lägg till i nästa iteration via en explicit "flytta upp/ner"-knapp som klipper ut intervallet och klistrar in vid önskad position.
+
+**6. Spara → cards**
+- Identiskt med v2: `splitDocToCards` + `planCardSync` → upsert/delete.
+- Notes/cues/tider sparas separat per matchad `cards.id` (samma flöde som v1).
+
+## Risker & svar
+
+- **Att få editor-text att exakt landa i frame-boxar**: Decorations som injicerar en spacer med exakt höjd `chrome_botten + gap + chrome_topp` vid varje sidbrytning. Mätning sker mot samma geometri som presentation.
+- **Klick på chrome ska inte stjäla fokus från editorn**: chrome-frames får `pointer-events: none` på själva text-zonen; bara knappar/inputs får `pointer-events: auto`.
+- **Drag**: avstängt i v3 v1.
+- **Panelist-sidebar + bubble-menu**: fungerar oförändrat (en editor → en selection).
 
 ## Filer
 
 | Fil | Ändring |
 |-----|---------|
-| `src/pages/EditorV2.tsx` | **Ny** — admin-only sida |
-| `src/components/editor/TiptapDocEditor.tsx` | **Ny** — en editor-instans för hela dokumentet |
-| `src/components/editor/PageBreakOverlay.tsx` | **Ny** — ritar virtuella sidbrytningar |
-| `src/lib/docSplit.ts` | **Ny** — `computePageBreaks()` + `splitDocToCards()` |
-| `src/App.tsx` | Lägg till route `/manus/:id/v2` |
-| `src/pages/Editor.tsx` | Liten "Testa v2" admin-knapp i toolbar |
+| `src/pages/EditorV3.tsx` | **Ny** — admin-only |
+| `src/components/editor/CardFrameStack.tsx` | **Ny** — chrome-boxar |
+| `src/components/editor/CardFrame.tsx` | **Ny** — en boxs chrome (kopierad från ManusCardV2 minus editor) |
+| `src/components/editor/DocEditorWithFrames.tsx` | **Ny** — kombinerar TiptapDocEditor + CardFrameStack via decorations |
+| `src/lib/docFrameDecorations.ts` | **Ny** — ProseMirror-decorations som injicerar spacers vid sidbrytningar |
+| `src/App.tsx` | Route `/manus/:id/v3` |
+| `src/pages/Editor.tsx` | "v3"-knapp för admin |
 
-## Risker & svar
+## Vad vi INTE gör nu
 
-- **Stora manus, prestanda**: en Tiptap-instans klarar enkelt 100+ sidor. Mätningen körs throttlad (rAF + debounce 200ms).
-- **Caret hoppar vid omberäkning**: vi rör aldrig dokumentinnehållet vid sidbrytningsberäkning — bara overlay. Caret är orört.
-- **Panelist-färgning över sidbrytning**: fungerar gratis, det är samma mark genom hela dokumentet.
+- Drag-omordning (kommer i v3.1 via "flytta upp/ner")
+- Manuella sidbrytningar (Ctrl+Enter) — kan läggas till efter
+- Migrering av v1-användare — v3 är admin-experiment tills vi vet att flödet är solitt
 
 ## Frågor
 
-1. **Ska v2-knappen synas på vanliga editorn för admin, eller bara nås via direkt-URL `/manus/:id/v2`?**
-2. **Notes/cues per kort i v2 — vill du ha högerpanel kopplad till aktivt kort, eller skjuter vi upp det helt till nästa iteration (bara textflödet först)?**
+1. **Drag-omordning**: ok att stänga av i v3 v1 och lösa med "flytta upp/ner"-knappar i more-menu i nästa iteration?
+2. **Decorations vs CSS-grid**: föredrar du den robustare decoration-baserade lösningen (svårare att bygga, exakt) eller en enklare CSS-grid där editorn klipps i flera kolumner (snabbare, viss risk för text-clipping vid kanter)? Min rekommendation: **decorations**.
 
