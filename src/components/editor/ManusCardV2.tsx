@@ -202,8 +202,14 @@ export function ManusCardV2({
         <span className="opacity-60">·</span>
         <TargetTimePopover
           value={card.target_seconds ?? null}
+          isManual={card.target_seconds_is_manual ?? false}
           estimated={seconds}
-          onChange={(v) => onLocalChange({ target_seconds: v } as Partial<Card>)}
+          onChange={(seconds, isManual) =>
+            onLocalChange({
+              target_seconds: seconds,
+              target_seconds_is_manual: isManual,
+            } as Partial<Card>)
+          }
         />
 
         {card.is_panic_card && (
