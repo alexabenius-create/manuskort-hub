@@ -27,6 +27,7 @@ import { useTourTrigger } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
 import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
