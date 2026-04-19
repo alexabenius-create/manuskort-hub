@@ -105,6 +105,7 @@ export function ManusCard({
       cue_teal: card.cue_teal,
       position: card.position,
       is_panic_card: card.is_panic_card ?? false,
+      target_seconds: card.target_seconds ?? null,
     },
   });
 
