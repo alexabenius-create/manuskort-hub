@@ -114,10 +114,17 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
           (name === "data-panelist-id" ||
             name === "data-panelist-color" ||
             name === "data-panelist-name" ||
+            name === "data-question-to" ||
+            name === "data-question-name" ||
+            name === "data-question-color" ||
             name === "style")
         ) {
-          // Behåll panelist-attribut; style hanteras nedan (vi tar bort om inte panelist)
-          if (name === "style" && !node.hasAttribute("data-panelist-id")) {
+          // Behåll panelist/question-attribut; style hanteras nedan (vi tar bort om inte specialspan)
+          if (
+            name === "style" &&
+            !node.hasAttribute("data-panelist-id") &&
+            !node.hasAttribute("data-question-to")
+          ) {
             node.removeAttribute("style");
           }
           continue;
@@ -125,8 +132,12 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
         node.removeAttribute(name);
       }
 
-      // Tom span utan panelist-id → unwrappa
-      if (tag === "SPAN" && !node.hasAttribute("data-panelist-id")) {
+      // Tom span utan panelist/question-id → unwrappa
+      if (
+        tag === "SPAN" &&
+        !node.hasAttribute("data-panelist-id") &&
+        !node.hasAttribute("data-question-to")
+      ) {
         unwrap(node);
       }
       return;
