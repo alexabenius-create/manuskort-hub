@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, X,
-  Scissors, AlertTriangle, Triangle, StickyNote, Sparkles, Clock,
+  Scissors, AlertTriangle, Triangle, StickyNote, Sparkles, Clock, RotateCcw,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import {
