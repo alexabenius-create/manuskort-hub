@@ -473,64 +473,126 @@ export default function Library() {
             )}
           </div>
         ) : (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filtered.map((m) => {
-              const isExample = (m.tags ?? []).includes(EXAMPLE_TAG);
-              return (
-              <li
-                key={m.id}
-                data-tour={isExample ? "library.example-card" : undefined}
-                className="group bg-surface rounded-2xl shadow-card hover:shadow-pop transition-shadow duration-200 overflow-hidden"
-              >
-                <div className="flex items-stretch">
-                  <button
-                    onClick={() => navigate(`/manus/${m.id}`)}
-                    className="flex-1 text-left px-6 py-5 min-w-0"
-                  >
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span
-                        className={`inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-0.5 rounded-full ${
-                          m.mode === "moderator"
-                            ? "bg-accent-blue/10 text-accent-blue"
-                            : "bg-cue-teal/10 text-[hsl(var(--cue-teal))]"
-                        }`}
-                      >
-                        {m.mode === "moderator" ? "Moderator" : "Talare"}
-                      </span>
-                      {(m.tags ?? []).includes(EXAMPLE_TAG) && (
-                        <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 rounded-full bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40 uppercase tracking-wide">
-                          <Sparkles className="h-3.5 w-3.5" /> Exempel
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-display text-[20px] font-semibold tracking-tight truncate">{m.title}</h3>
-                    <p className="text-[13px] text-muted-foreground mt-1.5">
-                      Uppdaterad {new Date(m.updated_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </button>
-                  <div className="flex items-center pr-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground h-9 w-9"
+          <>
+            {/* Bulk action bar — visas när minst ett kort är markerat */}
+            {selectedIds.size > 0 && (
+              <div className="sticky top-14 z-40 -mx-6 sm:-mx-10 px-6 sm:px-10 py-3 mb-5 bg-surface/95 backdrop-blur border-b-hair flex items-center gap-3 animate-fade-in">
+                <span className="text-[14px] font-medium">
+                  {selectedIds.size} markerad{selectedIds.size === 1 ? "" : "e"}
+                </span>
+                <button
+                  type="button"
+                  onClick={selectAllVisible}
+                  className="text-[13px] text-accent-blue hover:underline"
+                >
+                  Markera alla synliga ({filtered.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="text-[13px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                >
+                  <X className="h-3.5 w-3.5" /> Avmarkera
+                </button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="ml-auto rounded-full gap-1.5 h-9 px-4 text-[13px]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Radera markerade
+                </Button>
+              </div>
+            )}
+
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {filtered.map((m) => {
+                const isExample = (m.tags ?? []).includes(EXAMPLE_TAG);
+                const isSelected = selectedIds.has(m.id);
+                const selectionMode = selectedIds.size > 0;
+                return (
+                <li
+                  key={m.id}
+                  data-tour={isExample ? "library.example-card" : undefined}
+                  className={`group bg-surface rounded-2xl shadow-card hover:shadow-pop transition-all duration-200 overflow-hidden ${
+                    isSelected ? "ring-2 ring-accent-blue" : ""
+                  }`}
+                >
+                  <div className="flex items-stretch">
+                    {/* Checkbox-zon — alltid synlig på hover, alltid synlig i selection-mode */}
+                    <button
+                      type="button"
+                      onClick={() => toggleSelect(m.id)}
+                      aria-label={isSelected ? "Avmarkera manus" : "Markera manus"}
+                      className={`flex items-center justify-center pl-5 pr-2 transition-opacity ${
+                        selectionMode || isSelected
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(m.id)}
+                        className="h-5 w-5"
+                        aria-hidden
+                      />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (selectionMode) {
+                          toggleSelect(m.id);
+                        } else {
+                          navigate(`/manus/${m.id}`);
+                        }
+                      }}
+                      className="flex-1 text-left pr-6 py-5 min-w-0"
+                    >
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-0.5 rounded-full ${
+                            m.mode === "moderator"
+                              ? "bg-accent-blue/10 text-accent-blue"
+                              : "bg-cue-teal/10 text-[hsl(var(--cue-teal))]"
+                          }`}
                         >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl">
-                        <DropdownMenuItem onClick={() => duplicate(m)}>Duplicera</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setRenameId(m.id); setRenameValue(m.title); }}>Byt namn</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">Radera</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {m.mode === "moderator" ? "Moderator" : "Talare"}
+                        </span>
+                        {(m.tags ?? []).includes(EXAMPLE_TAG) && (
+                          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 rounded-full bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40 uppercase tracking-wide">
+                            <Sparkles className="h-3.5 w-3.5" /> Exempel
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-display text-[20px] font-semibold tracking-tight truncate">{m.title}</h3>
+                      <p className="text-[13px] text-muted-foreground mt-1.5">
+                        Uppdaterad {new Date(m.updated_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </button>
+                    <div className="flex items-center pr-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground h-9 w-9"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl">
+                          <DropdownMenuItem onClick={() => duplicate(m)}>Duplicera</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setRenameId(m.id); setRenameValue(m.title); }}>Byt namn</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">Radera</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                </div>
-              </li>
-              );
-            })}
-          </ul>
+                </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </main>
 
