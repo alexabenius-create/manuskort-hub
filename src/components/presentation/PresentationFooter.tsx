@@ -1,4 +1,4 @@
-import { Triangle, ZoomIn, ZoomOut } from "lucide-react";
+import { Triangle, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 
@@ -17,6 +17,10 @@ interface Props {
   cardElapsedSeconds: number;
   /** Måltid för aktuellt kort (manuellt satt). Fallback till start/end-diff. */
   cardTargetSeconds: number | null;
+  /** Om användaren har dismissat övertids-varningen för detta kort. */
+  isOverdueDismissed: boolean;
+  /** Användaren stänger av röd varning för detta specifika kort. */
+  onDismissOverdue: () => void;
   timeFormat: "clock" | "elapsed";
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
@@ -50,6 +54,8 @@ export function PresentationFooter({
   onPanic,
   cardElapsedSeconds,
   cardTargetSeconds,
+  isOverdueDismissed,
+  onDismissOverdue,
   timeFormat,
   sizeOffset,
   onSizeChange,
@@ -58,8 +64,9 @@ export function PresentationFooter({
   const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
   const ratio = planned ? cardElapsed / planned : 0;
   const percent = Math.min(100, ratio * 100);
-  const isOver = planned !== null && cardElapsed > planned;
-  const isWarn = planned !== null && !isOver && ratio >= 0.8;
+  const rawIsOver = planned !== null && cardElapsed > planned;
+  const isOver = rawIsOver && !isOverdueDismissed;
+  const isWarn = planned !== null && !isOver && !rawIsOver && ratio >= 0.8;
 
   const barColor = isOver
     ? "bg-red-400"
@@ -101,14 +108,26 @@ export function PresentationFooter({
         </div>
 
         {/* Mitten — per-kort-timer (centrerad) */}
-        <div className="flex flex-col items-center gap-2 pointer-events-none justify-self-center">
-          <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
-            {formatMmSs(cardElapsed)}
-            {planned && (
-              <span className="text-zinc-600">
-                {" / "}
-                <span className="text-zinc-400">{formatMmSs(planned)}</span>
-              </span>
+        <div className="flex flex-col items-center gap-2 justify-self-center pointer-events-none">
+          <div className="flex items-center gap-2">
+            <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
+              {formatMmSs(cardElapsed)}
+              {planned && (
+                <span className="text-zinc-600">
+                  {" / "}
+                  <span className="text-zinc-400">{formatMmSs(planned)}</span>
+                </span>
+              )}
+            </div>
+            {rawIsOver && !isOverdueDismissed && (
+              <button
+                onClick={onDismissOverdue}
+                className="pointer-events-auto p-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-100 transition-colors"
+                aria-label="Stäng av övertids-varning för detta kort"
+                title="Stäng av övertids-varning för detta kort"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
           {planned && (

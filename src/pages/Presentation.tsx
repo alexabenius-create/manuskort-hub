@@ -47,6 +47,7 @@ export default function Presentation() {
   const [speedFactor, setSpeedFactor] = useState(1.0);
   const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [overdueDismissedIds, setOverdueDismissedIds] = useState<Set<string>>(new Set());
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
@@ -424,7 +425,8 @@ export default function Presentation() {
           className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
             typeof current.target_seconds === "number" &&
             current.target_seconds > 0 &&
-            cardElapsedSeconds > current.target_seconds
+            cardElapsedSeconds > current.target_seconds &&
+            !overdueDismissedIds.has(current.id)
               ? "ring-4 ring-red-500 shadow-red-500/40"
               : "shadow-black/40"
           }`}
@@ -470,6 +472,14 @@ export default function Presentation() {
           onPanic={handlePanic}
           cardElapsedSeconds={cardElapsedSeconds}
           cardTargetSeconds={current.target_seconds ?? null}
+          isOverdueDismissed={overdueDismissedIds.has(current.id)}
+          onDismissOverdue={() =>
+            setOverdueDismissedIds((prev) => {
+              const next = new Set(prev);
+              next.add(current.id);
+              return next;
+            })
+          }
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
