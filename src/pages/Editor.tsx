@@ -1126,6 +1126,8 @@ export default function Editor() {
                     onAutoSplit: () => cascadeSplitFromCard(c.id),
                     onOverflowStateChange: handleOverflowChange,
                     onEditorReady: handleEditorReady,
+                    onAutoOverflow: (html: string, moveCaret: boolean) =>
+                      handleAutoOverflow(c.id, html, moveCaret),
                   };
                   return layoutVariant === "ny"
                     ? <ManusCardV2 key={c.id} {...commonProps} notesPlacement={notesPlacement} />
