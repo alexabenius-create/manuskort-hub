@@ -1,77 +1,107 @@
+## Pull-back vid Backspace
 
-## Förstår jag logiken?
+### Mål
 
-Ja. Du vill att korten ska bete sig som **sidor i Word**:
-- Varje kort rymmer max 8 rader (vid given textstorlek).
-- När du skriver och rad 9 uppstår på kort 1 → den raden flyttas automatiskt till kort 2 (blir rad 1 där).
-- Om kort 2 redan har innehåll → resten knuffas neråt till kort 3 osv. (kaskad)
-- Backspace i början av kort 2 → drar tillbaka text till kort 1 om det får plats där.
+Spegla push-flödet: när användaren trycker **Backspace** vid **caret position 0** (allra första tecknet) i ett kort som har en föregångare, ska text **dras tillbaka** från det aktuella kortet upp till föregående kort — så långt det får plats där (max 8 rader vid storlek md).
 
-Det här kallas **"text reflow"** mellan kort, precis som sidbrytning i ordbehandlare.
+Om föregående kort har plats för t.ex. 2 rader till, så flyttas första 2 raderna från det aktuella kortet upp till föregångaren. Resterande text stannar kvar i nuvarande kortet.
 
-## Nuläge (vad som finns)
+### Beteende i detalj
 
-- `MAX_ROWS_BY_SIZE` definierar radgräns per textstorlek (`src/lib/cardLimits.ts`).
-- `countPresentationRows()` mäter antal rader mot presentationsgeometrin.
-- `TiptapEditor` har redan **paste-overflow**: vid inklistring som spränger gränsen splittas texten och överskottet skickas via `onOverflowPaste` till nästa kort.
-- Ingen autoflyttning sker vid **vanlig tangentbordsinmatning** — användaren får bara en varning ("9/8 rader").
+**Trigger**
+- Tangenttryck: **Backspace**
+- Caret står vid **doc-position 0** i editorn
+- Det finns ett **föregående kort** (inte första kortet)
+- Ingen markering aktiv (annars normal radering)
+- Inga modifier-tangenter (Cmd/Ctrl/Alt) — då låter vi browsern hantera normalt
 
-## Vad som ska byggas
-
-**Reflow vid varje editor-update** (inte bara paste):
-
-1. **Detektera överflöd** — i `TiptapEditor.onUpdate`, om `rows > maxRows` → extrahera överskottstexten (HTML från sista node:n / sista raden).
-2. **Push till nästa kort** — ny callback `onOverflow(html)` som `Editor.tsx` hanterar genom att prependa HTML till nästa korts `content_html` (skapa nytt kort om inget finns).
-3. **Kaskad** — om nästa kort också spränger gränsen → samma logik triggar där (sker naturligt när dess editor renderas, men vi behöver göra det synkront för UX).
-4. **Pull tillbaka** (valfritt MVP-skärning) — vid Backspace i tomt kort → dra in text från nästa kort tills det fylls eller källkortet töms.
-
-**Caret-bevarande** — vid auto-split måste markören stanna kvar där användaren skriver (alltså flytta caret till nästa kort om sista tecknet skickades dit).
-
-## Teknisk approach
-
-### Splitlogik (kärna)
-Använd befintlig `splitHtmlAtRow(html, maxRows, textSize)` i `cardLimits.ts` — den finns redan och används av paste-flödet.
-
-### TiptapEditor.tsx
-- Ny prop: `onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void`
-- I `onUpdate`: efter mätning, om `rows > maxRows`:
-  - Kör `splitHtmlAtRow(html, max, size)` → `[fits, overflow]`
-  - Bestäm om caret hamnade i overflow-delen (jämför `selection.from` mot textlängden av `fits`).
-  - Sätt editorns innehåll till `fits` (utan emit), trigga `onChange(fits)`.
-  - Anropa `onOverflow(overflow, caretInOverflow)`.
-
-### Editor.tsx
-Ny handler `handleCardOverflow(cardId, overflowHtml, moveCaret)`:
-- Hitta nästa kort i `cards`-listan.
-- Om finns → `prependHtml(nextCard.content_html, overflowHtml)`, uppdatera via `updateCard`.
-- Om inte finns → skapa nytt kort efter aktuellt (samma logik som "lägg till kort").
-- Om `moveCaret` → fokusera nästa korts editor och placera caret vid slutet av den nyss inflyttade texten.
-
-### Caret-flytt mellan kort
-Behöver ref-system: en `Map<cardId, Editor>` i `Editor.tsx` (eller via befintlig `flushRegistry`-mönstret). När overflow flyttas och caret ska följa → `nextEditor.commands.focus(positionOfInsertedText)`.
+**Vad händer**
+1. Mät hur många rader föregångaren har just nu (`countPresentationRows`).
+2. Beräkna `lediga rader = maxRows - prevRows`.
+3. Om `lediga rader === 0` → bara caret-flytt till slutet av föregångaren. Ingen mutation.
+4. Om `lediga rader >= 1`:
+   - `splitHtmlAtRow(currentHtml, lediga, size)` → `[fitsInPrev, restStaysHere]`
+   - Lägg till `fitsInPrev` i slutet av föregångarens `content_html`
+   - Ersätt nuvarande kortets `content_html` med `restStaysHere`
+   - Caret hoppar till föregångarens editor, vid den position där den infogade texten börjar
 
 ### Edge cases
-- **Listpunkt / rubrik / blockquote**: split måste respektera blockgränser — `splitHtmlAtRow` gör redan detta korrekt (testat i paste-flödet).
-- **Pause-noder & panellist-marks**: bevaras eftersom vi splittar HTML, inte rå text.
-- **Snabb skrivning**: throttla overflow-checken med `requestAnimationFrame` (redan så) — undvik kaskadande renders i samma tick.
-- **Oändlig loop-skydd**: max 50 push-iterationer per update (samma mönster som `enforceRowLimit` i `buildCards.ts`).
 
-## Vad detta INTE inkluderar (kan komma sen)
+| Fall | Beteende |
+|------|----------|
+| Caret är inte vid pos 0 | Ingen pull-back — normal Backspace |
+| Det finns markering | Ingen pull-back — normal radering av selection |
+| Nuvarande kortet är **tomt** | Radera kortet helt (om inte första). Caret → slutet av föregångaren |
+| Föregångaren är **fullt fylld** (8/8) | Bara caret-flytt, ingen text flyttas |
+| Modifier-tangenter (Cmd/Ctrl/Alt) hålls | Ingen pull-back — låt browsern hantera |
 
-- **Pull-back vid Backspace** — kan leveras som Del 2 om du vill ha snabb MVP först.
-- **Manuell sidbrytning** (ctrl+enter för att tvinga nytt kort) — separat feature.
-- **Delete-tangent som sammanfogar två kort** — separat feature.
+### Teknisk implementation
 
-## Påverkan på befintlig kod
+**1. `TiptapEditor.tsx`**
+
+Ny prop:
+```ts
+onPullBack?: () => void;
+```
+
+I `handleKeyDown`:
+```ts
+if (event.key === "Backspace" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+  const sel = view.state.selection;
+  const isAtStart = sel.empty && sel.from <= 1;
+  if (isAtStart && onPullBackRef.current) {
+    event.preventDefault();
+    onPullBackRef.current();
+    return true;
+  }
+}
+```
+
+**2. `Editor.tsx`**
+
+Ny handler `handlePullBack(cardId)`:
+- Hitta `currentIdx` i `cards`. Om `currentIdx === 0` → returnera.
+- `prev = cards[currentIdx - 1]`, `current = cards[currentIdx]`
+- `available = maxRows - countPresentationRows(prev.content_html, size)`
+- Om `available <= 0` → fokusera prev-editorn vid slutet, ingen mutation
+- Annars:
+  - `[fitsInPrev, restStaysHere] = splitHtmlAtRow(current.content_html, available, size)`
+  - Om current var helt tom → ta bort kortet och fokusera prev vid slutet
+  - Annars: uppdatera båda korten via `updateCard`
+  - Fokusera prev-editorn vid den position där `fitsInPrev` börjar
+
+**3. `ManusCard.tsx` & `ManusCardV2.tsx`**
+
+Tråda igenom `onPullBack` på samma sätt som `onAutoOverflow`.
+
+**Caret-positionering**
+
+Återanvänd `editorRefs` Map. Använd `prevDocSize` innan merge som målposition så caret hamnar exakt där den nya texten börjar.
+
+### Avgränsningar (ingår INTE)
+
+- **Cmd/Ctrl+Backspace** (radera ord/rad) — låt browser hantera normalt
+- **Delete-tangent** från slutet av föregående kort (motsatt riktning) — separat feature
+- **Visuell hint** — inga animationer/toasts
+
+### Påverkan
 
 | Fil | Ändring |
 |-----|---------|
-| `src/components/editor/TiptapEditor.tsx` | Ny `onOverflow`-prop, reflow-logik i `onUpdate` |
-| `src/pages/Editor.tsx` | Ny `handleCardOverflow`, editor-ref-map, caret-koordinering |
-| `src/lib/cardLimits.ts` | Inga ändringar (`splitHtmlAtRow` återanvänds) |
+| `src/components/editor/TiptapEditor.tsx` | Ny `onPullBack`-prop + Backspace-detection |
+| `src/pages/Editor.tsx` | Ny `handlePullBack`-handler |
+| `src/components/editor/ManusCard.tsx` | Tråda igenom `onPullBack` |
+| `src/components/editor/ManusCardV2.tsx` | Tråda igenom `onPullBack` |
+| `src/lib/cardLimits.ts` | Inga ändringar |
 
-Befintlig paste-overflow blir redundant och kan förenklas — eller behållas som snabbväg för stora pastor.
+### Risker
 
-## Frågor innan jag börjar
+- **Caret-positionering** i ProseMirror räknar noder/tokens — använd `prevDocSize` innan merge som målposition.
+- **Race condition** med autosave — kör flush först (samma mönster som `flushRegistry`).
 
-Innan implementation: jag rekommenderar att vi **börjar med push-only (text knuffas framåt)** och sparar pull-back (backspace drar tillbaka) till en separat omgång. Det är en klart större komplexitet och du kan testa kärnflödet snabbare. Säg till om du hellre vill ha allt på en gång.
+### Frågor innan implementation
+
+1. **Vid full föregångare (8/8)**: Bara caret-flytt, eller ska Backspace inte göra något alls? Rekommendation: **caret-flytt** — det är intuitivt.
+2. **Vid tomt kort + Backspace**: Ska kortet raderas? Rekommendation: **ja**.
+
+Säg till om något ska ändras, annars kör jag.
