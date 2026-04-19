@@ -26,6 +26,7 @@ type Card = Database["public"]["Tables"]["cards"]["Row"] & {
 };
 
 export type NotesPlacement = "side" | "below";
+export type NotesDisplay = "always" | "auto" | "hidden";
 
 interface Props {
   card: Card;
@@ -38,6 +39,7 @@ interface Props {
   isModerator: boolean;
   canSyncWithPrevious?: boolean;
   notesPlacement?: NotesPlacement;
+  notesDisplay?: NotesDisplay;
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -53,6 +55,7 @@ interface Props {
 export function ManusCardV2({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   notesPlacement = "side",
+  notesDisplay = "auto",
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
   onAutoSplit, onOverflowStateChange, onEditorReady,
 }: Props) {
@@ -135,9 +138,15 @@ export function ManusCardV2({
   const hasAnyCue = !!(card.cue_red?.trim() || card.cue_amber?.trim() || card.cue_teal?.trim());
   const hasNotes = !!card.notes?.trim();
   const cuesVisible = hasAnyCue || showCues;
-  const notesVisibleInline = showNotes && (hasNotes || notesOpen);
+  // notesDisplay styr när panelen syns:
+  //   always → alltid (även tom)  | auto → bara om text finns ELLER user öppnat | hidden → aldrig
+  const notesEnabled = showNotes && notesDisplay !== "hidden";
+  const notesVisibleInline =
+    notesEnabled && (notesDisplay === "always" || hasNotes || notesOpen);
   const showSideNotes = notesVisibleInline && notesPlacement === "side";
   const showBelowNotes = notesVisibleInline && notesPlacement === "below";
+  // "+ Anteckning"-knappen i meta-raden ska bara visas när panelen är dold men kan öppnas (auto + tom)
+  const showAddNoteButton = notesEnabled && notesDisplay === "auto" && !hasNotes && !notesOpen;
 
   return (
     <article
@@ -218,8 +227,8 @@ export function ManusCardV2({
               <span className="text-[11px] font-sans">Signal</span>
             </MetaIconButton>
           )}
-          {/* + Anteckning — bara om showNotes är på och ingen anteckning finns */}
-          {showNotes && !hasNotes && (
+          {/* + Anteckning — bara i auto-läge när panelen kollapsats (ingen text + inte öppen) */}
+          {showAddNoteButton && (
             <MetaIconButton
               label="Lägg till anteckning"
               onClick={() => setNotesOpen(true)}
@@ -364,7 +373,7 @@ export function ManusCardV2({
                 value={card.notes}
                 onChange={(v) => onLocalChange({ notes: v })}
                 onClose={() => { setNotesOpen(false); onLocalChange({ notes: "" }); }}
-                allowClose={!hasNotes}
+                allowClose={!hasNotes && notesDisplay === "auto"}
               />
             </div>
           )}
@@ -378,7 +387,7 @@ export function ManusCardV2({
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">Anteckning</span>
-              {!hasNotes && (
+              {!hasNotes && notesDisplay === "auto" && (
                 <button
                   type="button"
                   onClick={() => setNotesOpen(false)}

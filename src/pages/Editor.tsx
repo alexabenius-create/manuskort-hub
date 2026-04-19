@@ -77,6 +77,18 @@ export default function Editor() {
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("editor.notesPlacement", notesPlacement);
   }, [notesPlacement]);
+  // Visningsläge för anteckningar: "always" | "auto" | "hidden"
+  // - always: panelen visas alltid (även tom)
+  // - auto:   kollapsad bar när tom, expanderad när text finns (default)
+  // - hidden: panelen visas aldrig
+  const [notesDisplay, setNotesDisplay] = useState<"always" | "auto" | "hidden">(() => {
+    if (typeof window === "undefined") return "auto";
+    const v = localStorage.getItem("editor.notesDisplay");
+    return v === "always" || v === "auto" || v === "hidden" ? v : "auto";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("editor.notesDisplay", notesDisplay);
+  }, [notesDisplay]);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
@@ -718,21 +730,49 @@ export default function Editor() {
                 </TooltipContent>
               <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
                 <div className="flex flex-col gap-4">
-                  <ViewSection label="Visa">
+                  <ViewSection label="Anteckningar" hint="Auto: panelen kollapsas när det inte finns någon anteckning">
                     <div className="seg-group w-full">
                       <button
-                        data-active={manuscript.show_notes}
-                        onClick={() => updateMeta({ show_notes: !manuscript.show_notes })}
+                        data-active={notesDisplay === "always"}
+                        onClick={() => {
+                          setNotesDisplay("always");
+                          if (!manuscript.show_notes) updateMeta({ show_notes: true });
+                        }}
                         className="seg-btn flex-1"
                       >
-                        Anteckningar
+                        Alltid
                       </button>
+                      <button
+                        data-active={notesDisplay === "auto"}
+                        onClick={() => {
+                          setNotesDisplay("auto");
+                          if (!manuscript.show_notes) updateMeta({ show_notes: true });
+                        }}
+                        className="seg-btn flex-1"
+                      >
+                        Auto
+                      </button>
+                      <button
+                        data-active={notesDisplay === "hidden"}
+                        onClick={() => {
+                          setNotesDisplay("hidden");
+                          if (manuscript.show_notes) updateMeta({ show_notes: false });
+                        }}
+                        className="seg-btn flex-1"
+                      >
+                        Dold
+                      </button>
+                    </div>
+                  </ViewSection>
+
+                  <ViewSection label="Tider">
+                    <div className="seg-group w-full">
                       <button
                         data-active={manuscript.show_times}
                         onClick={() => updateMeta({ show_times: !manuscript.show_times })}
                         className="seg-btn flex-1"
                       >
-                        Tider
+                        {manuscript.show_times ? "Visa tider" : "Dölj tider"}
                       </button>
                     </div>
                   </ViewSection>
@@ -950,6 +990,7 @@ export default function Editor() {
                     number: idx + 1,
                     textSize: manuscript.text_size as "sm" | "md" | "lg",
                     showNotes: manuscript.show_notes,
+                    notesDisplay,
                     showTimes: manuscript.show_times,
                     wpm: manuscript.wpm,
                     timeFormat,
