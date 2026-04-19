@@ -425,7 +425,8 @@ export default function Presentation() {
           className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
             typeof current.target_seconds === "number" &&
             current.target_seconds > 0 &&
-            cardElapsedSeconds > current.target_seconds
+            cardElapsedSeconds > current.target_seconds &&
+            !overdueDismissedIds.has(current.id)
               ? "ring-4 ring-red-500 shadow-red-500/40"
               : "shadow-black/40"
           }`}
