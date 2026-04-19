@@ -17,8 +17,9 @@ import { PrintDialog } from "@/components/editor/PrintDialog";
 import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
-import { ArrowLeft, Plus, Printer, Users, Play, Target, Settings2 } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Users, Play, Target, Settings2, Search } from "lucide-react";
 import { HelpButton } from "@/components/HelpButton";
+import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   // Layout-toggle (mockup): "ny" = ren V2-layout, "klassisk" = nuvarande
   const [layoutVariant, setLayoutVariant] = useState<"klassisk" | "ny">(() => {
     if (typeof window === "undefined") return "ny";
@@ -882,6 +884,20 @@ export default function Editor() {
               <Play className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Visa</span>
             </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setFindReplaceOpen(true)}
+                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2"
+                  aria-label="Hitta & ersätt"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Hitta &amp; ersätt</TooltipContent>
+            </Tooltip>
             <HelpButton />
           </div>
         </header>
