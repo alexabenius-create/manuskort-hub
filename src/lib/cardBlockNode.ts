@@ -51,15 +51,32 @@ export const CardBlock = Node.create({
 
   addAttributes() {
     return {
-      cardId: { default: null as string | null },
+      cardId: {
+        default: null as string | null,
+        parseHTML: (el) => el.getAttribute("data-card-id") || null,
+        renderHTML: (attrs) =>
+          attrs.cardId ? { "data-card-id": attrs.cardId } : {},
+      },
       cardNumber: { default: 1 },
       totalCards: { default: 1 },
       notes: { default: "" },
       cues: { default: [] as Cue[] },
       targetSeconds: { default: null as number | null },
       targetSecondsIsManual: { default: false },
-      role: { default: "speaker" as "speaker" | "moderator" },
-      isPanic: { default: false },
+      role: {
+        default: "speaker" as "speaker" | "moderator",
+        parseHTML: (el) => {
+          const v = el.getAttribute("data-role");
+          return v === "moderator" ? "moderator" : "speaker";
+        },
+        renderHTML: (attrs) => ({ "data-role": attrs.role ?? "speaker" }),
+      },
+      isPanic: {
+        default: false,
+        parseHTML: (el) => el.getAttribute("data-panic") === "true",
+        renderHTML: (attrs) =>
+          attrs.isPanic ? { "data-panic": "true" } : {},
+      },
       startTime: { default: "" },
       endTime: { default: "" },
       title: { default: "" },
@@ -73,13 +90,10 @@ export const CardBlock = Node.create({
     return [{ tag: "article[data-card-block]" }];
   },
 
-  renderHTML({ HTMLAttributes, node }) {
+  renderHTML({ HTMLAttributes }) {
     return [
       "article",
-      mergeAttributes(HTMLAttributes, {
-        "data-card-block": "true",
-        "data-card-id": node.attrs.cardId ?? "",
-      }),
+      mergeAttributes(HTMLAttributes, { "data-card-block": "true" }),
       0,
     ];
   },
