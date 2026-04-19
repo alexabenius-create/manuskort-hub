@@ -1,39 +1,44 @@
 
 
-## Diagnos: oönskad fallback till editor v1
+## Plan: auto-skala texten så ett kort alltid får plats
 
-### Vad jag ser i loggarna
-1. **`Maximum update depth exceeded`** i `FormatBubbleMenu.tsx` rad 42 — den nya `useEffect` som lyssnar på `transaction` triggar `setState` på varje transaktion, vilket triggar render → ny effect-instans → loop. React kraschar då komponenten.
-2. **`Duplicate extension names found: ['link', 'underline']`** — TipTap-varning, separat problem men kan bidra till instabilitet.
+### Problem
+Print-CSS låser fonten till 11pt (A4) / 13pt (A5). Om ett kort har mycket text spiller det över den fasta korthöjden och klipps av `overflow: hidden`. Användaren ser inte allt manus.
 
-### Varför det hoppar till v1
-När `FormatBubbleMenu` kraschar (max update depth) bubblas felet upp. `EditorV3` har troligen en `ErrorBoundary` eller så fallar hela editorträdet → något i appen tolkar det som att v3 är trasig och routar till v1. Alternativt: användaren har en gammal `editor_preference='v1'` i DB som plötsligt slår igenom när v3 kraschar och remountas.
+### Lösning: mät-och-skala per kort innan utskrift
 
-Mest sannolikt: **kraschen i FormatBubbleMenu** gör att `EditorV3` aldrig hinner rendera klart, och `EditorRouter` har redan valt v3, så det är inte ett route-byte i sig — utan v3-sidan kraschar och visar något som ser ut som v1. ELLER så finns det en `CardBlockErrorBoundary` som faller tillbaka.
+När användaren klickar "Skriv ut" i `PrintDialog`:
 
-Måste verifieras genom att läsa:
-- `FormatBubbleMenu.tsx` rad 30–60 (loop-källan)
-- `EditorV3.tsx` (finns ErrorBoundary?)
-- `EditorRouter.tsx` (kan preference ändras runtime?)
+1. **Beräkna tillgänglig korthöjd** i pixlar för valt format:
+   - A4 2-up: `(297mm − 24mm marginal − 12mm buffer) / 2`
+   - A5 1-up: `148mm − 28mm buffer`
+   - Konvertera mm → px (1mm ≈ 3.78px @ 96dpi).
 
-### Fix
+2. **Klona varje `.manu-card` osynligt** i en off-screen container med samma bredd som utskriftsytan (A4: 186mm, A5 liggande: 190mm) och baseline-typografi (11/13pt).
 
-**Primär:** Ta bort `transaction`-lyssnaren i `FormatBubbleMenu` — den triggas på varje knapptryck inkl. den force-render vi själva orsakar = oändlig loop. Behåll bara `selectionUpdate` som räcker för bubble-menyns syfte (knapparna behöver bara uppdateras vid markeringsändring).
+3. **Mät `scrollHeight`** på kort-klonen. Om den överskrider tillgänglig höjd → räkna ut skalfaktor `scale = available / scrollHeight` (clamp 0.55–1.0).
 
-```ts
-// FÖRE
-editor.on("selectionUpdate", handler);
-editor.on("transaction", handler);  // ← orsakar loop
+4. **Sätt en CSS-variabel per kort** på det riktiga elementet, t.ex. `style="--print-script-scale: 0.82"`, och låt print-CSS använda den:
+   ```css
+   .manu-card .ProseMirror {
+     font-size: calc(11pt * var(--print-script-scale, 1)) !important;
+     line-height: calc(1.5 * var(--print-script-scale, 1)) !important;
+   }
+   ```
+   Samma för `.card-panel-notes textarea` (med egen baseline 9pt/10pt).
 
-// EFTER
-editor.on("selectionUpdate", handler);
-```
+5. **Cleanup** i befintlig `afterprint`-handler: ta bort alla `--print-script-scale` från korten.
 
-**Sekundär:** Undersök varför editorn "hoppade till v1" — verifiera att det inte var en faktisk preference-ändring utan bara kraschad v3. Om det var en faktisk DB-ändring behöver vi läsa `useEditorPreference` för race conditions.
-
-**Tertiär:** Fixa duplicate extension-varningen (separat task, inte blockerande).
+### Bonus: ta bort den hårda spärren
+Idag blockeras hela utskriften om något kort är "för långt" (`data-print-blocked`). Med auto-skalning behövs inte spärren — alla kort får plats genom nedskalning. Behåll en mjuk varning om skalan måste under 0.6 (då blir texten väldigt liten), men låt utskriften gå igenom.
 
 ### Filer
-- `src/components/editor/FormatBubbleMenu.tsx` — ta bort `transaction`-lyssnaren.
-- Verifiera: `src/pages/EditorV3.tsx`, `src/hooks/useEditorPreference.tsx`.
+- `src/components/editor/PrintDialog.tsx` — lägg till mät-och-skala-steg före `window.print()`, cleanup efter.
+- `src/index.css` — ändra `.manu-card .ProseMirror` och `.card-panel-notes textarea` till att läsa `var(--print-script-scale, 1)`. Behåll `overflow: hidden` som säkerhetsnät.
+- `src/pages/Editor.tsx` — ta bort eller mjukgör `data-print-blocked`-spärren (visa toast istället).
+
+### Edge cases
+- **Tomma kort**: skala = 1, inget händer.
+- **Mycket långa kort** (skala < 0.55): clampa till 0.55 så texten förblir läsbar; resterande overflow klipps fortfarande av `overflow: hidden` — men i praktiken räcker 0.55 för 2–3× normalt innehåll.
+- **Notes vs. script**: skala beräknas på hela `.manu-card`-klonen, så både script och notes nedskalas proportionellt.
 
