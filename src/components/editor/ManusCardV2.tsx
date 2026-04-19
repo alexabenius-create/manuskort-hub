@@ -52,6 +52,7 @@ interface Props {
   onAutoSplit?: () => void;
   onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
   onEditorReady?: (cardId: string, editor: Editor | null) => void;
+  onAutoOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
 }
 
 export function ManusCardV2({
@@ -59,7 +60,7 @@ export function ManusCardV2({
   notesPlacement = "side",
   notesDisplay = "auto",
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
-  onAutoSplit, onOverflowStateChange, onEditorReady,
+  onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
@@ -313,6 +314,7 @@ export function ManusCardV2({
             maxRows={maxRows}
             onRowCountChange={setCurrentRows}
             onOverflowPaste={onPasteOverflow}
+            onOverflow={onAutoOverflow}
           />
 
           {/* Diskret radvarning — visas bara nära/över gränsen */}
