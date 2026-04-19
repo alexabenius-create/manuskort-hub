@@ -3,6 +3,7 @@ import type { Editor } from "@tiptap/react";
 import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
+import { hexToDarkText } from "@/lib/panelistColors";
 
 interface Props {
   editor: Editor | null;
@@ -145,12 +146,14 @@ export function FormatBubbleMenu({ editor }: Props) {
                     }
                   }}
                   className={cn(
-                    "inline-flex h-7 w-7 items-center justify-center rounded-full transition-all",
-                    "ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-110",
-                    isActive && "ring-2 ring-foreground/60 scale-110",
+                    "inline-flex h-7 items-center justify-center rounded-full px-2.5 text-[12px] font-medium leading-none transition-all max-w-[140px]",
+                    "ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
+                    isActive && "ring-2 ring-foreground/60 scale-105",
                   )}
-                  style={{ backgroundColor: p.color }}
-                />
+                  style={{ backgroundColor: p.color, color: hexToDarkText(p.color) }}
+                >
+                  <span className="truncate">{p.name?.trim() || "Namnlös"}</span>
+                </button>
               );
             })}
             {activePanelistId && (
