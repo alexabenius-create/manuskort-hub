@@ -14,10 +14,10 @@ type: feature
 ## Faser (UI/AI)
 - **5A.1 (klar):** UI + AI-förslag för `energy` (röd) och `action` (blå). Härleds direkt ur manustext. Presentation läser nya `cues` med legacy-fallback. Exempelmanus seedas med nya formatet (dual-write).
 - **5A.2 (klar):** Paneldeltagar-datamodell (`panelists`-tabellen) finns sedan tidigare. `panel`-cues aktiverade i CueEditor med panelist-väljare; chip + presentationsrendering använder panelistens färg. `CUE_KINDS_ENABLED` exponerar nu `["energy","action","panel"]`.
-- **5A.3 (pågår):** Tidsmodell per kort + time-cues. Levereras i tre delar:
+- **5A.3 (klar):** Tidsmodell per kort + time-cues. Levererat i tre delar:
   - **Del 1 (klar):** Datamodell — `profiles.wpm` (default 140), `cards.target_seconds_is_manual` (auto vs manuell måltid), `manuscripts.time_cue_display_seconds` (5/15/30/-1, default 15) med trigger-validering. Settings exponerar WPM-fält. ManusCardV2 visar "auto"-tagg när måltid är auto-uppskattad och har "Återställ till uppskattad tid"-knapp i popovern.
-  - **Del 2 (nästa):** Time-cue-editor — aktivera `time` i `CUE_KINDS_ENABLED`, input för `atSeconds` (mm:ss), chip i editorn, validering att atSeconds <= target_seconds.
-  - **Del 3:** Presentation — per-kort timer (00:00 vid kortbyte), dedikerad time-cue-zon intill timern, trigger vid atSeconds, fade in/out, "Nästa: '…' om 0:30"-preview, max 2 synliga samtidigt.
+  - **Del 2 (klar):** Time-cue-editor — `time` aktiverat i `CUE_KINDS_ENABLED`, mm:ss-input för `atSeconds` med klock-ikon på chip, validering blockerar Spara om tiden saknas/ogiltig/överskrider kortets måltid (manual ?? estimat).
+  - **Del 3 (klar):** Presentation — per-kort-timer återanvänder `useCardTimers.getCardElapsed` (nollställs vid kortbyte). `TimeCueZone` visas fixerad uppe till höger i cards-läget: triggas när `elapsed >= atSeconds`, stannar i `time_cue_display_seconds` (default 15s), max 2 samtidigt, fade-in via `animate-fade-in`. Diskret "Nästa: 0:30 — text"-preview under aktiva cues.
 
 ## Dual-write
 - Editor V2 skriver bara till nya `cues`-arrayen.
