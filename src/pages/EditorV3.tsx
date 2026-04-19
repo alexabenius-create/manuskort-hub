@@ -234,10 +234,20 @@ export default function EditorV3() {
     return () => window.removeEventListener("resize", onResize);
   }, [scheduleMeasure]);
 
-  // Mät när html eller storlek ändras
+  // Mät när html eller storlek ändras. Vi mäter två gånger: först direkt
+  // (för att räkna fram breaks), sen igen efter att decorations renderats
+  // (så box-Y-positionerna stämmer mot den slutliga DOM-layouten).
   useEffect(() => {
     scheduleMeasure();
+    const t = window.setTimeout(scheduleMeasure, 50);
+    return () => window.clearTimeout(t);
   }, [docHtml, textSize, scheduleMeasure]);
+
+  // Mät om när breaks-listan har applicerats (ny DOM-höjd)
+  useEffect(() => {
+    const t = window.setTimeout(scheduleMeasure, 30);
+    return () => window.clearTimeout(t);
+  }, [frameBreaks, scheduleMeasure]);
 
   // Debounced autosave
   const handleDocChange = (html: string) => {
