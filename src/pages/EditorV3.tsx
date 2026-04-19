@@ -398,6 +398,11 @@ export default function EditorV3() {
             </p>
           </div>
         </main>
+
+        <PanelistSidebar
+          open={panelistSidebarOpen}
+          onClose={() => setPanelistSidebarOpen(false)}
+        />
       </div>
     </PanelistsProvider>
   );
