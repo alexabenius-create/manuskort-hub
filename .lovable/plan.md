@@ -1,41 +1,20 @@
 
+Auth-loggarna visar tydligt:
 
-## Diagnos
+1. `/recover` (glömt lösenord) → `hook_timeout` mot `https://api.lovable.dev/projects/.../backend/email-hook` (5s timeout, 422)
+2. `/otp` (magisk länk) → samma `hook_timeout`
+3. `/signup` → samma `hook_timeout`
+4. `/token` (login) fungerar dock direkt (200 vid lyckad inloggning, 400 vid fel lösenord)
 
-**1. Vita barer över/under (iPad PWA/standalone):** Beror troligen på att `body`/`html` saknar svart bakgrund + safe-area inte respekteras. Presentation-vyn använder `absolute inset-0` men body kan synas igenom när iOS Safari visar status/home-indicator-zoner.
+Trots att jag tidigare körde `email_domain--toggle_project_emails` med `enabled: false`, så är hook:en fortfarande aktiv och timeoutar. Det betyder att toggle-anropet antingen inte faktiskt avregistrerade Auth-hook:en, eller att hook:en återaktiverats. Resultat: alla flöden som skickar mejl (signup, magisk länk, glömt lösenord) misslyckas med 422.
 
-**2. Tryck på knappar bläddrar:** Tap-zonerna för prev/next ligger som overlay över hela skärmen. Knapparna har `pointer-events-auto` men click-eventet bubblar upp till tap-zonen, eller så ligger tap-zonen ovanpå.
+Inloggning med befintligt konto + lösenord fungerar (token-endpointen rör inte hook:en). Auto-confirm är på, så signup *skulle* fungera om hook:en inte timeoutade — men eftersom GoTrue väntar på hook:en innan svar returneras, faller hela signup-anropet på 422.
 
-**3. Default = klocka:** Behöver ändras till `elapsed` som default.
+## Plan
 
-## Lösning
+1. **Försök stänga av Lovable Emails igen** via `email_domain--toggle_project_emails` (`enabled: false`) och verifiera att hook:en faktiskt försvinner från Auth-config.
+2. **Kontrollera domänstatus** med `email_domain--check_email_domain_status` för att förstå om en halvkonfigurerad domän/hook ligger kvar.
+3. **Om hook:en fortfarande triggas efter toggle:** scaffolda om auth-email-hook korrekt (`email_domain--scaffold_auth_email_templates` + deploy), så att hook:en svarar inom 5s istället för att timeouta. Det är troligen rätt långsiktig lösning eftersom du vill ha custom auth-mejl framöver.
+4. **Verifiera** genom att titta på nya auth-loggar efter åtgärd att `/signup`, `/otp` och `/recover` returnerar 200 istället för 422.
 
-### 1. Vit bar — fix bakgrund + safe-area
-- I `Presentation.tsx`: lägg `bg-zinc-950` på root + sätt `<html>`/`<body>` bakgrund via en effect medan presentationsläget är aktivt (eller via en wrapper med `fixed inset-0`).
-- Lägg `viewport-fit=cover` i `index.html` om saknas, och `env(safe-area-inset-*)` padding på topbar/footer.
-
-### 2. Tap-zoner bläddrar vid knapptryck
-Hitta tap-zon-elementen i `Presentation.tsx`. Två möjliga fixar:
-- **Bästa:** lägg `e.stopPropagation()` på alla onClick i Topbar/Footer-knappar, ELLER
-- **Robustare:** ändra tap-zonerna så de bara täcker mitten av skärmen (vänster/höger 1/3-strips), INTE topp/botten. T.ex. tap-zonerna får `top-[80px] bottom-[120px]` så topbar och footer är fredade.
-
-Jag väljer det andra — fredar hela topbar (top 80px) och footer (bottom 140px) från tap-navigation. Det är säkrare än att förlita sig på stopPropagation överallt.
-
-### 3. Default elapsed
-I `usePresentationTimer` (eller där `mode` initieras): byt `useState<TimerMode>("clock")` → `useState<TimerMode>("elapsed")`. Och `direction` default `"down"` (kvarstående tid).
-
-## Ändringar
-
-1. **`src/pages/Presentation.tsx`**:
-   - Root-wrapper: `bg-zinc-950` + effect som sätter `document.body.style.backgroundColor = "#09090b"` medan monterad
-   - Tap-zoner (prev/next): begränsa till `top-20 bottom-32` så topbar/footer fredas
-   - Initial mode → `"elapsed"`, direction → `"down"`
-
-2. **`index.html`**: säkerställ `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />`
-
-3. **`src/components/presentation/PresentationTopbar.tsx`** + **`PresentationFooter.tsx`**: lägg `pt-[env(safe-area-inset-top)]` resp. `pb-[env(safe-area-inset-bottom)]` på header/footer.
-
-4. **`src/hooks/usePresentationTimer.ts`** (om det är där default mode sätts): ändra default till `elapsed` + `down`.
-
-Inga db-ändringar.
-
+Inga kodändringar i projektet behövs — felet ligger uteslutande i backend-konfigurationen för Auth-mejlhooken.
