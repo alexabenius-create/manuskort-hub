@@ -126,9 +126,10 @@ export default function Import() {
       wordsPerCard: store.wordsPerCard,
       textSize: store.textSize,
       speakerTempIds: tempIds,
+      mode: store.mode ?? "speaker",
     });
 
-    const detectedNames = detectedSpeakerNames(store.rawBlocks);
+    const detectedNames = detectedSpeakerNames(store.rawBlocks, store.mode ?? "speaker");
     const speakerMappings = detectedNames.map((name, i) => ({
       detectedName: name,
       tempId: tempIds.get(name) || `tmp:${name}`,
@@ -160,6 +161,7 @@ export default function Import() {
       wordsPerCard: store.wordsPerCard,
       textSize: store.textSize,
       speakerTempIds: tempIds,
+      mode: store.mode ?? "speaker",
     });
     store.setCards(cards);
     // Markera ej dirty efter omstart
@@ -285,7 +287,7 @@ export default function Import() {
 
     const manuscriptPayload = {
       title: store.title.trim() || "Importerat manus",
-      mode: "speaker",
+      mode: store.mode ?? "speaker",
       text_size: store.textSize,
       target_duration_seconds: store.targetSeconds || null,
       wpm: 140,
