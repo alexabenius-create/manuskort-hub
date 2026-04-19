@@ -193,10 +193,16 @@ export function SettingsForm({ hasHeadings }: Props) {
           ))}
         </div>
         {STRATEGY_HELP[strategy] && (
-          <p className="text-[12px] text-muted-foreground leading-snug pt-1">
-            <span className="font-medium text-foreground">{STRATEGY_HELP[strategy].title}:</span>{" "}
-            {STRATEGY_HELP[strategy].body}
-          </p>
+          <div className="text-[12px] text-muted-foreground leading-snug pt-1 space-y-1">
+            <p>
+              <span className="font-medium text-foreground">{STRATEGY_HELP[strategy].title}:</span>{" "}
+              {STRATEGY_HELP[strategy].body}
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Bäst för:</span>{" "}
+              {STRATEGY_HELP[strategy].best.replace(/^Bäst för\s*/i, "")}
+            </p>
+          </div>
         )}
       </div>
 
