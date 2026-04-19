@@ -64,6 +64,16 @@ export function FormatBubbleMenu({ editor }: Props) {
       isActive: () => false,
       onClick: () => editor.chain().focus().insertPause().run(),
     },
+    {
+      key: "split",
+      label: "Dela kort här (⌘+Enter)",
+      icon: SplitSquareVertical,
+      isActive: () => false,
+      onClick: () => {
+        splitCardBlock(editor.state, editor.view.dispatch);
+        editor.view.focus();
+      },
+    },
   ];
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
