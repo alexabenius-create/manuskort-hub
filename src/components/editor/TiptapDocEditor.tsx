@@ -45,11 +45,17 @@ const CardBlockDocument = Node.create({
  */
 const CardBlockKeymap = Extension.create({
   name: "cardBlockKeymap",
+  priority: 1000,
   addProseMirrorPlugins() {
     return [
       keymap({
         Backspace: (state, dispatch, view) => joinCardBackward(state, dispatch, view),
-        "Mod-Enter": (state, dispatch) => splitCardBlock(state, dispatch),
+        "Mod-Enter": (state, dispatch) => {
+          console.log("[CardBlockKeymap] Mod-Enter pressed");
+          const result = splitCardBlock(state, dispatch);
+          console.log("[CardBlockKeymap] splitCardBlock returned", result);
+          return result;
+        },
       }),
     ];
   },
