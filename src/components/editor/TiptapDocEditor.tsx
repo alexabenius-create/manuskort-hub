@@ -97,21 +97,39 @@ export function TiptapDocEditor({
         class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
       handleDOMEvents: {
-        // Släpp igenom dragstart från våra egna drag-handles så PM inte
-        // tar över med sin default node-drag.
+        // Vi vill ENDAST tillåta drag som startar från vår egen drag-handle.
+        // - Om källan är [data-drag-handle]: returnera false → PM ignorerar,
+        //   browsern startar HTML5-dragen och vår onDragStart får köra.
+        // - Annars: returnera true → konsumerat, PM:s default-dragstart blockeras
+        //   (och browsern startar ingen drag eftersom vi inte preventDefault:ar).
+        //   Faktum: vi måste även preventDefault för att stoppa text-selection-drag.
         dragstart: (_view, event) => {
           const target = event.target as HTMLElement | null;
           if (target && target.closest('[data-drag-handle="true"]')) {
-            // returnera false → PM hanterar inte; vår onDragStart får köra
             return false;
           }
-          return false;
+          // Blockera all annan drag inifrån editorn (PM node-drag, text-drag)
+          event.preventDefault();
+          return true;
         },
-        // Förhindra att PM försöker tolka drop över våra zoner
+        // Vår CardDropZone hanterar drop själv via React-handlers.
+        // Förhindra PM från att tolka samma drop.
         drop: (_view, event) => {
           const target = event.target as HTMLElement | null;
           if (target && target.closest('[data-card-drop-zone="true"]')) {
-            return true; // konsumerat — vår onDrop tog hand om det
+            return true;
+          }
+          // Blockera även drop på vanlig editor-yta för cardblock-drag
+          if (event.dataTransfer?.types.includes("application/x-cardblock-pos")) {
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        },
+        dragover: (_view, event) => {
+          // Tillåt drop över hela editorn för vår payload (annars visar browsern "no-drop")
+          if (event.dataTransfer?.types.includes("application/x-cardblock-pos")) {
+            event.preventDefault();
           }
           return false;
         },

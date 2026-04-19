@@ -115,6 +115,7 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
     <NodeViewWrapper
       as="article"
       data-card-block="true"
+      draggable={false}
       className={`card-block relative rounded-2xl border bg-surface shadow-subtle mb-4 transition-all ${
         a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"
       } ${isBeingDragged ? "opacity-40" : ""}`}
