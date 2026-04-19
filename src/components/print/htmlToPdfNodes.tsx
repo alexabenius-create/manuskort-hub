@@ -136,10 +136,35 @@ function renderInline(node: Node, opts: RenderOpts): (JSX.Element | string)[] {
       return;
     }
 
-    // Panelist mark
+    // Panelist mark — namn-pill (versaler) följt av själva markerade texten,
+    // båda i panelistens färg så de visuellt hänger ihop som i editorn.
     if (tag === "span" && el.hasAttribute("data-panelist-id")) {
       const color = el.getAttribute("data-panelist-color") || "#999999";
+      const name = el.getAttribute("data-panelist-name") || "";
       const bg = hexToRgba(color, 0.32);
+      const tagBg = hexToRgba(color, 0.55);
+      if (name) {
+        out.push(
+          <Text
+            key={`i${key++}`}
+            style={{
+              backgroundColor: tagBg,
+              color: "#1a1a1a",
+              fontFamily: "Helvetica-Bold",
+              fontSize: opts.fontSize * 0.7,
+              paddingLeft: 5,
+              paddingRight: 5,
+              paddingTop: 1,
+              paddingBottom: 1,
+              borderRadius: 6,
+              letterSpacing: 0.6,
+            }}
+          >
+            {" "}{name.toUpperCase()}{" "}
+          </Text>,
+        );
+        out.push(<Text key={`i${key++}`}> </Text>);
+      }
       const childStyle: Style = {
         ...inherited,
         backgroundColor: bg,
