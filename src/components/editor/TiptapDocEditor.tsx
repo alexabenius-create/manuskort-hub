@@ -79,7 +79,7 @@ function showSmartPasteToast(
   });
 }
 
-
+export function TiptapDocEditor({
   value,
   onChange,
   size,
