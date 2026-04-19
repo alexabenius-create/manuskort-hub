@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 type PrintFormat = "a4-2up" | "a5-1up";
+type FontSize = 12 | 14 | 16 | 18;
+const FONT_SIZES: FontSize[] = [12, 14, 16, 18];
 
 interface PrintDialogProps {
   open: boolean;
@@ -20,9 +22,11 @@ interface PrintDialogProps {
 
 export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
   const [format, setFormat] = useState<PrintFormat>("a4-2up");
+  const [fontSize, setFontSize] = useState<FontSize>(16);
 
   const handlePrint = () => {
     const STYLE_ID = "print-page-size-style";
+    const notesPt = Math.round(fontSize * 0.75);
     // Injicera @page-regel dynamiskt — @page kan inte villkoras via attribut/klass
     const pageCSS =
       format === "a5-1up"
@@ -35,6 +39,10 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = pageCSS;
+
+    // Sätt valda textstorlekar via CSS-variabler — print-blocket i index.css läser dessa
+    document.documentElement.style.setProperty("--print-font-size", `${fontSize}pt`);
+    document.documentElement.style.setProperty("--print-notes-size", `${notesPt}pt`);
 
     // Mät-och-skala: räkna ut tillgänglig korthöjd för valt format och
     // sätt --print-script-scale per kort så att långt innehåll får plats.
@@ -71,10 +79,10 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
       // triggas utanför utskrift, så vi simulerar den medan vi mäter.
       const baselineCss =
         format === "a5-1up"
-          ? `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 16pt; line-height: 1.55; }
-             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 12pt; line-height: 1.45; }`
-          : `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 16pt; line-height: 1.5; }
-             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 12pt; line-height: 1.4; }`;
+          ? `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: ${fontSize}pt; line-height: 1.55; }
+             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: ${notesPt}pt; line-height: 1.45; }`
+          : `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: ${fontSize}pt; line-height: 1.5; }
+             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: ${notesPt}pt; line-height: 1.4; }`;
       const measureStyle = document.createElement("style");
       measureStyle.id = "print-measure-style";
       measureStyle.textContent = baselineCss;
@@ -110,6 +118,8 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
 
     const onAfterPrint = () => {
       document.documentElement.removeAttribute("data-print-format");
+      document.documentElement.style.removeProperty("--print-font-size");
+      document.documentElement.style.removeProperty("--print-notes-size");
       const el = document.getElementById(STYLE_ID);
       if (el) el.remove();
       scaledCards.forEach((c) => c.style.removeProperty("--print-script-scale"));
@@ -156,6 +166,27 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
           >
             <PreviewA5 />
           </FormatOption>
+        </div>
+
+        <div className="flex flex-col gap-2 pb-2">
+          <span className="text-[13px] font-medium text-foreground">Textstorlek</span>
+          <div className="inline-flex rounded-lg border border-hair bg-surface p-1">
+            {FONT_SIZES.map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setFontSize(size)}
+                className={cn(
+                  "flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
+                  fontSize === size
+                    ? "bg-accent-blue text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-surface-2",
+                )}
+              >
+                {size} pt
+              </button>
+            ))}
+          </div>
         </div>
 
         <DialogFooter>

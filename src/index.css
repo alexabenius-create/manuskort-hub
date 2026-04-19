@@ -473,21 +473,21 @@
      Varje .manu-card kan få --print-script-scale satt av PrintDialog (mät-och-skala)
      så att långt innehåll automatiskt krymps till att rymmas på sin sida. */
   .manu-card .ProseMirror {
-    font-size: calc(16pt * var(--print-script-scale, 1)) !important;
+    font-size: calc(var(--print-font-size, 16pt) * var(--print-script-scale, 1)) !important;
     line-height: calc(1.5 * var(--print-script-scale, 1)) !important;
     color: black !important;
   }
   .manu-card .card-panel-notes textarea {
-    font-size: calc(12pt * var(--print-script-scale, 1)) !important;
+    font-size: calc(var(--print-notes-size, 12pt) * var(--print-script-scale, 1)) !important;
     line-height: calc(1.4 * var(--print-script-scale, 1)) !important;
     color: black !important;
   }
   html[data-print-format="a5-1up"] .manu-card .ProseMirror {
-    font-size: calc(16pt * var(--print-script-scale, 1)) !important;
+    font-size: calc(var(--print-font-size, 16pt) * var(--print-script-scale, 1)) !important;
     line-height: calc(1.55 * var(--print-script-scale, 1)) !important;
   }
   html[data-print-format="a5-1up"] .manu-card .card-panel-notes textarea {
-    font-size: calc(12pt * var(--print-script-scale, 1)) !important;
+    font-size: calc(var(--print-notes-size, 12pt) * var(--print-script-scale, 1)) !important;
     line-height: calc(1.45 * var(--print-script-scale, 1)) !important;
   }
 
