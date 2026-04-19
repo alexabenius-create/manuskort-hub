@@ -342,6 +342,7 @@ export function ManusCardV2({
                 <CueChip
                   key={c.id}
                   cue={c}
+                  panelists={panelists}
                   onSave={(next) => updateCues(upsertCue(cues, next))}
                   onRemove={() => updateCues(removeCue(cues, c.id))}
                 />
