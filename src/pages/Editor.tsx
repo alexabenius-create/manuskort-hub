@@ -198,6 +198,15 @@ export default function Editor() {
     };
   }, [overflowingCardIds]);
 
+  // Säkerställ att print-blocked-flaggan ALDRIG ligger kvar globalt när
+  // användaren navigerar bort från legacy-editorn (t.ex. till v3-editorn).
+  // Annars ärver v3 spärren och visar tom utskrift med felmeddelandet.
+  useEffect(() => {
+    return () => {
+      document.documentElement.removeAttribute("data-print-blocked");
+    };
+  }, []);
+
   // Cmd/Ctrl+F öppnar Hitta & ersätt, Cmd/Ctrl+Enter startar presentation
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
