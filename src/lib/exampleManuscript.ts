@@ -77,6 +77,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "andas efter \"Välkomna!\"",
       cue_amber: "",
       cue_teal: "Presentation av panelen",
+      cues: [
+        { kind: "energy", text: "andas efter \"Välkomna!\"" },
+        { kind: "action", text: "Presentation av panelen" },
+      ],
       is_panic_card: false,
     },
     {
