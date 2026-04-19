@@ -24,6 +24,7 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState("");
   const [displayTitle, setDisplayTitle] = useState("");
   const [displayOrg, setDisplayOrg] = useState("");
+  const [wpm, setWpm] = useState<number>(140);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSavedAt, setProfileSavedAt] = useState<number | null>(null);
@@ -34,13 +35,14 @@ export default function Settings() {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, display_title, display_org")
+        .select("display_name, display_title, display_org, wpm")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
       setDisplayName(data?.display_name ?? "");
       setDisplayTitle(data?.display_title ?? "");
       setDisplayOrg(data?.display_org ?? "");
+      setWpm(typeof data?.wpm === "number" ? data.wpm : 140);
       setProfileLoaded(true);
     })();
     return () => { cancelled = true; };
@@ -51,12 +53,15 @@ export default function Settings() {
     if (!user || !profileLoaded) return;
     const t = setTimeout(async () => {
       setProfileSaving(true);
+      // Klampa WPM till rimligt intervall innan persist
+      const safeWpm = Math.max(60, Math.min(260, Math.round(wpm || 140)));
       const { error } = await supabase
         .from("profiles")
         .update({
           display_name: displayName.trim() || null,
           display_title: displayTitle.trim() || null,
           display_org: displayOrg.trim() || null,
+          wpm: safeWpm,
         })
         .eq("user_id", user.id);
       setProfileSaving(false);
@@ -67,7 +72,7 @@ export default function Settings() {
       }
     }, 600);
     return () => clearTimeout(t);
-  }, [displayName, displayTitle, displayOrg, user, profileLoaded]);
+  }, [displayName, displayTitle, displayOrg, wpm, user, profileLoaded]);
 
   const onResetBibliotek = async () => {
     await resetTour("bibliotek");
