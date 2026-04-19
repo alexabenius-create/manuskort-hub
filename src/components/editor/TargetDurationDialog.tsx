@@ -15,6 +15,11 @@ interface Props {
   intro?: string;
   /** Etiketten på "Spara"-knappen. Default: "Spara". */
   saveLabel?: string;
+  /**
+   * Sluttid (sekunder) för sista kortet enligt kedjan av manuella måltider.
+   * Endast satt när ALLA kort har manuell måltid (kedjan obruten hela vägen).
+   */
+  chainEndSeconds?: number | null;
 }
 
 const QUICK_OPTIONS = [3, 5, 10, 15, 20]; // minuter
@@ -42,7 +47,7 @@ function parseMmSs(input: string): number | null {
   return m * 60 + s;
 }
 
-export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro, saveLabel = "Spara" }: Props) {
+export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro, saveLabel = "Spara", chainEndSeconds = null }: Props) {
   const [customInput, setCustomInput] = useState("");
   const [touched, setTouched] = useState(false);
 
@@ -109,6 +114,16 @@ export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro,
                 </button>
               ))}
             </div>
+            {chainEndSeconds !== null && chainEndSeconds >= MIN_SECONDS && (
+              <button
+                type="button"
+                onClick={() => { onSave(chainEndSeconds); onOpenChange(false); }}
+                className="self-start mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium border border-accent-blue/30 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/15 transition-colors"
+                title="Sätter måltiden till samma värde som sista kortets sluttid i kedjan"
+              >
+                Använd sluttid från kedjan ({formatMmSs(chainEndSeconds)})
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
