@@ -56,7 +56,7 @@ export function TiptapDocEditor({
       QuestionToMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
-      DocFrameDecorations.configure(frameOptions),
+      DocFrameDecorations,
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
