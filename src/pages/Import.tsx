@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Mic, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
 import { SpeakerMappingPanel } from "@/components/import/SpeakerMappingPanel";
+import { ModeSelector } from "@/components/import/ModeSelector";
 import { SkippedContentPanel } from "@/components/import/SkippedContentPanel";
 import {
   detectFileKind,
@@ -38,7 +39,7 @@ export default function Import() {
   const { tier, loading: tierLoading } = useTier();
   const limits = LIMITS[tier];
   const store = useImportStore();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<0 | 1 | 2>(store.mode ? 1 : 0);
   const [parsing, setParsing] = useState(false);
   const [committing, setCommitting] = useState(false);
 
