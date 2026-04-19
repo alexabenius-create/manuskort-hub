@@ -9,6 +9,7 @@ import { PresentationTopbar } from "@/components/presentation/PresentationTopbar
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
+import { TimeCueZone } from "@/components/presentation/TimeCueZone";
 import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/components/presentation/PresentationStartMenu";
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
 import { HelpOverlay } from "@/components/presentation/HelpOverlay";
@@ -429,6 +430,17 @@ export default function Presentation() {
         >
           ?
         </button>
+      )}
+
+      {/* Time-cue-zon — dedikerad plats för time-cues, fixerad uppe till höger */}
+      {!menuOpen && viewMode === "cards" && timer.countdown === 0 && (
+        <div className="fixed top-20 right-6 md:right-10 z-30 max-w-[360px]">
+          <TimeCueZone
+            card={current}
+            elapsedSeconds={cardElapsedSeconds}
+            displayWindowSeconds={manuscript.time_cue_display_seconds ?? 15}
+          />
+        </div>
       )}
 
       <main className="flex-1 min-h-0 pt-24 pb-24 px-6 md:px-10 relative">
