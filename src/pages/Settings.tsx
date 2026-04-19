@@ -19,7 +19,6 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const { resetTour } = useTour();
   const { tier, isFree, isPro } = useTier();
-  const { preference: editorPref, setPreference: setEditorPref, emergencyForceV1 } = useEditorPreference();
   const [portalLoading, setPortalLoading] = useState(false);
 
   // Profil-fält (autofyller manus-platshållare)
