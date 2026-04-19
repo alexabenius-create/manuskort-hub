@@ -1,0 +1,1 @@
+ALTER TABLE public.cards ADD COLUMN target_seconds integer;
