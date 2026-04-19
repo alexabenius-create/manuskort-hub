@@ -1,13 +1,16 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical, ArrowUpToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
-import { splitCardBlock } from "@/lib/cardBlockCommands";
+import { splitCardBlock, mergeSelectionWithPrev, canMergeSelectionWithPrev } from "@/lib/cardBlockCommands";
+import type { TextSize } from "@/lib/cardLimits";
 
 interface Props {
   editor: Editor | null;
+  /** Textstorlek för rad-mätning vid merge med föregående kort. Default "md". */
+  textSize?: TextSize;
 }
 
 interface ToolButton {
