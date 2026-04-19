@@ -189,6 +189,7 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "",
       cue_teal: "Publikfrågor",
+      cues: [{ kind: "action", text: "Publikfrågor" }],
       is_panic_card: false,
     },
     {
