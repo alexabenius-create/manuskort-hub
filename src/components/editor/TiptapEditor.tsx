@@ -48,6 +48,7 @@ export function TiptapEditor({
   maxRows,
   onRowCountChange,
   onOverflowPaste,
+  onOverflow,
 }: Props) {
   // Ref till senaste rad-räkning så handleKeyDown alltid läser färskt värde
   const rowsRef = useRef(0);
@@ -55,6 +56,10 @@ export function TiptapEditor({
   maxRowsRef.current = maxRows;
   const sizeRef = useRef(size);
   sizeRef.current = size;
+  const onOverflowRef = useRef(onOverflow);
+  onOverflowRef.current = onOverflow;
+  // Skydd mot rekursiv reflow (när vi själva sätter content efter split)
+  const reflowingRef = useRef(false);
 
   const measureAndReport = (editor: Editor) => {
     // Mät mot presentations-geometrin, INTE editorns egen DOM.
