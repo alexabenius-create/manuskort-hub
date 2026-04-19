@@ -373,7 +373,7 @@ export function ManusCardV2({
                 value={card.notes}
                 onChange={(v) => onLocalChange({ notes: v })}
                 onClose={() => { setNotesOpen(false); onLocalChange({ notes: "" }); }}
-                allowClose={!hasNotes}
+                allowClose={!hasNotes && notesDisplay === "auto"}
               />
             </div>
           )}
