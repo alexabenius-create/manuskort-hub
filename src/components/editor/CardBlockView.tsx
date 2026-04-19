@@ -151,11 +151,41 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
         className="px-5 sm:px-6 pt-3 pb-1 flex items-center gap-2 flex-wrap text-[12px] font-mono text-muted-foreground border-b border-border/30"
       >
         {canDrag && myPos != null && (
-          <CardDragHandle
-            cardPos={myPos}
-            onDragStart={(p) => setDraggingCardPos(p)}
-            onDragEnd={() => setDraggingCardPos(null)}
-          />
+          <div className="flex items-center -ml-1">
+            <CardDragHandle
+              cardPos={myPos}
+              onDragStart={(p) => setDraggingCardPos(p)}
+              onDragEnd={() => setDraggingCardPos(null)}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (myPos == null) return;
+                moveCardBlockBySteps(editor.state, myPos, -1, editor.view.dispatch);
+                editor.view.focus();
+              }}
+              disabled={isFirst}
+              className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+              aria-label="Flytta kort uppåt"
+              title="Flytta uppåt"
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (myPos == null) return;
+                moveCardBlockBySteps(editor.state, myPos, 1, editor.view.dispatch);
+                editor.view.focus();
+              }}
+              disabled={isLast}
+              className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+              aria-label="Flytta kort nedåt"
+              title="Flytta nedåt"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
         )}
         <span className="px-1 tracking-wide">Kort {num} / {a.totalCards}</span>
         <span className="opacity-40">·</span>
