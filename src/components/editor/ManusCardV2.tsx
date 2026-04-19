@@ -123,6 +123,7 @@ export function ManusCardV2({
       position: card.position,
       is_panic_card: card.is_panic_card ?? false,
       target_seconds: card.target_seconds ?? null,
+      target_seconds_is_manual: card.target_seconds_is_manual ?? false,
     },
   });
 
