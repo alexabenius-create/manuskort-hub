@@ -117,6 +117,24 @@ export default function Library() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Kontrollera om användaren behöver fylla i namn (första inloggning)
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && data && !data.onboarding_completed) {
+        setNeedsOnboarding(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   // Trigger bibliotek-rundtur när biblioteket har laddats och exempelmanus finns renderat
   const exampleExists = items.some((m) => (m.tags ?? []).includes(EXAMPLE_TAG));
   useTourTrigger("bibliotek", !loading && exampleExists);
