@@ -44,6 +44,9 @@ export default function Import() {
   const [step, setStep] = useState<0 | 1 | 2>(store.mode ? 1 : 0);
   const [parsing, setParsing] = useState(false);
   const [committing, setCommitting] = useState(false);
+  // Drag-and-drop på preview-listan
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
 
   const importBlocked = !tierLoading && !limits.docxImport;
 
@@ -282,6 +285,31 @@ export default function Import() {
     };
     const next = [...store.cards];
     next.splice(idx, 1, a, b);
+    store.setCards(next);
+    store.markDirty();
+  };
+
+  const insertEmptyAt = (idx: number) => {
+    const empty: PreviewCard = {
+      id: `pc_empty_${Date.now().toString(36)}`,
+      title: "Nytt kort",
+      contentHtml: "<p></p>",
+      paragraphsHtml: ["<p></p>"],
+      wordCount: 0,
+    };
+    const next = [...store.cards];
+    next.splice(idx, 0, empty);
+    store.setCards(next);
+    store.markDirty();
+  };
+
+  const moveTo = (sourceIdx: number, targetIdx: number) => {
+    if (sourceIdx === targetIdx) return;
+    const next = [...store.cards];
+    const [moved] = next.splice(sourceIdx, 1);
+    // targetIdx är gutter-index; om source låg före target, krymps insättningen
+    const insertAt = sourceIdx < targetIdx ? targetIdx - 1 : targetIdx;
+    next.splice(insertAt, 0, moved);
     store.setCards(next);
     store.markDirty();
   };
