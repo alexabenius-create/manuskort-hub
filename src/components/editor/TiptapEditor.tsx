@@ -4,6 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
+import Blockquote from "@tiptap/extension-blockquote";
 import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
@@ -64,6 +65,7 @@ export function TiptapEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false }),
+      Blockquote,
       Underline,
       Highlight,
       Link.configure({ openOnClick: false, autolink: false, HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" } }),

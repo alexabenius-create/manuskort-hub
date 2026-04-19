@@ -52,6 +52,7 @@ function nextId(): string {
 function blockToInlineHtml(b: ParsedBlock): string {
   if (b.type === "heading") return `<p><strong>${escapeHtml(b.text)}</strong></p>`;
   if (b.type === "paragraph") return b.html;
+  if (b.type === "blockquote") return b.html;
   if (b.type === "list") {
     const tag = b.ordered ? "ol" : "ul";
     return `<${tag}>${b.itemsHtml.map((i) => `<li>${i}</li>`).join("")}</${tag}>`;
@@ -62,6 +63,7 @@ function blockToInlineHtml(b: ParsedBlock): string {
 function blockToPlainText(b: ParsedBlock): string {
   if (b.type === "heading") return b.text;
   if (b.type === "paragraph") return b.plainText;
+  if (b.type === "blockquote") return b.plainText;
   if (b.type === "list") return b.itemsHtml.map((h) => stripTags(h)).join(". ");
   return "";
 }
