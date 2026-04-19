@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useTier } from "@/hooks/useTier";
+import { useEditorPreference } from "@/hooks/useEditorPreference";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
-import { ArrowLeft, Save, Users } from "lucide-react";
+import { ArrowLeft, Save, Users, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   cardsToDocHtml,
