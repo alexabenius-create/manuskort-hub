@@ -52,7 +52,9 @@ export function cardsToDocHtml(rows: CardRow[]): string {
   return sorted
     .map((r) => {
       const inner = r.content_html?.trim() || "<p></p>";
-      return `<article data-card-block="true" data-card-id="${escapeAttr(r.id)}">${inner}</article>`;
+      const roleAttr = ` data-role="${r.role === "moderator" ? "moderator" : "speaker"}"`;
+      const panicAttr = r.is_panic_card ? ` data-panic="true"` : "";
+      return `<article data-card-block="true" data-card-id="${escapeAttr(r.id)}"${roleAttr}${panicAttr}>${inner}</article>`;
     })
     .join("");
 }
