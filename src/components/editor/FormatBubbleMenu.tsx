@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
 import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical, ArrowUpToLine } from "lucide-react";
@@ -28,6 +29,20 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
   } catch {
     panelists = [];
   }
+
+  // Tvinga re-render vid selection-/transaction-uppdateringar så att vi kan
+  // läsa aktuell selection (BubbleMenu re-renderar inte sina barn själv).
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => force((n) => n + 1);
+    editor.on("selectionUpdate", handler);
+    editor.on("transaction", handler);
+    return () => {
+      editor.off("selectionUpdate", handler);
+      editor.off("transaction", handler);
+    };
+  }, [editor]);
 
   if (!editor) return null;
 
