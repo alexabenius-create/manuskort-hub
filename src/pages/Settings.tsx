@@ -283,54 +283,6 @@ export default function Settings() {
             </p>
           </div>
         </section>
-
-
-        {/* Editor-version (cutover-flagga) */}
-        <section className="flex flex-col gap-4">
-          <h2 className="font-display text-2xl font-semibold tracking-tight">Editor-version</h2>
-          <p className="text-[14px] text-muted-foreground -mt-2">
-            Nya editorn ger smidigare flöde mellan kort, snabbare smart paste och bättre kortkommandon.
-            Du kan tillfälligt gå tillbaka till den gamla editorn under en sunset-period.
-            <br />
-            <span className="text-faint">Den gamla editorn (v1) läggs ner inom kort — alla flyttas då över permanent.</span>
-          </p>
-          <div className="bg-surface rounded-2xl shadow-card p-1.5 flex gap-1">
-            {(["v3", "v1"] as const).map((v) => {
-              const active = editorPref === v;
-              const label = v === "v3" ? "Ny editor (v3)" : "Gammal editor (v1)";
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  disabled={emergencyForceV1 && v === "v3"}
-                  onClick={async () => {
-                    if (active) return;
-                    await setEditorPref(v);
-                    toast.success(`Bytt till ${label}`);
-                  }}
-                  className={
-                    "flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-[13px] font-medium transition-colors " +
-                    (active
-                      ? "bg-accent-blue/10 text-accent-blue"
-                      : "text-muted-foreground hover:text-foreground hover:bg-surface-2") +
-                    (emergencyForceV1 && v === "v3" ? " opacity-40 cursor-not-allowed" : "")
-                  }
-                >
-                  {v === "v3" ? <Wand2 className="h-3.5 w-3.5" /> : <RotateCcw className="h-3.5 w-3.5" />}
-                  {label}
-                  {active && <Check className="h-3.5 w-3.5" />}
-                </button>
-              );
-            })}
-          </div>
-          {emergencyForceV1 && (
-            <p className="text-[12px] text-[hsl(var(--cue-amber))] inline-flex items-center gap-1.5">
-              <SettingsIcon className="h-3 w-3" />
-              Underhållsläge: alla kör tillfälligt v1. Din preferens sparas men aktiveras när läget hävs.
-            </p>
-          )}
-        </section>
-
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>
           <p className="text-[14px] text-muted-foreground -mt-2">
