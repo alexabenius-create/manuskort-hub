@@ -30,6 +30,9 @@ interface Props {
   /** Auto-reflow vid skrivning: överskott (HTML) skickas till nästa kort.
    *  caretInOverflow=true → caret ska följa med dit. */
   onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
+  /** Pull-back vid Backspace i början av kortet: drar tillbaka text från
+   *  nuvarande kort upp till föregående kort (om plats finns). */
+  onPullBack?: () => void;
 }
 
 // Editorns textruta speglar presentationsgeometrin (75ch, font-display,
