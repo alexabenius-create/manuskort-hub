@@ -54,6 +54,8 @@ export function PresentationFooter({
   onPanic,
   cardElapsedSeconds,
   cardTargetSeconds,
+  isOverdueDismissed,
+  onDismissOverdue,
   timeFormat,
   sizeOffset,
   onSizeChange,
@@ -62,8 +64,9 @@ export function PresentationFooter({
   const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
   const ratio = planned ? cardElapsed / planned : 0;
   const percent = Math.min(100, ratio * 100);
-  const isOver = planned !== null && cardElapsed > planned;
-  const isWarn = planned !== null && !isOver && ratio >= 0.8;
+  const rawIsOver = planned !== null && cardElapsed > planned;
+  const isOver = rawIsOver && !isOverdueDismissed;
+  const isWarn = planned !== null && !isOver && !rawIsOver && ratio >= 0.8;
 
   const barColor = isOver
     ? "bg-red-400"
