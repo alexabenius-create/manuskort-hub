@@ -142,6 +142,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "tidigt öppet för hela panelen",
       cue_teal: "Följdfråga om kulturen",
+      cues: [
+        { kind: "energy", text: "tidigt öppet för hela panelen" },
+        { kind: "action", text: "Följdfråga om kulturen" },
+      ],
       is_panic_card: false,
     },
     {
