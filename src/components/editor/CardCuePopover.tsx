@@ -10,17 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { newCueId, type Cue, type CueKind } from "@/lib/cues";
 
 interface Props {
   onAdd: (cue: Cue) => void;
 }
 
-const KIND_OPTIONS: { value: CueKind; label: string; icon: string }[] = [
-  { value: "energy", label: "Energi", icon: "⚡" },
-  { value: "action", label: "Action", icon: "▶" },
-  { value: "panel", label: "Panel", icon: "👥" },
+const KIND_OPTIONS: { value: CueKind; label: string; icon: LucideIcon }[] = [
+  { value: "energy", label: "Energi", icon: Zap },
+  { value: "action", label: "Action", icon: Play },
+  { value: "panel", label: "Panel", icon: Users },
 ];
 
 const PLACEHOLDER: Record<CueKind, string> = {
@@ -68,20 +68,23 @@ export function CardCuePopover({ onAdd }: Props) {
               onValueChange={(v) => setKind(v as CueKind)}
               className="grid grid-cols-3 gap-2 mt-1.5"
             >
-              {KIND_OPTIONS.map((o) => (
-                <Label
-                  key={o.value}
-                  className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md border cursor-pointer text-[12px] transition-colors ${
-                    kind === o.value
-                      ? "border-foreground/40 bg-accent"
-                      : "border-border/40 hover:border-border"
-                  }`}
-                >
-                  <RadioGroupItem value={o.value} className="sr-only" />
-                  <span aria-hidden="true">{o.icon}</span>
-                  <span>{o.label}</span>
-                </Label>
-              ))}
+              {KIND_OPTIONS.map((o) => {
+                const Icon = o.icon;
+                return (
+                  <Label
+                    key={o.value}
+                    className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md border cursor-pointer text-[12px] transition-colors ${
+                      kind === o.value
+                        ? "border-foreground/40 bg-accent"
+                        : "border-border/40 hover:border-border"
+                    }`}
+                  >
+                    <RadioGroupItem value={o.value} className="sr-only" />
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>{o.label}</span>
+                  </Label>
+                );
+              })}
             </RadioGroup>
           </div>
           <div>

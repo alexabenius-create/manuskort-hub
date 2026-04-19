@@ -25,13 +25,13 @@ import {
   moveCardBlock,
   moveCardBlockBySteps,
 } from "@/lib/cardBlockCommands";
-import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { ChevronUp, ChevronDown, X, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { CardBlockErrorBoundary } from "./CardBlockErrorBoundary";
 
-const CUE_ICON: Record<Cue["kind"], string> = {
-  energy: "⚡",
-  action: "▶",
-  panel: "👤",
+const CUE_ICON: Record<Cue["kind"], LucideIcon> = {
+  energy: Zap,
+  action: Play,
+  panel: Users,
 };
 
 export function CardBlockView(props: NodeViewProps) {
@@ -270,23 +270,26 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
           className="px-5 sm:px-6 pb-3 pt-2 border-t border-border/30 flex flex-col gap-2"
         >
           <div className="flex gap-1.5 flex-wrap items-center">
-            {cues.map((c) => (
-              <span
-                key={c.id}
-                className="inline-flex items-center gap-1 pl-2 pr-1 h-6 rounded-full bg-surface-2 text-[11px] text-muted-foreground border border-border/40"
-              >
-                <span aria-hidden="true">{CUE_ICON[c.kind]}</span>
-                <span>{c.text}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCue(c.id)}
-                  className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-foreground/10 transition-colors"
-                  aria-label="Ta bort cue"
+            {cues.map((c) => {
+              const Icon = CUE_ICON[c.kind];
+              return (
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-1 pl-2 pr-1 h-6 rounded-full bg-surface-2 text-[11px] text-muted-foreground border border-border/40"
                 >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
+                  <Icon className="h-3 w-3" aria-hidden="true" />
+                  <span>{c.text}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCue(c.id)}
+                    className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-foreground/10 transition-colors"
+                    aria-label="Ta bort cue"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              );
+            })}
             <CardCuePopover onAdd={handleAddCue} />
           </div>
           {showNotes && (

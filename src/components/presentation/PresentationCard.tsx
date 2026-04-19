@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Pause, Zap, ZoomIn, ZoomOut, Users } from "lucide-react";
+import { Zap, Play, ZoomIn, ZoomOut, Users } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
 import {
@@ -173,7 +173,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
               key={c.id}
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
             >
-              <Pause className="h-3.5 w-3.5 flex-shrink-0" />
+              <Zap className="h-3.5 w-3.5 flex-shrink-0" />
               <span>{c.text}</span>
             </div>
           ))}
@@ -182,7 +182,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
               key={c.id}
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--accent-blue))] bg-[hsl(var(--accent-blue)/0.15)] border border-[hsl(var(--accent-blue)/0.3)]"
             >
-              <Zap className="h-3.5 w-3.5 flex-shrink-0" />
+              <Play className="h-3.5 w-3.5 flex-shrink-0" />
               <span>{c.text}</span>
             </div>
           ))}
