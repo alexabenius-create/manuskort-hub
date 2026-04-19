@@ -16,7 +16,6 @@ import {
 import type { PreviewCard, TextSize } from "@/lib/import/splitStrategies";
 import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wordCount";
 import { PanelistMark } from "@/lib/panelistMark";
-import { QuestionToMark } from "@/lib/questionToMark";
 import { PreviewBubbleMenu } from "./PreviewBubbleMenu";
 import type { SpeakerMapping } from "@/lib/import/importStore";
 import { countPresentationRows, MAX_ROWS_BY_SIZE } from "@/lib/cardLimits";
@@ -256,7 +255,6 @@ function ExpandedEditor({
       Underline,
       Highlight,
       PanelistMark,
-      QuestionToMark,
     ],
     content: html || "",
     onUpdate: ({ editor }) => {

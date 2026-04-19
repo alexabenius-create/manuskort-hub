@@ -12,11 +12,11 @@ const panelists: KnownPanelist[] = [
 ];
 
 function countSpans(html: string): number {
-  return (html.match(/data-question-to=/g) || []).length;
+  return (html.match(/data-panelist-id=/g) || []).length;
 }
 
 function spanContent(html: string, idx = 0): string {
-  const matches = [...html.matchAll(/<span[^>]*data-question-to[^>]*>([^<]*)<\/span>/g)];
+  const matches = [...html.matchAll(/<span[^>]*data-panelist-id[^>]*>([^<]*)<\/span>/g)];
   return matches[idx]?.[1] || "";
 }
 
@@ -27,9 +27,8 @@ describe("annotateQuestionsInHtml", () => {
     expect(countSpans(out)).toBe(1);
     expect(spanContent(out)).toContain("Anders");
     expect(spanContent(out)).toContain("?");
-    // Färgkälla ska vara data-panelist-color (inte data-question-color)
+    // Färgkälla ska vara data-panelist-color
     expect(out).toContain('data-panelist-color="#A8D8B9"');
-    expect(out).not.toContain("data-question-color");
   });
 
   it("markerar tilltal som spänner över två meningar", () => {
@@ -74,7 +73,7 @@ describe("annotateQuestionsInHtml", () => {
 
   it("hoppar över redan-markerad text", () => {
     const html =
-      '<p><span data-question-to="tmp:Anders" data-question-name="Anders" data-panelist-color="#A8D8B9">Anders, vad tycker du?</span></p>';
+      '<p><span data-panelist-id="tmp:Anders" data-panelist-name="Anders" data-panelist-color="#A8D8B9">Anders, vad tycker du?</span></p>';
     const out = annotateQuestionsInHtml(html, panelists);
     expect(countSpans(out)).toBe(1);
   });
@@ -100,19 +99,18 @@ describe("annotateQuestionsInHtml", () => {
 });
 
 describe("stripQuestionsForTempIds", () => {
-  it("unwrappar question-spans för givna tempIds", () => {
+  it("unwrappar panelist-spans för givna tempIds", () => {
     const html =
-      '<p><span data-question-to="tmp:Anders" data-question-name="Anders" data-panelist-color="#A8D8B9" class="question-to-mark">Anders, vad tycker du?</span></p>';
+      '<p><span data-panelist-id="tmp:Anders" data-panelist-name="Anders" data-panelist-color="#A8D8B9" class="panelist-mark">Anders, vad tycker du?</span></p>';
     const out = stripQuestionsForTempIds(html, new Set(["tmp:Anders"]));
-    expect(out).not.toContain("data-question-to");
-    expect(out).not.toContain("question-to-mark");
+    expect(out).not.toContain("data-panelist-id");
     expect(out).toContain("Anders, vad tycker du?");
   });
 
   it("lämnar spans för andra tempIds orörda", () => {
     const html =
-      '<p><span data-question-to="tmp:Anna" data-question-name="Anna" data-panelist-color="#F6D976" class="question-to-mark">Anna?</span></p>';
+      '<p><span data-panelist-id="tmp:Anna" data-panelist-name="Anna" data-panelist-color="#F6D976" class="panelist-mark">Anna?</span></p>';
     const out = stripQuestionsForTempIds(html, new Set(["tmp:Anders"]));
-    expect(out).toContain("data-question-to");
+    expect(out).toContain("data-panelist-id");
   });
 });

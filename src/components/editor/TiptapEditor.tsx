@@ -7,7 +7,6 @@ import Link from "@tiptap/extension-link";
 import Blockquote from "@tiptap/extension-blockquote";
 import { useEffect, useRef } from "react";
 import { PanelistMark } from "@/lib/panelistMark";
-import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { countPresentationRows, splitHtmlAtRow, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
@@ -128,7 +127,6 @@ export function TiptapEditor({
       Highlight,
       Link.configure({ openOnClick: false, autolink: false, HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" } }),
       PanelistMark,
-      QuestionToMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
     ],
