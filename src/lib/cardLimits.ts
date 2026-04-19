@@ -42,13 +42,39 @@ function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
 }
 
 /**
+ * Normalisera HTML så att tomma block får en synlig line-box vid mätning.
+ * Tomt <p></p> (eller blockquote/heading/li) har annars scrollHeight = 0 i de
+ * flesta browsers — då räknas en blank rad inte som rad. Vi injicerar <br>
+ * i alla "tomma" block så de bidrar med exakt en rad var.
+ *
+ * Påverkar enbart mätning — sparat innehåll förblir oförändrat.
+ */
+function normalizeForMeasurement(html: string): string {
+  if (!html) return "<p><br></p>";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const blocks = tmp.querySelectorAll("p,blockquote,h1,h2,h3,h4,h5,h6,li,div");
+  blocks.forEach((el) => {
+    const text = (el.textContent ?? "").replace(/\u00a0/g, "").trim();
+    const onlyBr = el.children.length > 0 && Array.from(el.children).every((c) => c.tagName === "BR");
+    if (text === "" && (el.children.length === 0 || onlyBr)) {
+      el.innerHTML = "<br>";
+    }
+  });
+  return tmp.innerHTML || "<p><br></p>";
+}
+
+/**
  * Mäter hur många rader `html` skulle bli i presentationsläget.
  * Detta är den enda korrekta källan för radantal — editorns egen DOM
  * har annan bredd/font och ger fel resultat.
+ *
+ * Tomma rader (t.ex. <p></p> mellan stycken) räknas som en rad var,
+ * precis som i Word.
  */
 export function countPresentationRows(html: string, textSize: TextSize): number {
   const el = getPresentationMeasurer(textSize);
-  el.innerHTML = html || "<p></p>";
+  el.innerHTML = normalizeForMeasurement(html);
   const cs = getComputedStyle(el);
   const lh = parseFloat(cs.lineHeight);
   if (!lh || !isFinite(lh) || lh <= 0) return 0;
