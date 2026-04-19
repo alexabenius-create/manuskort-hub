@@ -1,8 +1,28 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { HelpCircle } from "lucide-react";
 import { useImportStore } from "@/lib/import/importStore";
 import { WORDS_PER_CARD_DEFAULT } from "@/lib/import/splitStrategies";
 import type { SplitStrategy, TextSize } from "@/lib/import/splitStrategies";
+
+const STRATEGY_HELP: Record<SplitStrategy, { title: string; body: string; best: string }> = {
+  headings: {
+    title: "Rubriker",
+    body: "Varje rubrik (H1/H2) i dokumentet startar ett nytt kort. Allt under rubriken hamnar på samma kort tills nästa rubrik kommer.",
+    best: "Bäst för strukturerade manus med tydliga sektioner (t.ex. Inledning, Problem, Lösning).",
+  },
+  wordcount: {
+    title: "Ordantal",
+    body: "Bygger kort tills de når ett valt antal ord och stänger sedan på närmsta stycke-gräns. Du kan justera målantalet.",
+    best: "Bäst för löpande prosa utan rubriker — föreläsningar, tal, brödtext.",
+  },
+  paragraph: {
+    title: "En per stycke",
+    body: "Varje stycke i dokumentet blir ett eget kort. Mycket korta stycken (<15 ord) slås ihop med föregående.",
+    best: "Bäst för punchy talmanus där varje stycke är en enhet (one-liners, panelinlägg, korta cues).",
+  },
+};
 
 interface Props {
   hasHeadings: boolean;
@@ -114,9 +134,40 @@ export function SettingsForm({ hasHeadings }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-[13px] text-muted-foreground font-medium">
-          Hur ska manuset delas?
-        </Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-[13px] text-muted-foreground font-medium">
+            Hur ska manuset delas?
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Förklaring av uppdelningsstrategier"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="right" align="start" className="w-80 text-[13px] space-y-3">
+              <p className="text-muted-foreground">
+                Välj hur ditt dokument ska delas upp i kort. Talar-byte (t.ex.{" "}
+                <span className="font-medium text-foreground">Anna:</span> →{" "}
+                <span className="font-medium text-foreground">Bengt:</span>) startar alltid ett nytt
+                kort, oavsett val.
+              </p>
+              {strategies.map(([v]) => {
+                const h = STRATEGY_HELP[v];
+                return (
+                  <div key={v} className="space-y-1">
+                    <div className="font-semibold text-foreground">{h.title}</div>
+                    <p className="text-muted-foreground leading-snug">{h.body}</p>
+                    <p className="text-muted-foreground leading-snug italic">{h.best}</p>
+                  </div>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
+        </div>
         <div className="seg-group">
           {strategies.map(([v, label, enabled]) => (
             <button
@@ -132,6 +183,12 @@ export function SettingsForm({ hasHeadings }: Props) {
             </button>
           ))}
         </div>
+        {STRATEGY_HELP[strategy] && (
+          <p className="text-[12px] text-muted-foreground leading-snug pt-1">
+            <span className="font-medium text-foreground">{STRATEGY_HELP[strategy].title}:</span>{" "}
+            {STRATEGY_HELP[strategy].body}
+          </p>
+        )}
       </div>
 
       {strategy === "wordcount" && (
