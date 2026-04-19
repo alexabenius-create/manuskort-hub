@@ -63,45 +63,54 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
     setError(null);
     setFetchingGoogle(true);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "google-docs-import",
-        { body: { url } },
-      );
+      // Vi kringgår supabase.functions.invoke() här eftersom den försöker
+      // JSON-parsa svaret. Edge-funktionen returnerar binär .docx, så vi
+      // hämtar via fetch och läser body som ArrayBuffer.
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token ?? anonKey;
 
-      if (fnError) {
-        // Försök läsa svarstext om FunctionsError exponerar context
-        const ctx = (fnError as { context?: { body?: unknown } }).context;
-        let msg = fnError.message || "Kunde inte hämta dokumentet.";
-        if (ctx?.body) {
-          try {
-            const txt = typeof ctx.body === "string"
-              ? ctx.body
-              : await (ctx.body as Response).text();
-            const parsed = JSON.parse(txt);
-            if (parsed?.error) msg = parsed.error;
-          } catch { /* ignore */ }
-        }
+      const res = await fetch(`${supabaseUrl}/functions/v1/google-docs-import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!res.ok) {
+        let msg = `Kunde inte hämta dokumentet (HTTP ${res.status}).`;
+        try {
+          const parsed = await res.json();
+          if (parsed?.error) msg = parsed.error;
+        } catch { /* binärt svar utan JSON-fel */ }
         setError(msg);
         return;
       }
 
-      // Edge function returnerar binär .docx — Supabase SDK ger oss antingen
-      // Blob (i web-runtime) eller annan struktur. Hantera båda.
-      let blob: Blob | null = null;
-      if (data instanceof Blob) {
-        blob = data;
-      } else if (data instanceof ArrayBuffer) {
-        blob = new Blob([data]);
-      } else if (data && typeof data === "object" && "size" in data) {
-        blob = data as unknown as Blob;
-      }
-      if (!blob) {
-        setError("Oväntat svarsformat från servern.");
+      const buf = await res.arrayBuffer();
+      if (!buf || buf.byteLength < 100) {
+        setError("Tomt eller ofullständigt svar från servern.");
         return;
       }
 
-      const filename = "Google-dokument.docx";
-      const f = new File([blob], filename, {
+      // Plocka ut filnamn från X-Filename eller Content-Disposition
+      let filename = "Google-dokument.docx";
+      const xName = res.headers.get("x-filename");
+      if (xName) {
+        try { filename = decodeURIComponent(xName); } catch { filename = xName; }
+      } else {
+        const dispo = res.headers.get("content-disposition");
+        const m = dispo?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+        if (m && m[1]) {
+          try { filename = decodeURIComponent(m[1]); } catch { filename = m[1]; }
+        }
+      }
+
+      const f = new File([buf], filename, {
         type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
       handleFile(f);
