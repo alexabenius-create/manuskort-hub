@@ -605,24 +605,52 @@ export default function Import() {
 
         <SkippedContentPanel items={store.skippedItems} />
 
-        <div className="space-y-3">
+        <div className="space-y-0">
           {store.cards.map((c, i) => (
-            <PreviewCardItem
-              key={c.id}
-              card={c}
-              index={i}
-              total={store.cards.length}
-              textSize={store.textSize}
-              speakers={store.speakers}
-              onRename={(t) => updateCard(i, { title: t })}
-              onContentChange={(html) => updateCard(i, { contentHtml: html, wordCount: wordCount(html) })}
-              onMergePrev={() => mergeWith(i, i - 1)}
-              onMergeNext={() => mergeWith(i, i + 1)}
-              onRemove={() => removeCard(i)}
-              onMoveUp={() => move(i, -1)}
-              onMoveDown={() => move(i, 1)}
-            />
+            <div key={c.id}>
+              <CardGutter
+                index={i}
+                canMerge={i > 0}
+                onMerge={() => mergeWith(i, i - 1)}
+                onInsertEmpty={() => insertEmptyAt(i)}
+                onDropCard={(src) => moveTo(src, i)}
+              />
+              <PreviewCardItem
+                card={c}
+                index={i}
+                total={store.cards.length}
+                textSize={store.textSize}
+                speakers={store.speakers}
+                isDragging={draggingIdx === i}
+                isDropTarget={dropTargetIdx === i && draggingIdx !== null && draggingIdx !== i}
+                onRename={(t) => updateCard(i, { title: t })}
+                onContentChange={(html) => updateCard(i, { contentHtml: html, wordCount: wordCount(html) })}
+                onMergePrev={() => mergeWith(i, i - 1)}
+                onMergeNext={() => mergeWith(i, i + 1)}
+                onRemove={() => removeCard(i)}
+                onMoveUp={() => move(i, -1)}
+                onMoveDown={() => move(i, 1)}
+                onSplitAt={(p) => splitAt(i, p)}
+                onDragStart={() => setDraggingIdx(i)}
+                onDragEnd={() => { setDraggingIdx(null); setDropTargetIdx(null); }}
+                onDropCard={(src) => {
+                  // Drop på själva kortet → slå ihop med detta kort
+                  if (src !== i) mergeWith(src, i);
+                  setDropTargetIdx(null);
+                }}
+                onDragOverCard={(over) => setDropTargetIdx(over ? i : (dropTargetIdx === i ? null : dropTargetIdx))}
+              />
+            </div>
           ))}
+          {store.cards.length > 0 && (
+            <CardGutter
+              index={store.cards.length}
+              canMerge={false}
+              onMerge={() => {}}
+              onInsertEmpty={() => insertEmptyAt(store.cards.length)}
+              onDropCard={(src) => moveTo(src, store.cards.length)}
+            />
+          )}
         </div>
 
         <div className="rounded-2xl bg-surface p-5 shadow-card">
