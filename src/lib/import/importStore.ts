@@ -50,7 +50,7 @@ interface ImportState {
 
   setCards: (c: PreviewCard[]) => void;
   setSpeakers: (s: SpeakerMapping[]) => void;
-  updateSpeaker: (detectedName: string, patch: Partial<SpeakerMapping>) => void;
+  updateSpeaker: (tempId: string, patch: Partial<SpeakerMapping>) => void;
   markDirty: () => void;
 
   reset: () => void;
@@ -94,10 +94,10 @@ export const useImportStore = create<ImportState>((set) => ({
 
   setCards: (c) => set({ cards: c }),
   setSpeakers: (s) => set({ speakers: s }),
-  updateSpeaker: (detectedName, patch) =>
+  updateSpeaker: (tempId, patch) =>
     set((state) => ({
       speakers: state.speakers.map((s) =>
-        s.detectedName === detectedName ? { ...s, ...patch } : s
+        s.tempId === tempId ? { ...s, ...patch } : s
       ),
     })),
   markDirty: () => set({ dirty: true }),

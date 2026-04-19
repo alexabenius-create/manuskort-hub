@@ -47,7 +47,7 @@ export function SpeakerMappingPanel({ existing }: Props) {
               type="text"
               value={s.detectedName}
               onChange={(e) =>
-                updateSpeaker(s.detectedName, { detectedName: e.target.value })
+                updateSpeaker(s.tempId, { detectedName: e.target.value })
               }
               className="flex-1 min-w-0 bg-transparent text-[14px] font-medium outline-none focus:ring-1 focus:ring-accent-blue rounded px-1 py-0.5"
               aria-label="Talarens namn"
@@ -57,17 +57,17 @@ export function SpeakerMappingPanel({ existing }: Props) {
               onChange={(e) => {
                 const v = e.target.value;
                 if (v === "new")
-                  updateSpeaker(s.detectedName, {
+                  updateSpeaker(s.tempId, {
                     action: "new",
                     existingPanelistId: undefined,
                   });
                 else if (v === "ignore")
-                  updateSpeaker(s.detectedName, {
+                  updateSpeaker(s.tempId, {
                     action: "ignore",
                     existingPanelistId: undefined,
                   });
                 else if (v.startsWith("e:"))
-                  updateSpeaker(s.detectedName, {
+                  updateSpeaker(s.tempId, {
                     action: "existing",
                     existingPanelistId: v.slice(2),
                   });
