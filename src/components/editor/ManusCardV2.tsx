@@ -143,7 +143,9 @@ export function ManusCardV2({
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const hasAnyCue = !!(card.cue_red?.trim() || card.cue_amber?.trim() || card.cue_teal?.trim());
+  // Cues finns om antingen nya arrayen eller gamla legacy-kolumnerna har data
+  const hasLegacyCue = !!(card.cue_red?.trim() || card.cue_amber?.trim() || card.cue_teal?.trim());
+  const hasAnyCue = cues.length > 0 || hasLegacyCue;
   const hasNotes = !!card.notes?.trim();
   const cuesVisible = hasAnyCue || showCues;
   // notesDisplay styr när panelen syns:
