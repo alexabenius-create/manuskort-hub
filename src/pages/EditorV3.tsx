@@ -544,7 +544,6 @@ export default function EditorV3() {
                   </TooltipContent>
                   <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
                     <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-4">
                       <ViewSection label="Textstorlek">
                         <div className="seg-group w-full">
                           {sizes.map((s) => (
