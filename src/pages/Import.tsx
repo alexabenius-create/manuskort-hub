@@ -362,6 +362,49 @@ export default function Import() {
     );
   }
 
+  // ============== STEG 0 — Mode-val ==============
+  if (step === 0) {
+    return (
+      <div className="min-h-screen">
+        <SEO title="Importera – Manuskort" noindex nofollow />
+        <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek")} className="rounded-full">
+            <ArrowLeft className="h-4 w-4" /> Tillbaka
+          </Button>
+          <h1 className="font-display text-[17px] font-semibold tracking-tight">
+            Importera manus
+          </h1>
+        </header>
+
+        <main className="max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
+          <div className="mb-8">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
+              Vad ska du genomföra?
+            </h2>
+            <p className="text-muted-foreground text-[15px] mt-2">
+              Vi anpassar importen efter typ av tillfälle. Valet bestämmer hur vi
+              hanterar talare och frågor i texten.
+            </p>
+          </div>
+
+          <ModeSelector
+            value={store.mode}
+            onChange={(m) => {
+              store.setMode(m);
+              setStep(1);
+            }}
+          />
+
+          <div className="flex justify-end gap-3 mt-10">
+            <Button variant="ghost" onClick={cancel} className="rounded-full">
+              Avbryt
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // ============== STEG 1 ==============
   if (step === 1) {
     return (
