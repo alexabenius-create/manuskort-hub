@@ -673,6 +673,14 @@ export default function Library() {
         title={upgradeReason?.title}
         description={upgradeReason?.description}
       />
+
+      {user && (
+        <OnboardingModal
+          open={needsOnboarding}
+          userId={user.id}
+          onComplete={() => setNeedsOnboarding(false)}
+        />
+      )}
     </div>
     </>
   );
