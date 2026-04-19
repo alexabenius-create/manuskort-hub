@@ -69,6 +69,7 @@ export default function EditorV3() {
     (async () => {
       setLoading(true);
       initializedRef.current = false;
+      hydratedRef.current = false;
       const [mRes, cRes] = await Promise.all([
         supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
         supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
