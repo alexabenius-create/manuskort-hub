@@ -1,116 +1,84 @@
 
-Användarens insikt är central: **mode (talare vs moderator) avgör hela detekteringslogiken**. En talare har inga "talare i texten" — det är hela manuset. En moderator har frågor riktade TILL panelister, och deras (eventuella) svar är notes/förväntad output.
 
-Låt mig snabbt verifiera nuvarande mode-stöd innan jag presenterar planen.
+## Diagnos: tre konkreta brister
 
-Tittat på koden:
-- `Import.tsx` skickar redan `mode: "speaker"` hårdkodat till `import_manuscript` RPC
-- `manuscriptPayload` har `mode`-fält → backend stöder redan speaker/moderator
-- `SpeakerMappingPanel` visas alltid, oavsett om manuset är ett soloföredrag
-- `detectSpeakers.ts` körs alltid, även för rena tal
+**1. Färgen är "grå" (inte talarens färg)**
+- `buildCards` använder en lokal `PALETTE`-array och tilldelar färg per *index i detection-ordning*, helt frikopplat från det `SpeakerMapping[]` som senare visas i wizardens panel.
+- Resultat: om Anders detekteras som #2 får hans frågor `#A8D8B9` (mintgrön), men i SpeakerMappingPanel kan han ha bytt eller fått en annan färg → mismatch.
+- `--question-fg` mättas via `hexToDarkText` → vid vissa pasteller blir det en mörk dämpad ton som *upplevs* grå.
+- **Frågan har inget `data-panelist-color`-attribut alls** — bara `data-question-color` + en inline `style="--question-fg/--question-accent"`. Om sanitizern strippar `style` (vilket den faktiskt gör för spans utan `data-panelist-id`/`data-question-to` — men frågespanen *har* `data-question-to`, så den ska överleva), men: om det ändå strippas någonstans får vi default-grå från CSS-fallbacken `hsl(240 6% 50%)`.
 
-Detta gör mode-valet både meningsfullt och billigt att införa — datamodellen finns redan.
+**2. Detekteringen "blir ofta fel"**
+Nuvarande `matchQuestionTo` kräver att meningen *både* innehåller namnet **och** är en fråga (`?` i slutet) eller överlämning. Problem:
+- Markerar **hela meningen** inkl. själva namnet — namnet borde framhävas, inte hela frågan i färgad understruken text.
+- Triggar på *vilken* mening som helst där namnet förekommer + `?` — ger falska positiva ("Vad sa Anders i går?" är inte en fråga *till* Anders).
+- Missar adress-mönstret du beskrev: `"Anders, låt oss zooma in på mobiliteten. Vad är …?"` — två meningar, namnet i första, frågan i andra. Nuvarande logik markerar bara den ena.
 
----
-
-# Plan: Mode-val + smartare talarkodning
-
-## Steg 0 — Mode-val först i wizarden (förkrav)
-
-**Nytt steg före upload** i `/importera`: stor visuell väljare med två kort:
-
-```text
-┌─────────────────────┐  ┌─────────────────────┐
-│  🎤  Tal/föreläsning │  │  🎙️  Panelsamtal    │
-│                     │  │                     │
-│  Jag är talaren     │  │  Jag är moderator   │
-│  (ingen panel)      │  │  (frågar panelister)│
-└─────────────────────┘  └─────────────────────┘
-```
-
-Lagras i `useImportStore` som `mode: "speaker" | "moderator"` (default `null` → tvingar val).
-
-**Konsekvenser i wizarden:**
-| Mode | Talar-detektering | SpeakerMappingPanel | Kort-wrap |
-|------|------------------|---------------------|-----------|
-| `speaker` | **AV helt** | Dolt | Inga `data-panelist-id`-spans |
-| `moderator` | **PÅ + frågor-fokus** | Visas | Frågor markeras, ev. namn-spans för svar |
-
-Detta löser direkt "varför detekterar den talare i mitt soloföredrag?"-buggen som finns idag.
+**3. Färgkoppling sker före mappning**
+`buildCards` körs i steg 1 → frågorna får färg innan användaren har sett/justerat panellist-paletten i steg 2. Ändras en talares färg i panelen uppdateras *inte* befintliga `data-question-color`-attribut.
 
 ---
 
-## Steg 1 — Punkt 1: Markera frågor TILL talare (moderator-läge)
+## Plan
 
-Endast aktivt när `mode === "moderator"`.
+### A. En enda färgkälla — `data-panelist-color`
+Ändra `QuestionToMark` + `detectQuestions` att skriva `data-panelist-color` (samma attribut som `PanelistMark` använder). CSS läser färgen via `attr()`/CSS-variabel som beräknas från ett enda attribut. Då blir frågans färg **alltid** identisk med talarens färg — ingen separat färg-pipeline.
 
-**Nya detekterings-mönster** i `detectSpeakers.ts` (eller ny fil `detectQuestions.ts`):
-- `Anna, vad tycker du om …?` → fråga till Anna
-- `Då går vi över till Anna —` → överlämning till Anna
-- `Bengt, din tur.` / `Bengt?` → fråga till Bengt
-- `Vad säger du, Carl?` → fråga till Carl (namn på slutet)
+Konkret:
+- Spara `data-question-to`, `data-question-name`, `data-panelist-color="#hex"` (rå hex)
+- Beräkna `--question-fg` via en JS-helper i `QuestionToMark.renderHTML` baserat på det attributet (gör vi redan, men nu från en stabil källa)
+- Ta bort den separata `data-question-color`-vägen
 
-Heuristik: mening innehåller känt panelist-namn (från redan-detekterade) **OCH** är en fråga (slutar med `?`) **ELLER** matchar överlämnings-fras.
+### B. Färgsynk efter mappning
+När användaren ändrar färg i `SpeakerMappingPanel`:
+- Loopa `cards`, för varje `<span data-question-to="{tempId}">` uppdatera `data-panelist-color` + inline-style.
+- Samma sak om användaren väljer "matcha med befintlig panelist" → använd den befintligas färg.
 
-**Visuell markering i kortet:**
-- Frågor till talare wrappas i `<span data-question-to="{tempId}" data-question-name="Anna">…</span>`
-- Eget visuellt format i editor + presentation: t.ex. färgad pil-prefix `→ Anna:` eller färgad understruken text i panelistens färg
-- Skiljs tydligt från `data-panelist-id` (= panelistens egen replik) — frågor är moderatorns text *riktad till* en panelist
+Implementation: en helper `recolorQuestionsInCards(cards, speakers)` som körs i `useEffect` på `speakers`-ändringar i `Import.tsx`.
 
-**Nytt mark/extension** i Tiptap (`questionToMark.ts`, parallellt med `panelistMark.ts`).
+### C. Smartare frågedetektering
+Skriv om `detectQuestions.ts`:
 
----
+1. **Markera bara namn-tilltalet, inte hela meningen.** Wrappa antingen:
+   - bara `"Anders"` + komma/tankstreck om följt av tilltal, ELLER
+   - `"Anders, "` + själva frågesatsen som fortsätter
+   - Detta gör att markeringen visuellt pekar ut *vem* frågan är till, utan att färga hela texten.
 
-## Steg 2 — Punkt 3: Manuell finjustering i preview
+2. **Tre tydliga mönster** (var och en med eget regex, prioritetsordning):
+   - **Direkt tilltal**: `^Namn[,—–-]\s` i början av mening (fångar ditt exempel). Markera `Namn` + ev. fortsatt frågesats (resten av detta + nästa mening om den slutar med `?`).
+   - **Anrop på slutet**: `,\s*Namn\?$` — markera namnet + ev. komma framför.
+   - **Överlämning**: redan stöttade `HANDOFF_PHRASES` — markera bara namnet inom frasen.
 
-Endast i steg 2 (preview). Användaren markerar text i ett kort → bubble menu med:
+3. **Falska positiva**: kräv att namnet står som tilltal (komma/dash efter, eller frågetecken nära), inte bara förekommer i texten. Skippar "Vad sa Anders i går?" eftersom det saknar komma/dash.
 
-```text
-┌───────────────────────────────────┐
-│ Tilldela talare ▾   Markera som ▾ │
-│ • Anna                • Fråga     │
-│ • Bengt               • Replik    │
-│ • Carl                • Rensa     │
-│ + Ny talare                       │
-└───────────────────────────────────┘
-```
+4. **Multi-mening-sekvenser**: tillåt att frågan fortsätter över 1–2 meningar efter tilltalet (slutar vid första `?`).
 
-**Implementation:**
-- Aktivera Tiptap i `PreviewCardItem.tsx` (eller ge varje kort en lättviktig editor i edit-läge)
-- Återanvänd `FormatBubbleMenu`-mönstret från `editor/`
-- "Markera som fråga" → wrappar selection i `data-question-to`
-- "Tilldela talare" → wrappar i `data-panelist-id`
-- "Rensa" → tar bort båda attributen från selection
+### D. Visuell justering
+- Behåll pil-prefix `→ Anders:` men *bara* när markeringen täcker hela meningen.
+- För kort tilltal (bara namnet) → ingen pil, bara färgad fet text.
+- Höj kontrasten i `hexToDarkText` så pasteller inte upplevs grå (mål: WCAG AA mot vit bakgrund).
 
----
-
-## Tekniska detaljer
-
-**Filer som skapas:**
-- `src/components/import/ModeSelector.tsx` — steg 0 UI
-- `src/lib/import/detectQuestions.ts` — frågedetektering
-- `src/lib/panelistMark.ts` utökas med `QuestionToMark` (eller separat fil)
-- `src/components/import/PreviewBubbleMenu.tsx` — bubble menu i preview
-
-**Filer som ändras:**
-- `src/lib/import/importStore.ts` — lägg till `mode: "speaker" | "moderator" | null`, `setMode`
-- `src/pages/Import.tsx` — nytt steg 0, skicka `mode` till RPC, dölj SpeakerMappingPanel i speaker-mode
-- `src/lib/import/buildCards.ts` — hoppa över `withSpeakerWrap` om `mode === "speaker"`; kör `detectQuestions` om `moderator`
-- `src/components/import/PreviewCardItem.tsx` — Tiptap-baserad redigering med bubble menu
-- `src/index.css` — styling för `[data-question-to]` (t.ex. färgad text + arrow-prefix)
-- `src/components/editor/TiptapEditor.tsx` — registrera `QuestionToMark` så frågor även renderas i editor/presentation
-
-**Visuellt språk för frågor:**
-- Editor/preview: indragen rad med `→` prefix i panelistens färg + lite fetare text
-- Presentation: stor pil + namn ovanför frågan så du som moderator ser direkt "detta är min fråga till Anna"
+### E. Tester
+Uppdatera/lägg till i `detectSpeakers.test.ts` (eller ny `detectQuestions.test.ts`):
+- "Anders, låt oss zooma in. Vad är viktigast?" → markerar "Anders" + frågan
+- "Vad tycker du, Anna?" → markerar ", Anna?"
+- "Vad sa Anders i går?" → ingen markering
+- "Då går vi över till Bengt." → markerar "Bengt"
 
 ---
 
-## Ordning att bygga
+## Filer som ändras
+- `src/lib/import/detectQuestions.ts` — ny matchnings- och wrappnings-logik
+- `src/lib/questionToMark.ts` — använd `data-panelist-color` istället för separat `data-question-color`
+- `src/lib/import/buildCards.ts` — använd faktisk SpeakerMapping-färg om tillgänglig, annars palett-fallback
+- `src/lib/import/sanitizeHtml.ts` — uppdatera attribut-vit-listan (ta bort `data-question-color`, lägg till `data-panelist-color` på question-spans)
+- `src/pages/Import.tsx` — `useEffect` som re-färgar frågor när `speakers`-färger ändras
+- `src/index.css` — höjd kontrast för `--question-fg`, justera så CSS funkar utan inline-style om bara attribut finns
+- `src/lib/panelistColors.ts` — höj `targetL`-kontrast i `hexToDarkText`
+- `src/lib/import/detectQuestions.test.ts` — nya tester
 
-1. **Mode-väljaren** (steg 0) — liten, frigör logik nedströms
-2. **Stäng av talar-detektering i speaker-mode** — direkt vinst
-3. **Frågedetektering** (punkt 1) — moderator-only
-4. **Bubble menu i preview** (punkt 3) — finjustering ovanpå auto
+## Ordning
+1. Färgsynk (B) + attribut-konsolidering (A) — fixar grå-buggen omedelbart
+2. Ny detekteringslogik (C) — färre falska positiva, bättre träffsäkerhet
+3. Visuell finputs (D) + tester (E)
 
-Alla fyra ryms i en implementation om du godkänner.
