@@ -30,6 +30,7 @@ import {
 } from "@/lib/import/splitStrategies";
 import type { PreviewCard } from "@/lib/import/splitStrategies";
 import { PANELIST_PALETTE } from "@/lib/panelistColors";
+import { recolorQuestionsInHtml } from "@/lib/import/detectQuestions";
 import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wordCount";
 
 export default function Import() {
