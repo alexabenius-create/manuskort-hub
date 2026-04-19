@@ -233,6 +233,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "30 sek per person",
       cue_teal: "Avslutning",
+      cues: [
+        { kind: "energy", text: "30 sek per person" },
+        { kind: "action", text: "Avslutning" },
+      ],
       is_panic_card: false,
     },
     {
