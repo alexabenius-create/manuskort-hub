@@ -730,21 +730,49 @@ export default function Editor() {
                 </TooltipContent>
               <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
                 <div className="flex flex-col gap-4">
-                  <ViewSection label="Visa">
+                  <ViewSection label="Anteckningar" hint="Auto: panelen kollapsas när det inte finns någon anteckning">
                     <div className="seg-group w-full">
                       <button
-                        data-active={manuscript.show_notes}
-                        onClick={() => updateMeta({ show_notes: !manuscript.show_notes })}
+                        data-active={notesDisplay === "always"}
+                        onClick={() => {
+                          setNotesDisplay("always");
+                          if (!manuscript.show_notes) updateMeta({ show_notes: true });
+                        }}
                         className="seg-btn flex-1"
                       >
-                        Anteckningar
+                        Alltid
                       </button>
+                      <button
+                        data-active={notesDisplay === "auto"}
+                        onClick={() => {
+                          setNotesDisplay("auto");
+                          if (!manuscript.show_notes) updateMeta({ show_notes: true });
+                        }}
+                        className="seg-btn flex-1"
+                      >
+                        Auto
+                      </button>
+                      <button
+                        data-active={notesDisplay === "hidden"}
+                        onClick={() => {
+                          setNotesDisplay("hidden");
+                          if (manuscript.show_notes) updateMeta({ show_notes: false });
+                        }}
+                        className="seg-btn flex-1"
+                      >
+                        Dold
+                      </button>
+                    </div>
+                  </ViewSection>
+
+                  <ViewSection label="Tider">
+                    <div className="seg-group w-full">
                       <button
                         data-active={manuscript.show_times}
                         onClick={() => updateMeta({ show_times: !manuscript.show_times })}
                         className="seg-btn flex-1"
                       >
-                        Tider
+                        {manuscript.show_times ? "Visa tider" : "Dölj tider"}
                       </button>
                     </div>
                   </ViewSection>
