@@ -13,7 +13,7 @@ import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 import { CardBlock } from "@/lib/cardBlockNode";
-import { joinCardBackward } from "@/lib/cardBlockCommands";
+import { joinCardBackward, splitCardBlock } from "@/lib/cardBlockCommands";
 
 interface Props {
   value: string;
@@ -39,13 +39,17 @@ const CardBlockDocument = Node.create({
   content: "cardBlock+",
 });
 
-/** Backspace-handler som joinar kort när caret står vid kort-start. */
+/**
+ * Högprio-keymap för cardBlock-operationer. Registreras som ProseMirror-plugin
+ * så det körs FÖRE StarterKits standard-keymap (där hardBreak äger Mod-Enter).
+ */
 const CardBlockKeymap = Extension.create({
   name: "cardBlockKeymap",
   addProseMirrorPlugins() {
     return [
       keymap({
         Backspace: (state, dispatch, view) => joinCardBackward(state, dispatch, view),
+        "Mod-Enter": (state, dispatch) => splitCardBlock(state, dispatch),
       }),
     ];
   },
