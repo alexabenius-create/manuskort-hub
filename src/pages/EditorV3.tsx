@@ -365,7 +365,7 @@ export default function EditorV3() {
           </div>
         </main>
       </div>
-    </>
+    </PanelistsProvider>
   );
 }
 
