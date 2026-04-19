@@ -54,6 +54,11 @@ export function ManusCard({
   const [editor, setEditor] = useState<Editor | null>(null);
   const [selection, setSelection] = useState<SelectionState>({ hasSelection: false, activePanelistId: null });
   const [currentRows, setCurrentRows] = useState(0);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const hasNotes = !!card.notes?.trim();
+  const notesEnabled = showNotes && notesDisplay !== "hidden";
+  const notesPanelExpanded = notesEnabled && (notesDisplay === "always" || hasNotes || notesOpen);
+  const showAddNoteBar = notesEnabled && notesDisplay === "auto" && !hasNotes && !notesOpen;
   const maxRows = MAX_ROWS_BY_SIZE[textSize];
   const isFull = currentRows >= maxRows;
   const isOver = currentRows > maxRows;
