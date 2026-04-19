@@ -1,126 +1,98 @@
-
-
-## Fas 2 — interaktiv chrome + operationer
+## Fas 3 — drag-omordning, roll-selector, target-tid
 
 ### Mål
-v3 får full v1-paritet för redigering: cue-editor (popover), notes-editor (inline), more-menu (duplicate/delete/panic), "+"-knapp mellan kort, Cmd+Enter split. NodeView migreras till React för att kunna återanvända befintliga UI-komponenter (Popover, DropdownMenu, Textarea, Button).
-
-Roll för v3: **fortfarande admin-only experiment**, ingen cutover-flagga ännu.
+v3 får tre kvarvarande v1-paritetsbitar: drag-omordna kort, roll-väljare (moderator/speaker) i header, och target-tid-popover med manuell override. Fortfarande **admin-only experiment**, ingen cutover-flagga.
 
 ### Arkitektur
 
-**NodeView → React via `ReactNodeViewRenderer`**
-- `CardBlockNodeView.ts` (vanilla TS) tas bort
-- Ny komponent `src/components/editor/CardBlockView.tsx` — React-komponent som tar emot `NodeViewProps`
-- `NodeViewWrapper` runt hela kort-boxen, `NodeViewContent` för contentDOM
-- `cardBlockNode.ts` byter `addNodeView` till `ReactNodeViewRenderer(CardBlockView)`
-- Header och footer renderas som vanlig React → kan använda Popover/DropdownMenu från shadcn
+**Drag-omordning (HTML5 native i ProseMirror)**
+- v1 använder `@dnd-kit/sortable` på en React-array. I v3 äger ProseMirror dokumentet → vi kan inte sortable:a en React-lista direkt.
+- Lösning: drag-handle inuti `CardBlockView` (vänster i header). HTML5 native `draggable` på handle-elementet. PM:s default drag-hantering bypassas genom att sätta `data-drag-handle` och returna `false` från `handleDOMEvents.dragstart` för dessa events.
+- Drop-zoner: tunna band (visuellt 2px, hit-area 8-12px via `::before`) ovanför varje cardBlock + ett under sista, renderade av `CardBlockView` med `contentEditable={false}`.
+- `onDragStart` på handle: sätt `dataTransfer.effectAllowed='move'` + custom data med kort-pos. `onDragOver` på drop-zon: `preventDefault` + tillfällig accent-border. `onDrop`: kör `moveCardBlock(fromPos, toPos)`.
+- Nytt kommando `moveCardBlock(state, fromPos, toAbsolutePos, dispatch)`:
+  - Hämta käll-cardBlock-noden via `state.doc.nodeAt(fromPos)`
+  - `tr.delete(fromPos, fromPos + node.nodeSize)`
+  - Mappa toAbsolutePos genom `tr.mapping` (för att kompensera för delete)
+  - `tr.insert(mappedTargetPos, sourceNode)` — samma node, oförändrade attrs (cardId behålls)
+- Persist: `planCardSyncFromDoc` jämför doc-ordning → DB-ordning via `position`. Flyttat kort får ny `position` → updates-vägen. Inga inserts/deletes.
+- Visuellt: dragged kort `opacity-50`, drop-target `border-t-2 border-accent-blue`.
 
-**Attribut-uppdateringar från NodeView**
-- React-komponenten får `updateAttributes(patch)` från Tiptap → vi använder den för cue-add/remove, notes-edit, role-toggle, panic-toggle
-- Ingen extern bridge behövs — Tiptap's editor + getPos() ger oss allt
+**Roll-selector (moderator/speaker)**
+- Header vänster (efter "Kort 01/N"): chip med ikon ("🎤 Talare" / "🎙 Moderator")
+- Klick → `<Popover>` med två val
+- Selection: `updateAttributes({ role })`
+- Visuellt: speaker = neutralt, moderator = subtil accent (matcha v1)
+- Manus-`mode` är default; per-kort `role` overridar (befintlig semantik)
+- Ny modul: `src/components/editor/CardRolePopover.tsx`
 
-**Cue-editor (popover)**
-- Footer-rad: render alla cues som chips via `<Badge>` med ta-bort-knapp
-- En enda **`+ Lägg till cue`**-knapp till höger → öppnar `<Popover>`
-- Popover innehåller: typ-väljare (energy/action/time som tre tabs eller radiogroup) + textarea + spara-knapp
-- På spara: `updateAttributes({ cues: [...node.attrs.cues, newCue] })`
-- Ny modul: `src/components/editor/CardCuePopover.tsx`
-
-**Notes-editor (inline)**
-- Footer: om `notes` är tom → liten "+ Lägg till notes"-länk
-- Om notes har innehåll → inline `<Textarea>` med autosave på blur (debounced via `updateAttributes`)
-- Compact, "anteckning"-styling matchar v1
-- Ny modul: `src/components/editor/CardNotesEditor.tsx`
-
-**More-menu (⋯)**
-- Header höger: `<DropdownMenu>` med Trigger = ⋯-knapp
-- Items: **Duplicera**, **Ta bort**, **Markera som panik-kort** (toggle med checkmark)
-- Implementeras via editor-kommandon:
-  - `duplicateCardBlock(pos)` — infogar en kopia av noden direkt efter aktuell pos
-  - `deleteCardBlock(pos)` — `tr.delete(pos, pos + nodeSize)`
-  - Toggle panic: `updateAttributes({ isPanic: !node.attrs.isPanic })`
-- Duplicate sätter `cardId: null` på den nya noden så persist skapar en ny rad
-- Lägg till i `src/lib/cardBlockCommands.ts`
-
-**"+"-knapp mellan kort**
-- Renderas av `CardBlockView` som en svävande pill mellan denna kort-box och nästa, synlig vid hover på området mellan korten
-- Klick → `insertCardBlockAfter(getPos())` — infogar tom cardBlock med `cardId: null`
-- För att synas även **före** första kortet: vi renderar pillen "ovanför" varje kort, plus en extra ovanför första kortet. Enklare lösning: rendera pill **under** varje kort, så får vi automatiskt insert-mellan-alla; för första-position lägger vi den även ovanför första kortet.
-- Animation: scale-in vid hover, transition
-
-**Cmd+Enter split**
-- Keyboard shortcut i `cardBlockNode.ts` via `addKeyboardShortcuts`
-- `Mod-Enter`: `splitCardBlock` — splittar aktuell cardBlock vid caret. Caret hamnar i nya kortet (efter).
-- Implementation: `tr.split($from.pos, 2)` med rätt `typesAfter` så nya delen blir ett nytt cardBlock med `cardId: null`
-- Hörnfall: caret längst i slutet → splittar och nya kortet blir tomt med caret
-- Hörnfall: caret längst i början → splittar; första kortet blir tomt, caret hamnar i andra (= ursprungs-innehållet)
+**Target-tid-popover**
+- Header vänster (efter ord/duration): chip "🎯 mm:ss" om `targetSeconds` satt, annars "+ Sätt mål"
+- Klick → `<Popover>` med:
+  - Input minuter (0-99) + sekunder (0-59), klampning
+  - Knapp "Auto" → `targetSeconds=null, targetSecondsIsManual=false`
+  - Knapp "Spara" → `targetSeconds=X, targetSecondsIsManual=true`
+- Default i popover = nuvarande `targetSeconds` eller estimerade `seconds`
+- Visuellt: manual = fast färgad chip; auto = dim
+- Inline popover (inte v1:s `TargetDurationDialog`-modal)
+- Ny modul: `src/components/editor/CardTargetTimePopover.tsx`
 
 **Persist-konsekvenser**
-- Duplicate, "+"-insert, split skapar alla noder med `cardId: null` → vid nästa autosave genererar `persist()` UUID:n och upsertar (existerande logik från Fas 1, oförändrad)
-- Delete tas omhand av befintlig diff-logik (`plan.deletes`)
-- Panic/role/notes/cues-uppdateringar går genom updates-vägen (befintligt)
+- Allt går genom befintlig `planCardSyncFromDoc` updates-väg
+- `role`, `targetSeconds`, `targetSecondsIsManual` finns redan i schema och i `rowsToCardAttrs`/`docToCardNodes`
+- `position` uppdateras automatiskt av diff-logiken
 
 ### Filer
 
 **Nya:**
-- `src/components/editor/CardBlockView.tsx` — React-NodeView (ersätter CardBlockNodeView.ts)
-- `src/components/editor/CardCuePopover.tsx` — popover för att lägga till/redigera cues
-- `src/components/editor/CardNotesEditor.tsx` — inline notes-editor
-- `src/components/editor/CardMoreMenu.tsx` — DropdownMenu med duplicate/delete/panic
-- `src/components/editor/CardInsertButton.tsx` — "+"-pill mellan kort
+- `src/components/editor/CardRolePopover.tsx`
+- `src/components/editor/CardTargetTimePopover.tsx`
+- `src/components/editor/CardDragHandle.tsx` (handle + drop-zoner)
 
 **Ändras:**
-- `src/lib/cardBlockNode.ts` — byter till `ReactNodeViewRenderer`, lägger till `addKeyboardShortcuts` (Cmd+Enter)
-- `src/lib/cardBlockCommands.ts` — nya kommandon: `splitCardBlock`, `duplicateCardBlock`, `deleteCardBlock`, `insertCardBlockAfter`, `insertCardBlockBefore`
-- `src/pages/EditorV3.tsx` — ingen större förändring; persist hanterar redan nya kort utan cardId
+- `src/components/editor/CardBlockView.tsx` — drag-handle vänster i header, role-chip, target-tid-chip; drop-zon-band ovanför kortet
+- `src/lib/cardBlockCommands.ts` — `moveCardBlock(state, fromPos, toAbsolutePos, dispatch)`
+- `src/components/editor/TiptapDocEditor.tsx` — `editorProps.handleDOMEvents.dragstart` för att släppa förbi vår handle
 
-**Tas bort:**
-- `src/components/editor/CardBlockNodeView.ts` — ersatt av React-versionen
+**Tas bort:** inget
 
-### Fas 2-omfång (allt nedan)
+### Fas 3-omfång (allt nedan)
 
 **Med:**
-- Cue-editor popover (typ-väljare + text)
-- Notes-editor (inline textarea, autosave på blur)
-- More-menu: duplicera, ta bort, toggle panik
-- "+"-knapp mellan kort (vid hover)
-- Cmd+Enter split (caret i nya kortet)
-- Migration till React NodeView
+- Drag-omordning (HTML5 native + drop-zoner)
+- Roll-selector i header (popover)
+- Target-tid-popover i header (auto/manuell)
 
-**Inte med (Fas 3+):**
-- Drag-omordning av kort
-- Roll-selector (moderator/speaker)
-- Target-tid-popover
-- Panelist-mark/färg-system inuti karteditor
-- Smart paste (auto-split)
+**Inte med (Fas 4+):**
+- Panelist-mark/färg-system inuti karteditor (mark-typ + selektor-bar)
+- Smart paste (auto-split vid stora pastes)
 - Keyboard shortcuts utöver Cmd+Enter
+- Cutover-flagga / migration v1 → v3 för icke-admin
 
-### Verifieringsscenarier (Fas 2)
+### Verifieringsscenarier (Fas 3)
 
-1. Klick på "+ Lägg till cue" → popover öppnas → välj energy → skriv text → spara → chip visas i footer
-2. Klick på X på en cue-chip → cuen försvinner, sparat
-3. Klick på "+ Lägg till notes" → textarea visas → skriv → blur → notes-text visas, sparat
-4. Klick på ⋯ → "Duplicera" → ny identisk kort-box dyker upp direkt under, ny rad i DB efter spara
-5. Klick på ⋯ → "Ta bort" → kortet försvinner, raden borta i DB
-6. Klick på ⋯ → "Markera som panik-kort" → kortet får panik-styling, attr sparat
-7. Hover mellan två kort → "+"-pill visas → klick → tomt kort sätts in mellan, ny DB-rad
-8. Hover ovanför första kortet → "+"-pill → klick → nytt kort blir första
-9. Cmd+Enter mitt i text → kortet splittas, caret i nya kortet, två rader i DB efter spara
-10. Cmd+Enter i tomt slut av kort → nytt tomt kort skapas, caret där
-11. Undo: skapa via "+", Cmd+Z → kortet borta, Cmd+Shift+Z → tillbaka
-12. Persist är idempotent: snabb redigering + duplicering → exakt rätt antal rader
+1. Drag handle på kort 3 → släpp ovanför kort 1 → kort 3 blir först, övriga numreras om, `position` uppdaterad i DB
+2. Drag kort 1 → släpp under sista kortet → flyttat sist
+3. Drag på enda kortet → drop-zoner försvinner / drop blir no-op
+4. Klick roll-chip → välj moderator → chip uppdateras, `role='moderator'` i DB
+5. Klick på moderator-chip → välj talare → tillbaka, sparas
+6. Klick target-chip på kort utan target → 1:30 → spara → chip "🎯 1:30", `targetSeconds=90, targetSecondsIsManual=true`
+7. Klick target-chip → "Auto" → nollställt, chip blir "+ Sätt mål"
+8. Roll-byte + duplicate (Fas 2) → kopian ärver rollen
+9. Drag + Cmd+Z → ordningen återställs
+10. Persist idempotent: snabb drag + roll + target → exakt rätt rader uppdaterade
 
 ### Risker
 
-- **React NodeView re-renders**: ProseMirror kan kalla `update()` ofta. React-versionen måste returnera `true` från sin `shouldComponentUpdate` (eller använda memo) annars stutter. Vi använder hela attrs som dependency.
-- **`NodeViewContent` styling**: contentDOM måste vara editable, all chrome runt om får inte vara editable (`contenteditable={false}` på header/footer-wrappers).
-- **Popover inuti NodeView**: Radix Popover måste portala till body — bekräfta att fokus-trapping fungerar utan att stjäla från Tiptap.
-- **Split + `defining: true`**: behöver `tr.split(pos, depth=2)` med korrekt `typesAfter: [{type: cardBlock}]`. Om vi misslyckas hamnar splittringen utanför cardBlock → korrupt doc.
-- **Duplicate och cardId**: glömmer vi att nolla `cardId` på kopian → upsert overwriter originalet. Test: duplicera, redigera kopian, verifiera att originalet är orört.
-- **Insert-pill z-index**: får inte ligga över bubble menus eller popovers.
+- **HTML5 drag i PM**: PM:s `handleDOMEvents.dragstart` måste släppa events från `[data-drag-handle]`-element. Annars startar PM sin egen node-drag.
+- **Hit-detection**: tunna drop-zoner svåra att träffa → utöka via `::before` med padding.
+- **Position-recalc**: verifiera att icke-flyttade rader inte skickar onödiga updates ("ghost").
+- **Target-input-validering**: klampa min/sek; visa fel för negativa.
+- **Popover portal**: Radix portalar default till body — bekräfta att popover inte stjäl fokus från PM.
+- **Drag-handle vs textmarkering**: handle ej editable; cursor `grab` → `grabbing`.
 
 ### Frågor
 
-Inga öppna frågor — dina svar täcker allt jag behövde. Kör.
-
+1. Target-tid: inline popover (förslag) eller behåll v1:s `TargetDurationDialog`-modal?
+2. Drag aktivt: dölj "+"-pillar (förslag) eller alltid synas?
+3. Roll-chip: subtil accent för moderator (förslag) eller neutralt för båda?
