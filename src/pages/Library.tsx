@@ -195,6 +195,42 @@ export default function Library() {
     const { error } = await supabase.from("manuscripts").delete().eq("id", m.id);
     if (error) { toast({ title: "Misslyckades", description: error.message, variant: "destructive" }); return; }
     setItems((prev) => prev.filter((x) => x.id !== m.id));
+    setSelectedIds((prev) => {
+      if (!prev.has(m.id)) return prev;
+      const next = new Set(prev);
+      next.delete(m.id);
+      return next;
+    });
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedIds(new Set(filtered.map((m) => m.id)));
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    const { error } = await supabase.from("manuscripts").delete().in("id", ids);
+    setBulkDeleting(false);
+    if (error) {
+      toast({ title: "Misslyckades", description: error.message, variant: "destructive" });
+      return;
+    }
+    setItems((prev) => prev.filter((x) => !selectedIds.has(x.id)));
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+    toast({ title: `${ids.length} manus raderade` });
   };
 
   const renameSubmit = async () => {
