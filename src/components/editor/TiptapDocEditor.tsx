@@ -10,7 +10,7 @@ import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
-import { DocFrameDecorations, type FrameBreak } from "@/lib/docFrameDecorations";
+import { DocFrameDecorations, setFrameBreaks, type FrameBreak } from "@/lib/docFrameDecorations";
 
 interface Props {
   value: string;
