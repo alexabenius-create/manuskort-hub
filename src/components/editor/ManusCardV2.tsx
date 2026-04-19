@@ -387,7 +387,7 @@ export function ManusCardV2({
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">Anteckning</span>
-              {!hasNotes && (
+              {!hasNotes && notesDisplay === "auto" && (
                 <button
                   type="button"
                   onClick={() => setNotesOpen(false)}
