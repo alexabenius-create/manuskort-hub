@@ -8,12 +8,17 @@ import Blockquote from "@tiptap/extension-blockquote";
 import { useEffect } from "react";
 import { keymap } from "prosemirror-keymap";
 import { Extension, Node } from "@tiptap/core";
+import { DOMParser as PMDOMParser, Fragment, type Node as PMNode } from "prosemirror-model";
+import { TextSelection } from "prosemirror-state";
+import { toast } from "sonner";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 import { CardBlock } from "@/lib/cardBlockNode";
 import { joinCardBackward, splitCardBlock } from "@/lib/cardBlockCommands";
+import { computeMaxWordsPerCard } from "@/lib/smartPasteThreshold";
+import { splitPastedHtml, plainTextToHtml } from "@/lib/smartPasteSplit";
 
 interface Props {
   value: string;
@@ -55,6 +60,24 @@ const CardBlockKeymap = Extension.create({
     ];
   },
 });
+
+function showSmartPasteToast(
+  split: { cardsHtml: string[]; sectionCount: number; lengthSplitCount: number },
+  totalWords: number,
+  editor: Editor | null,
+) {
+  const n = split.cardsHtml.length;
+  const desc =
+    split.sectionCount > 1 || split.lengthSplitCount > 0
+      ? `${split.sectionCount} sektion${split.sectionCount === 1 ? "" : "er"}, ${split.lengthSplitCount} delning${split.lengthSplitCount === 1 ? "" : "ar"} för längd`
+      : undefined;
+  toast.success(`Klistrat in ${totalWords} ord → ${n} kort`, {
+    description: desc,
+    action: editor
+      ? { label: "Ångra", onClick: () => editor.commands.undo() }
+      : undefined,
+  });
+}
 
 export function TiptapDocEditor({
   value,
@@ -146,6 +169,98 @@ export function TiptapDocEditor({
           return true;
         }
         return false;
+      },
+      handlePaste: (view, event) => {
+        const cd = event.clipboardData;
+        if (!cd) return false;
+
+        const htmlRaw = cd.getData("text/html");
+        const textRaw = cd.getData("text/plain");
+        const sourceHtml = htmlRaw && htmlRaw.trim() ? htmlRaw : plainTextToHtml(textRaw || "");
+        if (!sourceHtml.trim()) return false;
+
+        const maxWords = computeMaxWordsPerCard(size);
+        const probe = document.createElement("div");
+        probe.innerHTML = sourceHtml;
+        const totalWords = (probe.textContent ?? "").trim().split(/\s+/).filter(Boolean).length;
+
+        if (totalWords <= maxWords) return false;
+
+        const split = splitPastedHtml(sourceHtml, maxWords);
+        if (split.cardsHtml.length <= 1) return false;
+
+        event.preventDefault();
+
+        const { state } = view;
+        const { schema, selection } = state;
+        const cardBlockType = schema.nodes.cardBlock;
+        const $from = selection.$from;
+
+        let cardDepth = -1;
+        for (let d = $from.depth; d >= 0; d--) {
+          if ($from.node(d).type.name === "cardBlock") {
+            cardDepth = d;
+            break;
+          }
+        }
+        if (cardDepth < 0) return false;
+
+        const cardNode = $from.node(cardDepth);
+        const cardBefore = $from.before(cardDepth);
+        const cardAfter = cardBefore + cardNode.nodeSize;
+        const isEmptyCard = (cardNode.textContent ?? "").trim().length === 0;
+
+        const domParser = PMDOMParser.fromSchema(schema);
+        const newCards: PMNode[] = split.cardsHtml.map((html) => {
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = html;
+          const slice = domParser.parseSlice(wrapper, { preserveWhitespace: true });
+          let content = slice.content;
+          if (content.size === 0) {
+            content = Fragment.from(schema.nodes.paragraph.create());
+          }
+          return cardBlockType.create({ cardId: null }, content);
+        });
+
+        if (isEmptyCard) {
+          const tr = state.tr.replaceWith(cardBefore, cardAfter, newCards);
+          // Caret i sista nya kortet
+          const lastSize = newCards.reduce((acc, n) => acc + n.nodeSize, 0);
+          const caretPos = cardBefore + lastSize - 2;
+          tr.setSelection(TextSelection.near(tr.doc.resolve(Math.max(0, caretPos))));
+          view.dispatch(tr.scrollIntoView());
+        } else {
+          const atVeryEnd =
+            $from.parentOffset === $from.parent.content.size &&
+            $from.index(cardDepth) === cardNode.childCount - 1;
+
+          if (!atVeryEnd) {
+            const splitOk = splitCardBlock(state, view.dispatch);
+            if (splitOk) {
+              const newState = view.state;
+              const $newFrom = newState.selection.$from;
+              let newDepth = -1;
+              for (let d = $newFrom.depth; d >= 0; d--) {
+                if ($newFrom.node(d).type.name === "cardBlock") {
+                  newDepth = d;
+                  break;
+                }
+              }
+              if (newDepth >= 0) {
+                const insertAt = $newFrom.before(newDepth);
+                const tr2 = newState.tr.insert(insertAt, newCards);
+                view.dispatch(tr2.scrollIntoView());
+                showSmartPasteToast(split, totalWords, editor);
+                return true;
+              }
+            }
+          }
+          const tr = state.tr.insert(cardAfter, newCards);
+          view.dispatch(tr.scrollIntoView());
+        }
+
+        showSmartPasteToast(split, totalWords, editor);
+        return true;
       },
     },
   });
