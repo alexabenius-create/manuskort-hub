@@ -108,7 +108,7 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   };
 
   const hasCues = cues.length > 0;
-  const hasNotes = showNotes && a.notes.trim().length > 0;
+  const hasNotes = showNotes && typeof a.notes === "string" && a.notes.trim().length > 0;
   const showFooter = true; // visa alltid footer (för "+ lägg till"-CTA:er)
   const showInsertPills = !isDragActive;
 
