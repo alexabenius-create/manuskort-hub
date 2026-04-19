@@ -70,6 +70,47 @@ export function TiptapEditor({
     onRowCountChange?.(rows);
   };
 
+  /** Auto-reflow: om innehållet överstiger maxRows → splitta och skicka
+   *  överskott uppåt via onOverflow. Caret följer med om användaren skrev
+   *  i den del som flyttades. */
+  const maybeReflow = (editor: Editor) => {
+    const cb = onOverflowRef.current;
+    const max = maxRowsRef.current;
+    if (!cb || !max || reflowingRef.current) return;
+    const html = editor.getHTML();
+    const rows = countPresentationRows(html, sizeRef.current);
+    if (rows <= max) return;
+
+    const [fits, overflow] = splitHtmlAtRow(html, max, sizeRef.current);
+    if (!overflow || !overflow.trim() || fits === html) return;
+
+    // Beräkna om caret hamnade i overflow-delen.
+    // Heuristik: om caret-position i doc:en är större än textlängden av "fits",
+    // så skrev användaren i den del som flyttas → följ med.
+    const tmp = document.createElement("div");
+    tmp.innerHTML = fits;
+    const fitsTextLen = (tmp.textContent ?? "").length;
+    const caretPos = editor.state.selection.from;
+    // ProseMirror-pos räknar noder/tokens — inte exakt textindex. Vi
+    // approximerar: jämför med totala docs textstorlek.
+    tmp.innerHTML = html;
+    const totalTextLen = (tmp.textContent ?? "").length;
+    const caretRatio = totalTextLen > 0 ? caretPos / editor.state.doc.content.size : 1;
+    const caretInOverflow = caretRatio * totalTextLen >= fitsTextLen - 1;
+
+    reflowingRef.current = true;
+    try {
+      editor.commands.setContent(fits, { emitUpdate: false });
+      onChange(fits);
+      rowsRef.current = countPresentationRows(fits, sizeRef.current);
+      onRowCountChange?.(rowsRef.current);
+      cb(overflow, caretInOverflow);
+    } finally {
+      // Släpp i nästa tick så vi inte triggar oss själva
+      requestAnimationFrame(() => { reflowingRef.current = false; });
+    }
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, horizontalRule: false }),
