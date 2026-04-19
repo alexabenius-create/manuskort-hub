@@ -107,9 +107,19 @@ export function PresentationFooter({
           </button>
         </div>
 
-        {/* Mitten — per-kort-timer (centrerad) */}
-        <div className="flex flex-col items-center gap-2 justify-self-center pointer-events-none">
-          <div className="flex items-center gap-2">
+        {/* Mitten — per-kort-timer (centrerad), med dismiss-knapp till vänster */}
+        <div className="flex items-center gap-3 justify-self-center pointer-events-none">
+          {rawIsOver && !isOverdueDismissed && (
+            <button
+              onClick={onDismissOverdue}
+              className="pointer-events-auto inline-flex items-center px-4 py-2.5 rounded-xl bg-red-950/50 hover:bg-red-900/60 text-red-200 hover:text-red-100 border border-red-700/40 transition-colors text-[14px] font-medium"
+              aria-label="Stäng av övertidsvarningen för detta kort"
+              title="Stäng av övertidsvarningen för detta kort"
+            >
+              Stäng av övertidsvarningen
+            </button>
+          )}
+          <div className="flex flex-col items-center gap-2">
             <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
               {formatMmSs(cardElapsed)}
               {planned && (
@@ -119,25 +129,15 @@ export function PresentationFooter({
                 </span>
               )}
             </div>
-            {rawIsOver && !isOverdueDismissed && (
-              <button
-                onClick={onDismissOverdue}
-                className="pointer-events-auto p-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-100 transition-colors"
-                aria-label="Stäng av övertids-varning för detta kort"
-                title="Stäng av övertids-varning för detta kort"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            {planned && (
+              <div className="h-1.5 w-[200px] rounded-full bg-zinc-800 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
             )}
           </div>
-          {planned && (
-            <div className="h-1.5 w-[200px] rounded-full bg-zinc-800 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-          )}
         </div>
 
         {/* Höger — kortnummer + nästa + panik */}
