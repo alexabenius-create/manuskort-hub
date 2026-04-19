@@ -77,6 +77,18 @@ export default function Editor() {
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("editor.notesPlacement", notesPlacement);
   }, [notesPlacement]);
+  // Visningsläge för anteckningar: "always" | "auto" | "hidden"
+  // - always: panelen visas alltid (även tom)
+  // - auto:   kollapsad bar när tom, expanderad när text finns (default)
+  // - hidden: panelen visas aldrig
+  const [notesDisplay, setNotesDisplay] = useState<"always" | "auto" | "hidden">(() => {
+    if (typeof window === "undefined") return "auto";
+    const v = localStorage.getItem("editor.notesDisplay");
+    return v === "always" || v === "auto" || v === "hidden" ? v : "auto";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("editor.notesDisplay", notesDisplay);
+  }, [notesDisplay]);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
