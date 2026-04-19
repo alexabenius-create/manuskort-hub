@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Pause, Zap, X, Plus, Users } from "lucide-react";
+import { Pause, Zap, X, Plus, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type Cue,
@@ -13,9 +13,36 @@ import {
 import { hexToRgba, hexToDarkText } from "@/lib/panelistColors";
 import type { Panelist } from "@/hooks/usePanelists";
 
+/* -------------------------- mm:ss helpers (lokala) ------------------------- */
+
+/** Parse "mm:ss", "m:ss" eller bara sekunder ("90"). Returnerar null vid ogiltigt. */
+function parseMmSs(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes(":")) {
+    const [mStr, sStr] = trimmed.split(":");
+    const m = parseInt(mStr, 10);
+    const s = parseInt(sStr, 10);
+    if (!Number.isFinite(m) || !Number.isFinite(s) || s < 0 || s >= 60 || m < 0) return null;
+    return m * 60 + s;
+  }
+  const n = parseInt(trimmed, 10);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
+function formatMmSs(total: number): string {
+  const s = Math.max(0, Math.round(total));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2, "0")}`;
+}
+
 interface CueChipProps {
   cue: Cue;
   panelists?: Panelist[];
+  /** Effektiv måltid på kortet (manual ?? estimerat). Används för validering av time-cues. */
+  targetSeconds?: number | null;
   onSave: (next: Cue) => void;
   onRemove: () => void;
 }
@@ -29,7 +56,10 @@ const KIND_STYLE: Record<Exclude<CueKind, "panel">, { chip: string; icon: React.
     chip: "bg-[hsl(var(--accent-blue)/0.12)] text-[hsl(var(--accent-blue))] border-[hsl(var(--accent-blue)/0.35)] hover:bg-[hsl(var(--accent-blue)/0.18)]",
     icon: <Zap className="h-3 w-3" />,
   },
-  time: { chip: "bg-muted text-muted-foreground border-border", icon: null },
+  time: {
+    chip: "bg-[hsl(var(--cue-amber)/0.12)] text-[hsl(var(--cue-amber))] border-[hsl(var(--cue-amber)/0.35)] hover:bg-[hsl(var(--cue-amber)/0.18)]",
+    icon: <Clock className="h-3 w-3" />,
+  },
 };
 
 function panelChipStyle(color: string | null | undefined): React.CSSProperties {
@@ -44,11 +74,14 @@ function panelChipStyle(color: string | null | undefined): React.CSSProperties {
 }
 
 /** Klickbar chip som öppnar popover för redigering. */
-export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps) {
+export function CueChip({ cue, panelists = [], targetSeconds, onSave, onRemove }: CueChipProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(cue.text);
   const [kind, setKind] = useState<CueKind>(cue.kind);
   const [panelistId, setPanelistId] = useState<string | null>(cue.panelistId ?? null);
+  const [atSecondsStr, setAtSecondsStr] = useState<string>(
+    typeof cue.atSeconds === "number" ? formatMmSs(cue.atSeconds) : "",
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,26 +89,33 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
       setText(cue.text);
       setKind(cue.kind);
       setPanelistId(cue.panelistId ?? null);
+      setAtSecondsStr(typeof cue.atSeconds === "number" ? formatMmSs(cue.atSeconds) : "");
       setTimeout(() => inputRef.current?.select(), 50);
     }
-  }, [open, cue.text, cue.kind, cue.panelistId]);
+  }, [open, cue.text, cue.kind, cue.panelistId, cue.atSeconds]);
 
   const commit = () => {
     const trimmed = text.trim();
     if (!trimmed) {
       onRemove();
-    } else if (
-      trimmed !== cue.text ||
-      kind !== cue.kind ||
-      (kind === "panel" && panelistId !== (cue.panelistId ?? null))
-    ) {
-      onSave({
-        ...cue,
-        text: trimmed,
-        kind,
-        panelistId: kind === "panel" ? panelistId : null,
-      });
+      setOpen(false);
+      return;
     }
+    let parsedAt: number | null = null;
+    if (kind === "time") {
+      parsedAt = parseMmSs(atSecondsStr);
+      if (parsedAt == null) return; // ogiltig tid → blockera spara
+      if (typeof targetSeconds === "number" && targetSeconds > 0 && parsedAt > targetSeconds) {
+        return; // över kortets målgräns → blockera
+      }
+    }
+    onSave({
+      ...cue,
+      text: trimmed,
+      kind,
+      panelistId: kind === "panel" ? panelistId : null,
+      atSeconds: kind === "time" ? parsedAt : null,
+    });
     setOpen(false);
   };
 
@@ -83,12 +123,20 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
   let chipClass = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors";
   let chipStyle: React.CSSProperties = {};
   let icon: React.ReactNode = null;
+  let timePrefix: string | null = null;
 
   if (cue.kind === "panel") {
     const p = panelists.find((x) => x.id === cue.panelistId);
     chipClass = cn(chipClass, "border");
     chipStyle = panelChipStyle(p?.color);
     icon = <Users className="h-3 w-3" />;
+  } else if (cue.kind === "time") {
+    const s = KIND_STYLE.time;
+    chipClass = cn(chipClass, s.chip);
+    icon = s.icon;
+    if (typeof cue.atSeconds === "number") {
+      timePrefix = formatMmSs(cue.atSeconds);
+    }
   } else if (cue.kind === "energy" || cue.kind === "action") {
     const s = KIND_STYLE[cue.kind];
     chipClass = cn(chipClass, s.chip);
@@ -105,6 +153,7 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
         <button type="button" className={chipClass} style={chipStyle}>
           {icon}
           {panelName && <span className="opacity-70 font-mono text-[10px] uppercase tracking-wider">{panelName}</span>}
+          {timePrefix && <span className="opacity-70 font-mono text-[10px] tabular-nums">{timePrefix}</span>}
           <span>{cue.text}</span>
         </button>
       </PopoverTrigger>
@@ -114,9 +163,12 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
           text={text}
           panelistId={panelistId}
           panelists={panelists}
+          atSecondsStr={atSecondsStr}
+          targetSeconds={targetSeconds ?? null}
           onKindChange={setKind}
           onTextChange={setText}
           onPanelistChange={setPanelistId}
+          onAtSecondsStrChange={setAtSecondsStr}
           inputRef={inputRef}
           onCommit={commit}
           onCancel={() => setOpen(false)}
@@ -133,15 +185,18 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
 
 interface AddCueButtonProps {
   panelists?: Panelist[];
+  /** Effektiv måltid på kortet — används för validering av time-cues. */
+  targetSeconds?: number | null;
   onAdd: (cue: Cue) => void;
 }
 
 /** "+ Signal"-knapp som öppnar popover för att skapa ny cue. */
-export function AddCueButton({ panelists = [], onAdd }: AddCueButtonProps) {
+export function AddCueButton({ panelists = [], targetSeconds, onAdd }: AddCueButtonProps) {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<CueKind>("energy");
   const [text, setText] = useState("");
   const [panelistId, setPanelistId] = useState<string | null>(null);
+  const [atSecondsStr, setAtSecondsStr] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -149,20 +204,30 @@ export function AddCueButton({ panelists = [], onAdd }: AddCueButtonProps) {
       setText("");
       setKind("energy");
       setPanelistId(panelists[0]?.id ?? null);
+      setAtSecondsStr("");
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, panelists]);
 
   const commit = () => {
     const trimmed = text.trim();
-    if (trimmed) {
-      onAdd({
-        id: newCueId(),
-        kind,
-        text: trimmed,
-        ...(kind === "panel" ? { panelistId } : {}),
-      });
+    if (!trimmed) {
+      setOpen(false);
+      return;
     }
+    let parsedAt: number | null = null;
+    if (kind === "time") {
+      parsedAt = parseMmSs(atSecondsStr);
+      if (parsedAt == null) return;
+      if (typeof targetSeconds === "number" && targetSeconds > 0 && parsedAt > targetSeconds) return;
+    }
+    onAdd({
+      id: newCueId(),
+      kind,
+      text: trimmed,
+      ...(kind === "panel" ? { panelistId } : {}),
+      ...(kind === "time" ? { atSeconds: parsedAt } : {}),
+    });
     setOpen(false);
   };
 
@@ -183,9 +248,12 @@ export function AddCueButton({ panelists = [], onAdd }: AddCueButtonProps) {
           text={text}
           panelistId={panelistId}
           panelists={panelists}
+          atSecondsStr={atSecondsStr}
+          targetSeconds={targetSeconds ?? null}
           onKindChange={setKind}
           onTextChange={setText}
           onPanelistChange={setPanelistId}
+          onAtSecondsStrChange={setAtSecondsStr}
           inputRef={inputRef}
           onCommit={commit}
           onCancel={() => setOpen(false)}
@@ -200,9 +268,12 @@ interface CueFormProps {
   text: string;
   panelistId: string | null;
   panelists: Panelist[];
+  atSecondsStr: string;
+  targetSeconds: number | null;
   onKindChange: (k: CueKind) => void;
   onTextChange: (t: string) => void;
   onPanelistChange: (id: string | null) => void;
+  onAtSecondsStrChange: (s: string) => void;
   inputRef: React.RefObject<HTMLInputElement>;
   onCommit: () => void;
   onCancel: () => void;
@@ -211,24 +282,41 @@ interface CueFormProps {
 }
 
 function CueForm({
-  kind, text, panelistId, panelists,
-  onKindChange, onTextChange, onPanelistChange,
+  kind, text, panelistId, panelists, atSecondsStr, targetSeconds,
+  onKindChange, onTextChange, onPanelistChange, onAtSecondsStrChange,
   inputRef, onCommit, onCancel, onRemove, showRemove,
 }: CueFormProps) {
   const panelDisabled = kind === "panel" && panelists.length === 0;
+
+  // Validering för time-cues
+  const parsedAt = kind === "time" ? parseMmSs(atSecondsStr) : null;
+  const timeInvalid = kind === "time" && atSecondsStr.trim() !== "" && parsedAt == null;
+  const timeOverLimit =
+    kind === "time" &&
+    parsedAt != null &&
+    typeof targetSeconds === "number" &&
+    targetSeconds > 0 &&
+    parsedAt > targetSeconds;
+  const timeMissing = kind === "time" && atSecondsStr.trim() === "";
+  const timeError = timeInvalid
+    ? "Ogiltigt format — använd mm:ss eller sekunder"
+    : timeOverLimit
+      ? `Max ${formatMmSs(targetSeconds!)} (kortets måltid)`
+      : null;
+  const commitDisabled = panelDisabled || timeInvalid || timeOverLimit || timeMissing;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Kategori</span>
-        <div className="inline-flex bg-surface-2 rounded-lg p-1 gap-1">
+        <div className="inline-flex bg-surface-2 rounded-lg p-1 gap-1 flex-wrap">
           {CUE_KINDS_ENABLED.map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => onKindChange(k)}
               className={cn(
-                "flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors",
+                "flex-1 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors",
                 kind === k ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -275,6 +363,38 @@ function CueForm({
         </div>
       )}
 
+      {kind === "time" && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            Triggas vid (mm:ss)
+          </span>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={atSecondsStr}
+              onChange={(e) => onAtSecondsStrChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); onCommit(); }
+                if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+              }}
+              placeholder="0:30"
+              className={cn(
+                "font-mono text-[13px] tabular-nums w-[96px] px-2.5 py-1.5 rounded-md bg-background border focus:outline-none focus:ring-2 focus:ring-ring",
+                timeError ? "border-destructive" : "border-border",
+              )}
+            />
+            {typeof targetSeconds === "number" && targetSeconds > 0 && (
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                av {formatMmSs(targetSeconds)}
+              </span>
+            )}
+          </div>
+          {timeError && (
+            <p className="text-[11px] text-destructive">{timeError}</p>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Text</span>
         <input
@@ -295,7 +415,7 @@ function CueForm({
             kind === "energy" ? "T.ex. Andas, paus" :
             kind === "action" ? "T.ex. Visa bild 3" :
             kind === "panel" ? "T.ex. Fråga om bakgrund" :
-            "T.ex. checkpoint"
+            "T.ex. Wrap upp"
           }
           className="w-full px-3 py-2 rounded-md bg-background border border-border text-[14px] focus:outline-none focus:ring-2 focus:ring-ring"
         />
@@ -323,7 +443,7 @@ function CueForm({
           <button
             type="button"
             onClick={onCommit}
-            disabled={panelDisabled}
+            disabled={commitDisabled}
             className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Spara
