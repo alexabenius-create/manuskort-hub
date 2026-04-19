@@ -29,6 +29,7 @@ export type Database = {
           position: number
           role: Database["public"]["Enums"]["card_role"]
           start_time: string
+          target_seconds: number | null
           title: string
           updated_at: string
           user_id: string
@@ -47,6 +48,7 @@ export type Database = {
           position?: number
           role?: Database["public"]["Enums"]["card_role"]
           start_time?: string
+          target_seconds?: number | null
           title?: string
           updated_at?: string
           user_id: string
@@ -65,6 +67,7 @@ export type Database = {
           position?: number
           role?: Database["public"]["Enums"]["card_role"]
           start_time?: string
+          target_seconds?: number | null
           title?: string
           updated_at?: string
           user_id?: string

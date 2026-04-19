@@ -105,6 +105,7 @@ export function ManusCard({
       cue_teal: card.cue_teal,
       position: card.position,
       is_panic_card: card.is_panic_card ?? false,
+      target_seconds: card.target_seconds ?? null,
     },
   });
 
@@ -239,8 +240,11 @@ export function ManusCard({
               </TooltipContent>
             </Tooltip>
           )}
-          <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono">
-            {words} ord · ~{formatDuration(seconds)} uppläsning
+          <span className="ml-auto text-[12px] text-muted-foreground bg-surface-2 rounded-full px-3 py-1 font-mono inline-flex items-center gap-2">
+            <span>{words} ord</span>
+            <span className="opacity-60">·</span>
+            <span className="text-foreground">{card.target_seconds != null ? `${Math.floor(card.target_seconds / 60)}:${(card.target_seconds % 60).toString().padStart(2, "0")}` : `~${formatDuration(seconds)}`}</span>
+            <span className="opacity-60">{card.target_seconds != null ? "måltid" : "uppläsning"}</span>
           </span>
         </div>
       )}
