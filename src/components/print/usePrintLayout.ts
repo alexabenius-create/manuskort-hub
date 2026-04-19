@@ -56,9 +56,10 @@ export function usePrintLayout(
     const computeAvailableLines = (fontSize: number) =>
       Math.floor(innerHeightPt / (fontSize * 1.45));
 
-    const computeColumnWidth = (hasNotes: boolean) => {
+    const computeColumnWidth = (_hasNotes: boolean) => {
       const widthPt = innerWidthMm * MM_TO_PT;
-      return hasNotes ? widthPt * 0.6 : widthPt;
+      // Notes-ytan visas alltid vid utskrift (för handskrift) → scriptkolumn = 75%.
+      return widthPt * 0.71;
     };
 
     const fitsAll = (fontSize: number): boolean => {
