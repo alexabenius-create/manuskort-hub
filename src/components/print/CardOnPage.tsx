@@ -26,6 +26,7 @@ export interface CardOnPageProps {
 const PT_PER_MM = 2.8346;
 const PAD_MM = 10;
 const RAIL_MM = 4;
+const FRAME_MARGIN_MM = 5;
 
 function formatSec(sec: number | null): string {
   if (sec === null || sec === undefined) return "—";
@@ -36,13 +37,22 @@ function formatSec(sec: number | null): string {
 }
 
 const styles = StyleSheet.create({
-  card: {
+  frame: {
     width: "100%",
     height: "100%",
+    padding: FRAME_MARGIN_MM * PT_PER_MM,
+    backgroundColor: "#FFFFFF",
+  },
+  card: {
+    flex: 1,
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     fontFamily: "Helvetica",
     color: "#1A1A1A",
+    borderWidth: 0.75,
+    borderColor: "#D0D0D0",
+    borderRadius: 14,
+    overflow: "hidden",
   },
   leftRail: {
     width: RAIL_MM * PT_PER_MM,
@@ -220,7 +230,8 @@ export function CardOnPage(props: CardOnPageProps) {
   } = props;
 
   return (
-    <View style={styles.card} wrap={false}>
+    <View style={styles.frame} wrap={false}>
+      <View style={styles.card}>
       <View style={[styles.leftRail, { backgroundColor: roleColor }]} />
       <View style={styles.inner}>
         {/* Header */}
@@ -296,6 +307,7 @@ export function CardOnPage(props: CardOnPageProps) {
           <View style={styles.footerSpacer} />
           <Text style={styles.footerPage}>{totalCardsLabel.toUpperCase()}</Text>
         </View>
+      </View>
       </View>
     </View>
   );
