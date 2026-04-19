@@ -1,9 +1,10 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
+import { splitCardBlock } from "@/lib/cardBlockCommands";
 
 interface Props {
   editor: Editor | null;
