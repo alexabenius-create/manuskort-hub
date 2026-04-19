@@ -401,79 +401,117 @@ export default function Editor() {
   /**
    * Auto-reflow vid skrivning: text som flödar över kortets radgräns knuffas
    * till nästa kort (eller ett nytt om sista). Caret följer med om användaren
-   * skrev i den del som flyttades. Beter sig som sidbrytning i Word.
+   * skrev i den del som flyttades. Kaskaderar genom efterföljande kort tills
+   * allt ryms. Beter sig som sidbrytning i Word.
    */
   const handleAutoOverflow = async (cardId: string, overflowHtml: string, moveCaret: boolean) => {
     if (!user || !manuscript || !overflowHtml || !overflowHtml.trim()) return;
-    const idx = cards.findIndex((c) => c.id === cardId);
-    if (idx === -1) return;
-    const src = cards[idx];
-    const nextCard = cards[idx + 1];
+    const startIdx = cards.findIndex((c) => c.id === cardId);
+    if (startIdx === -1) return;
 
-    if (nextCard) {
-      // Prepend overflow till nästa kort
-      const merged = overflowHtml + (nextCard.content_html ?? "");
-      setCards((prev) => {
-        const out = prev.slice();
-        out[idx + 1] = { ...out[idx + 1], content_html: merged };
-        return out;
+    const textSize = (manuscript.text_size as "sm" | "md" | "lg") ?? "md";
+    const maxRows = MAX_ROWS_BY_SIZE[textSize];
+
+    let working: Card[] = cards.map((c) => ({ ...c }));
+    let pendingOverflow = overflowHtml;
+    let targetIdx = startIdx + 1;
+    const modifiedIds = new Set<string>();
+    const createdIds: string[] = [];
+    let caretLandsOnId: string | null = null;
+    let caretLandsAtTextLen = 0;
+
+    let safety = 50;
+    while (pendingOverflow && pendingOverflow.trim() && safety-- > 0) {
+      if (targetIdx >= working.length) {
+        // Skapa nytt kort
+        if (working.length >= limits.cardsPerManuscript) {
+          const prev = working[targetIdx - 1];
+          working[targetIdx - 1] = { ...prev, content_html: (prev.content_html ?? "") + pendingOverflow };
+          modifiedIds.add(prev.id);
+          setUpgradeOpen(true);
+          break;
+        }
+        const { data, error } = await supabase
+          .from("cards")
+          .insert({
+            manuscript_id: manuscript.id,
+            user_id: user.id,
+            position: targetIdx,
+            role: working[startIdx].role,
+            content_html: pendingOverflow,
+          })
+          .select()
+          .single();
+        if (error || !data) {
+          toast({ title: "Kunde inte skapa nytt kort", description: error?.message, variant: "destructive" });
+          return;
+        }
+        working.splice(targetIdx, 0, data);
+        createdIds.push(data.id);
+        if (moveCaret && caretLandsOnId === null) {
+          caretLandsOnId = data.id;
+          const t = document.createElement("div");
+          t.innerHTML = pendingOverflow;
+          caretLandsAtTextLen = (t.textContent ?? "").length;
+        }
+        // Mät om kortet ändå spränger gränsen → splitta vidare
+        const [fits, more] = splitHtmlAtRow(pendingOverflow, maxRows, textSize);
+        if (more && more.trim() && fits !== pendingOverflow) {
+          working[targetIdx] = { ...working[targetIdx], content_html: fits };
+          pendingOverflow = more;
+          targetIdx++;
+          continue;
+        }
+        pendingOverflow = "";
+        break;
+      }
+
+      // Prepend till befintligt nästa kort
+      const target = working[targetIdx];
+      const merged = pendingOverflow + (target.content_html ?? "");
+      const [fits, more] = splitHtmlAtRow(merged, maxRows, textSize);
+
+      working[targetIdx] = { ...target, content_html: fits };
+      modifiedIds.add(target.id);
+
+      if (moveCaret && caretLandsOnId === null) {
+        caretLandsOnId = target.id;
+        const t = document.createElement("div");
+        t.innerHTML = pendingOverflow;
+        caretLandsAtTextLen = (t.textContent ?? "").length;
+      }
+
+      if (!more || !more.trim()) {
+        pendingOverflow = "";
+        break;
+      }
+      pendingOverflow = more;
+      targetIdx++;
+    }
+
+    const renum = working.map((c, i) => ({ ...c, position: i }));
+    setCards(renum);
+
+    const updates: PromiseLike<unknown>[] = [];
+    for (const c of renum) {
+      if (modifiedIds.has(c.id)) {
+        updates.push(supabase.from("cards").update({ content_html: c.content_html }).eq("id", c.id));
+      }
+    }
+    if (createdIds.length > 0) {
+      updates.push(persistPositions(renum));
+    }
+    void Promise.all(updates);
+
+    if (moveCaret && caretLandsOnId) {
+      const landId = caretLandsOnId;
+      const offsetTextLen = caretLandsAtTextLen;
+      requestAnimationFrame(() => {
+        const ed = editorRefs.current.get(landId);
+        if (!ed) return;
+        const target = Math.min(ed.state.doc.content.size, offsetTextLen + 2);
+        ed.commands.focus(target, { scrollIntoView: true });
       });
-      // Persistera direkt så autosave-snapshot håller jämna steg
-      void supabase.from("cards").update({ content_html: merged }).eq("id", nextCard.id);
-      if (moveCaret) {
-        // Vänta på att TiptapEditor renderat det nya innehållet, fokusera vid
-        // slutet av den inflyttade texten (= efter overflow-delen).
-        requestAnimationFrame(() => {
-          const ed = editorRefs.current.get(nextCard.id);
-          if (!ed) return;
-          // Mät tokenlängd av overflow inom det nya doc:et
-          const tmp = document.createElement("div");
-          tmp.innerHTML = overflowHtml;
-          const overflowTextLen = (tmp.textContent ?? "").length;
-          // Approximera ProseMirror-position: textens längd + 2 (för doc/para-wrappers)
-          const target = Math.min(ed.state.doc.content.size, overflowTextLen + 2);
-          ed.commands.focus(target, { scrollIntoView: true });
-        });
-      }
-    } else {
-      // Skapa nytt sista kort med overflow som innehåll
-      if (cards.length >= limits.cardsPerManuscript) {
-        // Tier-spärr → backa: lägg tillbaka i src så användaren ser texten
-        setCards((prev) => {
-          const out = prev.slice();
-          out[idx] = { ...out[idx], content_html: (out[idx].content_html ?? "") + overflowHtml };
-          return out;
-        });
-        setUpgradeOpen(true);
-        return;
-      }
-      const { data, error } = await supabase
-        .from("cards")
-        .insert({
-          manuscript_id: manuscript.id,
-          user_id: user.id,
-          position: idx + 1,
-          role: src.role,
-          content_html: overflowHtml,
-        })
-        .select()
-        .single();
-      if (error || !data) {
-        toast({ title: "Kunde inte skapa nytt kort", description: error?.message, variant: "destructive" });
-        return;
-      }
-      setCards((prev) => {
-        const out = [...prev];
-        out.splice(idx + 1, 0, data);
-        return out.map((c, i) => ({ ...c, position: i }));
-      });
-      if (moveCaret) {
-        requestAnimationFrame(() => {
-          const ed = editorRefs.current.get(data.id);
-          if (!ed) return;
-          ed.commands.focus("end", { scrollIntoView: true });
-        });
-      }
     }
   };
 
