@@ -118,6 +118,12 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
     window.addEventListener("afterprint", onAfterPrint);
     document.documentElement.setAttribute("data-print-format", format);
     onOpenChange(false);
+    if (clampedCount > 0) {
+      toast.warning(
+        `${clampedCount} kort skalades till minsta storlek — innehåll kan vara klippt. Korta texten på de korten för bästa resultat.`,
+        { duration: 8000 },
+      );
+    }
     // Vänta in DOM-uppdateringen så CSS hinner aktiveras innan print-dialogen öppnas
     setTimeout(() => window.print(), 80);
   };
