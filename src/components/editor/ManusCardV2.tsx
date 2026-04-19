@@ -603,16 +603,9 @@ function TimePopover({
               className="font-mono text-[13px] bg-surface-2 rounded-md border-0 outline-none w-[96px] px-2.5 py-1 placeholder:text-faint focus:ring-2 focus:ring-accent-blue"
             />
           </label>
-          {canSync && onSync && (
-            <button
-              type="button"
-              onClick={onSync}
-              className="mt-1 inline-flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground hover:text-accent-blue bg-surface-2 hover:bg-accent-blue/10 rounded-full px-2.5 py-1 transition-colors"
-            >
-              <Clock className="h-3 w-3" />
-              Synka med föregående
-            </button>
-          )}
+          <p className="text-[11px] text-muted-foreground mt-1 leading-[1.4]">
+            Sluttid och måltid synkas automatiskt — nästa korts starttid uppdateras direkt.
+          </p>
         </div>
       </PopoverContent>
     </Popover>
