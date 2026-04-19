@@ -26,6 +26,7 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
 
   const handlePrint = () => {
     const STYLE_ID = "print-page-size-style";
+    const notesPt = Math.round(fontSize * 0.75);
     // Injicera @page-regel dynamiskt — @page kan inte villkoras via attribut/klass
     const pageCSS =
       format === "a5-1up"
@@ -38,6 +39,10 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = pageCSS;
+
+    // Sätt valda textstorlekar via CSS-variabler — print-blocket i index.css läser dessa
+    document.documentElement.style.setProperty("--print-font-size", `${fontSize}pt`);
+    document.documentElement.style.setProperty("--print-notes-size", `${notesPt}pt`);
 
     // Mät-och-skala: räkna ut tillgänglig korthöjd för valt format och
     // sätt --print-script-scale per kort så att långt innehåll får plats.
