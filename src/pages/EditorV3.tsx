@@ -84,7 +84,6 @@ export default function EditorV3() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setPreference } = useEditorPreference();
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -114,16 +113,6 @@ export default function EditorV3() {
     | "clock"
     | "elapsed";
   const targetDurationSeconds = manuscript?.target_duration_seconds ?? null;
-
-  /** Opt-out: spara preferens v1 i DB och navigera till /v1-routen. */
-  const handleUseV1 = useCallback(async () => {
-    await setPreference("v1");
-    toast({
-      title: "Bytt till v1",
-      description: "Inställningen sparas på din profil. Du kan ändra tillbaka i Inställningar.",
-    });
-    navigate(`/manus/${id}/v1`);
-  }, [setPreference, navigate, id]);
 
   // Ladda manus + kort
   useEffect(() => {
