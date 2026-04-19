@@ -2,65 +2,40 @@
 
 ## Diagnos
 
-Skärmen är överfull med konkurrerande element:
-- **Topbar**: X-knapp, Wake Lock-pill, två stora mode-knappar ("Klockslag"/"Förfluten"), enorm tid-block (56px font, 400px bred), pause-knapp
-- **Footer**: Två stora A−/A+ knappar, stort kortnummer med ring, "Nästa: …", panik-knapp
-- **Per-kort-timer saknas** helt i presentationsläget (vi lade till `cards.target_seconds` men kopplade aldrig in det)
+**1. Vita barer över/under (iPad PWA/standalone):** Beror troligen på att `body`/`html` saknar svart bakgrund + safe-area inte respekteras. Presentation-vyn använder `absolute inset-0` men body kan synas igenom när iOS Safari visar status/home-indicator-zoner.
 
-## Lösning: rensad layout + per-kort-timer tillbaka
+**2. Tryck på knappar bläddrar:** Tap-zonerna för prev/next ligger som overlay över hela skärmen. Knapparna har `pointer-events-auto` men click-eventet bubblar upp till tap-zonen, eller så ligger tap-zonen ovanpå.
 
-### 1. Topbar — krympt och hopslagen
+**3. Default = klocka:** Behöver ändras till `elapsed` som default.
 
-**Vänster**: bara X-knappen (mindre, p-3 istället för p-5). Wake Lock-pillen flyttas till en liten prick bredvid X (bara grön/gul/röd dot, label syns vid hover).
+## Lösning
 
-**Höger**: ETT enda kompakt tidsblock:
-- Tid på en rad (`text-[40px]` istället för 56px, min-w 280px istället för 400px)
-- Mode-toggle som liten ikonrad UNDER tiden (klocka/timer-ikoner, inga textetiketter — bara ikoner)
-- Pause-knapp integrerad i samma block (bara i förfluten-läge)
+### 1. Vit bar — fix bakgrund + safe-area
+- I `Presentation.tsx`: lägg `bg-zinc-950` på root + sätt `<html>`/`<body>` bakgrund via en effect medan presentationsläget är aktivt (eller via en wrapper med `fixed inset-0`).
+- Lägg `viewport-fit=cover` i `index.html` om saknas, och `env(safe-area-inset-*)` padding på topbar/footer.
 
-Resultat: ~50% mindre yta i toppen.
+### 2. Tap-zoner bläddrar vid knapptryck
+Hitta tap-zon-elementen i `Presentation.tsx`. Två möjliga fixar:
+- **Bästa:** lägg `e.stopPropagation()` på alla onClick i Topbar/Footer-knappar, ELLER
+- **Robustare:** ändra tap-zonerna så de bara täcker mitten av skärmen (vänster/höger 1/3-strips), INTE topp/botten. T.ex. tap-zonerna får `top-[80px] bottom-[120px]` så topbar och footer är fredade.
 
-### 2. Footer — minimalistisk + per-kort-timer
+Jag väljer det andra — fredar hela topbar (top 80px) och footer (bottom 140px) från tap-navigation. Det är säkrare än att förlita sig på stopPropagation överallt.
 
-Ny layout, allt på en rad i botten:
+### 3. Default elapsed
+I `usePresentationTimer` (eller där `mode` initieras): byt `useState<TimerMode>("clock")` → `useState<TimerMode>("elapsed")`. Och `direction` default `"down"` (kvarstående tid).
 
-```text
-[A− A+]      ⏱ 0:42 / 1:30   ●━━━━━○━━━   01/14   Nästa: Talare · …      [Panik]
-```
+## Ändringar
 
-- **Vänster**: A−/A+ kompaktare (p-2.5, h-5 w-5 ikoner)
-- **Mitten-vänster**: NY per-kort-timer
-  - Visar `formatMmSs(cardElapsed) / formatMmSs(card.target_seconds)`
-  - Liten progress-bar (linjär, 120px bred) under siffrorna
-  - Färg: emerald → amber sista 20% → röd när över
-  - Om kortet saknar `target_seconds`: visa bara `formatMmSs(cardElapsed)` utan ring/bar
-- **Mitten**: kortnummer (mindre, 18px font, ingen stor ring runt — ringen ersätts av per-kort-bar:en till vänster)
-- **Mitten-höger**: "Nästa: …" (oförändrat, lite mindre 14px)
-- **Höger**: Panik-knapp kompaktare (px-4 py-2.5, 14px text)
+1. **`src/pages/Presentation.tsx`**:
+   - Root-wrapper: `bg-zinc-950` + effect som sätter `document.body.style.backgroundColor = "#09090b"` medan monterad
+   - Tap-zoner (prev/next): begränsa till `top-20 bottom-32` så topbar/footer fredas
+   - Initial mode → `"elapsed"`, direction → `"down"`
 
-### 3. Per-kort-elapsed-beräkning
+2. **`index.html`**: säkerställ `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />`
 
-I `Presentation.tsx` finns redan `cardStartedAtElapsed` (summan av planerade tider för tidigare kort). Vi byter till en bättre källa: **summan av `target_seconds` (eller fallback till start/end-diff) för korten innan currentIndex**. Skicka `cardTargetSeconds = current.target_seconds` ner till footern.
+3. **`src/components/presentation/PresentationTopbar.tsx`** + **`PresentationFooter.tsx`**: lägg `pt-[env(safe-area-inset-top)]` resp. `pb-[env(safe-area-inset-bottom)]` på header/footer.
 
-## Tekniska ändringar
+4. **`src/hooks/usePresentationTimer.ts`** (om det är där default mode sätts): ändra default till `elapsed` + `down`.
 
-1. **`src/components/presentation/PresentationTopbar.tsx`**:
-   - Krymp X-knapp (p-3, h-7 w-7)
-   - Ersätt Wake Lock-pill med liten dot + tooltip
-   - Slå ihop mode-toggle + tid + pause i ett enda kompakt block. Mode som ikon-only toggle (Clock/Timer-ikoner, inga ord).
-   - Tid: text-[40px], min-w-[280px]
-
-2. **`src/components/presentation/PresentationFooter.tsx`**:
-   - Krymp A−/A+ knappar (p-2.5)
-   - Lägg till `cardTargetSeconds: number | null` och `cardElapsedSeconds: number` props
-   - Ny vänster-mitten-sektion: per-kort-timer med linjär progress-bar (emerald/amber/röd)
-   - Krymp kortnummer (text-[18px], ta bort stora ringen)
-   - Krymp "Nästa: …" (text-[14px])
-   - Krymp panik-knapp
-
-3. **`src/pages/Presentation.tsx`**:
-   - Beräkna `cardStartedAtElapsed` med `target_seconds` som primär källa, start/end som fallback
-   - Skicka `cardTargetSeconds={current.target_seconds}` till footern
-
-Inga db-ändringar. Inga nya filer.
+Inga db-ändringar.
 
