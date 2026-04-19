@@ -97,10 +97,15 @@ export function TiptapDocEditor({
     editor.commands.setContent(value || "", { emitUpdate: false });
   }, [value, editor]);
 
-  // Uppdatera frame-breaks via plugin-state (dispatch på editor.view)
+  // Uppdatera frame-breaks via plugin-state. Vi dispatchar i nästa frame
+  // så att React-render hinner committas innan ProseMirror räknar om
+  // decorations — det undviker en mätnings-loop där boxar mäts mot fel Y.
   useEffect(() => {
     if (!editor) return;
-    setFrameBreaks(editor.view, frameBreaks);
+    const raf = requestAnimationFrame(() => {
+      setFrameBreaks(editor.view, frameBreaks);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [frameBreaks, editor]);
 
   return (
