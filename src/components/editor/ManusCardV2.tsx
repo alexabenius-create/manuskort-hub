@@ -227,8 +227,8 @@ export function ManusCardV2({
               <span className="text-[11px] font-sans">Signal</span>
             </MetaIconButton>
           )}
-          {/* + Anteckning — bara om showNotes är på och ingen anteckning finns */}
-          {showNotes && !hasNotes && (
+          {/* + Anteckning — bara i auto-läge när panelen kollapsats (ingen text + inte öppen) */}
+          {showAddNoteButton && (
             <MetaIconButton
               label="Lägg till anteckning"
               onClick={() => setNotesOpen(true)}
