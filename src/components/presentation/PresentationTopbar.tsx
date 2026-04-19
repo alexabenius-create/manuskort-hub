@@ -71,7 +71,10 @@ export function PresentationTopbar({
       : "bg-zinc-500";
 
   return (
-    <header className="absolute top-0 inset-x-0 z-30 flex items-start justify-between px-6 md:px-10 pt-5 gap-4 pointer-events-none">
+    <header
+      className="absolute top-0 inset-x-0 z-30 flex items-start justify-between px-6 md:px-10 gap-4 pointer-events-none"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}
+    >
       {/* Vänster — X + wake lock dot */}
       <div className="flex items-center gap-2 pointer-events-auto">
         <button
