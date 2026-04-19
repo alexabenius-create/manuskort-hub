@@ -52,6 +52,18 @@ export default function Presentation() {
   const wakeLockStatus = useWakeLock(true);
   useFullscreen(true);
 
+  // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer
+  useEffect(() => {
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = "#09090b";
+    document.documentElement.style.backgroundColor = "#09090b";
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
+
   // Återställ sizeOffset från sessionStorage
   useEffect(() => {
     if (!id) return;
