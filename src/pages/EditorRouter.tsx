@@ -1,3 +1,7 @@
+// TODO: Radera denna fil senast 2026-05-03.
+// v1/v2 är utfasade — v3 är enda aktiva editorn sedan 2026-04-19.
+// Routern används inte längre — /manus/:id renderar EditorV3 direkt i App.tsx.
+// Filen ligger kvar som referens under sunset-perioden.
 /**
  * EditorRouter — wrapper på /manus/:id som väljer EditorV1 eller EditorV3
  * baserat på användarens DB-preferens (profiles.editor_preference).
