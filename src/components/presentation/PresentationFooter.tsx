@@ -13,10 +13,8 @@ interface Props {
   total: number;
   hasPanicCards: boolean;
   onPanic: () => void;
-  /** Sekunder förflutna sen presentationsstart. */
-  elapsedSeconds: number;
-  /** Sekunder presentationen pågått som inte hör till detta kort. */
-  cardStartedAtElapsedSeconds: number;
+  /** Faktiskt spenderad tid på detta kort i sekunder. */
+  cardElapsedSeconds: number;
   /** Måltid för aktuellt kort (manuellt satt). Fallback till start/end-diff. */
   cardTargetSeconds: number | null;
   timeFormat: "clock" | "elapsed";
