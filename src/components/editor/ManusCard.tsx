@@ -30,6 +30,7 @@ interface Props {
   timeFormat: TimeFormat;
   isModerator: boolean;
   canSyncWithPrevious?: boolean;
+  notesDisplay?: "always" | "auto" | "hidden";
   onLocalChange: (patch: Partial<Card>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -44,6 +45,7 @@ interface Props {
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
+  notesDisplay = "auto",
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
   onAutoSplit, onOverflowStateChange, onEditorReady,
 }: Props) {
