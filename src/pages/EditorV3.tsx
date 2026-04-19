@@ -10,7 +10,6 @@ import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
-import { PrintDialog } from "@/components/editor/PrintDialog";
 import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
 import {
   TargetDurationDialog,
@@ -97,7 +96,7 @@ export default function EditorV3() {
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [cardCount, setCardCount] = useState(0);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
-  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
@@ -703,7 +702,7 @@ export default function EditorV3() {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => setPrintDialogOpen(true)}
+                    onClick={() => navigate(`/manus/${id}/utskrift`)}
                     aria-label="Skriv ut manus"
                     className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
                   >
@@ -802,8 +801,6 @@ export default function EditorV3() {
           open={panelistSidebarOpen}
           onClose={() => setPanelistSidebarOpen(false)}
         />
-
-        <PrintDialog open={printDialogOpen} onOpenChange={setPrintDialogOpen} />
 
         <FindReplaceDialog
           open={findReplaceOpen}
