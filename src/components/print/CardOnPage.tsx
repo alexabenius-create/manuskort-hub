@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    flexDirection: "row",
+    flexDirection: "column",
     fontFamily: "Helvetica",
     color: "#1A1A1A",
     borderWidth: 0.75,
@@ -53,15 +53,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
   },
-  leftRail: {
-    width: RAIL_MM * PT_PER_MM,
-    height: "100%",
-  },
   inner: {
     flex: 1,
     paddingTop: PAD_MM * PT_PER_MM,
     paddingBottom: PAD_MM * PT_PER_MM,
-    paddingLeft: (PAD_MM - 1) * PT_PER_MM,
+    paddingLeft: PAD_MM * PT_PER_MM,
     paddingRight: PAD_MM * PT_PER_MM,
     flexDirection: "column",
   },
