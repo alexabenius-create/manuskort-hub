@@ -1,107 +1,96 @@
-## Pull-back vid Backspace
 
-### Mål
 
-Spegla push-flödet: när användaren trycker **Backspace** vid **caret position 0** (allra första tecknet) i ett kort som har en föregångare, ska text **dras tillbaka** från det aktuella kortet upp till föregående kort — så långt det får plats där (max 8 rader vid storlek md).
+## Mål
 
-Om föregående kort har plats för t.ex. 2 rader till, så flyttas första 2 raderna från det aktuella kortet upp till föregångaren. Resterande text stannar kvar i nuvarande kortet.
+Bygga en **dummy-editor v2** parallellt med befintlig editor. Endast admin når den. Här börjar vi om med radflödet mellan kort så det känns som Word: skriv, radera, klistra, navigera — utan kantfall.
 
-### Beteende i detalj
+## Princip: "en lång text, virtuella sidbrytningar"
 
-**Trigger**
-- Tangenttryck: **Backspace**
-- Caret står vid **doc-position 0** i editorn
-- Det finns ett **föregående kort** (inte första kortet)
-- Ingen markering aktiv (annars normal radering)
-- Inga modifier-tangenter (Cmd/Ctrl/Alt) — då låter vi browsern hantera normalt
+Istället för dagens push/pull mellan separata Tiptap-instanser per kort:
 
-**Vad händer**
-1. Mät hur många rader föregångaren har just nu (`countPresentationRows`).
-2. Beräkna `lediga rader = maxRows - prevRows`.
-3. Om `lediga rader === 0` → bara caret-flytt till slutet av föregångaren. Ingen mutation.
-4. Om `lediga rader >= 1`:
-   - `splitHtmlAtRow(currentHtml, lediga, size)` → `[fitsInPrev, restStaysHere]`
-   - Lägg till `fitsInPrev` i slutet av föregångarens `content_html`
-   - Ersätt nuvarande kortets `content_html` med `restStaysHere`
-   - Caret hoppar till föregångarens editor, vid den position där den infogade texten börjar
+- **En enda Tiptap-instans** håller hela manuset.
+- Sidbrytningar är **virtuella** (beräknade från presentations-geometrin), inte fysiska kort i DB.
+- När användaren skriver/raderar: ProseMirror sköter caret, undo, paste, markering — gratis.
+- Vid spara: vi delar upp dokumentet på beräknade brytpunkter och persisterar till `cards`-tabellen i samma format som idag (bakåtkompatibelt).
 
-### Edge cases
+Det löser grundproblemet: dagens buggar kommer från att vi försöker synka caret/innehåll mellan N separata editorer. Word har inga sådana gränser — de visualiseras bara.
 
-| Fall | Beteende |
-|------|----------|
-| Caret är inte vid pos 0 | Ingen pull-back — normal Backspace |
-| Det finns markering | Ingen pull-back — normal radering av selection |
-| Nuvarande kortet är **tomt** | Radera kortet helt (om inte första). Caret → slutet av föregångaren |
-| Föregångaren är **fullt fylld** (8/8) | Bara caret-flytt, ingen text flyttas |
-| Modifier-tangenter (Cmd/Ctrl/Alt) hålls | Ingen pull-back — låt browsern hantera |
+## Arkitektur
 
-### Teknisk implementation
-
-**1. `TiptapEditor.tsx`**
-
-Ny prop:
-```ts
-onPullBack?: () => void;
+```text
+┌─────────────────────────────────────────────┐
+│  EditorV2 (admin-only route)                │
+│                                             │
+│  ┌─ TiptapDocEditor (1 instans) ────────┐  │
+│  │                                       │  │
+│  │  [Kort 1 innehåll]                    │  │
+│  │  ─── virtuell sidbrytning (8 rader) ──│  │
+│  │  [Kort 2 innehåll]                    │  │
+│  │  ─── virtuell sidbrytning ────────────│  │
+│  │  [Kort 3 innehåll]                    │  │
+│  └───────────────────────────────────────┘  │
+│                                             │
+│  PageBreakOverlay (visar linjer + nummer)   │
+└─────────────────────────────────────────────┘
+         │
+         ▼ (autosave)
+   splitDocByRows() → cards[]  →  Supabase
 ```
 
-I `handleKeyDown`:
-```ts
-if (event.key === "Backspace" && !event.metaKey && !event.ctrlKey && !event.altKey) {
-  const sel = view.state.selection;
-  const isAtStart = sel.empty && sel.from <= 1;
-  if (isAtStart && onPullBackRef.current) {
-    event.preventDefault();
-    onPullBackRef.current();
-    return true;
-  }
-}
-```
+## Plan
 
-**2. `Editor.tsx`**
+**1. Routing & access**
+- Ny route `/manus/:id/v2` skyddad av `RequireAuth` + admin-check (`useTier().isAdmin`).
+- Liten "v2"-knapp på vanliga editorn synlig endast för admin → öppnar v2 för samma manus.
 
-Ny handler `handlePullBack(cardId)`:
-- Hitta `currentIdx` i `cards`. Om `currentIdx === 0` → returnera.
-- `prev = cards[currentIdx - 1]`, `current = cards[currentIdx]`
-- `available = maxRows - countPresentationRows(prev.content_html, size)`
-- Om `available <= 0` → fokusera prev-editorn vid slutet, ingen mutation
-- Annars:
-  - `[fitsInPrev, restStaysHere] = splitHtmlAtRow(current.content_html, available, size)`
-  - Om current var helt tom → ta bort kortet och fokusera prev vid slutet
-  - Annars: uppdatera båda korten via `updateCard`
-  - Fokusera prev-editorn vid den position där `fitsInPrev` börjar
+**2. Ny editor-komponent: `EditorV2.tsx`**
+- Laddar manus + kort som idag.
+- Slår ihop alla `cards[].content_html` till **ett HTML-dokument** med en osynlig markör mellan korten (t.ex. `<!-- card-break -->`) bara som hint vid första laddning.
+- Renderar `<TiptapDocEditor>` med samma extensions som dagens editor (PanelistMark, PauseMarkNode, etc.) — inga reflow-callbacks.
 
-**3. `ManusCard.tsx` & `ManusCardV2.tsx`**
+**3. Virtuella sidbrytningar**
+- Efter varje `onUpdate`: kör `computePageBreaks(html, size, maxRows)` som returnerar lista med ProseMirror-positioner där brytningar ska ritas.
+- Bygger på befintliga `countPresentationRows` + `splitHtmlAtRow` (återanvänds).
+- Overlay-komponent ritar horisontella linjer + "Kort N / M" badges absolut-positionerat ovanpå editorn vid dessa positioner.
 
-Tråda igenom `onPullBack` på samma sätt som `onAutoOverflow`.
+**4. Spara → kort**
+- Vid autosave: dela `editor.getHTML()` på de beräknade brytpunkterna → `cards[]`.
+- Diff:a mot befintliga rader, `upsert` ändrade, `delete` överflödiga. Bevarar `id` på oförändrade kort där det går (matcha på position + innehållshash).
+- Notes/cues/times per kort: i v2-prototypen lägger vi dessa i en **högerpanel** kopplad till "aktivt kort" (det där caret står). Sparas på det matchade kort-id:t.
 
-**Caret-positionering**
+**5. Presentation 1:1**
+- Presentation-läget rör vi inte — det läser samma `cards`-tabell.
+- Eftersom vi splittar med samma `splitHtmlAtRow` + presentations-geometri som presentationsläget mäter mot → garanterad 1:1.
 
-Återanvänd `editorRefs` Map. Använd `prevDocSize` innan merge som målposition så caret hamnar exakt där den nya texten börjar.
+**6. Bakåtkompatibelt**
+- Samma DB-schema, samma `cards`-rader. Användaren kan växla mellan v1 och v2 på samma manus.
+- Inga migrations behövs.
 
-### Avgränsningar (ingår INTE)
+## Vad vi INTE bygger nu
 
-- **Cmd/Ctrl+Backspace** (radera ord/rad) — låt browser hantera normalt
-- **Delete-tangent** från slutet av föregående kort (motsatt riktning) — separat feature
-- **Visuell hint** — inga animationer/toasts
+- Ingen reflow-mellan-editorer-logik (hela poängen).
+- Ingen panelist-sidebar i v2 första iterationen — fokus på textflödet. Markering + bubble-menu för panelist funkar via befintlig FormatBubbleMenu.
+- Ingen drag-omordning av kort i v2 — ordning följer textflödet.
 
-### Påverkan
+## Filer
 
 | Fil | Ändring |
 |-----|---------|
-| `src/components/editor/TiptapEditor.tsx` | Ny `onPullBack`-prop + Backspace-detection |
-| `src/pages/Editor.tsx` | Ny `handlePullBack`-handler |
-| `src/components/editor/ManusCard.tsx` | Tråda igenom `onPullBack` |
-| `src/components/editor/ManusCardV2.tsx` | Tråda igenom `onPullBack` |
-| `src/lib/cardLimits.ts` | Inga ändringar |
+| `src/pages/EditorV2.tsx` | **Ny** — admin-only sida |
+| `src/components/editor/TiptapDocEditor.tsx` | **Ny** — en editor-instans för hela dokumentet |
+| `src/components/editor/PageBreakOverlay.tsx` | **Ny** — ritar virtuella sidbrytningar |
+| `src/lib/docSplit.ts` | **Ny** — `computePageBreaks()` + `splitDocToCards()` |
+| `src/App.tsx` | Lägg till route `/manus/:id/v2` |
+| `src/pages/Editor.tsx` | Liten "Testa v2" admin-knapp i toolbar |
 
-### Risker
+## Risker & svar
 
-- **Caret-positionering** i ProseMirror räknar noder/tokens — använd `prevDocSize` innan merge som målposition.
-- **Race condition** med autosave — kör flush först (samma mönster som `flushRegistry`).
+- **Stora manus, prestanda**: en Tiptap-instans klarar enkelt 100+ sidor. Mätningen körs throttlad (rAF + debounce 200ms).
+- **Caret hoppar vid omberäkning**: vi rör aldrig dokumentinnehållet vid sidbrytningsberäkning — bara overlay. Caret är orört.
+- **Panelist-färgning över sidbrytning**: fungerar gratis, det är samma mark genom hela dokumentet.
 
-### Frågor innan implementation
+## Frågor
 
-1. **Vid full föregångare (8/8)**: Bara caret-flytt, eller ska Backspace inte göra något alls? Rekommendation: **caret-flytt** — det är intuitivt.
-2. **Vid tomt kort + Backspace**: Ska kortet raderas? Rekommendation: **ja**.
+1. **Ska v2-knappen synas på vanliga editorn för admin, eller bara nås via direkt-URL `/manus/:id/v2`?**
+2. **Notes/cues per kort i v2 — vill du ha högerpanel kopplad till aktivt kort, eller skjuter vi upp det helt till nästa iteration (bara textflödet först)?**
 
-Säg till om något ska ändras, annars kör jag.
