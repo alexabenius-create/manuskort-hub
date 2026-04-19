@@ -206,6 +206,40 @@ export function insertCardBlockAfter(
 }
 
 /**
+ * Flytta cardBlock vid pos ett steg upp (-1) eller ner (+1) bland top-level
+ * cardBlock-syskon. No-op om redan i ändkanten.
+ */
+export function moveCardBlockBySteps(
+  state: EditorState,
+  pos: number,
+  delta: -1 | 1,
+  dispatch?: (tr: Transaction) => void,
+): boolean {
+  const node = state.doc.nodeAt(pos);
+  if (!node || node.type.name !== "cardBlock") return false;
+
+  // Räkna upp top-level boundaries (positioner mellan cardBlock-noder)
+  const boundaries: number[] = [0];
+  state.doc.forEach((child) => {
+    boundaries.push(boundaries[boundaries.length - 1] + child.nodeSize);
+  });
+  // boundaries[i] = start på i:te top-level noden
+  // boundaries[boundaries.length-1] = doc.content.size
+
+  // Hitta index för vår nod
+  const myIndex = boundaries.indexOf(pos);
+  if (myIndex < 0) return false;
+  const targetIndex = myIndex + delta;
+  if (targetIndex < 0 || targetIndex >= boundaries.length - 1) return false;
+
+  // Pos där vi vill sätta in:
+  // - delta=-1: före kort vid targetIndex → boundaries[targetIndex]
+  // - delta=+1: efter kort vid targetIndex → boundaries[targetIndex+1]
+  const toPos = delta === -1 ? boundaries[targetIndex] : boundaries[targetIndex + 1];
+  return moveCardBlock(state, pos, toPos, dispatch);
+}
+
+/**
  * Flytta cardBlock från `fromPos` till absolut position `toPos` (innan delete).
  * `toPos` ska vara en top-level-gränsposition mellan cardBlock-noder
  * (0 = före första, doc.content.size = efter sista, eller summan av nodeSize för
