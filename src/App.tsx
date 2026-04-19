@@ -21,6 +21,7 @@ const EditorV1 = lazy(() => import("./pages/Editor"));
 const EditorV2 = lazy(() => import("./pages/EditorV2"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
 const Presentation = lazy(() => import("./pages/Presentation"));
+const PrintView = lazy(() => import("./components/print/PrintView"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Import = lazy(() => import("./pages/Import"));
 const Pricing = lazy(() => import("./pages/Pricing"));
@@ -65,6 +66,7 @@ const App = () => (
                     <Route path="/manus/:id/v2" element={<RequireAuth><EditorV2 /></RequireAuth>} />
                     <Route path="/manus/:id/v3" element={<RequireAuth><EditorV3 /></RequireAuth>} />
                     <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
+                    <Route path="/manus/:id/utskrift" element={<RequireAuth><PrintView /></RequireAuth>} />
                     <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
                     <Route path="/checkout/return" element={<CheckoutReturn />} />
                     <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
