@@ -92,8 +92,7 @@ export default function Editor() {
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
   const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
-  // Kort-id:n vars starttid användaren har redigerat manuellt — dessa skyddas från auto-kedjan
-  const [manualStartIds, setManualStartIds] = useState<Set<string>>(new Set());
+  // (Tidigare manualStartIds — borttaget eftersom auto-kedjan nu alltid är aktiv)
   // Kort som överskrider sin radgräns — blockerar utskrift
   const [overflowingCardIds, setOverflowingCardIds] = useState<Set<string>>(new Set());
   // Refs till varje korts Tiptap-editor — används för att mäta visuella rader exakt vid auto-split
@@ -632,12 +631,6 @@ export default function Editor() {
       return;
     }
     setCards((list) => list.map((c) => (c.id === cardId ? { ...c, start_time: chained } : c)));
-    setManualStartIds((prev) => {
-      if (!prev.has(cardId)) return prev;
-      const next = new Set(prev);
-      next.delete(cardId);
-      return next;
-    });
   };
 
   if (loading || !manuscript) {
