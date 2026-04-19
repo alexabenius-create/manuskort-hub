@@ -118,8 +118,9 @@ export function splitHtmlAtRow(
   if (!html || !html.trim()) return [html, ""];
 
   const measurer = getPresentationMeasurer(textSize);
-  // Kontrollera först om allt får plats
-  measurer.innerHTML = html;
+  // Kontrollera först om allt får plats — använd samma normalisering som
+  // countPresentationRows så tomma rader räknas konsekvent.
+  measurer.innerHTML = normalizeForMeasurement(html);
   if (countVisualRows(measurer) <= maxRows) {
     return [html, ""];
   }
