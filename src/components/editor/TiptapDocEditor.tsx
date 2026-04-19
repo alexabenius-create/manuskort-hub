@@ -68,7 +68,10 @@ export function TiptapDocEditor({
     },
     editorProps: {
       attributes: {
-        class: `${sizeClass[size]} focus:outline-none w-full max-w-[75ch] mx-auto text-foreground px-8 py-12`,
+        // padding-top = HEADER_HEIGHT (40) så första kortets meta-rad får plats
+        // padding-bottom = FOOTER_HEIGHT (16) så sista kortets footer får plats
+        // px-6 matchar v1:s kort-padding (px-5/sm:px-6)
+        class: `${sizeClass[size]} focus:outline-none w-full text-foreground px-6 pt-12 pb-6`,
       },
       handleKeyDown: (_view, event) => {
         if (
