@@ -384,7 +384,7 @@ export function ManusCardV2({
               )}
 
               {/* "+ Signal"-knappen för att lägga till nya cues */}
-              <AddCueButton onAdd={(c) => updateCues(upsertCue(cues, c))} />
+              <AddCueButton panelists={panelists} onAdd={(c) => updateCues(upsertCue(cues, c))} />
 
               {showCues && !hasAnyCue && cues.length === 0 && (
                 <button
