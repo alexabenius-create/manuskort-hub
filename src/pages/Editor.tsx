@@ -17,8 +17,9 @@ import { PrintDialog } from "@/components/editor/PrintDialog";
 import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
-import { ArrowLeft, Plus, Printer, Users, Play, Target, Settings2 } from "lucide-react";
+import { ArrowLeft, Plus, Printer, Users, Play, Target, Settings2, Search } from "lucide-react";
 import { HelpButton } from "@/components/HelpButton";
+import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   // Layout-toggle (mockup): "ny" = ren V2-layout, "klassisk" = nuvarande
   const [layoutVariant, setLayoutVariant] = useState<"klassisk" | "ny">(() => {
     if (typeof window === "undefined") return "ny";
@@ -183,6 +185,21 @@ export default function Editor() {
       window.removeEventListener("beforeprint", onBeforePrint);
     };
   }, [overflowingCardIds]);
+
+  // Cmd/Ctrl+F öppnar Hitta & ersätt
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "f" || e.key === "F")) {
+        const target = e.target as HTMLElement | null;
+        // Tillåt inte i input/textarea där användaren kanske vill söka i webbläsaren
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+        e.preventDefault();
+        setFindReplaceOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Trigger manus-rundturen när exempelmanuset är öppnat och korten är renderade
   const isExampleManuscript = !!manuscript && (manuscript.tags ?? []).includes(EXAMPLE_TAG);
@@ -882,6 +899,20 @@ export default function Editor() {
               <Play className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Visa</span>
             </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setFindReplaceOpen(true)}
+                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2"
+                  aria-label="Hitta & ersätt"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Hitta &amp; ersätt</TooltipContent>
+            </Tooltip>
             <HelpButton />
           </div>
         </header>
@@ -983,6 +1014,39 @@ export default function Editor() {
         onOpenChange={setUpgradeOpen}
         title="Du har nått kort-gränsen för Gratis"
         description={`Gratis tillåter ${limits.cardsPerManuscript} kort per manus. Uppgradera till PRO för obegränsat.`}
+      />
+
+      <FindReplaceDialog
+        open={findReplaceOpen}
+        onOpenChange={setFindReplaceOpen}
+        cards={cards.map((c) => ({ id: c.id, content_html: c.content_html }))}
+        onApply={async (updates, total) => {
+          if (updates.length === 0) return;
+          // Optimistisk uppdatering lokalt
+          setCards((prev) => {
+            const map = new Map(updates.map((u) => [u.id, u.html]));
+            return prev.map((c) => (map.has(c.id) ? { ...c, content_html: map.get(c.id)! } : c));
+          });
+          // Persistera parallellt
+          const results = await Promise.all(
+            updates.map((u) =>
+              supabase.from("cards").update({ content_html: u.html }).eq("id", u.id),
+            ),
+          );
+          const failed = results.filter((r) => r.error).length;
+          if (failed > 0) {
+            toast({
+              title: "Vissa kort kunde inte uppdateras",
+              description: `${failed} av ${updates.length} kort misslyckades.`,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Ersatt",
+              description: `${total} förekomst${total === 1 ? "" : "er"} i ${updates.length} kort.`,
+            });
+          }
+        }}
       />
     </div>
     </PanelistsProvider>

@@ -13,6 +13,11 @@ import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/compone
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
 import { HelpOverlay } from "@/components/presentation/HelpOverlay";
 import { SEO } from "@/components/SEO";
+import { scanCardsForPlaceholders } from "@/lib/profilePlaceholders";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const HELP_SEEN_KEY = "presentation-help-seen-v1";
 import { toast } from "sonner";
@@ -48,6 +53,12 @@ export default function Presentation() {
   const [speedChip, setSpeedChip] = useState<{ value: number; ts: number } | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [overdueDismissedIds, setOverdueDismissedIds] = useState<Set<string>>(new Set());
+  const [pendingStart, setPendingStart] = useState<null | {
+    mode: "countdown" | "instant";
+    viewMode: ViewMode;
+    focusStyle: FocusStyle;
+    placeholders: string[];
+  }>(null);
   const xTimerRef = useRef<number | null>(null);
   const hasEnteredFullscreenRef = useRef(false);
 
@@ -501,12 +512,22 @@ export default function Presentation() {
         <PresentationStartMenu
           estimatedSpeedFactor={1.0}
           onStartCountdown={(opts) => {
+            const placeholders = scanCardsForPlaceholders(cards);
+            if (placeholders.length > 0) {
+              setPendingStart({ mode: "countdown", viewMode: opts.viewMode, focusStyle: opts.focusStyle, placeholders });
+              return;
+            }
             setViewMode(opts.viewMode);
             setFocusStyle(opts.focusStyle);
             setStartMode("countdown");
             setMenuOpen(false);
           }}
           onStartInstant={(opts) => {
+            const placeholders = scanCardsForPlaceholders(cards);
+            if (placeholders.length > 0) {
+              setPendingStart({ mode: "instant", viewMode: opts.viewMode, focusStyle: opts.focusStyle, placeholders });
+              return;
+            }
             setViewMode(opts.viewMode);
             setFocusStyle(opts.focusStyle);
             setStartMode("instant");
@@ -515,6 +536,62 @@ export default function Presentation() {
           onExit={exit}
         />
       )}
+
+      <AlertDialog
+        open={!!pendingStart}
+        onOpenChange={(o) => { if (!o) setPendingStart(null); }}
+      >
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-2xl font-semibold">
+              Oersatta platshållare hittades
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-[14px]">
+                <p>
+                  Manuset innehåller {pendingStart?.placeholders.length}{" "}
+                  {pendingStart?.placeholders.length === 1 ? "platshållare" : "platshållare"} som inte är ifyllda.
+                  Dessa kommer synas under presentationen:
+                </p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {pendingStart?.placeholders.map((p) => (
+                    <span
+                      key={p}
+                      className="inline-flex items-center text-[12px] font-mono px-2.5 py-1 rounded-full bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/30"
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-muted-foreground">
+                  Du kan gå tillbaka och fixa dem med Hitta &amp; ersätt, eller fortsätta ändå.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full" onClick={() => {
+              setPendingStart(null);
+              exit();
+            }}>
+              Tillbaka och fixa
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white"
+              onClick={() => {
+                if (!pendingStart) return;
+                setViewMode(pendingStart.viewMode);
+                setFocusStyle(pendingStart.focusStyle);
+                setStartMode(pendingStart.mode);
+                setMenuOpen(false);
+                setPendingStart(null);
+              }}
+            >
+              Fortsätt ändå
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </>
   );

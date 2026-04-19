@@ -175,6 +175,9 @@ export type Database = {
         Row: {
           bibliotek_tour_completed: boolean
           created_at: string
+          display_name: string | null
+          display_org: string | null
+          display_title: string | null
           email: string | null
           id: string
           manus_tour_completed: boolean
@@ -184,6 +187,9 @@ export type Database = {
         Insert: {
           bibliotek_tour_completed?: boolean
           created_at?: string
+          display_name?: string | null
+          display_org?: string | null
+          display_title?: string | null
           email?: string | null
           id?: string
           manus_tour_completed?: boolean
@@ -193,6 +199,9 @@ export type Database = {
         Update: {
           bibliotek_tour_completed?: boolean
           created_at?: string
+          display_name?: string | null
+          display_org?: string | null
+          display_title?: string | null
           email?: string | null
           id?: string
           manus_tour_completed?: boolean
