@@ -292,7 +292,7 @@ export default function Presentation() {
     };
   }, []);
 
-  // Touch — svep + tap-zoner
+  // Touch — svep + tap-zoner. Fredar interaktiva element och topbar/footer-zoner.
   const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
@@ -312,13 +312,21 @@ export default function Presentation() {
     if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
     xTimerRef.current = window.setTimeout(() => setXVisible(false), 3000);
 
+    // Hoppa över navigation om tap/svep landade på ett interaktivt element
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, textarea, [role="button"], [contenteditable="true"]')) {
+      return;
+    }
+
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) && dt < 600) {
       if (dx < 0) goNext(); else goPrev();
       return;
     }
 
-    // Tap (ingen sweep) → tap-zon
+    // Tap (ingen sweep) → tap-zon. Fredar topp 96px och botten 144px (topbar/footer).
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
+      const h = window.innerHeight;
+      if (t.clientY < 96 || t.clientY > h - 144) return;
       const w = window.innerWidth;
       if (t.clientX > w / 2) goNext(); else goPrev();
     }
