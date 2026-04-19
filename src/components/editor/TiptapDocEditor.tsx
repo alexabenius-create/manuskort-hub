@@ -61,7 +61,25 @@ const CardBlockKeymap = Extension.create({
   },
 });
 
-export function TiptapDocEditor({
+function showSmartPasteToast(
+  split: { cardsHtml: string[]; sectionCount: number; lengthSplitCount: number },
+  totalWords: number,
+  editor: Editor | null,
+) {
+  const n = split.cardsHtml.length;
+  const desc =
+    split.sectionCount > 1 || split.lengthSplitCount > 0
+      ? `${split.sectionCount} sektion${split.sectionCount === 1 ? "" : "er"}, ${split.lengthSplitCount} delning${split.lengthSplitCount === 1 ? "" : "ar"} för längd`
+      : undefined;
+  toast.success(`Klistrat in ${totalWords} ord → ${n} kort`, {
+    description: desc,
+    action: editor
+      ? { label: "Ångra", onClick: () => editor.commands.undo() }
+      : undefined,
+  });
+}
+
+
   value,
   onChange,
   size,
