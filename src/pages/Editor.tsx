@@ -13,6 +13,7 @@ import { ManusCard } from "@/components/editor/ManusCard";
 import { ManusCardV2, type NotesPlacement } from "@/components/editor/ManusCardV2";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { SunsetBanner } from "@/components/editor/SunsetBanner";
 import { PrintDialog } from "@/components/editor/PrintDialog";
 import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
