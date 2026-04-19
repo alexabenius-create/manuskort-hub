@@ -53,6 +53,7 @@ interface Props {
   onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
   onEditorReady?: (cardId: string, editor: Editor | null) => void;
   onAutoOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
+  onPullBack?: () => void;
 }
 
 export function ManusCardV2({
