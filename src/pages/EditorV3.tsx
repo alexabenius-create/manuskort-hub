@@ -523,20 +523,7 @@ export default function EditorV3() {
                 </TooltipContent>
               </Tooltip>
 
-              {/* Storlek */}
-              <div className="seg-group">
-                {sizes.map((s) => (
-                  <button
-                    key={s}
-                    data-active={manuscript.text_size === s}
-                    onClick={() => updateMeta({ text_size: s })}
-                    className="seg-btn"
-                    title={`Textstorlek: ${s.toUpperCase()}`}
-                  >
-                    {s.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+              {/* Storlek flyttad till Vy-popover nedan */}
 
               {/* Vy-popover */}
               <Tooltip delayDuration={200}>
