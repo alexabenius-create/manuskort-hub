@@ -34,6 +34,10 @@ export function hexToRgba(hex: string, alpha: number): string {
 // Returnerar en mörkare, mättad variant av färgen — lämplig som textfärg ovanpå
 // den ljusa bakgrunden. Behåller samma kulör (hue) men sänker ljushet och höjer
 // mättnaden så texten får god kontrast och tydlig färgidentitet.
+//
+// Mål: WCAG AA (≥ 4.5:1) mot vit bakgrund. Tidigare targetL=28 gav vissa
+// pasteller (mint, persika, gul) en dämpad ton som upplevdes "grå". Vi sänker
+// L till 22 och höjer min-mättnaden — färgen blir tydligt identifierbar.
 export function hexToDarkText(hex: string): string {
   const h = hex.replace("#", "");
   const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
@@ -56,9 +60,8 @@ export function hexToDarkText(hex: string): string {
     hDeg *= 60;
     if (hDeg < 0) hDeg += 360;
   }
-  // Mörkna och mätta — målar en djup, läsbar variant
-  const targetL = 28; // %
-  const targetS = Math.min(85, Math.max(55, s * 100 + 20));
+  // Mörkna och mätta — målar en djup, läsbar variant med stark kulör-identitet
+  const targetL = 22; // % — tillräckligt mörk för AA mot vit
+  const targetS = Math.min(95, Math.max(70, s * 100 + 30));
   return `hsl(${hDeg.toFixed(0)} ${targetS.toFixed(0)}% ${targetL}%)`;
 }
-
