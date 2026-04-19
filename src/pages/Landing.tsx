@@ -155,7 +155,7 @@ export default function Landing() {
               Manuskort för proffsiga presentationer
             </div>
             <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[72px] leading-[1.02] font-semibold tracking-[-0.03em]">
-              Tala tryggt.
+              Tala tryggt.{" "}
               <br />
               <span className="text-muted-foreground">Håll tiden. Varje&nbsp;gång.</span>
             </h1>
