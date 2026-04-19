@@ -1283,6 +1283,7 @@ export default function Editor() {
                     onEditorReady: handleEditorReady,
                     onAutoOverflow: (html: string, moveCaret: boolean) =>
                       handleAutoOverflow(c.id, html, moveCaret),
+                    onPullBack: () => handlePullBack(c.id),
                   };
                   return layoutVariant === "ny"
                     ? <ManusCardV2 key={c.id} {...commonProps} notesPlacement={notesPlacement} />
