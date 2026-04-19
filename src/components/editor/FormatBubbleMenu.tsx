@@ -154,6 +154,7 @@ export function FormatBubbleMenu({ editor }: Props) {
                 >
                   <span className="truncate">{p.name?.trim() || "Namnlös"}</span>
                 </button>
+              );
             })}
             {activePanelistId && (
               <button
