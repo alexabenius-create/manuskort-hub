@@ -33,6 +33,19 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
 
   // Kolla merge-möjlighet: kräver markering + föregående cardBlock + ryms radvis.
   const mergeCheck = canMergeSelectionWithPrev(editor.state, textSize);
+  if (typeof window !== "undefined" && !editor.state.selection.empty) {
+    // eslint-disable-next-line no-console
+    console.log("[merge debug]", {
+      hasPrev: mergeCheck.hasPrev,
+      fits: mergeCheck.fits,
+      availableRows: mergeCheck.availableRows,
+      selectionRows: mergeCheck.selectionRows,
+      textSize,
+      schemaHasCardBlock: !!editor.state.schema.nodes.cardBlock,
+      selFrom: editor.state.selection.from,
+      selTo: editor.state.selection.to,
+    });
+  }
 
   const buttons: ToolButton[] = [
     {
