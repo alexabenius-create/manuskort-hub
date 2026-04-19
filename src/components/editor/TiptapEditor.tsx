@@ -55,6 +55,7 @@ export function TiptapEditor({
   onRowCountChange,
   onOverflowPaste,
   onOverflow,
+  onPullBack,
 }: Props) {
   // Ref till senaste rad-räkning så handleKeyDown alltid läser färskt värde
   const rowsRef = useRef(0);
