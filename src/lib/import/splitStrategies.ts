@@ -22,6 +22,11 @@ export interface PreviewCard {
   speakerName?: string;
 }
 
+// Mode forwardas in så vi kan styra wrap-beteende. I moderator-läge
+// är texten i grunden moderatorns egna ord — vi vill INTE färga hela
+// stycken som "talare", bara markera frågor riktade till panelister.
+export type CardBuildMode = "moderator" | "speaker" | undefined;
+
 export const WORDS_PER_CARD_DEFAULT: Record<TextSize, number> = {
   sm: 180,
   md: 130,
