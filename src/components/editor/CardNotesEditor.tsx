@@ -14,8 +14,9 @@ interface Props {
 }
 
 export function CardNotesEditor({ value, onChange }: Props) {
+  const safeValue = typeof value === "string" ? value : "";
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
+  const [draft, setDraft] = useState(safeValue);
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -27,8 +28,8 @@ export function CardNotesEditor({ value, onChange }: Props) {
   }, [editing]);
 
   useEffect(() => {
-    setDraft(value);
-  }, [value]);
+    setDraft(safeValue);
+  }, [safeValue]);
 
   const commit = () => {
     if (draft !== value) onChange(draft);
