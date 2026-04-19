@@ -614,6 +614,31 @@ export default function Library() {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-2xl font-semibold">
+              Radera {selectedIds.size} manus?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Detta tar bort de markerade manuset och alla deras kort permanent. Det går inte att ångra.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full" disabled={bulkDeleting}>
+              Avbryt
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); void bulkDelete(); }}
+              disabled={bulkDeleting}
+              className="rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {bulkDeleting ? "Raderar…" : "Radera"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <UpgradeModal
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
