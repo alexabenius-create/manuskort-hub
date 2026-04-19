@@ -1,9 +1,16 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, MessageCircleQuestion, ChevronDown, User } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Props {
   editor: Editor | null;
@@ -24,6 +31,8 @@ export function FormatBubbleMenu({ editor }: Props) {
   } catch {
     panelists = [];
   }
+
+  const [questionOpen, setQuestionOpen] = useState(false);
 
   if (!editor) return null;
 
@@ -67,20 +76,40 @@ export function FormatBubbleMenu({ editor }: Props) {
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
     .panelistId ?? null;
+  const activeQuestionId = (editor.getAttributes("questionTo") as { panelistId?: string | null })
+    .panelistId ?? null;
+  const hasAnyMark = !!activePanelistId || !!activeQuestionId;
+
+  // Expandera caret till ord vid behov, returnera chain att köra på
+  const ensureSelectionChain = () => {
+    const { from, to } = editor.state.selection;
+    if (from !== to) return editor.chain().focus();
+    const $pos = editor.state.doc.resolve(from);
+    const start = $pos.start();
+    const end = $pos.end();
+    const text = editor.state.doc.textBetween(start, end, " ");
+    const rel = from - start;
+    let s = rel;
+    let e = rel;
+    while (s > 0 && /\S/.test(text[s - 1] ?? "")) s--;
+    while (e < text.length && /\S/.test(text[e] ?? "")) e++;
+    if (e > s) {
+      return editor.chain().focus().setTextSelection({ from: start + s, to: start + e });
+    }
+    return editor.chain().focus();
+  };
 
   return (
     <BubbleMenu
       editor={editor}
       options={{ placement: "top" }}
       shouldShow={({ editor }) => {
-        // Visa även vid tom markering (caret) så pausknappen alltid är nåbar
         if (!editor.isEditable) return false;
         return editor.isFocused;
       }}
     >
       <div
         className="flex items-center gap-0.5 rounded-full border border-border bg-popover px-1 py-1 shadow-pop"
-        // Förhindra att klick i toolbaren stjäl fokus från editorn (vilket skulle clearar selection innan kommandot körs)
         onMouseDown={(e) => e.preventDefault()}
       >
         {buttons.map(({ key, label, icon: Icon, isActive, onClick }) => {
@@ -105,10 +134,11 @@ export function FormatBubbleMenu({ editor }: Props) {
           );
         })}
 
-        {/* Panelist-färgväljare — synlig när det finns deltagare. Applicerar på selection (eller närmaste ord om caret) */}
         {panelists.length > 0 && (
           <>
             <div className="mx-1 h-5 w-px bg-border" />
+
+            {/* Panelist-pills (talare) */}
             {panelists.map((p) => {
               const isActive = activePanelistId === p.id;
               return (
@@ -119,26 +149,7 @@ export function FormatBubbleMenu({ editor }: Props) {
                   aria-pressed={isActive}
                   title={p.name || "Panelist"}
                   onClick={() => {
-                    const { from, to } = editor.state.selection;
-                    let chain = editor.chain().focus();
-                    if (from === to) {
-                      // Ingen selection → expandera till ordet under caret
-                      chain = chain.setTextSelection({ from, to }).extendMarkRange("panelist");
-                      // Om inget ord finns där, försök selectera närmaste ord via PM
-                      const $pos = editor.state.doc.resolve(from);
-                      const start = $pos.start();
-                      const end = $pos.end();
-                      const text = editor.state.doc.textBetween(start, end, " ");
-                      const rel = from - start;
-                      // hitta ordgränser kring rel
-                      let s = rel;
-                      let e = rel;
-                      while (s > 0 && /\S/.test(text[s - 1] ?? "")) s--;
-                      while (e < text.length && /\S/.test(text[e] ?? "")) e++;
-                      if (e > s) {
-                        chain = editor.chain().focus().setTextSelection({ from: start + s, to: start + e });
-                      }
-                    }
+                    const chain = ensureSelectionChain();
                     if (isActive) {
                       chain.unsetPanelist().run();
                     } else {
@@ -156,12 +167,54 @@ export function FormatBubbleMenu({ editor }: Props) {
                 </button>
               );
             })}
-            {activePanelistId && (
+
+            {/* Fråga till-dropdown */}
+            <DropdownMenu open={questionOpen} onOpenChange={setQuestionOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Markera som fråga till panelist"
+                  title="Fråga till"
+                  className={cn(
+                    "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[12px] font-medium transition-colors",
+                    "text-foreground/80 hover:bg-muted hover:text-foreground",
+                    activeQuestionId && "bg-foreground text-background hover:bg-foreground hover:text-background",
+                  )}
+                >
+                  <MessageCircleQuestion className="h-3.5 w-3.5" />
+                  Fråga till
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="rounded-xl">
+                {panelists.map((p) => (
+                  <DropdownMenuItem
+                    key={p.id}
+                    onClick={() => {
+                      const chain = ensureSelectionChain();
+                      chain.setMark("questionTo", { panelistId: p.id, color: p.color, name: p.name }).run();
+                      setQuestionOpen(false);
+                    }}
+                  >
+                    <span
+                      className="h-3 w-3 rounded-full mr-2"
+                      style={{ backgroundColor: p.color }}
+                    />
+                    {p.name?.trim() || "Namnlös"}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Eraser tar bort båda marks */}
+            {hasAnyMark && (
               <button
                 type="button"
-                aria-label="Ta bort panelist-markering"
+                aria-label="Ta bort markering"
                 title="Ta bort markering"
-                onClick={() => editor.chain().focus().unsetPanelist().run()}
+                onClick={() =>
+                  editor.chain().focus().unsetPanelist().unsetMark("questionTo").run()
+                }
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors text-foreground/60 hover:bg-muted hover:text-foreground"
               >
                 <Eraser className="h-4 w-4" />
