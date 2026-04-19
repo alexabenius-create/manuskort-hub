@@ -314,6 +314,7 @@ export function ManusCard({
             onRowCountChange={setCurrentRows}
             onOverflowPaste={onPasteOverflow}
             onOverflow={onAutoOverflow}
+            onPullBack={onPullBack}
           />
           {isOver && (
             <div className="mt-3 flex items-center gap-3 rounded-lg bg-destructive/10 px-3 py-2 border border-destructive/25">
