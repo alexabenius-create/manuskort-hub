@@ -35,10 +35,73 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
     }
     styleEl.textContent = pageCSS;
 
+    // Mät-och-skala: räkna ut tillgänglig korthöjd för valt format och
+    // sätt --print-script-scale per kort så att långt innehåll får plats.
+    const MM_TO_PX = 3.7795275591; // 1mm @ 96dpi
+    // A4 portrait: 297mm − 24mm marginal = 273mm för 2 kort (med ~12mm gap).
+    // A5 landscape: 148mm höjd − 20mm marginal = 128mm för 1 kort.
+    const availableMm = format === "a5-1up" ? 128 - 4 : (273 - 12) / 2;
+    const availablePx = availableMm * MM_TO_PX;
+    const cardWidthMm = format === "a5-1up" ? 190 : 186;
+
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(".manu-card"),
+    );
+    const scaledCards: HTMLElement[] = [];
+
+    if (cards.length > 0) {
+      const sandbox = document.createElement("div");
+      sandbox.style.position = "fixed";
+      sandbox.style.left = "-99999px";
+      sandbox.style.top = "0";
+      sandbox.style.width = `${cardWidthMm}mm`;
+      sandbox.style.visibility = "hidden";
+      sandbox.style.pointerEvents = "none";
+      sandbox.setAttribute("data-print-measure-sandbox", "true");
+      sandbox.setAttribute("data-print-format", format);
+      document.body.appendChild(sandbox);
+
+      // Duplicerar baseline-typografi i sandboxen — @media print kan inte
+      // triggas utanför utskrift, så vi simulerar den medan vi mäter.
+      const baselineCss =
+        format === "a5-1up"
+          ? `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 13pt; line-height: 1.55; }
+             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 10pt; line-height: 1.45; }`
+          : `[data-print-measure-sandbox] .manu-card .ProseMirror { font-size: 11pt; line-height: 1.5; }
+             [data-print-measure-sandbox] .manu-card .card-panel-notes textarea { font-size: 9pt; line-height: 1.4; }`;
+      const measureStyle = document.createElement("style");
+      measureStyle.id = "print-measure-style";
+      measureStyle.textContent = baselineCss;
+      document.head.appendChild(measureStyle);
+
+      try {
+        cards.forEach((card) => {
+          const clone = card.cloneNode(true) as HTMLElement;
+          clone.style.removeProperty("--print-script-scale");
+          clone.style.height = "auto";
+          clone.style.maxHeight = "none";
+          clone.style.overflow = "visible";
+          sandbox.innerHTML = "";
+          sandbox.appendChild(clone);
+          const measured = clone.scrollHeight;
+          if (measured > availablePx && measured > 0) {
+            const raw = availablePx / measured;
+            const scale = Math.max(0.55, Math.min(1, raw));
+            card.style.setProperty("--print-script-scale", scale.toFixed(3));
+            scaledCards.push(card);
+          }
+        });
+      } finally {
+        sandbox.remove();
+        measureStyle.remove();
+      }
+    }
+
     const onAfterPrint = () => {
       document.documentElement.removeAttribute("data-print-format");
       const el = document.getElementById(STYLE_ID);
       if (el) el.remove();
+      scaledCards.forEach((c) => c.style.removeProperty("--print-script-scale"));
       window.removeEventListener("afterprint", onAfterPrint);
     };
     window.addEventListener("afterprint", onAfterPrint);
