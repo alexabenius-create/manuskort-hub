@@ -65,6 +65,8 @@ export function TiptapEditor({
   sizeRef.current = size;
   const onOverflowRef = useRef(onOverflow);
   onOverflowRef.current = onOverflow;
+  const onPullBackRef = useRef(onPullBack);
+  onPullBackRef.current = onPullBack;
   // Skydd mot rekursiv reflow (när vi själva sätter content efter split)
   const reflowingRef = useRef(false);
 
