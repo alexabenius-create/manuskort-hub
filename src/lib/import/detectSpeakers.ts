@@ -1,4 +1,11 @@
-// Detekterar talare i form av "NAMN:" eller "Namn:" i början av stycken.
+// Detekterar talare i form av flera mönster i början av stycken.
+// Stödjer:
+//   "NAMN:"            → "Anna:"
+//   "Förnamn Efternamn:" → "Anna Svensson:"
+//   "Anna —" / "Anna –" / "Anna -"  (em/en-dash, eller bindestreck)
+//   "Anna (moderator):" / "Anna [moderator]:"
+//   Namn på egen rad följt av talartext (heading-liknande paragraf)
+//
 // Returnerar lista av unika namn samt en map paragraf-index → namn.
 
 import type { ParsedBlock } from "./parseDocument";
@@ -9,24 +16,76 @@ export interface SpeakerDetection {
   blockSpeaker: Map<number, { name: string; restHtml: string; restText: string }>;
 }
 
-const SPEAKER_RE = /^([A-ZÅÄÖ][A-ZÅÄÖa-zåäö-]{1,30}):\s+/;
+// Namn-token: börjar med versal (inkl Å/Ä/Ö), kan innehålla bindestreck.
+// Tillåter 1-2 ord (För-/efternamn) men håller längd i schack.
+const NAME_TOKEN = `[A-ZÅÄÖ][A-ZÅÄÖa-zåäö'’\\-]{1,24}`;
+const NAME_PART = `${NAME_TOKEN}(?:\\s+${NAME_TOKEN})?`;
+// Valfri parentes/hakparentes-roll: " (moderator)" / " [gäst]"
+const ROLE_OPT = `(?:\\s*[\\(\\[][^\\)\\]]{1,40}[\\)\\]])?`;
+// Avskiljare: kolon, em-dash, en-dash, bindestreck (ev omgivet av spaces)
+const SEP = `(?::|\\s+[—–-])`;
+
+const SPEAKER_RE = new RegExp(`^(${NAME_PART})${ROLE_OPT}${SEP}\\s+`);
+
+// Regex för "namn på egen rad" — hela paragrafens text matchar bara namnet.
+const NAME_ONLY_RE = new RegExp(`^(${NAME_PART})${ROLE_OPT}\\s*[:.]?\\s*$`);
+
+// Ord vi NÄSTAN ALDRIG vill behandla som talare även om de matchar mönstret.
+const STOPWORDS = new Set([
+  "Och", "Eller", "Men", "Om", "Att", "Det", "Den", "De", "En", "Ett",
+  "Vi", "Du", "Jag", "Han", "Hon", "Hen", "Ni", "Man",
+  "Kapitel", "Avsnitt", "Del", "Sida", "Sektion",
+  "Obs", "OBS", "Notera", "Anteckning",
+]);
+
+function isLikelyName(name: string): boolean {
+  const first = name.trim().split(/\s+/)[0];
+  if (STOPWORDS.has(first)) return false;
+  if (first.length < 2) return false;
+  return true;
+}
 
 export function detectSpeakers(blocks: ParsedBlock[]): SpeakerDetection {
   const counts = new Map<string, number>();
   const blockSpeaker = new Map<number, { name: string; restHtml: string; restText: string }>();
 
+  // Pass 1: direkta inline-mönster ("Anna: ...", "Anna — ...")
   blocks.forEach((b, i) => {
     if (b.type !== "paragraph") return;
     const m = b.plainText.match(SPEAKER_RE);
     if (!m) return;
     const name = m[1];
-    counts.set(name, (counts.get(name) || 0) + 1);
+    if (!isLikelyName(name)) return;
 
+    counts.set(name, (counts.get(name) || 0) + 1);
     const restText = b.plainText.slice(m[0].length);
-    // Ta bort "NAMN: " från HTML också — enklast: använd plain text-prefixet att
-    // hitta i innerText och klippa motsvarande från HTML-strängen försiktigt.
     const restHtml = stripPrefixFromHtml(b.html, m[0]);
     blockSpeaker.set(i, { name, restHtml, restText });
+  });
+
+  // Pass 2: "Namn på egen rad" — paragraf är bara ett namn, NÄSTA paragraf är repliken.
+  blocks.forEach((b, i) => {
+    if (b.type !== "paragraph") return;
+    if (blockSpeaker.has(i)) return;
+    const m = b.plainText.trim().match(NAME_ONLY_RE);
+    if (!m) return;
+    const name = m[1];
+    if (!isLikelyName(name)) return;
+
+    // Hitta nästa paragraf-block
+    let next = i + 1;
+    while (next < blocks.length && blocks[next].type !== "paragraph") next++;
+    if (next >= blocks.length) return;
+    const nb = blocks[next];
+    if (nb.type !== "paragraph") return;
+    if (blockSpeaker.has(next)) return;
+
+    // Markera nästa paragraf som tillhörande denna talare; ursprungs-paragrafen
+    // markeras som tom så den filtreras bort i bygg-steget.
+    counts.set(name, (counts.get(name) || 0) + 1);
+    blockSpeaker.set(next, { name, restHtml: nb.html, restText: nb.plainText });
+    // Töm name-only paragrafen så den inte producerar ett tomt kort
+    blockSpeaker.set(i, { name, restHtml: "", restText: "" });
   });
 
   // Tröskel: minst 2 unika namn × ≥3 förekomster totalt

@@ -2,7 +2,7 @@
 // Töms vid commit eller "Avbryt".
 
 import { create } from "zustand";
-import type { ParsedBlock } from "./parseDocument";
+import type { ParsedBlock, SkippedItem } from "./parseDocument";
 import type { PreviewCard, SplitStrategy, TextSize } from "./splitStrategies";
 
 export interface SpeakerMapping {
@@ -20,6 +20,7 @@ interface ImportState {
   rawBlocks: ParsedBlock[];
   detectedTitle: string | null;
   skipped: { images: number; tables: number; footnotes: number };
+  skippedItems: SkippedItem[];
 
   // Inställningar
   title: string;
@@ -39,6 +40,7 @@ interface ImportState {
   setRawBlocks: (b: ParsedBlock[]) => void;
   setDetectedTitle: (t: string | null) => void;
   setSkipped: (s: { images: number; tables: number; footnotes: number }) => void;
+  setSkippedItems: (items: SkippedItem[]) => void;
 
   setTitle: (t: string) => void;
   setTargetSeconds: (s: number) => void;
@@ -48,7 +50,7 @@ interface ImportState {
 
   setCards: (c: PreviewCard[]) => void;
   setSpeakers: (s: SpeakerMapping[]) => void;
-  updateSpeaker: (detectedName: string, patch: Partial<SpeakerMapping>) => void;
+  updateSpeaker: (tempId: string, patch: Partial<SpeakerMapping>) => void;
   markDirty: () => void;
 
   reset: () => void;
@@ -60,6 +62,7 @@ const initial = {
   rawBlocks: [],
   detectedTitle: null,
   skipped: { images: 0, tables: 0, footnotes: 0 },
+  skippedItems: [] as SkippedItem[],
 
   title: "",
   targetSeconds: 5 * 60,
@@ -81,6 +84,7 @@ export const useImportStore = create<ImportState>((set) => ({
   setRawBlocks: (b) => set({ rawBlocks: b }),
   setDetectedTitle: (t) => set({ detectedTitle: t }),
   setSkipped: (s) => set({ skipped: s }),
+  setSkippedItems: (items) => set({ skippedItems: items }),
 
   setTitle: (t) => set({ title: t }),
   setTargetSeconds: (s) => set({ targetSeconds: s }),
@@ -90,10 +94,10 @@ export const useImportStore = create<ImportState>((set) => ({
 
   setCards: (c) => set({ cards: c }),
   setSpeakers: (s) => set({ speakers: s }),
-  updateSpeaker: (detectedName, patch) =>
+  updateSpeaker: (tempId, patch) =>
     set((state) => ({
       speakers: state.speakers.map((s) =>
-        s.detectedName === detectedName ? { ...s, ...patch } : s
+        s.tempId === tempId ? { ...s, ...patch } : s
       ),
     })),
   markDirty: () => set({ dirty: true }),

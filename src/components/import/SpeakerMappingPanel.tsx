@@ -1,5 +1,5 @@
 import { useImportStore } from "@/lib/import/importStore";
-import { Label } from "@/components/ui/label";
+import { Users } from "lucide-react";
 
 interface ExistingPanelist {
   id: string;
@@ -18,32 +18,59 @@ export function SpeakerMappingPanel({ existing }: Props) {
 
   return (
     <div className="bg-surface rounded-2xl shadow-card p-5 space-y-3">
-      <div>
-        <h3 className="font-display text-[16px] font-semibold">Talare upptäckta</h3>
-        <p className="text-[13px] text-muted-foreground">
-          Vi hittade {speakers.length} talare i dokumentet. Välj hur de ska hanteras.
-        </p>
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-lg bg-accent-blue/10 text-accent-blue flex items-center justify-center shrink-0">
+          <Users className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-display text-[15px] font-semibold leading-tight">
+            {speakers.length} talare upptäckta
+          </h3>
+          <p className="text-[12px] text-muted-foreground">
+            Justera namn eller välj vad som ska hända med varje
+          </p>
+        </div>
       </div>
+
       <div className="space-y-2">
         {speakers.map((s) => (
           <div
-            key={s.detectedName}
+            key={s.tempId}
             className="flex items-center gap-3 p-3 rounded-xl bg-surface-2"
           >
             <div
               className="h-7 w-7 rounded-full shrink-0"
               style={{ backgroundColor: s.color || "#F5D76E" }}
+              aria-hidden
             />
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-medium truncate">{s.detectedName}</p>
-            </div>
+            <input
+              type="text"
+              value={s.detectedName}
+              onChange={(e) =>
+                updateSpeaker(s.tempId, { detectedName: e.target.value })
+              }
+              className="flex-1 min-w-0 bg-transparent text-[14px] font-medium outline-none focus:ring-1 focus:ring-accent-blue rounded px-1 py-0.5"
+              aria-label="Talarens namn"
+            />
             <select
               value={s.action === "existing" ? `e:${s.existingPanelistId}` : s.action}
               onChange={(e) => {
                 const v = e.target.value;
-                if (v === "new") updateSpeaker(s.detectedName, { action: "new", existingPanelistId: undefined });
-                else if (v === "ignore") updateSpeaker(s.detectedName, { action: "ignore", existingPanelistId: undefined });
-                else if (v.startsWith("e:")) updateSpeaker(s.detectedName, { action: "existing", existingPanelistId: v.slice(2) });
+                if (v === "new")
+                  updateSpeaker(s.tempId, {
+                    action: "new",
+                    existingPanelistId: undefined,
+                  });
+                else if (v === "ignore")
+                  updateSpeaker(s.tempId, {
+                    action: "ignore",
+                    existingPanelistId: undefined,
+                  });
+                else if (v.startsWith("e:"))
+                  updateSpeaker(s.tempId, {
+                    action: "existing",
+                    existingPanelistId: v.slice(2),
+                  });
               }}
               className="h-9 rounded-lg bg-background border border-border text-[13px] px-3"
             >
@@ -53,7 +80,7 @@ export function SpeakerMappingPanel({ existing }: Props) {
                   Koppla till {p.name || "(namnlös)"}
                 </option>
               ))}
-              <option value="ignore">Ignorera</option>
+              <option value="ignore">Ignorera (inte en talare)</option>
             </select>
           </div>
         ))}
