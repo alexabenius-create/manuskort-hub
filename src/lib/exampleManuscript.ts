@@ -203,6 +203,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "max 3 frågor",
       cue_teal: "Sista ordet",
+      cues: [
+        { kind: "energy", text: "max 3 frågor" },
+        { kind: "action", text: "Sista ordet" },
+      ],
       is_panic_card: false,
     },
     {
