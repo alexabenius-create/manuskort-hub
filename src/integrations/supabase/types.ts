@@ -21,6 +21,7 @@ export type Database = {
           cue_amber: string
           cue_red: string
           cue_teal: string
+          cues: Json
           end_time: string
           id: string
           is_panic_card: boolean
@@ -40,6 +41,7 @@ export type Database = {
           cue_amber?: string
           cue_red?: string
           cue_teal?: string
+          cues?: Json
           end_time?: string
           id?: string
           is_panic_card?: boolean
@@ -59,6 +61,7 @@ export type Database = {
           cue_amber?: string
           cue_red?: string
           cue_teal?: string
+          cues?: Json
           end_time?: string
           id?: string
           is_panic_card?: boolean
