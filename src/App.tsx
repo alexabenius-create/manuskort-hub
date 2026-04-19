@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 const Library = lazy(() => import("./pages/Library"));
 const Editor = lazy(() => import("./pages/Editor"));
 const EditorV2 = lazy(() => import("./pages/EditorV2"));
+const EditorV3 = lazy(() => import("./pages/EditorV3"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Import = lazy(() => import("./pages/Import"));
@@ -58,6 +59,7 @@ const App = () => (
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
                   <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
                   <Route path="/manus/:id/v2" element={<RequireAuth><EditorV2 /></RequireAuth>} />
+                  <Route path="/manus/:id/v3" element={<RequireAuth><EditorV3 /></RequireAuth>} />
                   <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                   <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
                   <Route path="/checkout/return" element={<CheckoutReturn />} />

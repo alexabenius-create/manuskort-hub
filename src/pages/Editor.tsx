@@ -925,6 +925,23 @@ export default function Editor() {
             </Tooltip>
           )}
 
+          {/* Admin-only: öppna experimentell editor v3 */}
+          {tier === "admin" && (
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <Link
+                  to={`/manus/${id}/v3`}
+                  className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-accent-blue/15 text-accent-blue text-[10px] font-mono uppercase tracking-widest border border-accent-blue/30 hover:bg-accent-blue/25 transition-colors"
+                >
+                  v3
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                v3 — v1-layout med v2-flöde (admin)
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Höger sida — primära åtgärder + sekundära ikoner */}
           <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
             {/* Måltid — ikon med diff-prick */}
