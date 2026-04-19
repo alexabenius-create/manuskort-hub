@@ -1,93 +1,55 @@
 
 
-## Mål
+## Diagnos
 
-Behåll v1:s kort-layout (boxar med chrome: nummer, drag-handle, anteckning, cues, tider, more-menu) men byt ut den interna text-motorn mot v2:s "en lång editor + virtuella sidbrytningar". Resultat: Word-flöde mellan kort, men varje kort ser ut och fungerar som idag.
+V3 är fundamentalt fel byggd. Tre problem:
 
-## Princip
+1. **Kan inte redigera**: Chrome-ramen ligger `absolute` ovanpå editorn med `bg-surface/40`. Även med `pointer-events: none` på containern fångar topp-meta och bottenrad (`pointer-events-auto`) en stor del av kort-ytan → klick på text träffar chrome istället för editorn. Dessutom har ramen en bakgrundsfärg som täcker texten visuellt.
+
+2. **Textöverlapp**: Chrome ritas ovanpå texten istället för **runt** den. Editorn vet inget om att det ska finnas tomrum vid varje sidbrytning där meta/notes/cues ska få plats.
+
+3. **Fel mental modell**: V3 försökte vara "v2 + overlay-chrome". Men du ville ha **v1:s layout** (kort som boxar staplade på varandra, med luft mellan, chrome i kanten av varje box) **med v2:s sömlösa textmotor**.
+
+## Rätt approach: spacer-decorations
+
+Bygg om `EditorV3` så texten **flyter genom riktiga kort-boxar** istället för att chrome läggs ovanpå:
 
 ```text
-┌─ Kort 01 ─ [drag] ─ [⏸ ⚑ ⏰] ─ [⋯] ─┐
-│  En enda Tiptap-instans renderar     │
-│  HELA manuset. CSS/overlay klipper   │
-│  visuellt vid varje virtuell         │
-│  sidbrytning och ritar chrome runt.  │
-└──────────────────────────────────────┘
-       ↓ flödar sömlöst
-┌─ Kort 02 ─ [drag] ─ [⏸ ⚑ ⏰] ─ [⋯] ─┐
-│  ...samma editor, fortsättning       │
-└──────────────────────────────────────┘
+┌─ Kort 01 ──────────────[meta]──┐
+│ Lorem ipsum dolor sit amet     │  ← editor-text (DEL 1)
+│ consectetur adipiscing elit    │
+│ [anteckning] [cues]            │
+└────────────────────────────────┘
+   ↓ luft (gap, ej editerbar)
+┌─ Kort 02 ──────────────[meta]──┐
+│ Sed do eiusmod tempor incidi…  │  ← editor-text (DEL 2)
+└────────────────────────────────┘
 ```
 
-Inget caret-hopp mellan editorer, ingen push/pull-logik. ProseMirror sköter allt.
+### Hur det löses tekniskt
 
-## Två lager
+**En enda Tiptap-instans** men vid varje virtuell sidbrytning injiceras en **ProseMirror-decoration** (widget) som är ett tomt block med exakt höjd = `chrome_botten + gap + chrome_topp + meta_höjd`. Decorations är **inte del av dokumentet** → caret hoppar över dem automatiskt, ProseMirror räknar dem inte i textflödet. Texten "delas" visuellt utan att vi rör innehållet.
 
-**Lager 1 — Editor (en enda instans)**
-- `TiptapDocEditor` (från v2) renderas absolut-positionerad över hela kort-stacken.
-- Bakgrund transparent. Padding/spacing matchar kort-chromen så texten landar rätt.
+Chrome-boxarna ritas absolut-positionerade per sidbrytning, men **bara meta-raden överst och notes/cues-raden underst** — själva text-zonen mitt i är helt tom (ingen bakgrund, inga pointer-events). Texten i editorn syns rakt igenom.
 
-**Lager 2 — Kort-chrome (DOM-rader)**
-- För varje virtuell sidbrytning renderas en "kort-frame" med:
-  - Topp-rad: nummer, drag-handle, paus/flagga/klocka, more-menu, +Signal
-  - Botten-rad: anteckningsfält, cues, tider, ord-räknare, varningar
-- Frame-höjden styrs av `MAX_ROWS_BY_SIZE * lineHeight` så texten inuti exakt fyller boxen.
-
-## Plan (steg)
-
-**1. `EditorV3.tsx` (admin-only, parallellt med v1 och v2)**
-- Route `/manus/:id/v3`. Knapp "v3" i v1-topbar för admin (bredvid v2-knappen).
-- Laddar manus + kort + panelister som v1.
-
-**2. `CardFrameStack.tsx` (ny)**
-- Tar `pageBreaks: number[]` (Y-positioner från PageBreakOverlay-logik) + `cards: Card[]`.
-- Renderar N stycken `<CardFrame>` i en kolumn. Varje frame har v1:s chrome (kopierad från `ManusCardV2.tsx`) men ingen Tiptap-editor inuti — bara en tom `<div>` med rätt höjd som "håller plats" för texten.
-
-**3. `DocEditorOverlay.tsx` (ny, eller utbyggd PageBreakOverlay)**
-- En enda `TiptapDocEditor` placeras `position: absolute` ovanpå hela frame-stacken.
-- CSS gap mellan frames + padding inuti frames ger naturlig "luft" mellan korten där editor-texten visuellt avbryts. (Tricket: editor-DOM:en har transparent bakgrund och `padding-block` som matchar gap+chrome-höjd vid varje sidbrytning — vi injicerar detta via decorations.)
-- Alternativ enklare metod: använd ProseMirror **Decorations** för att injicera en osynlig spacer-div vid varje sidbrytning som puttar ner nästa stycke exakt så mycket att det landar i nästa frame.
-
-**4. Aktivt kort + chrome-actions**
-- Spåra vilken sidbrytnings-region caret befinner sig i → markera den frame som "aktiv".
-- Anteckning/cues/tider/notes redigeras i den aktiva framen och sparas till motsvarande `cards`-rad (matchad via `planCardSync` från `docSplit.ts`).
-- More-menu (radera, duplicera, dela): manipulerar texten i editorn (ta bort range, infoga break-marker, etc).
-
-**5. Drag-omordning**
-- Eftersom korten är virtuella måste drag flytta **textintervall** i editorn.
-- I v3 första iterationen: **drag inaktiverat** (motiveras med "korten följer textflödet"). Lägg till i nästa iteration via en explicit "flytta upp/ner"-knapp som klipper ut intervallet och klistrar in vid önskad position.
-
-**6. Spara → cards**
-- Identiskt med v2: `splitDocToCards` + `planCardSync` → upsert/delete.
-- Notes/cues/tider sparas separat per matchad `cards.id` (samma flöde som v1).
-
-## Risker & svar
-
-- **Att få editor-text att exakt landa i frame-boxar**: Decorations som injicerar en spacer med exakt höjd `chrome_botten + gap + chrome_topp` vid varje sidbrytning. Mätning sker mot samma geometri som presentation.
-- **Klick på chrome ska inte stjäla fokus från editorn**: chrome-frames får `pointer-events: none` på själva text-zonen; bara knappar/inputs får `pointer-events: auto`.
-- **Drag**: avstängt i v3 v1.
-- **Panelist-sidebar + bubble-menu**: fungerar oförändrat (en editor → en selection).
-
-## Filer
+## Konkreta ändringar
 
 | Fil | Ändring |
 |-----|---------|
-| `src/pages/EditorV3.tsx` | **Ny** — admin-only |
-| `src/components/editor/CardFrameStack.tsx` | **Ny** — chrome-boxar |
-| `src/components/editor/CardFrame.tsx` | **Ny** — en boxs chrome (kopierad från ManusCardV2 minus editor) |
-| `src/components/editor/DocEditorWithFrames.tsx` | **Ny** — kombinerar TiptapDocEditor + CardFrameStack via decorations |
-| `src/lib/docFrameDecorations.ts` | **Ny** — ProseMirror-decorations som injicerar spacers vid sidbrytningar |
-| `src/App.tsx` | Route `/manus/:id/v3` |
-| `src/pages/Editor.tsx` | "v3"-knapp för admin |
+| `src/lib/docFrameDecorations.ts` | **Ny** — Tiptap-extension som lägger widget-decoration vid varje sidbrytnings-position med konfigurerbar höjd |
+| `src/components/editor/TiptapDocEditor.tsx` | Lägg till prop `breakOffsets: number[]` + `gapHeight: number` som driver decorations |
+| `src/components/editor/CardChromeFrame.tsx` | Ta bort bg-färg på själva ram-containern. Behåll bara meta-rad (top) och notes/cues-rad (bottom) som riktiga DOM-element. Mitten ska vara helt transparent och `pointer-events-none`. Border ritas runt **hela** ramen visuellt men **bryter** för text-zonen (eller använd en outline som inte stör). |
+| `src/pages/EditorV3.tsx` | Beräkna text-offsets för sidbrytningar (inte Y-pixlar). Skicka offsets till editorn för decorations. Skicka meta-höjd + footer-höjd så decorations kan reservera rätt höjd för chromen. |
 
-## Vad vi INTE gör nu
+### Detaljer
 
-- Drag-omordning (kommer i v3.1 via "flytta upp/ner")
-- Manuella sidbrytningar (Ctrl+Enter) — kan läggas till efter
-- Migrering av v1-användare — v3 är admin-experiment tills vi vet att flödet är solitt
+- **Sidbrytnings-offsets**: använd `splitDocToCards` för att räkna fram fragment, mät text-längd per fragment, och konvertera till ProseMirror-positioner via `editor.state.doc.resolve()`-walk (text-offset → doc-pos).
+- **Decoration-höjd**: ~28px för meta-topp + ~32px för notes/cues-bottten + 16px gap = ~76px reserverad luft mellan kort.
+- **Klick-zoner**: chrome har `pointer-events: none` överallt utom på `<button>`, `<input>`, `<textarea>`, dropdown-triggers (de får `pointer-events: auto` individuellt).
+- **Editor-bakgrund**: behålls transparent. Kort-boxens bakgrund ritas av chrome-frame, men bara som tunn border + topp/botten-band — inte över text.
 
 ## Frågor
 
-1. **Drag-omordning**: ok att stänga av i v3 v1 och lösa med "flytta upp/ner"-knappar i more-menu i nästa iteration?
-2. **Decorations vs CSS-grid**: föredrar du den robustare decoration-baserade lösningen (svårare att bygga, exakt) eller en enklare CSS-grid där editorn klipps i flera kolumner (snabbare, viss risk för text-clipping vid kanter)? Min rekommendation: **decorations**.
+1. **Drag/omordning**: håll inaktiverat i denna iteration också, eller ska jag lägga in "flytta upp/ner"-knappar i more-menu redan nu?
+2. **Notes-placering**: i v1 ligger notes som sidokolumn (höger om texten). I v3 lägger jag dem under texten inom samma kort-box (enklare med decorations). OK?
 
