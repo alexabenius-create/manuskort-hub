@@ -147,12 +147,14 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
       >
         {buttons.map(({ key, label, icon: Icon, isActive, onClick }) => {
           const active = isActive();
+          const isMergeDisabled = key === "merge-prev" && !mergeCheck.fits;
           return (
             <button
               key={key}
               type="button"
               aria-label={label}
               aria-pressed={active}
+              aria-disabled={isMergeDisabled}
               title={label}
               onClick={onClick}
               className={cn(
@@ -160,6 +162,7 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
                 "text-foreground/80 hover:bg-muted hover:text-foreground",
                 active && "bg-foreground text-background hover:bg-foreground hover:text-background",
                 key === "pause" && "text-[hsl(var(--cue-red))] hover:bg-[hsl(var(--cue-red)/0.12)] hover:text-[hsl(var(--cue-red))]",
+                isMergeDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-foreground/80",
               )}
             >
               <Icon className="h-4 w-4" />
