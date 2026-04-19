@@ -12,8 +12,10 @@
 
 export type HeadingMode = "title" | "strong";
 
+import { applySmartQuotesInPlace } from "./smartQuotes";
+
 const ALLOWED_INLINE = new Set(["STRONG", "B", "EM", "I", "U", "S", "MARK", "A", "BR", "SPAN"]);
-const ALLOWED_BLOCK = new Set(["P", "UL", "OL", "LI"]);
+const ALLOWED_BLOCK = new Set(["P", "UL", "OL", "LI", "BLOCKQUOTE"]);
 
 function isYellowHighlight(style: string): boolean {
   const s = style.toLowerCase();
