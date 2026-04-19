@@ -16,7 +16,7 @@ import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
 import { CardBlock } from "@/lib/cardBlockNode";
-import { joinCardBackward, splitCardBlock } from "@/lib/cardBlockCommands";
+import { joinCardBackward, splitCardBlock, moveCardBlockBySteps } from "@/lib/cardBlockCommands";
 import { computeMaxWordsPerCard } from "@/lib/smartPasteThreshold";
 import { splitPastedHtml, plainTextToHtml } from "@/lib/smartPasteSplit";
 
