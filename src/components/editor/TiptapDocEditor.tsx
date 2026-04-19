@@ -96,6 +96,26 @@ export function TiptapDocEditor({
       attributes: {
         class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
+      handleDOMEvents: {
+        // Släpp igenom dragstart från våra egna drag-handles så PM inte
+        // tar över med sin default node-drag.
+        dragstart: (_view, event) => {
+          const target = event.target as HTMLElement | null;
+          if (target && target.closest('[data-drag-handle="true"]')) {
+            // returnera false → PM hanterar inte; vår onDragStart får köra
+            return false;
+          }
+          return false;
+        },
+        // Förhindra att PM försöker tolka drop över våra zoner
+        drop: (_view, event) => {
+          const target = event.target as HTMLElement | null;
+          if (target && target.closest('[data-card-drop-zone="true"]')) {
+            return true; // konsumerat — vår onDrop tog hand om det
+          }
+          return false;
+        },
+      },
       handleKeyDown: (_view, event) => {
         if (
           event.key === "/" &&
