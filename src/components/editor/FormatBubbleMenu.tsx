@@ -1,9 +1,10 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, SplitSquareVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
+import { splitCardBlock } from "@/lib/cardBlockCommands";
 
 interface Props {
   editor: Editor | null;
@@ -62,6 +63,16 @@ export function FormatBubbleMenu({ editor }: Props) {
       icon: Pause,
       isActive: () => false,
       onClick: () => editor.chain().focus().insertPause().run(),
+    },
+    {
+      key: "split",
+      label: "Dela kort här (⌘+Enter)",
+      icon: SplitSquareVertical,
+      isActive: () => false,
+      onClick: () => {
+        splitCardBlock(editor.state, editor.view.dispatch);
+        editor.view.focus();
+      },
     },
   ];
 
