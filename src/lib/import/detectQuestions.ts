@@ -163,7 +163,7 @@ function findMatches(text: string, panelists: KnownPanelist[]): Match[] {
 }
 
 /**
- * Wrappar tilltal/frågor till panelister i <span data-question-to>.
+ * Wrappar tilltal/frågor till panelister i <span data-panelist-id>.
  * Operatar på text-noder inuti html, bevarar inline-markup utanför.
  *
  * Strategi: parsa HTML, walka text-noder, för varje text-nod hitta matches
@@ -185,14 +185,11 @@ export function annotateQuestionsInHtml(
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let n: Node | null = walker.nextNode();
   while (n) {
-    // Hoppa över text inuti existerande question/panelist-spans
+    // Hoppa över text inuti existerande panelist-spans
     let parent: HTMLElement | null = (n as Text).parentElement;
     let inside = false;
     while (parent && parent !== root) {
-      if (
-        parent.hasAttribute("data-question-to") ||
-        parent.hasAttribute("data-panelist-id")
-      ) {
+      if (parent.hasAttribute("data-panelist-id")) {
         inside = true;
         break;
       }
