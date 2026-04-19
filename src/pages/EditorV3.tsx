@@ -221,9 +221,33 @@ export default function EditorV3() {
   const persist = useCallback(async () => {
     const ed = editorRef.current;
     if (!ed || !user || !manuscript) return;
+    if (!hydratedRef.current) return; // extra skydd
     setSaving("saving");
     try {
-      // Serialisera doc-noder till HTML via PM:s DOMSerializer
+      // STEG 1: säkerställ att varje cardBlock har ett cardId. Genererar
+      // UUID lokalt för nya kort och skriver tillbaka i editor-state innan
+      // vi serialiserar — då blir DB-skriv idempotent (upsert på id).
+      {
+        const tr = ed.state.tr;
+        let changed = false;
+        ed.state.doc.descendants((node, pos) => {
+          if (node.type.name !== "cardBlock") return false;
+          if (!node.attrs.cardId) {
+            tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              cardId: crypto.randomUUID(),
+            });
+            changed = true;
+          }
+          return false;
+        });
+        if (changed) {
+          tr.setMeta("addToHistory", false);
+          ed.view.dispatch(tr);
+        }
+      }
+
+      // STEG 2: serialisera doc → kort-noder
       const serializer = DOMSerializer.fromSchema(ed.schema);
       const serializeNode = (node: import("prosemirror-model").Node): string => {
         const div = document.createElement("div");
@@ -237,24 +261,28 @@ export default function EditorV3() {
         userId: user.id,
       });
 
-      // Updates
+      // STEG 3: updates
       for (const u of plan.updates) {
         const { error } = await supabase.from("cards").update(u.patch).eq("id", u.id);
         if (error) throw error;
       }
 
-      // Inserts
+      // STEG 4: inserts — använd upsert med vårt lokalt-genererade id
       const inserted: Card[] = [];
       if (plan.inserts.length > 0) {
+        const rowsWithIds = plan.inserts.map((i) => ({
+          ...i.row,
+          id: i.tempCardId ?? crypto.randomUUID(),
+        }));
         const { data, error } = await supabase
           .from("cards")
-          .insert(plan.inserts.map((i) => i.row))
+          .upsert(rowsWithIds, { onConflict: "id" })
           .select();
         if (error) throw error;
         if (data) inserted.push(...data);
       }
 
-      // Deletes
+      // STEG 5: deletes
       if (plan.deletes.length > 0) {
         const { error } = await supabase.from("cards").delete().in("id", plan.deletes);
         if (error) throw error;
@@ -272,27 +300,6 @@ export default function EditorV3() {
       next.push(...inserted);
       next.sort((a, b) => a.position - b.position);
       setCards(next);
-
-      // Sätt cardId på nya cardBlock-noder så att nästa save inte skapar dubletter
-      if (inserted.length > 0) {
-        const tr = ed.state.tr;
-        let posIdx = 0;
-        ed.state.doc.descendants((node, pos) => {
-          if (node.type.name !== "cardBlock") return false;
-          if (!node.attrs.cardId) {
-            const insertedRow = inserted[posIdx - (next.length - inserted.length)];
-            // Enklare: matcha via position
-            const matching = inserted.find((r) => r.position === posIdx);
-            if (matching) {
-              tr.setNodeMarkup(pos, undefined, { ...node.attrs, cardId: matching.id });
-            }
-          }
-          posIdx++;
-          return false;
-        });
-        tr.setMeta("addToHistory", false);
-        ed.view.dispatch(tr);
-      }
 
       setSaving("saved");
       window.setTimeout(() => setSaving((s) => (s === "saved" ? "idle" : s)), 1500);
