@@ -36,10 +36,6 @@ export function TiptapDocEditor({
   onEditorReady,
   frameBreaks = [],
 }: Props) {
-  // Stabil ref till options-objektet — vi muterar `breaks` på det
-  // mellan renderingar utan att skapa om extensionen.
-  const frameOptions = useMemo(() => ({ breaks: [] as FrameBreak[] }), []);
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
