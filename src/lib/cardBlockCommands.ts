@@ -9,6 +9,7 @@
  *   - insertCardBlockAfter / insertCardBlockBefore: tomt nytt kort
  */
 import type { EditorState, Transaction } from "prosemirror-state";
+import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import type { Node as PMNode, NodeType } from "prosemirror-model";
 
@@ -157,9 +158,7 @@ export function insertCardBlockAfter(
     );
     const insertAt = pos + node.nodeSize;
     const tr = state.tr.insert(insertAt, newCard);
-    // Sätt selection till början av nya kortet (insertAt + 2 = inne i paragraph)
-    const sel = (tr.doc.resolve(insertAt + 2));
-    tr.setSelection(state.selection.constructor.near(sel) as never);
+    tr.setSelection(TextSelection.near(tr.doc.resolve(insertAt + 2)));
     dispatch(tr.scrollIntoView());
   }
   return true;
@@ -185,8 +184,7 @@ export function insertCardBlockBefore(
       paragraphType.create(),
     );
     const tr = state.tr.insert(pos, newCard);
-    const sel = tr.doc.resolve(pos + 2);
-    tr.setSelection(state.selection.constructor.near(sel) as never);
+    tr.setSelection(TextSelection.near(tr.doc.resolve(pos + 2)));
     dispatch(tr.scrollIntoView());
   }
   return true;
