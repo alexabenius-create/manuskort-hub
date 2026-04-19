@@ -399,21 +399,10 @@ export default function EditorV3() {
         <main className="flex-1 w-full">
           <div className="max-w-[900px] mx-auto py-8 px-4 relative">
             <div className="relative">
-              {/* Editor — hela texten i en instans */}
-              <div className="relative z-0">
-                <TiptapDocEditor
-                  value={docHtml}
-                  onChange={handleDocChange}
-                  size={textSize}
-                  onEditorReady={handleEditorReady}
-                  frameBreaks={frameBreaks}
-                />
-              </div>
-
-              {/* Chrome-overlay — header + footer per fragment, ABSOLUT.
-                  Containern släpper igenom alla pointer-events; bara
-                  header/footer-elementen själva fångar dem. */}
-              <div className="absolute inset-0 pointer-events-none z-10">
+              {/* Chrome-lager — bg-surface kort-boxar UNDER editorn (z-0).
+                  Editorn har transparent bakgrund så boxarna syns. Header/footer
+                  på chromen kan klickas tack vare pointer-events-auto. */}
+              <div className="absolute inset-0 z-0 pointer-events-none">
                 {layout.map((f, i) => {
                   const card = cards[i] ?? null;
                   return (
@@ -422,7 +411,7 @@ export default function EditorV3() {
                       card={card}
                       number={i + 1}
                       total={layout.length}
-                      topPx={f.topPx - CHROME_HEADER_HEIGHT}
+                      topPx={f.topPx}
                       heightPx={f.heightPx}
                       isActive={i === activeIdx}
                       contentHtml={f.html}
@@ -436,10 +425,21 @@ export default function EditorV3() {
                   );
                 })}
               </div>
+
+              {/* Editor — text ovanpå chromen, transparent bg */}
+              <div className="relative z-10">
+                <TiptapDocEditor
+                  value={docHtml}
+                  onChange={handleDocChange}
+                  size={textSize}
+                  onEditorReady={handleEditorReady}
+                  frameBreaks={frameBreaks}
+                />
+              </div>
             </div>
 
             <p className="mt-6 text-[12px] text-muted-foreground font-mono text-center">
-              v3 — v1:s kort-chrome ovanpå v2:s flödes-editor. Drag avstängt; ordning följer texten.
+              v3 — v1:s kort-layout ovanpå v2:s flödes-editor. Drag avstängt; ordning följer texten.
             </p>
           </div>
         </main>
