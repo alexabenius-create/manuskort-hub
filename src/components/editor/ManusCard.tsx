@@ -330,21 +330,47 @@ export function ManusCard({
             </div>
           )}
         </div>
-        {showNotes && (
+        {notesPanelExpanded && (
           <div data-tour="card.notes" className="card-panel-notes w-full md:w-[220px] bg-surface rounded-xl shadow-subtle px-5 py-5 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
-              <HelpDot text="Privata noter till dig själv som inte ska läsas upp — t.ex. ”vänta in applåd”, ”titta upp här”, eller bakgrundsfakta. Syns bara i redigeringsläget, inte i ett framtida presentationsläge." />
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <p className="text-[12px] font-medium text-muted-foreground">Anteckningar</p>
+                <HelpDot text="Privata noter till dig själv som inte ska läsas upp — t.ex. ”vänta in applåd”, ”titta upp här”, eller bakgrundsfakta. Syns bara i redigeringsläget, inte i ett framtida presentationsläge." />
+              </div>
+              {!hasNotes && notesDisplay === "auto" && (
+                <button
+                  type="button"
+                  onClick={() => setNotesOpen(false)}
+                  className="text-faint hover:text-muted-foreground"
+                  aria-label="Stäng anteckning"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </div>
             <textarea
               value={card.notes}
               onChange={(e) => onLocalChange({ notes: e.target.value })}
               placeholder="Egna noter, inte för uppläsning"
+              autoFocus={notesOpen && !hasNotes}
               className="flex-1 min-h-[100px] w-full text-[13px] leading-[1.6] bg-transparent border-0 outline-none resize-none text-foreground placeholder:text-faint"
             />
           </div>
         )}
       </div>
+
+      {/* Kollapsad anteckningsbar — visas i auto-läge när panelen är tom */}
+      {showAddNoteBar && (
+        <button
+          type="button"
+          onClick={() => setNotesOpen(true)}
+          className="self-start mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+          aria-label="Lägg till anteckning"
+        >
+          <HelpCircle className="h-3 w-3" />
+          + Anteckning
+        </button>
+      )}
 
       {/* Panelist selection toolbar — visas under Manus när text är markerad */}
       {isModerator && panelists.length > 0 && (
