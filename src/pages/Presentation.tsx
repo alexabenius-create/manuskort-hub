@@ -327,18 +327,22 @@ export default function Presentation() {
   // Tap på desktop med klick på huvudytan — bara om INTE på interaktiv zon
   // (vi använder bara touch-handlers; mus-klick går via knapparna)
 
-  // Per-kort start-elapsed (för progress-ring): summera planerade tider för tidigare kort
+  // Per-kort start-elapsed: summera planerade tider för tidigare kort.
+  // Prioritet: target_seconds > start/end-diff.
   const cardStartedAtElapsed = useMemo(() => {
     let sum = 0;
     for (let i = 0; i < currentIndex; i++) {
       const c = cards[i];
+      if (typeof c.target_seconds === "number" && c.target_seconds > 0) {
+        sum += c.target_seconds;
+        continue;
+      }
       const start = c.start_time;
       const end = c.end_time;
-      // Försök beräkna planerad tid för kortet
       if (start && end) {
-        const ms = parseInt(end.split(":").reduce((a, p) => a * 60 + parseInt(p, 10), 0).toString())
-                 - parseInt(start.split(":").reduce((a, p) => a * 60 + parseInt(p, 10), 0).toString());
-        if (ms > 0) sum += ms;
+        const toSec = (s: string) => s.split(":").reduce((a, p) => a * 60 + parseInt(p, 10), 0);
+        const diff = toSec(end) - toSec(start);
+        if (diff > 0) sum += diff;
       }
     }
     return sum;
@@ -449,6 +453,7 @@ export default function Presentation() {
           onPanic={handlePanic}
           elapsedSeconds={timer.elapsedSeconds}
           cardStartedAtElapsedSeconds={cardStartedAtElapsed}
+          cardTargetSeconds={current.target_seconds ?? null}
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
