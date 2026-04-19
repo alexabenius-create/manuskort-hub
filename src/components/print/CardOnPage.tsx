@@ -8,9 +8,10 @@ export interface CardOnPageProps {
   manuscriptTitle: string;
   totalTargetSeconds: number | null;
   cardNumberLabel: string;       // "03 / 10" eller "03a / 10"
+  cardNumberShort: string;       // "1" eller "1A" (för sidfot)
   totalCardsLabel: string;       // "Sida 3 / 10" eller "Sida 3a / 10"
   roleLabel: string;             // "TALARE" / "ANNA SJÖBERG"
-  roleColor: string;             // hex för vänsterkant
+  roleColor: string;             // hex för rolletikett
   cumulativeStartSeconds: number | null;
   cumulativeEndSeconds: number | null;
   targetSeconds: number | null;
