@@ -434,6 +434,33 @@ export default function EditorV3() {
     );
   }, [cards, manuscript]);
 
+  /**
+   * Sluttid (sekunder) på sista kortet enligt kedjan av manuella måltider —
+   * endast om ALLA kort har manuell måltid satt. Räknas från live-doc i
+   * editorn när dialogen öppnas (annars null).
+   */
+  const chainEndSeconds = useMemo<number | null>(() => {
+    if (!targetDialogOpen) return null;
+    const ed = editorRef.current;
+    if (!ed) return null;
+    let acc = 0;
+    let count = 0;
+    let broken = false;
+    ed.state.doc.forEach((n) => {
+      if (broken) return;
+      if (n.type.name !== "cardBlock") return;
+      const attrs = n.attrs as { targetSeconds: number | null; targetSecondsIsManual: boolean };
+      if (!attrs.targetSecondsIsManual || attrs.targetSeconds == null || attrs.targetSeconds <= 0) {
+        broken = true;
+        return;
+      }
+      acc += attrs.targetSeconds;
+      count += 1;
+    });
+    if (broken || count === 0) return null;
+    return acc + (count - 1); // +1s paus mellan korten
+  }, [targetDialogOpen]);
+
   if (loading || !manuscript) {
     return (
       <div className="min-h-screen flex items-center justify-center">
