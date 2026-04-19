@@ -28,7 +28,6 @@ import {
   ArrowLeft,
   Save,
   Users,
-  RotateCcw,
   Target,
   Settings2,
   Printer,
