@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notesCol: {
-    width: "36%",
+    width: "25%",
     borderLeftWidth: 0.6,
     borderLeftColor: "#D8D8D8",
     paddingLeft: 12,
