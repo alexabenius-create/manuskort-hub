@@ -209,6 +209,8 @@ export default function EditorV3() {
   // Debounced autosave
   const handleDocChange = (html: string) => {
     setDocHtml(html);
+    // Skydd mot race: triggar inte spara förrän hydrering är klar
+    if (!hydratedRef.current) return;
     setSaving("idle");
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
