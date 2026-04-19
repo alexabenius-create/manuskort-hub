@@ -180,7 +180,11 @@ export function ManusCardV2({
         <Sep />
         <span className="px-1 tabular-nums">{words} ord</span>
         <span className="opacity-60">·</span>
-        <span className="px-1 tabular-nums">~{formatDuration(seconds)}</span>
+        <TargetTimePopover
+          value={card.target_seconds ?? null}
+          estimated={seconds}
+          onChange={(v) => onLocalChange({ target_seconds: v } as Partial<Card>)}
+        />
 
         {card.is_panic_card && (
           <>
