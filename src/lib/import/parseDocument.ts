@@ -56,8 +56,10 @@ function htmlToParsedBlocks(html: string): { blocks: ParsedBlock[]; skippedItems
   let currentSection = "Början av dokumentet";
 
   const collectFromContainer = (container: Element) => {
-    // Bilder
-    container.querySelectorAll("img").forEach((img) => {
+    // Bilder — inklusive containern själv om den är en img
+    const imgs: Element[] = Array.from(container.querySelectorAll("img"));
+    if (container.tagName === "IMG") imgs.unshift(container);
+    imgs.forEach((img) => {
       const alt = img.getAttribute("alt") || "";
       const src = img.getAttribute("src") || "";
       let format = "";
