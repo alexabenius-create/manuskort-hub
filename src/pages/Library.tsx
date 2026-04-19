@@ -13,6 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle } from "lucide-react";
+import { HelpButton } from "@/components/HelpButton";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
@@ -308,6 +309,7 @@ export default function Library() {
           >
             <LogOut className="h-3.5 w-3.5" /> Logga ut
           </Button>
+          <HelpButton />
         </div>
       </header>
 

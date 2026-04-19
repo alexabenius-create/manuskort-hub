@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { SEO } from "@/components/SEO";
+import { HelpButton } from "@/components/HelpButton";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
@@ -59,6 +60,9 @@ export default function Settings() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="font-display text-[17px] font-semibold tracking-tight">Inställningar</h1>
+        <div className="ml-auto">
+          <HelpButton />
+        </div>
       </header>
 
       <main className="max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20 flex flex-col gap-10">
@@ -126,7 +130,7 @@ export default function Settings() {
               </span>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-[15px]">Visa rundturen i biblioteket igen</p>
-                <p className="text-[12px] text-muted-foreground">2 steg om biblioteket</p>
+                <p className="text-[12px] text-muted-foreground">2 korta steg</p>
               </div>
             </button>
             <button
@@ -139,7 +143,7 @@ export default function Settings() {
               </span>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-[15px]">Visa rundturen på manussidan igen</p>
-                <p className="text-[12px] text-muted-foreground">12 steg, körs nästa gång du öppnar exempelmanuset</p>
+                <p className="text-[12px] text-muted-foreground">4 korta steg, körs nästa gång du öppnar exempelmanuset</p>
               </div>
             </button>
           </div>
