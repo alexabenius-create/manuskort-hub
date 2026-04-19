@@ -1,38 +1,25 @@
 
-Bra. Då bygger jag SEO-fas 1 mot `manuskort.se`.
+För att fokusera rätt — här är de största smärtpunkterna i nuvarande docx-import (`parseDocument.ts`, `sanitizeHtml.ts`, `buildCards.ts`, `UploadZone.tsx`):
 
-## Vad jag gör
+**Identifierade brister**
+1. Bilder/tabeller/fotnoter räknas men visas aldrig för användaren — försvinner tyst
+2. `.doc` avvisas helt (kräver manuell omsparning i Word)
+3. Talar-detektering fångar bara vissa mönster (t.ex. "NAMN:" först i paragraf), missar "Anna —", "Anna (moderator):", namn på egen rad
+4. Listor, indrag och citat tappas eller blir sneda i sanitizeringen
+5. Ingen progress-indikator vid stora filer
+6. Wordcount-strategin visar ingen radmätare i preview — användaren ser inte att kort kommer splittras
+7. Ingen "ersätt befintligt manus" — varje import skapar nytt
 
-### 1. `index.html`
-- `<html lang="sv">` (är `en` nu)
-- Canonical → `https://manuskort.se/`
-- OG/Twitter URL → `.se`
-- Behåll nuvarande OG-image (r2.dev) tills vi har en stabil i `public/`
+**Förslag på prioritering (välj fokus)**
 
-### 2. Per-route meta via `react-helmet-async`
-- Installera paketet
-- Wrap `App` i `<HelmetProvider>` i `src/main.tsx`
-- Ny `src/components/SEO.tsx` (props: title, description, canonical, noindex)
+| Spår | Vad | Effort |
+|---|---|---|
+| A. Talar-detektering | Fler mönster, UI för manuell justering i preview | M |
+| B. Tappat innehåll synligt | Lista bilder/tabeller/fotnoter med plats i dok, bekräfta-checkbox | S |
+| C. Bevara mer formatering | Listor, indrag, smart quotes, fotnoter inline | M |
+| D. Smartare uppdelning | Auto-strategi, radmätare per kort i preview, dra för split/merge | L |
+| E. Filtypsstöd | `.doc` via edge function, PDF-text, Google Docs-länk | M-L |
 
-### 3. Sidspecifika meta-taggar
-- **Landing** (`/`): unik title + desc + JSON-LD `SoftwareApplication` + `Organization`
-- **Pricing** (`/priser`): "Priser – Manuskort" + desc om planer
-- **Auth** (`/auth`): `noindex` (login bör inte rankas)
-- **Library, Editor, Presentation, Settings, Import, Admin**: `noindex,nofollow` (auth-skyddade)
+**Fråga till dig**: Vilket spår vill du börja med? Jag rekommenderar **B + A** först — de ger snabb märkbar förbättring utan stor refaktor. D är största lyftet långsiktigt men kräver mer jobb i preview-UI.
 
-### 4. Tekniska filer
-- `public/sitemap.xml` med `https://manuskort.se/` och `/priser`
-- `public/robots.txt`: lägg till `Sitemap: https://manuskort.se/sitemap.xml`
-
-## Vad DU gör efter publish
-1. Klicka **Update** i Publish-dialogen
-2. **Google Search Console** → lägg till property `manuskort.se` → verifiera (säg till om du får en HTML-meta-kod, jag lägger in den)
-3. Skicka in `https://manuskort.se/sitemap.xml`
-4. **URL Inspection → Request Indexing** för `/` och `/priser`
-5. **Bing Webmaster Tools** → importera från Search Console
-
-## Senare (egen fas)
-- Stabil `public/og-image.png` (1200×630)
-- Blogg-sektion för långsiktig organisk ranking
-
-Säg "kör" så bygger jag.
+Skriv vilket spår (eller kombination) du vill ha så bygger jag detaljerad plan för exakt det.
