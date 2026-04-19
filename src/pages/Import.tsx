@@ -68,6 +68,30 @@ export default function Import() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [step, store.dirty]);
 
+  // Synkronisera färger på question/panelist-spans när användaren ändrar
+  // färg i SpeakerMappingPanel — säkerställer att markerade frågor alltid
+  // har samma färg som talaren i panelen.
+  useEffect(() => {
+    if (step !== 2 || store.cards.length === 0) return;
+    const colorMap = new Map<string, string>();
+    for (const s of store.speakers) {
+      if (s.color) colorMap.set(s.tempId, s.color);
+      if (s.action === "existing" && s.existingPanelistId && s.color) {
+        colorMap.set(s.existingPanelistId, s.color);
+      }
+    }
+    if (colorMap.size === 0) return;
+    let anyChanged = false;
+    const next = store.cards.map((c) => {
+      const newHtml = recolorQuestionsInHtml(c.contentHtml, colorMap);
+      if (newHtml === c.contentHtml) return c;
+      anyChanged = true;
+      return { ...c, contentHtml: newHtml };
+    });
+    if (anyChanged) store.setCards(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.speakers, step]);
+
   const handleFileSelected = async (file: File) => {
     setParsing(true);
     store.setFile(file);
