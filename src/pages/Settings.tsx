@@ -231,7 +231,59 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Rundturer */}
+        {/* Talartid */}
+        <section className="flex flex-col gap-4">
+          <h2 className="font-display text-2xl font-semibold tracking-tight">Talartid</h2>
+          <p className="text-[14px] text-muted-foreground -mt-2">
+            Används för att uppskatta hur lång tid varje kort tar att läsa upp.
+            Default är 140 ord/min — en normal svensk talartakt.
+          </p>
+          <div className="bg-surface rounded-2xl shadow-card px-5 py-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="wpm" className="text-[13px] text-muted-foreground font-medium">
+                Ord per minut
+              </Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="wpm"
+                  type="number"
+                  min={60}
+                  max={260}
+                  step={5}
+                  value={wpm}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    setWpm(Number.isFinite(n) ? n : 140);
+                  }}
+                  className="h-11 w-28 rounded-xl bg-surface-2 border-0 focus-visible:ring-2 focus-visible:ring-accent-blue tabular-nums"
+                />
+                <div className="flex gap-1.5">
+                  {[120, 140, 160].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setWpm(preset)}
+                      className={
+                        "text-[12px] px-2.5 py-1 rounded-full transition-colors tabular-nums " +
+                        (wpm === preset
+                          ? "bg-accent-blue/10 text-accent-blue"
+                          : "bg-surface-2 text-muted-foreground hover:text-foreground")
+                      }
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p className="text-[12px] text-muted-foreground">
+              Långsam talare: ~120. Snabb talare: ~160. Tips — testa att läsa upp ett kort
+              och se om uppskattningen stämmer; justera vid behov.
+            </p>
+          </div>
+        </section>
+
+
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>
           <p className="text-[14px] text-muted-foreground -mt-2">
