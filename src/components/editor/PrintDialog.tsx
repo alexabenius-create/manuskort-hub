@@ -118,6 +118,8 @@ export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
 
     const onAfterPrint = () => {
       document.documentElement.removeAttribute("data-print-format");
+      document.documentElement.style.removeProperty("--print-font-size");
+      document.documentElement.style.removeProperty("--print-notes-size");
       const el = document.getElementById(STYLE_ID);
       if (el) el.remove();
       scaledCards.forEach((c) => c.style.removeProperty("--print-script-scale"));
