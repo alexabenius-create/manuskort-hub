@@ -1,98 +1,56 @@
-## Fas 3 — drag-omordning, roll-selector, target-tid
 
-### Mål
-v3 får tre kvarvarande v1-paritetsbitar: drag-omordna kort, roll-väljare (moderator/speaker) i header, och target-tid-popover med manuell override. Fortfarande **admin-only experiment**, ingen cutover-flagga.
 
-### Arkitektur
+## Diagnos
 
-**Drag-omordning (HTML5 native i ProseMirror)**
-- v1 använder `@dnd-kit/sortable` på en React-array. I v3 äger ProseMirror dokumentet → vi kan inte sortable:a en React-lista direkt.
-- Lösning: drag-handle inuti `CardBlockView` (vänster i header). HTML5 native `draggable` på handle-elementet. PM:s default drag-hantering bypassas genom att sätta `data-drag-handle` och returna `false` från `handleDOMEvents.dragstart` för dessa events.
-- Drop-zoner: tunna band (visuellt 2px, hit-area 8-12px via `::before`) ovanför varje cardBlock + ett under sista, renderade av `CardBlockView` med `contentEditable={false}`.
-- `onDragStart` på handle: sätt `dataTransfer.effectAllowed='move'` + custom data med kort-pos. `onDragOver` på drop-zon: `preventDefault` + tillfällig accent-border. `onDrop`: kör `moveCardBlock(fromPos, toPos)`.
-- Nytt kommando `moveCardBlock(state, fromPos, toAbsolutePos, dispatch)`:
-  - Hämta käll-cardBlock-noden via `state.doc.nodeAt(fromPos)`
-  - `tr.delete(fromPos, fromPos + node.nodeSize)`
-  - Mappa toAbsolutePos genom `tr.mapping` (för att kompensera för delete)
-  - `tr.insert(mappedTargetPos, sourceNode)` — samma node, oförändrade attrs (cardId behålls)
-- Persist: `planCardSyncFromDoc` jämför doc-ordning → DB-ordning via `position`. Flyttat kort får ny `position` → updates-vägen. Inga inserts/deletes.
-- Visuellt: dragged kort `opacity-50`, drop-target `border-t-2 border-accent-blue`.
+**Två relaterade buggar** i import → editor-flödet:
 
-**Roll-selector (moderator/speaker)**
-- Header vänster (efter "Kort 01/N"): chip med ikon ("🎤 Talare" / "🎙 Moderator")
-- Klick → `<Popover>` med två val
-- Selection: `updateAttributes({ role })`
-- Visuellt: speaker = neutralt, moderator = subtil accent (matcha v1)
-- Manus-`mode` är default; per-kort `role` overridar (befintlig semantik)
-- Ny modul: `src/components/editor/CardRolePopover.tsx`
+### Bug 1: Tilltal/frågor från Wizard kan inte tas bort i editorn
+- I import-pipelinen genererar `annotateQuestionsInHtml` `<span data-question-to="tmp:Anna_Sjöberg">…</span>`-element runt frågor till panelister.
+- I `Import.tsx` `commit()` skickas korten till `import_manuscript`-RPC:n. RPC:n gör en strängersättning från `data-panelist-id="tmp:..."` → riktigt UUID.
+- **RPC:n hanterar aldrig `data-question-to="tmp:..."`-attribut.** Frågorna landar i DB med dött tempId.
+- I editorn (`FormatBubbleMenu`) finns en Eraser för `unsetPanelist` men **ingen knapp för `unsetQuestionTo`**. Användaren kan därför inte ta bort frågans bubble manuellt.
 
-**Target-tid-popover**
-- Header vänster (efter ord/duration): chip "🎯 mm:ss" om `targetSeconds` satt, annars "+ Sätt mål"
-- Klick → `<Popover>` med:
-  - Input minuter (0-99) + sekunder (0-59), klampning
-  - Knapp "Auto" → `targetSeconds=null, targetSecondsIsManual=false`
-  - Knapp "Spara" → `targetSeconds=X, targetSecondsIsManual=true`
-- Default i popover = nuvarande `targetSeconds` eller estimerade `seconds`
-- Visuellt: manual = fast färgad chip; auto = dim
-- Inline popover (inte v1:s `TargetDurationDialog`-modal)
-- Ny modul: `src/components/editor/CardTargetTimePopover.tsx`
+### Bug 2: Manuellt skapade bubblar matchar inte importerade
+- `FormatBubbleMenu.setPanelist({ panelistId: p.id })` använder riktigt UUID.
+- Importerade question-spans bär `tmp:Förnamn_Efternamn` → olika id-domäner = inget matchas mellan dem.
+- Dessutom: `FormatBubbleMenu` saknar UI för att skapa `questionTo`-mark alls i editorn — den finns bara i Wizardens `PreviewBubbleMenu`.
 
-**Persist-konsekvenser**
-- Allt går genom befintlig `planCardSyncFromDoc` updates-väg
-- `role`, `targetSeconds`, `targetSecondsIsManual` finns redan i schema och i `rowsToCardAttrs`/`docToCardNodes`
-- `position` uppdateras automatiskt av diff-logiken
+## Fix — tre nivåer
 
-### Filer
+### A. RPC: ersätt även `data-question-to` (måste fixas)
 
-**Nya:**
-- `src/components/editor/CardRolePopover.tsx`
-- `src/components/editor/CardTargetTimePopover.tsx`
-- `src/components/editor/CardDragHandle.tsx` (handle + drop-zoner)
+Uppdatera `public.import_manuscript` så loopen som ersätter tempIds även byter ut `data-question-to="tmp:..."`:
 
-**Ändras:**
-- `src/components/editor/CardBlockView.tsx` — drag-handle vänster i header, role-chip, target-tid-chip; drop-zon-band ovanför kortet
-- `src/lib/cardBlockCommands.ts` — `moveCardBlock(state, fromPos, toAbsolutePos, dispatch)`
-- `src/components/editor/TiptapDocEditor.tsx` — `editorProps.handleDOMEvents.dragstart` för att släppa förbi vår handle
+```sql
+v_html := replace(v_html, 'data-panelist-id="' || v_temp_id || '"', 'data-panelist-id="' || real || '"');
+v_html := replace(v_html, 'data-question-to="' || v_temp_id || '"', 'data-question-to="' || real || '"');
+```
 
-**Tas bort:** inget
+Migration: ny version av `import_manuscript`-funktionen.
 
-### Fas 3-omfång (allt nedan)
+### B. FormatBubbleMenu: fullständigt panelist+question-stöd
 
-**Med:**
-- Drag-omordning (HTML5 native + drop-zoner)
-- Roll-selector i header (popover)
-- Target-tid-popover i header (auto/manuell)
+Utöka bubble-menyn i editorn (v3) att spegla Wizardens `PreviewBubbleMenu`:
 
-**Inte med (Fas 4+):**
-- Panelist-mark/färg-system inuti karteditor (mark-typ + selektor-bar)
-- Smart paste (auto-split vid stora pastes)
-- Keyboard shortcuts utöver Cmd+Enter
-- Cutover-flagga / migration v1 → v3 för icke-admin
+1. **Eraser tar bort båda marks**: `unsetPanelist().unsetQuestionTo()` när någon av dem är aktiv.
+2. **Lägg till "Fråga till"-väljare**: dropdown bredvid panelist-pills (ikon `MessageCircleQuestion`) med samma panelist-lista. Klick → `setQuestionTo({ panelistId: p.id, color: p.color, name: p.name })` på selection. Aktiv om `editor.isActive("questionTo")`.
+3. **Visuell indikering**: visa eraser även när `questionTo` är aktiv (inte bara `panelist`).
 
-### Verifieringsscenarier (Fas 3)
+### C. Datakonsekvens-städning (engångs, valfri)
 
-1. Drag handle på kort 3 → släpp ovanför kort 1 → kort 3 blir först, övriga numreras om, `position` uppdaterad i DB
-2. Drag kort 1 → släpp under sista kortet → flyttat sist
-3. Drag på enda kortet → drop-zoner försvinner / drop blir no-op
-4. Klick roll-chip → välj moderator → chip uppdateras, `role='moderator'` i DB
-5. Klick på moderator-chip → välj talare → tillbaka, sparas
-6. Klick target-chip på kort utan target → 1:30 → spara → chip "🎯 1:30", `targetSeconds=90, targetSecondsIsManual=true`
-7. Klick target-chip → "Auto" → nollställt, chip blir "+ Sätt mål"
-8. Roll-byte + duplicate (Fas 2) → kopian ärver rollen
-9. Drag + Cmd+Z → ordningen återställs
-10. Persist idempotent: snabb drag + roll + target → exakt rätt rader uppdaterade
+Inga existerande importer behöver migreras eftersom Bug 1 åtgärdas i RPC:n framöver. Befintliga manus med dött `tmp:`-id i DB:n kan rättas vid behov via en separat städ-migration som matchar `tmp:Förnamn_Efternamn` mot panelist-namn — men föreslår att vi väntar med detta tills vi vet om någon faktiskt drabbats.
 
-### Risker
+## Ändrade filer
 
-- **HTML5 drag i PM**: PM:s `handleDOMEvents.dragstart` måste släppa events från `[data-drag-handle]`-element. Annars startar PM sin egen node-drag.
-- **Hit-detection**: tunna drop-zoner svåra att träffa → utöka via `::before` med padding.
-- **Position-recalc**: verifiera att icke-flyttade rader inte skickar onödiga updates ("ghost").
-- **Target-input-validering**: klampa min/sek; visa fel för negativa.
-- **Popover portal**: Radix portalar default till body — bekräfta att popover inte stjäl fokus från PM.
-- **Drag-handle vs textmarkering**: handle ej editable; cursor `grab` → `grabbing`.
+| Fil | Ändring |
+|---|---|
+| `supabase/migrations/<ny>.sql` | Uppdatera `import_manuscript` med `data-question-to`-ersättning |
+| `src/components/editor/FormatBubbleMenu.tsx` | "Fråga till"-dropdown + eraser för båda marks |
 
-### Frågor
+## Verifiering
 
-1. Target-tid: inline popover (förslag) eller behåll v1:s `TargetDurationDialog`-modal?
-2. Drag aktivt: dölj "+"-pillar (förslag) eller alltid synas?
-3. Roll-chip: subtil accent för moderator (förslag) eller neutralt för båda?
+1. Importera ett moderator-manus med tilltal ("Anna, vad tycker du…"). Öppna editorn → markera tilltalstexten → klicka eraser → bubble försvinner.
+2. I samma editor: markera annan text → "Fråga till" → välj Anna → samma färg/styling som de importerade.
+3. Klicka eraser på en manuell bubble → försvinner.
+4. Spara om och ladda om manuset → bubblarna kvar med rätt UUID i HTML (DevTools).
+
