@@ -432,6 +432,17 @@ export default function Presentation() {
         </button>
       )}
 
+      {/* Time-cue-zon — dedikerad plats för time-cues, fixerad uppe till höger */}
+      {!menuOpen && viewMode === "cards" && timer.countdown === 0 && (
+        <div className="fixed top-20 right-6 md:right-10 z-30 max-w-[360px]">
+          <TimeCueZone
+            card={current}
+            elapsedSeconds={cardElapsedSeconds}
+            displayWindowSeconds={manuscript.time_cue_display_seconds ?? 15}
+          />
+        </div>
+      )}
+
       <main className="flex-1 min-h-0 pt-24 pb-24 px-6 md:px-10 relative">
         <div
           className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
