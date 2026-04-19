@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,50 +6,30 @@ import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
-import {
-  CardChromeFrame,
-  CHROME_HEADER_HEIGHT,
-  CHROME_FOOTER_HEIGHT,
-  CHROME_GAP_HEIGHT,
-} from "@/components/editor/CardChromeFrame";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { joinCardsToDoc, splitDocToCards, planCardSync } from "@/lib/docSplit";
+import {
+  cardsToDocHtml,
+  rowsToCardAttrs,
+  docToCardNodes,
+  planCardSyncFromDoc,
+} from "@/lib/cardDocSerialize";
 import { PanelistsProvider } from "@/hooks/usePanelists";
-import type { TextSize } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 import type { Editor as TiptapEditorType } from "@tiptap/react";
-import type { FrameBreak } from "@/lib/docFrameDecorations";
+import { DOMSerializer } from "prosemirror-model";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 
-interface FragmentLayout {
-  /** index 0..N-1 */
-  index: number;
-  /** ProseMirror dokument-position där fragmentet börjar (block-start). */
-  startDocPos: number;
-  /** ProseMirror dokument-position där fragmentet slutar (block-slut). */
-  endDocPos: number;
-  /** Ordlängd-html för chromen (för wordcount). */
-  html: string;
-  /** Pixel-Y i editor-rooten där fragmentets text börjar. */
-  topPx: number;
-  /** Höjd i pixlar för fragmentets text-zon. */
-  heightPx: number;
-}
-
 /**
- * EditorV3 — v1:s kort-chrome ovanpå v2:s flödes-editor.
+ * EditorV3 — NodeView-arkitektur (Fas 1).
  *
- * Princip:
- *  - splitDocToCards delar texten i N HTML-fragment vid presentations-radgräns
- *  - Varje fragment-gräns översätts till en ProseMirror-block-position
- *  - DocFrameDecorations injicerar en spacer-widget vid varje gräns →
- *    reserverar plats för chrome (footer + gap + nästa header)
- *  - Vi mäter pixel-Y för start/slut av varje fragment och ritar absolut-
- *    positionerade header + footer i en overlay
- *  - Texten i mitten är helt fri → klick på text → editorn fångar
+ * Varje DB-kort = en cardBlock-nod i ProseMirror-dokumentet. Chrome ritas
+ * via CardBlockNodeView (riktig DOM, inte overlay). Persistens 1:1 mot
+ * `cards`-tabellen via diff i `planCardSyncFromDoc`.
+ *
+ * Inga mätningar, inga decorations, inga overlays.
  */
 export default function EditorV3() {
   const { id } = useParams<{ id: string }>();
@@ -63,15 +43,11 @@ export default function EditorV3() {
 
   const [docHtml, setDocHtml] = useState<string>("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
-
-  const [layout, setLayout] = useState<FragmentLayout[]>([]);
-  const [frameBreaks, setFrameBreaks] = useState<FrameBreak[]>([]);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [cardCount, setCardCount] = useState(0);
 
   const editorRef = useRef<TiptapEditorType | null>(null);
-  const editorRootRef = useRef<HTMLElement | null>(null);
   const saveTimerRef = useRef<number | null>(null);
-  const measureRafRef = useRef<number | null>(null);
+  const initializedRef = useRef(false);
 
   // Admin-skydd
   useEffect(() => {
@@ -91,6 +67,7 @@ export default function EditorV3() {
     if (!id) return;
     (async () => {
       setLoading(true);
+      initializedRef.current = false;
       const [mRes, cRes] = await Promise.all([
         supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
         supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
@@ -101,153 +78,128 @@ export default function EditorV3() {
         return;
       }
       setManuscript(mRes.data);
-      setCards(cRes.data ?? []);
-      setDocHtml(joinCardsToDoc(cRes.data ?? []));
+      const rows = cRes.data ?? [];
+      setCards(rows);
+      setDocHtml(cardsToDocHtml(rows));
+      setCardCount(Math.max(1, rows.length));
       setLoading(false);
     })();
   }, [id, navigate]);
 
-  const textSize: TextSize = (manuscript?.text_size as TextSize) ?? "md";
-
-  // Total spacer-höjd mellan två kort i editor-flödet:
-  //   = FOOTER (slut på kort i) + GAP (luft) + HEADER (början på kort i+1)
-  const SPACER_HEIGHT = CHROME_FOOTER_HEIGHT + CHROME_GAP_HEIGHT + CHROME_HEADER_HEIGHT;
-
-  const measureLayout = useCallback(() => {
-    const editor = editorRef.current;
-    const root = editorRootRef.current;
-    if (!editor || !root || !manuscript) return;
-
-    // 1) Splitta html i fragments enligt presentations-geometri
-    const fragments = splitDocToCards(docHtml, textSize);
-
-    // 2) Hitta block-gräns-positioner i doc
-    const blockEnds: number[] = [];
-    editor.state.doc.forEach((node, offset) => {
-      blockEnds.push(offset + node.nodeSize);
-    });
-
-    // Räkna hur många top-level block varje fragment innehåller
-    const blocksPerFrag: number[] = fragments.map((html) => {
-      const tmp = document.createElement("div");
-      tmp.innerHTML = html;
-      let count = 0;
-      tmp.childNodes.forEach((n) => {
-        if (n.nodeType === 1) count++;
+  /**
+   * Efter att Tiptap mountat dokumentet: gå igenom top-level cardBlock-noder
+   * och sätt attrs (cues, notes, target_seconds, …) i editor-state utan att
+   * trigga onUpdate. HTML-laddningen sätter bara struktur + cardId — resten
+   * ligger i tabellen och måste tankas in.
+   */
+  const hydrateAttrs = useCallback(
+    (editor: TiptapEditorType) => {
+      if (!manuscript) return;
+      const attrs = rowsToCardAttrs(cards, {
+        wpm: manuscript.wpm,
+        showNotes: manuscript.show_notes,
+        showTimes: manuscript.show_times,
       });
-      return Math.max(1, count);
-    });
+      const byId = new Map(attrs.map((a) => [a.cardId, a]));
 
-    // Fragment-index → block-range
-    const fragBlockRanges: { startBlock: number; endBlock: number }[] = [];
-    let acc = 0;
-    for (const b of blocksPerFrag) {
-      fragBlockRanges.push({ startBlock: acc, endBlock: acc + b - 1 });
-      acc += b;
-    }
-
-    // 3) Frame-breaks = STARTPOSITION för första blocket i varje fragment > 0
-    //    Decoration sätter padding-top på det blocket → reserverar visuell luft.
-    const breaks: FrameBreak[] = [];
-    for (let i = 1; i < fragBlockRanges.length; i++) {
-      const startBlockIdx = fragBlockRanges[i].startBlock;
-      const pos = startBlockIdx === 0 ? 0 : blockEnds[startBlockIdx - 1];
-      breaks.push({ pos, heightPx: SPACER_HEIGHT });
-    }
-
-    // 4) Mät pixel-Y för fragmentens text-zon
-    const editorRect = root.getBoundingClientRect();
-    const blockEls = Array.from(root.children).filter(
-      (n) => n.nodeType === 1,
-    ) as HTMLElement[];
-
-    const layouts: FragmentLayout[] = [];
-    for (let i = 0; i < fragBlockRanges.length; i++) {
-      const { startBlock, endBlock } = fragBlockRanges[i];
-      const firstEl = blockEls[startBlock];
-      const lastEl = blockEls[endBlock] ?? firstEl;
-      if (!firstEl || !lastEl) continue;
-      const fr = firstEl.getBoundingClientRect();
-      const lr = lastEl.getBoundingClientRect();
-      // Om första blocket har spacer-padding → texten börjar SPACER_HEIGHT lägre
-      const hasSpacer = firstEl.hasAttribute("data-frame-break-spacer");
-      const textTop = (fr.top + (hasSpacer ? SPACER_HEIGHT : 0)) - editorRect.top;
-      const textBottom = lr.bottom - editorRect.top;
-      const textHeight = Math.max(40, textBottom - textTop);
-
-      // Box = HEADER ovanför text + text-zon + FOOTER under text
-      const boxTop = textTop - CHROME_HEADER_HEIGHT;
-      const boxHeight = CHROME_HEADER_HEIGHT + textHeight + CHROME_FOOTER_HEIGHT;
-
-      const startBlockOffset = startBlock === 0 ? 0 : blockEnds[startBlock - 1];
-      const endBlockOffset = blockEnds[endBlock] ?? startBlockOffset;
-
-      layouts.push({
-        index: i,
-        startDocPos: startBlockOffset,
-        endDocPos: endBlockOffset,
-        html: fragments[i],
-        topPx: boxTop,
-        heightPx: boxHeight,
+      const tr = editor.state.tr;
+      let i = 0;
+      let total = 0;
+      editor.state.doc.forEach((n) => {
+        if (n.type.name === "cardBlock") total++;
       });
-    }
+      total = Math.max(1, total);
 
-    setLayout(layouts);
-    setFrameBreaks(breaks);
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name !== "cardBlock") return false;
+        i++;
+        const cardId = node.attrs.cardId as string | null;
+        const fromDb = cardId ? byId.get(cardId) : null;
+        const next = {
+          ...node.attrs,
+          cardNumber: i,
+          totalCards: total,
+          wpm: manuscript.wpm,
+          showNotes: manuscript.show_notes,
+          showTimes: manuscript.show_times,
+          ...(fromDb ?? {}),
+        };
+        tr.setNodeMarkup(pos, undefined, next);
+        return false;
+      });
+      tr.setMeta("addToHistory", false);
+      editor.view.dispatch(tr);
+    },
+    [cards, manuscript],
+  );
 
-    // Aktivt kort = där caret står
-    const sel = editor.state.selection;
-    if (sel) {
-      const from = sel.from;
-      let idx = 0;
-      for (let i = 0; i < layouts.length; i++) {
-        if (from >= layouts[i].startDocPos && from <= layouts[i].endDocPos) {
-          idx = i;
-          break;
-        }
-        idx = i;
+  const handleEditorReady = useCallback(
+    (ed: TiptapEditorType | null) => {
+      editorRef.current = ed;
+      if (ed && !initializedRef.current && cards.length >= 0 && manuscript) {
+        // Vänta en frame så setContent hunnit appliceras
+        requestAnimationFrame(() => {
+          if (editorRef.current === ed) {
+            hydrateAttrs(ed);
+            initializedRef.current = true;
+          }
+        });
       }
-      setActiveIdx(idx);
-    }
-  }, [docHtml, manuscript, textSize, SPACER_HEIGHT]);
+    },
+    [cards, manuscript, hydrateAttrs],
+  );
 
-  const scheduleMeasure = useCallback(() => {
-    if (measureRafRef.current) cancelAnimationFrame(measureRafRef.current);
-    measureRafRef.current = requestAnimationFrame(measureLayout);
-  }, [measureLayout]);
-
-  const handleEditorReady = useCallback((ed: TiptapEditorType | null) => {
-    editorRef.current = ed;
-    editorRootRef.current = ed ? (ed.view.dom as HTMLElement) : null;
-    if (ed) {
-      ed.on("selectionUpdate", scheduleMeasure);
-      ed.on("update", scheduleMeasure);
-      // initial mätning efter en frame
-      requestAnimationFrame(scheduleMeasure);
-    }
-  }, [scheduleMeasure]);
-
-  // Mät om vid resize
+  // När docHtml byts (t.ex. efter omladdning från DB), rehydrera attrs
   useEffect(() => {
-    const onResize = () => scheduleMeasure();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [scheduleMeasure]);
-
-  // Mät när html eller storlek ändras. Vi mäter två gånger: först direkt
-  // (för att räkna fram breaks), sen igen efter att decorations renderats
-  // (så box-Y-positionerna stämmer mot den slutliga DOM-layouten).
-  useEffect(() => {
-    scheduleMeasure();
-    const t = window.setTimeout(scheduleMeasure, 50);
+    if (!editorRef.current || !manuscript) return;
+    initializedRef.current = false;
+    const t = window.setTimeout(() => {
+      if (editorRef.current) {
+        hydrateAttrs(editorRef.current);
+        initializedRef.current = true;
+      }
+    }, 16);
     return () => window.clearTimeout(t);
-  }, [docHtml, textSize, scheduleMeasure]);
+  }, [docHtml, hydrateAttrs, manuscript]);
 
-  // Mät om när breaks-listan har applicerats (ny DOM-höjd)
+  // Räkna kort när doc ändras + uppdatera cardNumber/totalCards
   useEffect(() => {
-    const t = window.setTimeout(scheduleMeasure, 30);
-    return () => window.clearTimeout(t);
-  }, [frameBreaks, scheduleMeasure]);
+    const ed = editorRef.current;
+    if (!ed) return;
+    const onUpdate = () => {
+      let total = 0;
+      ed.state.doc.forEach((n) => {
+        if (n.type.name === "cardBlock") total++;
+      });
+      setCardCount(Math.max(1, total));
+
+      // Uppdatera cardNumber/totalCards på alla noder utan att skapa historik
+      const tr = ed.state.tr;
+      let n = 0;
+      let changed = false;
+      ed.state.doc.descendants((node, pos) => {
+        if (node.type.name !== "cardBlock") return false;
+        n++;
+        if (node.attrs.cardNumber !== n || node.attrs.totalCards !== total) {
+          tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            cardNumber: n,
+            totalCards: total,
+          });
+          changed = true;
+        }
+        return false;
+      });
+      if (changed) {
+        tr.setMeta("addToHistory", false);
+        ed.view.dispatch(tr);
+      }
+    };
+    ed.on("update", onUpdate);
+    return () => {
+      ed.off("update", onUpdate);
+    };
+  }, [editorRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced autosave
   const handleDocChange = (html: string) => {
@@ -255,62 +207,86 @@ export default function EditorV3() {
     setSaving("idle");
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
-      void persist(html);
+      void persist();
     }, 1200);
   };
 
-  async function persist(html: string) {
-    if (!user || !manuscript) return;
+  const persist = useCallback(async () => {
+    const ed = editorRef.current;
+    if (!ed || !user || !manuscript) return;
     setSaving("saving");
     try {
-      const fragments = splitDocToCards(html, textSize);
-      const plan = planCardSync(
-        fragments,
-        cards.map((c) => ({ id: c.id, position: c.position, content_html: c.content_html })),
-      );
+      // Serialisera doc-noder till HTML via PM:s DOMSerializer
+      const serializer = DOMSerializer.fromSchema(ed.schema);
+      const serializeNode = (node: import("prosemirror-model").Node): string => {
+        const div = document.createElement("div");
+        div.appendChild(serializer.serializeNode(node));
+        return div.innerHTML;
+      };
 
+      const computed = docToCardNodes(ed.state.doc, serializeNode);
+      const plan = planCardSyncFromDoc(computed, cards, {
+        manuscriptId: manuscript.id,
+        userId: user.id,
+      });
+
+      // Updates
       for (const u of plan.updates) {
-        const { error } = await supabase
-          .from("cards")
-          .update({ content_html: u.content_html, position: u.position })
-          .eq("id", u.id);
+        const { error } = await supabase.from("cards").update(u.patch).eq("id", u.id);
         if (error) throw error;
       }
 
-      const insertedRows: Card[] = [];
+      // Inserts
+      const inserted: Card[] = [];
       if (plan.inserts.length > 0) {
         const { data, error } = await supabase
           .from("cards")
-          .insert(
-            plan.inserts.map((i) => ({
-              manuscript_id: manuscript.id,
-              user_id: user.id,
-              position: i.position,
-              role: manuscript.mode,
-              content_html: i.content_html,
-            })),
-          )
+          .insert(plan.inserts.map((i) => i.row))
           .select();
         if (error) throw error;
-        if (data) insertedRows.push(...data);
+        if (data) inserted.push(...data);
       }
 
+      // Deletes
       if (plan.deletes.length > 0) {
         const { error } = await supabase.from("cards").delete().in("id", plan.deletes);
         if (error) throw error;
       }
 
+      // Uppdatera lokal cards-cache
       const next: Card[] = [];
       const updatedById = new Map(plan.updates.map((u) => [u.id, u]));
       for (const c of cards) {
         if (plan.deletes.includes(c.id)) continue;
         const u = updatedById.get(c.id);
-        if (u) next.push({ ...c, content_html: u.content_html, position: u.position });
+        if (u) next.push({ ...c, ...u.patch });
         else next.push(c);
       }
-      next.push(...insertedRows);
+      next.push(...inserted);
       next.sort((a, b) => a.position - b.position);
       setCards(next);
+
+      // Sätt cardId på nya cardBlock-noder så att nästa save inte skapar dubletter
+      if (inserted.length > 0) {
+        const tr = ed.state.tr;
+        let posIdx = 0;
+        ed.state.doc.descendants((node, pos) => {
+          if (node.type.name !== "cardBlock") return false;
+          if (!node.attrs.cardId) {
+            const insertedRow = inserted[posIdx - (next.length - inserted.length)];
+            // Enklare: matcha via position
+            const matching = inserted.find((r) => r.position === posIdx);
+            if (matching) {
+              tr.setNodeMarkup(pos, undefined, { ...node.attrs, cardId: matching.id });
+            }
+          }
+          posIdx++;
+          return false;
+        });
+        tr.setMeta("addToHistory", false);
+        ed.view.dispatch(tr);
+      }
+
       setSaving("saved");
       window.setTimeout(() => setSaving((s) => (s === "saved" ? "idle" : s)), 1500);
     } catch (e: unknown) {
@@ -322,37 +298,7 @@ export default function EditorV3() {
         variant: "destructive",
       });
     }
-  }
-
-  async function patchCard(cardId: string, patch: Partial<Card>) {
-    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, ...patch } : c)));
-    const { error } = await supabase.from("cards").update(patch).eq("id", cardId);
-    if (error) {
-      toast({ title: "Kunde inte spara ändring", description: error.message, variant: "destructive" });
-    }
-  }
-
-  async function deleteCard(cardId: string) {
-    const fragIdx = cards.findIndex((c) => c.id === cardId);
-    if (fragIdx < 0) return;
-    const fragments = splitDocToCards(docHtml, textSize);
-    const removed = fragments.filter((_, i) => i !== fragIdx);
-    const newHtml = removed.join("") || "<p></p>";
-    setDocHtml(newHtml);
-    editorRef.current?.commands.setContent(newHtml, { emitUpdate: false });
-    void persist(newHtml);
-  }
-
-  async function duplicateCard(cardId: string) {
-    const fragIdx = cards.findIndex((c) => c.id === cardId);
-    if (fragIdx < 0) return;
-    const fragments = splitDocToCards(docHtml, textSize);
-    const dup = [...fragments.slice(0, fragIdx + 1), fragments[fragIdx], ...fragments.slice(fragIdx + 1)];
-    const newHtml = dup.join("");
-    setDocHtml(newHtml);
-    editorRef.current?.commands.setContent(newHtml, { emitUpdate: false });
-    void persist(newHtml);
-  }
+  }, [cards, manuscript, user]);
 
   if (loading || !manuscript) {
     return (
@@ -388,13 +334,13 @@ export default function EditorV3() {
                 {manuscript.title}
               </span>
               <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-accent-blue/15 text-accent-blue border border-accent-blue/30">
-                v3 · admin
+                v3 · admin · Fas 1
               </span>
             </div>
 
             <div className="ml-auto flex items-center gap-3">
               <span className="text-[12px] text-muted-foreground font-mono">
-                {layout.length} kort
+                {cardCount} kort
               </span>
               <span
                 className={`text-[12px] font-mono inline-flex items-center gap-1.5 ${
@@ -409,49 +355,16 @@ export default function EditorV3() {
         </header>
 
         <main className="flex-1 w-full">
-          <div className="max-w-[900px] mx-auto py-8 px-4 relative">
-            <div className="relative">
-              {/* Chrome-lager — bg-surface kort-boxar UNDER editorn (z-0).
-                  Editorn har transparent bakgrund så boxarna syns. Header/footer
-                  på chromen kan klickas tack vare pointer-events-auto. */}
-              <div className="absolute inset-0 z-0 pointer-events-none">
-                {layout.map((f, i) => {
-                  const card = cards[i] ?? null;
-                  return (
-                    <CardChromeFrame
-                      key={card?.id ?? `virtual-${i}`}
-                      card={card}
-                      number={i + 1}
-                      total={layout.length}
-                      topPx={f.topPx}
-                      heightPx={f.heightPx}
-                      isActive={i === activeIdx}
-                      contentHtml={f.html}
-                      showNotes={manuscript.show_notes}
-                      showTimes={manuscript.show_times}
-                      wpm={manuscript.wpm}
-                      onChange={(patch) => card && patchCard(card.id, patch)}
-                      onDelete={() => card && deleteCard(card.id)}
-                      onDuplicate={() => card && duplicateCard(card.id)}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Editor — text ovanpå chromen, transparent bg */}
-              <div className="relative z-10">
-                <TiptapDocEditor
-                  value={docHtml}
-                  onChange={handleDocChange}
-                  size={textSize}
-                  onEditorReady={handleEditorReady}
-                  frameBreaks={frameBreaks}
-                />
-              </div>
-            </div>
+          <div className="max-w-[900px] mx-auto py-8 px-4">
+            <TiptapDocEditor
+              value={docHtml}
+              onChange={handleDocChange}
+              size={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+              onEditorReady={handleEditorReady}
+            />
 
             <p className="mt-6 text-[12px] text-muted-foreground font-mono text-center">
-              v3 — v1:s kort-layout ovanpå v2:s flödes-editor. Drag avstängt; ordning följer texten.
+              v3 Fas 1 — NodeView-arkitektur. Enter/Backspace flödar mellan kort. Drag, cue-edit och meny kommer i Fas 2.
             </p>
           </div>
         </main>

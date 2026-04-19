@@ -6,11 +6,14 @@ import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import Blockquote from "@tiptap/extension-blockquote";
 import { useEffect } from "react";
+import { keymap } from "prosemirror-keymap";
+import { Extension, Node } from "@tiptap/core";
 import { PanelistMark } from "@/lib/panelistMark";
 import { QuestionToMark } from "@/lib/questionToMark";
 import { PauseMarkNode } from "@/lib/pauseNode";
 import { FormatBubbleMenu } from "./FormatBubbleMenu";
-import { DocFrameDecorations, setFrameBreaks, type FrameBreak } from "@/lib/docFrameDecorations";
+import { CardBlock } from "@/lib/cardBlockNode";
+import { joinCardBackward } from "@/lib/cardBlockCommands";
 
 interface Props {
   value: string;
@@ -18,8 +21,6 @@ interface Props {
   size: "sm" | "md" | "lg";
   placeholder?: string;
   onEditorReady?: (editor: Editor | null) => void;
-  /** Spacer-positioner i dokumentet där kort-chrome ska få plats. */
-  frameBreaks?: FrameBreak[];
 }
 
 const sizeClass = {
@@ -28,21 +29,46 @@ const sizeClass = {
   lg: "font-display text-[38px] leading-[1.7]",
 };
 
+/**
+ * Custom Document-nod som kräver `cardBlock+` på top-level.
+ * Ersätter StarterKits standard Document.
+ */
+const CardBlockDocument = Node.create({
+  name: "doc",
+  topNode: true,
+  content: "cardBlock+",
+});
+
+/** Backspace-handler som joinar kort när caret står vid kort-start. */
+const CardBlockKeymap = Extension.create({
+  name: "cardBlockKeymap",
+  addProseMirrorPlugins() {
+    return [
+      keymap({
+        Backspace: (state, dispatch, view) => joinCardBackward(state, dispatch, view),
+      }),
+    ];
+  },
+});
+
 export function TiptapDocEditor({
   value,
   onChange,
   size,
   placeholder = "Börja skriva ditt manus…",
   onEditorReady,
-  frameBreaks = [],
 }: Props) {
   const editor = useEditor({
     extensions: [
+      CardBlockDocument,
+      CardBlock,
+      CardBlockKeymap,
       StarterKit.configure({
         heading: false,
         codeBlock: false,
         blockquote: false,
         horizontalRule: false,
+        document: false,
       }),
       Blockquote,
       Underline,
@@ -56,18 +82,14 @@ export function TiptapDocEditor({
       QuestionToMark,
       PauseMarkNode,
       Placeholder.configure({ placeholder, emptyEditorClass: "is-editor-empty" }),
-      DocFrameDecorations,
     ],
-    content: value || "",
+    content: value || `<article data-card-block="true"><p></p></article>`,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        // padding-top = HEADER_HEIGHT (40) så första kortets meta-rad får plats
-        // padding-bottom = FOOTER_HEIGHT (16) så sista kortets footer får plats
-        // px-6 matchar v1:s kort-padding (px-5/sm:px-6)
-        class: `${sizeClass[size]} focus:outline-none w-full text-foreground px-6 pt-12 pb-6`,
+        class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
       handleKeyDown: (_view, event) => {
         if (
@@ -94,19 +116,8 @@ export function TiptapDocEditor({
   useEffect(() => {
     if (!editor) return;
     if (editor.getHTML() === value) return;
-    editor.commands.setContent(value || "", { emitUpdate: false });
+    editor.commands.setContent(value || `<article data-card-block="true"><p></p></article>`, { emitUpdate: false });
   }, [value, editor]);
-
-  // Uppdatera frame-breaks via plugin-state. Vi dispatchar i nästa frame
-  // så att React-render hinner committas innan ProseMirror räknar om
-  // decorations — det undviker en mätnings-loop där boxar mäts mot fel Y.
-  useEffect(() => {
-    if (!editor) return;
-    const raf = requestAnimationFrame(() => {
-      setFrameBreaks(editor.view, frameBreaks);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [frameBreaks, editor]);
 
   return (
     <div className="relative w-full">
