@@ -1,121 +1,77 @@
 
+## Förstår jag logiken?
 
-# Plan: Manuskort UX-förbättringar (5 steg)
+Ja. Du vill att korten ska bete sig som **sidor i Word**:
+- Varje kort rymmer max 8 rader (vid given textstorlek).
+- När du skriver och rad 9 uppstår på kort 1 → den raden flyttas automatiskt till kort 2 (blir rad 1 där).
+- Om kort 2 redan har innehåll → resten knuffas neråt till kort 3 osv. (kaskad)
+- Backspace i början av kort 2 → drar tillbaka text till kort 1 om det får plats där.
 
-Stort arbete uppdelat i 5 numrerade steg. Planen sparas också i projektminnet (`mem://plans/uxa-2026-04`) så vi kan återvända till den om något steg drar ut på tiden. **Bekräftelse efter varje steg** innan jag går vidare.
+Det här kallas **"text reflow"** mellan kort, precis som sidbrytning i ordbehandlare.
 
----
+## Nuläge (vad som finns)
 
-## Steg 1 — Korta ner rundturen + kontextuell hjälp ("?")
+- `MAX_ROWS_BY_SIZE` definierar radgräns per textstorlek (`src/lib/cardLimits.ts`).
+- `countPresentationRows()` mäter antal rader mot presentationsgeometrin.
+- `TiptapEditor` har redan **paste-overflow**: vid inklistring som spränger gränsen splittas texten och överskottet skickas via `onOverflowPaste` till nästa kort.
+- Ingen autoflyttning sker vid **vanlig tangentbordsinmatning** — användaren får bara en varning ("9/8 rader").
 
-**Mål:** Ny användare överväldigas inte. Detaljinfo flyttas till ett alltid-synligt frågetecken.
+## Vad som ska byggas
 
-- Reducera `MANUS_TOUR` i `src/lib/tours.ts` från 12 → **4 steg**:
-  1. Skapa/importera manus (`library.new-button` — flyttas till BIBLIOTEK_TOUR redan ok, men vi gör om bibliotek-touren till 2 steg: exempelmanuset + ny/importera).
-  2. Lägg till signaler/cues (`card.cues`).
-  3. Starta presentationsläge (`editor.present`).
-  4. Panik-knappen (lägg till `data-tour="card.panic"` på menyobjektet "Markera som panik-kort" eller chip; tooltip-text om hur PANIK-tangenten fungerar i presentation).
-- Ny komponent **`HelpButton`** (frågetecken-ikon, fast i topbar-högerhörn) i `Library`, `Editor`, `Settings`, `Import`. Öppnar en `Sheet` (höger-sida) med kontextkänsligt innehåll per route.
-- Innehåll i hjälppanelen tas från en ny `src/lib/helpContent.ts` med entries för varje vy (bibliotek, manus, importera, inställningar, presentation).
-- "Visa rundturen igen" finns redan i `Settings.tsx` — uppdatera texten till "2 steg" / "4 steg".
+**Reflow vid varje editor-update** (inte bara paste):
 
-**Filer:** `src/lib/tours.ts`, `src/lib/helpContent.ts` (ny), `src/components/HelpButton.tsx` (ny), `src/components/HelpSheet.tsx` (ny), `src/pages/Library.tsx`, `src/pages/Editor.tsx`, `src/pages/Settings.tsx`, `src/pages/Import.tsx`, `src/pages/Presentation.tsx` (befintlig `?`-knapp + HelpOverlay återanvänds).
+1. **Detektera överflöd** — i `TiptapEditor.onUpdate`, om `rows > maxRows` → extrahera överskottstexten (HTML från sista node:n / sista raden).
+2. **Push till nästa kort** — ny callback `onOverflow(html)` som `Editor.tsx` hanterar genom att prependa HTML till nästa korts `content_html` (skapa nytt kort om inget finns).
+3. **Kaskad** — om nästa kort också spränger gränsen → samma logik triggar där (sker naturligt när dess editor renderas, men vi behöver göra det synkront för UX).
+4. **Pull tillbaka** (valfritt MVP-skärning) — vid Backspace i tomt kort → dra in text från nästa kort tills det fylls eller källkortet töms.
 
----
+**Caret-bevarande** — vid auto-split måste markören stanna kvar där användaren skriver (alltså flytta caret till nästa kort om sista tecknet skickades dit).
 
-## Steg 2 — Platshållare `[ditt namn]` autofylls + varning
+## Teknisk approach
 
-**Mål:** Inga oersatta `[…]` syns under skarp presentation.
+### Splitlogik (kärna)
+Använd befintlig `splitHtmlAtRow(html, maxRows, textSize)` i `cardLimits.ts` — den finns redan och används av paste-flödet.
 
-- **DB-migration:** lägg till kolumner på `profiles`: `display_name text`, `display_title text`, `display_org text` (nullable).
-- Ny sektion "Profil" i `Settings.tsx` med tre fält (autosparas via `useAutosave`-mönster eller direkt update).
-- Uppdatera `seedExampleManuscript.ts` så `[ditt namn]`, `[din titel]`, `[din organisation]` ersätts vid seedning (om profil-värden finns) — annars lämnas som platshållare.
-- I exempelmanuset: lägg till några ytterligare meningsfulla platshållare (`[publikens ort]`, `[datum]`) som demo.
-- **Hitta & ersätt** i Editor: liten knapp i topbar (eller via `Cmd/Ctrl+F`), enkel dialog med "Hitta" + "Ersätt med" + "Ersätt alla". Implementeras genom att gå igenom `cards[]` content_html som plain-text-extraktion + regex.
-- **Pre-flight i Presentation:** innan `setMenuOpen(false)` (start), scanna `cards.content_html` efter `\[[^\]]+\]`. Om träffar finns: visa en confirm-dialog "Manuset innehåller oersatta platshållare: …. Fortsätt ändå?".
+### TiptapEditor.tsx
+- Ny prop: `onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void`
+- I `onUpdate`: efter mätning, om `rows > maxRows`:
+  - Kör `splitHtmlAtRow(html, max, size)` → `[fits, overflow]`
+  - Bestäm om caret hamnade i overflow-delen (jämför `selection.from` mot textlängden av `fits`).
+  - Sätt editorns innehåll till `fits` (utan emit), trigga `onChange(fits)`.
+  - Anropa `onOverflow(overflow, caretInOverflow)`.
 
-**Filer:** migration, `src/pages/Settings.tsx`, `src/lib/seedExampleManuscript.ts`, `src/lib/exampleManuscript.ts`, `src/components/editor/FindReplaceDialog.tsx` (ny), `src/pages/Editor.tsx`, `src/pages/Presentation.tsx`, `src/components/presentation/PresentationStartMenu.tsx`.
+### Editor.tsx
+Ny handler `handleCardOverflow(cardId, overflowHtml, moveCaret)`:
+- Hitta nästa kort i `cards`-listan.
+- Om finns → `prependHtml(nextCard.content_html, overflowHtml)`, uppdatera via `updateCard`.
+- Om inte finns → skapa nytt kort efter aktuellt (samma logik som "lägg till kort").
+- Om `moveCaret` → fokusera nästa korts editor och placera caret vid slutet av den nyss inflyttade texten.
 
----
+### Caret-flytt mellan kort
+Behöver ref-system: en `Map<cardId, Editor>` i `Editor.tsx` (eller via befintlig `flushRegistry`-mönstret). När overflow flyttas och caret ska följa → `nextEditor.commands.focus(positionOfInsertedText)`.
 
-## Steg 3 — Smart anteckningspanel i presentationsläget
+### Edge cases
+- **Listpunkt / rubrik / blockquote**: split måste respektera blockgränser — `splitHtmlAtRow` gör redan detta korrekt (testat i paste-flödet).
+- **Pause-noder & panellist-marks**: bevaras eftersom vi splittar HTML, inte rå text.
+- **Snabb skrivning**: throttla overflow-checken med `requestAnimationFrame` (redan så) — undvik kaskadande renders i samma tick.
+- **Oändlig loop-skydd**: max 50 push-iterationer per update (samma mönster som `enforceRowLimit` i `buildCards.ts`).
 
-**Mål:** Tomma anteckningar ska inte stjäla utrymme.
+## Vad detta INTE inkluderar (kan komma sen)
 
-- I `PresentationCard.tsx`: tre lägen styrda av ny user-preference `notesDisplay: "always" | "auto" | "hidden"` (default `"auto"`):
-  - `auto`: tom note → kollapsad smal bar (ca 28px, halvtransparent) längst ner med "+ Anteckning"-ikon. Innehåller text → expanderad som idag, med "minimera"-knapp.
-  - `always`: alltid expanderad (nuvarande).
-  - `hidden`: aldrig synlig.
-- Inställning lagras i `localStorage` (`presentation.notesDisplay`) och exponeras i `Settings.tsx` under ny sektion "Presentation".
-- Lägg till minimera-/expandera-knapp i note-headern.
+- **Pull-back vid Backspace** — kan leveras som Del 2 om du vill ha snabb MVP först.
+- **Manuell sidbrytning** (ctrl+enter för att tvinga nytt kort) — separat feature.
+- **Delete-tangent som sammanfogar två kort** — separat feature.
 
-**Filer:** `src/components/presentation/PresentationCard.tsx`, `src/pages/Settings.tsx`, `src/pages/Presentation.tsx` (läs preference vid mount).
+## Påverkan på befintlig kod
 
----
+| Fil | Ändring |
+|-----|---------|
+| `src/components/editor/TiptapEditor.tsx` | Ny `onOverflow`-prop, reflow-logik i `onUpdate` |
+| `src/pages/Editor.tsx` | Ny `handleCardOverflow`, editor-ref-map, caret-koordinering |
+| `src/lib/cardLimits.ts` | Inga ändringar (`splitHtmlAtRow` återanvänds) |
 
-## Steg 4 — "Visa"-knappen som primär CTA
+Befintlig paste-overflow blir redundant och kan förenklas — eller behållas som snabbväg för stora pastor.
 
-**Mål:** Starta presentation ska vara den självklara knappen.
+## Frågor innan jag börjar
 
-- I `Editor.tsx` topbar: byt nuvarande "Visa"-knapp (ghost) till stor primär CTA högst upp till höger:
-  - Stil: `bg-accent-blue`, vit text, `rounded-full`, ▶-ikon (`Play`), text "Starta presentation".
-  - Behåll kortkommando `Cmd/Ctrl+Enter` (lägg till global handler om saknas — verifierar i `Editor.tsx`).
-  - Tooltip visar kortkommandot.
-- Andra knappar (signal, anteckningar, skriv ut, inställningar) blir tydligt sekundära (ghost, mindre).
-- **Ingen påverkan på SEO** (Editor är bakom auth, noindex).
-
-**Filer:** `src/pages/Editor.tsx`.
-
----
-
-## Steg 5 — Cue-systemet (största steget — bryts ned i 5A–5D)
-
-Planeras i delsteg, bekräftelse efter varje delsteg.
-
-### 5A — Datamodell + UI för fyra cue-kategorier (grund)
-
-- DB-migration: ersätt nuvarande tre cue-kolumner (`cue_red/amber/teal`) med en flexiblare `cues jsonb` (default `'[]'`). Behåll gamla kolumner för bakåtkompatibilitet i en migrationsfas; skriv migrationsskript som flyttar befintliga värden in i `cues`-array.
-- Cue-typ: `{ id, kind: "energy" | "action" | "panel" | "time", text, panelistId?, position? }`.
-- UI i `ManusCardV2`: sektion "Signaler" med kategori-tabbar; pills i nya färger (`hsl(--cue-red)`, `--cue-blue`, panelist-färg, gråton).
-- Per-kategori toggle "Dölj denna kategori" i `Settings` (lagras lokalt).
-
-### 5B — AI-föreslagna cues (prio 1)
-
-- Ny edge function `suggest-cues` (Lovable AI Gateway, `google/gemini-3-flash-preview`, tool-calling för strukturerad output). Input: kortets `content_html` + panelist-namn. Output: lista av cue-förslag med kategori + position.
-- I editor: knapp "Föreslå signaler" per kort + global "Föreslå för hela manuset". Förslag visas som diskreta accept/avvisa/redigera-chips ovanför cue-pills.
-- Vid import (`Import.tsx`): efter parse → kör suggest-cues i bakgrunden, visa förslag i preview-läget.
-
-### 5C — Röststyrda cues (prio 2)
-
-- Ny hook `useVoiceCommands` med Web Speech API (`SpeechRecognition`).
-- Aktiveras via toggle i presentations-startmeny ("Aktivera röststyrning").
-- Kommandon: "nästa", "föregående", "panik", "hoppa till [namn]".
-- Visuell indikator i topbar (mic-ikon röd när lyssnar). Off by default (kräver mikrofontillstånd).
-
-### 5D — Adaptiva cues (prio 3) + arkitektur för synkade cues (prio 4 förstudie)
-
-- Adaptiva: i `Presentation.tsx` jämför `timer.elapsedSeconds` mot kortens `start_time`. Om före schema → injicera transient cue "Sakta ner". Om efter → "Hoppa över om tiden tryter".
-- Synkade cues (förstudie): designdokument i `mem://features/cues-multi-device` om hur Realtime-channel per manuskript skulle struktureras (channel = manuscript_id, presence = enhets-roll). **Ingen implementation** i detta steg — bara arkitektur-skiss så vi inte målar in oss.
-
----
-
-## Övergripande SEO-hygien (gäller hela arbetet)
-
-- **Endast steg 4 och möjligen 5** rör Landing/marknadsföringssidor. Övriga är bakom auth (noindex).
-- I `SEO.tsx`: lägg till JSON-LD `SoftwareApplication`-schema i landing och usecase-sidor (saknas idag).
-- Verifiera Open Graph-taggar (finns i SEO.tsx — ok).
-- Behåll alla H1/H2/H3, befintliga rubriker med sökord, URL-slugs, alt-texter.
-- Inga befintliga interna länkar tas bort.
-
----
-
-## Leveransordning + bekräftelse
-
-1. **Steg 1** (rundtur + ?-hjälp) — låg risk, snabb vinst
-2. **Steg 2** (platshållare + Hitta&Ersätt) — kräver migration
-3. **Steg 3** (anteckningspanel) — UI-justering
-4. **Steg 4** (Visa-CTA) — snabb vinst
-5. **Steg 5A → 5D** (cue-systemet) — separat bekräftelse per delsteg
-
-Efter varje avslutat steg: kort statusrapport + förslag att gå vidare. Om ett steg drar över, påminner jag om återstående steg innan vi prioriterar om.
-
+Innan implementation: jag rekommenderar att vi **börjar med push-only (text knuffas framåt)** och sparar pull-back (backspace drar tillbaka) till en separat omgång. Det är en klart större komplexitet och du kan testa kärnflödet snabbare. Säg till om du hellre vill ha allt på en gång.
