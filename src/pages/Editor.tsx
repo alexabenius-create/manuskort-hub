@@ -14,7 +14,7 @@ import { ManusCardV2, type NotesPlacement } from "@/components/editor/ManusCardV
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { SunsetBanner } from "@/components/editor/SunsetBanner";
-import { PrintDialog } from "@/components/editor/PrintDialog";
+
 import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/TargetDurationDialog";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
@@ -61,7 +61,7 @@ export default function Editor() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [panelistSidebarOpen, setPanelistSidebarOpen] = useState(false);
-  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   // Layout-toggle (mockup): "ny" = ren V2-layout, "klassisk" = nuvarande
   const [layoutVariant, setLayoutVariant] = useState<"klassisk" | "ny">(() => {
@@ -1136,33 +1136,15 @@ export default function Editor() {
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (overflowingCardIds.size > 0) {
-                      toast({
-                        title: "Utskrift blockerad",
-                        description: `${overflowingCardIds.size} ${overflowingCardIds.size === 1 ? "kort är" : "kort är"} för långt. Korta ner texten eller använd "Dela kortet automatiskt".`,
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    setPrintDialogOpen(true);
-                  }}
-                  disabled={overflowingCardIds.size > 0}
+                  onClick={() => navigate(`/manus/${manuscript.id}/utskrift`)}
                   aria-label="Skriv ut manus"
-                  className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
                 >
                   <Printer className="h-4 w-4" />
-                  {overflowingCardIds.size > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold">
-                      {overflowingCardIds.size}
-                    </span>
-                  )}
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-                {overflowingCardIds.size > 0
-                  ? `Blockerad: ${overflowingCardIds.size} kort överskrider radgränsen`
-                  : "Skriv ut manus"}
+                Skriv ut manus
               </TooltipContent>
             </Tooltip>
 
