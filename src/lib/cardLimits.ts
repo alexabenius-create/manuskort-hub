@@ -193,7 +193,7 @@ export function splitHtmlAtRow(
         ...fitBlocks.map((b) => b.outerHTML),
         partialBlock,
       ].filter(Boolean).join("");
-      measurer.innerHTML = trial || "<p></p>";
+      measurer.innerHTML = normalizeForMeasurement(trial || "<p></p>");
       const rows = countVisualRows(measurer);
       if (rows <= maxRows) {
         bestFit = mid;
