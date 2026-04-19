@@ -704,7 +704,7 @@ export default function EditorV3() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={startPresentation}
+                    onClick={() => startPresentation()}
                     className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
@@ -817,6 +817,34 @@ export default function EditorV3() {
             }
           }}
         />
+
+        <AlertDialog open={chainBreakOpen} onOpenChange={setChainBreakOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Måltid saknas på vissa kort</AlertDialogTitle>
+              <AlertDialogDescription>
+                Följande kort saknar manuell måltid och bryter den ackumulerade tidskedjan:{" "}
+                <strong>
+                  {missingTargetCards
+                    .map((n) => `Kort ${String(n).padStart(2, "0")}`)
+                    .join(", ")}
+                </strong>
+                .
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Gå tillbaka och redigera</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setChainBreakOpen(false);
+                  startPresentation(true);
+                }}
+              >
+                Starta ändå
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </PanelistsProvider>
   );
