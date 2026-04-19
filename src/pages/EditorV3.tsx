@@ -340,9 +340,9 @@ export default function EditorV3() {
         <header className="border-b border-border/60 bg-background/95 backdrop-blur sticky top-0 z-30">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
             <Button asChild variant="ghost" size="sm" className="gap-2">
-              <Link to={`/manus/${id}`}>
+              <Link to="/bibliotek">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Tillbaka till v1</span>
+                <span className="hidden sm:inline">Bibliotek</span>
               </Link>
             </Button>
 
@@ -350,12 +350,19 @@ export default function EditorV3() {
               <span className="font-display text-[17px] font-semibold tracking-tight truncate max-w-[260px]">
                 {manuscript.title}
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-accent-blue/15 text-accent-blue border border-accent-blue/30">
-                v3 · admin · Fas 1
-              </span>
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleUseV1}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12px] text-muted-foreground hover:text-foreground hover:bg-surface-2 border border-border/40 transition-colors"
+                aria-label="Använd gamla editorn (v1)"
+                title="Byt tillbaka till v1 — gamla editorn läggs ner inom kort"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Använd v1 (läggs ner snart)</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setPanelistSidebarOpen(true)}
