@@ -12,6 +12,7 @@ import { SEO } from "@/components/SEO";
 import { UploadZone } from "@/components/import/UploadZone";
 import { SettingsForm } from "@/components/import/SettingsForm";
 import { PreviewCardItem } from "@/components/import/PreviewCardItem";
+import { CardGutter } from "@/components/import/CardGutter";
 import { SpeakerMappingPanel } from "@/components/import/SpeakerMappingPanel";
 import { ModeSelector } from "@/components/import/ModeSelector";
 import { SkippedContentPanel } from "@/components/import/SkippedContentPanel";
