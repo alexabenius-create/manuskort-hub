@@ -24,6 +24,8 @@ export interface BuildOptions {
   // Map: detekterat talar-namn → tempId (skapas av wizarden så den vet vilka som ska bli panelister)
   speakerTempIds: Map<string, string>;
   mode?: ImportMode;
+  // Valfri färg-map: detekterat namn → hex-färg. Om ej angiven används palett-fallback i ordning.
+  speakerColors?: Map<string, string>;
 }
 
 export function autoDetectStrategy(blocks: ParsedBlock[]): SplitStrategy {
@@ -65,8 +67,7 @@ export function buildCards(opts: BuildOptions): PreviewCard[] {
     const known: KnownPanelist[] = speakers.names.map((name, i) => ({
       tempId: opts.speakerTempIds.get(name) || `tmp:${name.replace(/\s+/g, "_")}`,
       name,
-      // Färg matchas senare av wizarden — använd palett-position som default
-      color: PALETTE[i % PALETTE.length],
+      color: opts.speakerColors?.get(name) || PALETTE[i % PALETTE.length],
     }));
     cards = cards.map((c) => {
       const annotated = annotateQuestionsInHtml(c.contentHtml, known);

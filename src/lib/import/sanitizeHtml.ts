@@ -116,7 +116,6 @@ export function sanitizeHtml(rawHtml: string, headingMode: HeadingMode = "strong
             name === "data-panelist-name" ||
             name === "data-question-to" ||
             name === "data-question-name" ||
-            name === "data-question-color" ||
             name === "style")
         ) {
           // Behåll panelist/question-attribut; style hanteras nedan (vi tar bort om inte specialspan)
