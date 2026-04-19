@@ -144,6 +144,7 @@ export default function EditorV3() {
           if (editorRef.current === ed) {
             hydrateAttrs(ed);
             initializedRef.current = true;
+            hydratedRef.current = true;
           }
         });
       }
@@ -155,10 +156,12 @@ export default function EditorV3() {
   useEffect(() => {
     if (!editorRef.current || !manuscript) return;
     initializedRef.current = false;
+    hydratedRef.current = false;
     const t = window.setTimeout(() => {
       if (editorRef.current) {
         hydrateAttrs(editorRef.current);
         initializedRef.current = true;
+        hydratedRef.current = true;
       }
     }, 16);
     return () => window.clearTimeout(t);
