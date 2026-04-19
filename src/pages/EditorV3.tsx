@@ -109,9 +109,9 @@ export default function EditorV3() {
 
   const textSize: TextSize = (manuscript?.text_size as TextSize) ?? "md";
 
-  // Höjd för spacer-decoration:
-  // = footer-utrymme (notes/cues, ungefär) + gap + nästa kort header
-  const SPACER_HEIGHT = 56 + CHROME_GAP_HEIGHT + CHROME_HEADER_HEIGHT;
+  // Total spacer-höjd mellan två kort i editor-flödet:
+  //   = FOOTER (slut på kort i) + GAP (luft) + HEADER (början på kort i+1)
+  const SPACER_HEIGHT = CHROME_FOOTER_HEIGHT + CHROME_GAP_HEIGHT + CHROME_HEADER_HEIGHT;
 
   const measureLayout = useCallback(() => {
     const editor = editorRef.current;
@@ -121,20 +121,16 @@ export default function EditorV3() {
     // 1) Splitta html i fragments enligt presentations-geometri
     const fragments = splitDocToCards(docHtml, textSize);
 
-    // 2) Hitta block-gräns-positioner i doc:
-    //    Räkna block (paragraph/heading/blockquote) i samma ordning som splittan
-    //    skapar dem. Vi antar 1 fragment ≈ N hela block i ordning. Mappingen är:
-    //    frag i innehåller blocken [blockOffset[i] .. blockOffset[i+1])
-    const blockEnds: number[] = []; // doc-pos efter varje top-level block
+    // 2) Hitta block-gräns-positioner i doc
+    const blockEnds: number[] = [];
     editor.state.doc.forEach((node, offset) => {
       blockEnds.push(offset + node.nodeSize);
     });
 
-    // Räkna hur många block varje fragment innehåller
+    // Räkna hur många top-level block varje fragment innehåller
     const blocksPerFrag: number[] = fragments.map((html) => {
       const tmp = document.createElement("div");
       tmp.innerHTML = html;
-      // räkna direkta child-element som är block-typer
       let count = 0;
       tmp.childNodes.forEach((n) => {
         if (n.nodeType === 1) count++;
@@ -142,7 +138,7 @@ export default function EditorV3() {
       return Math.max(1, count);
     });
 
-    // Mappa fragment-index → start/slut block-index
+    // Fragment-index → block-range
     const fragBlockRanges: { startBlock: number; endBlock: number }[] = [];
     let acc = 0;
     for (const b of blocksPerFrag) {
@@ -150,7 +146,7 @@ export default function EditorV3() {
       acc += b;
     }
 
-    // 3) Frame-breaks = positionen EFTER sista blocket i varje fragment (utom sista)
+    // 3) Frame-breaks = position EFTER sista blocket i varje fragment (utom sista)
     const breaks: FrameBreak[] = [];
     for (let i = 0; i < fragBlockRanges.length - 1; i++) {
       const endBlockIdx = fragBlockRanges[i].endBlock;
@@ -160,7 +156,7 @@ export default function EditorV3() {
       }
     }
 
-    // 4) Mät pixel-Y för start/slut av varje fragment via DOM
+    // 4) Mät pixel-Y för fragmentens text-zon
     const editorRect = root.getBoundingClientRect();
     const blockEls = Array.from(root.children).filter(
       (n) => n.nodeType === 1 && !(n as HTMLElement).hasAttribute("data-frame-spacer"),
@@ -174,8 +170,12 @@ export default function EditorV3() {
       if (!firstEl || !lastEl) continue;
       const fr = firstEl.getBoundingClientRect();
       const lr = lastEl.getBoundingClientRect();
-      const topPx = fr.top - editorRect.top;
-      const heightPx = Math.max(40, lr.bottom - fr.top);
+      const textTop = fr.top - editorRect.top;
+      const textHeight = Math.max(40, lr.bottom - fr.top);
+
+      // Box = HEADER ovanför text + text-zon + FOOTER under text
+      const boxTop = textTop - CHROME_HEADER_HEIGHT;
+      const boxHeight = CHROME_HEADER_HEIGHT + textHeight + CHROME_FOOTER_HEIGHT;
 
       const startBlockOffset = startBlock === 0 ? 0 : blockEnds[startBlock - 1];
       const endBlockOffset = blockEnds[endBlock] ?? startBlockOffset;
@@ -185,8 +185,8 @@ export default function EditorV3() {
         startDocPos: startBlockOffset,
         endDocPos: endBlockOffset,
         html: fragments[i],
-        topPx,
-        heightPx,
+        topPx: boxTop,
+        heightPx: boxHeight,
       });
     }
 
