@@ -55,7 +55,7 @@ export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeVi
   const seconds = estimateSeconds(words, a.wpm || 140);
   const num = String(a.cardNumber).padStart(2, "0");
 
-  const cues = a.cues ?? [];
+  const cues = Array.isArray(a.cues) ? a.cues : [];
   const showNotes = a.showNotes !== false;
   const isFirst = a.cardNumber === 1;
   const isLast = a.cardNumber === a.totalCards;
