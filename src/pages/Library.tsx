@@ -349,7 +349,7 @@ export default function Library() {
             ))}
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2" data-tour="library.new-button">
             <Button
               variant="ghost"
               onClick={requestImport}
@@ -359,7 +359,6 @@ export default function Library() {
             </Button>
             <Dialog open={openNew} onOpenChange={setOpenNew}>
               <Button
-                data-tour="library.new-button"
                 onClick={requestNew}
                 className="h-11 rounded-full px-5 bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] font-medium gap-1.5"
               >
