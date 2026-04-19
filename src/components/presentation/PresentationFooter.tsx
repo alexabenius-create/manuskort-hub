@@ -17,6 +17,10 @@ interface Props {
   cardElapsedSeconds: number;
   /** Måltid för aktuellt kort (manuellt satt). Fallback till start/end-diff. */
   cardTargetSeconds: number | null;
+  /** Om användaren har dismissat övertids-varningen för detta kort. */
+  isOverdueDismissed: boolean;
+  /** Användaren stänger av röd varning för detta specifika kort. */
+  onDismissOverdue: () => void;
   timeFormat: "clock" | "elapsed";
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
