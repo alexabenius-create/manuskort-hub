@@ -37,10 +37,8 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
     if (!editor) return;
     const handler = () => force((n) => n + 1);
     editor.on("selectionUpdate", handler);
-    editor.on("transaction", handler);
     return () => {
       editor.off("selectionUpdate", handler);
-      editor.off("transaction", handler);
     };
   }, [editor]);
 
