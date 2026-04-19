@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EXAMPLE_MANUSCRIPT } from "./exampleManuscript";
 import { hexToRgba, hexToDarkText } from "./panelistColors";
-import { autofillProfilePlaceholders, type ProfileValues } from "./placeholders";
+import { autofillProfilePlaceholders, type ProfileValues } from "./profilePlaceholders";
 
 const seededKey = (userId: string) => `manuskort:example_seeded:${userId}`;
 
