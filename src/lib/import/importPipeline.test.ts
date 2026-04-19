@@ -21,7 +21,9 @@ async function parseBuf(buf: Buffer) {
   let currentSection = "Början av dokumentet";
 
   const collect = (container: Element) => {
-    container.querySelectorAll("img").forEach((img) => {
+    const imgs: Element[] = Array.from(container.querySelectorAll("img"));
+    if (container.tagName === "IMG") imgs.unshift(container);
+    imgs.forEach((img) => {
       const alt = img.getAttribute("alt") || "";
       const src = img.getAttribute("src") || "";
       let format = "";
@@ -34,7 +36,9 @@ async function parseBuf(buf: Buffer) {
         : `Bild${format ? ` (${format})` : ""}`;
       skippedItems.push({ kind: "image", section: currentSection, description: desc });
     });
-    container.querySelectorAll("table").forEach((table) => {
+    const tables: Element[] = Array.from(container.querySelectorAll("table"));
+    if (container.tagName === "TABLE") tables.unshift(container);
+    tables.forEach((table) => {
       const rows = table.querySelectorAll("tr").length;
       const cols = table.querySelector("tr")?.querySelectorAll("td, th").length || 0;
       const firstCell = (table.querySelector("td, th")?.textContent || "").trim().slice(0, 40);
