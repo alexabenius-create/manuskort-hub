@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
-import { useEditorPreference } from "@/hooks/useEditorPreference";
+
 
 export default function Settings() {
   const { user, signOut } = useAuth();
