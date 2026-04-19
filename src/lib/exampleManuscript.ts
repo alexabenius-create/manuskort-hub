@@ -172,6 +172,10 @@ export const EXAMPLE_MANUSCRIPT: ExampleManuscript = {
       cue_red: "",
       cue_amber: "bryt om någon tar över helt",
       cue_teal: "Generationsfrågan",
+      cues: [
+        { kind: "energy", text: "bryt om någon tar över helt" },
+        { kind: "action", text: "Generationsfrågan" },
+      ],
       is_panic_card: false,
     },
     {
