@@ -187,6 +187,7 @@ export type Database = {
           display_name: string | null
           display_org: string | null
           display_title: string | null
+          editor_preference: Database["public"]["Enums"]["editor_version"]
           email: string | null
           id: string
           manus_tour_completed: boolean
@@ -200,6 +201,7 @@ export type Database = {
           display_name?: string | null
           display_org?: string | null
           display_title?: string | null
+          editor_preference?: Database["public"]["Enums"]["editor_version"]
           email?: string | null
           id?: string
           manus_tour_completed?: boolean
@@ -213,6 +215,7 @@ export type Database = {
           display_name?: string | null
           display_org?: string | null
           display_title?: string | null
+          editor_preference?: Database["public"]["Enums"]["editor_version"]
           email?: string | null
           id?: string
           manus_tour_completed?: boolean
@@ -326,6 +329,7 @@ export type Database = {
     Enums: {
       app_role: "free" | "pro" | "admin"
       card_role: "moderator" | "speaker"
+      editor_version: "v1" | "v3"
       manuscript_mode: "moderator" | "speaker"
     }
     CompositeTypes: {
@@ -456,6 +460,7 @@ export const Constants = {
     Enums: {
       app_role: ["free", "pro", "admin"],
       card_role: ["moderator", "speaker"],
+      editor_version: ["v1", "v3"],
       manuscript_mode: ["moderator", "speaker"],
     },
   },
