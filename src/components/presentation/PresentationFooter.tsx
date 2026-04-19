@@ -1,4 +1,4 @@
-import { Triangle, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Triangle, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 
