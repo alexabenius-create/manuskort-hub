@@ -1,5 +1,8 @@
 // Definitionsdata för rundturerna. Varje steg pekar ut ett mål-element via
 // data-tour-attribut och innehåller rubrik + brödtext för tooltipen.
+//
+// Touren är medvetet kort (max 4 steg per vy). Detaljerad hjälp finns i
+// HelpSheet (frågetecken-knappen i topbar) — se src/lib/helpContent.ts.
 
 export type TourId = "bibliotek" | "manus";
 
@@ -27,13 +30,13 @@ export const BIBLIOTEK_TOUR: TourDefinition = {
       target: '[data-tour="library.example-card"]',
       title: "Exempelmanuset",
       body:
-        "Det här är ett färdigt manus du kan utforska, ändra och presentera. Se det som ett sandlåde-manus — ändra allt du vill, eller radera det när du är klar.",
+        "Här är ett färdigt manus du kan utforska och ändra. Klicka på det för att öppna och se hur kort, signaler och paneldeltagare fungerar.",
     },
     {
       target: '[data-tour="library.new-button"]',
-      title: "Skapa nytt manus",
+      title: "Skapa eller importera",
       body:
-        "Klicka här när du vill skapa ett tomt manus från grunden. Du kan också importera ett befintligt manus från PDF eller Word.",
+        "Skapa ett tomt manus från grunden, eller importera ett befintligt Word-dokument med \"Importera\" bredvid.",
       preferredPlacement: "left",
     },
   ],
@@ -44,77 +47,30 @@ export const MANUS_TOUR: TourDefinition = {
   flag: "manus_tour_completed",
   steps: [
     {
-      target: '[data-tour="editor.display-settings"]',
-      title: "Måltid, textstorlek och visning",
+      target: '[data-tour="card.script"]',
+      title: "Skriv ditt manus",
       body:
-        "Ställ in manusets måltid (hur långt ska det vara), justera textstorleken för att förlänga eller korta ner, och bestäm om anteckningar och tider ska visas i redigeringsvyn.",
-      preferredPlacement: "bottom",
+        "Här skriver du det du faktiskt ska säga. Markera text för att formatera. Tryck snedstreck (/) där du vill lägga in en medveten paus.",
     },
     {
-      target: '[data-tour="editor.panelists"]',
-      title: "Deltagare",
+      target: '[data-tour="card.cues"]',
+      title: "Lägg till signaler (cues)",
       body:
-        "Lägg till de personer som ska tala i manuset. Varje deltagare får en färg, och du kan koppla dem till kort via talare-chipen på varje kort.",
-      preferredPlacement: "bottom",
+        "Färgade signaler som syns under framträdandet — paus, avslutningssignal, överlämning. Detta är vad som gör Manuskort unikt.",
     },
     {
-      target: '[data-tour="editor.add-print"]',
-      title: "Nytt kort och utskrift",
+      target: '[data-tour="card.menu"]',
+      title: "Markera ett panik-kort",
       body:
-        "Lägg till ett nytt tomt kort i slutet av manuset, eller skriv ut hela manuset på papper om du föredrar det framför skärmen under framträdandet.",
-      preferredPlacement: "bottom",
+        "I kortmenyn kan du markera ett kort som panik-kort. Under presentationen kommer du dit direkt med P-tangenten — en räddningsfras alltid inom räckhåll.",
+      preferredPlacement: "left",
     },
     {
       target: '[data-tour="editor.present"]',
       title: "Starta presentationsläget",
       body:
-        "Klicka här när det är dags att framträda. Skärmen tar över helt, skärmen hålls vaken och du navigerar kort för kort med svep, tangentbord eller presentationsklickare.",
+        "När du är klar — tryck här för att gå in i helskärm. Skärmen hålls vaken, aviseringar tystas, och du navigerar kort för kort.",
       preferredPlacement: "bottom",
-    },
-    // Kort-steg — alla på första kortet
-    {
-      target: '[data-tour="card.role"]',
-      title: "Talare",
-      body:
-        "Tryck på chipen för att byta eller lägga till talare för det här kortet. Chipens färg följer deltagaren och syns även i presentationsläget.",
-    },
-    {
-      target: '[data-tour="card.title"]',
-      title: "Kortets rubrik",
-      body:
-        "En kort beskrivande rubrik som hjälper dig snabbt identifiera kortet — både i redigeringen och i presentationsläget. Tänk på det som en kapiteltitel.",
-    },
-    {
-      target: '[data-tour="card.script"]',
-      title: "Manustexten",
-      body:
-        "Här skriver du det du faktiskt ska säga. Markera text för att få fram formateringsverktyget — fetstil, kursiv, understrykning och gulmarkering. Tryck snedstreck (/) där du vill lägga in en medveten paus — markören syns tydligt i presentationsläget som en andningspåminnelse.",
-    },
-    {
-      target: '[data-tour="card.notes"]',
-      title: "Anteckningar",
-      body:
-        "Skriv egna påminnelser som bara du ser — tonläge, kroppsspråk, saker att komma ihåg. Anteckningarna syns i presentationsläget men aldrig i utskriften som delas med andra.",
-      preferredPlacement: "left",
-    },
-    {
-      target: '[data-tour="card.times"]',
-      title: "Tider",
-      body:
-        "Sätt hur långt in i framträdandet det här kortet börjar och slutar. I presentationsläget syns en ring runt kortet som visar om du ligger i fas eller måste skynda på.",
-    },
-    {
-      target: '[data-tour="card.cues"]',
-      title: "Signaler",
-      body:
-        "Skriv korta regi-kommentarer i de tre fälten — t.ex. \"vänta på applåder\" eller \"signalera till tekniker\". I presentationsläget syns de som färgade prickar i kortets hörn; tappa pricken för att läsa signalen under framträdandet.",
-    },
-    {
-      target: '[data-tour="card.menu"]',
-      title: "Kortmenyn",
-      body:
-        "Via menyn kan du markera kortet som panik-kort, duplicera det, splitta långa kort i två, eller ta bort det helt.",
-      preferredPlacement: "left",
     },
   ],
 };

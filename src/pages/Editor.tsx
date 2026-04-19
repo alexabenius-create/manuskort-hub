@@ -18,6 +18,7 @@ import { TargetDurationDialog, formatTargetDuration } from "@/components/editor/
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { useAutosave } from "@/hooks/useAutosave";
 import { ArrowLeft, Plus, Printer, Users, Play, Target, Settings2 } from "lucide-react";
+import { HelpButton } from "@/components/HelpButton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
@@ -881,6 +882,7 @@ export default function Editor() {
               <Play className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Visa</span>
             </Button>
+            <HelpButton />
           </div>
         </header>
       </div>
