@@ -835,6 +835,7 @@ export default function EditorV3() {
           open={targetDialogOpen}
           onOpenChange={setTargetDialogOpen}
           value={targetDurationSeconds}
+          chainEndSeconds={chainEndSeconds}
           intro={targetDialogIntro}
           saveLabel={targetSaveLabel}
           onSave={(seconds) => {
