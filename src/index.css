@@ -281,32 +281,30 @@
   }
 
   /* Fråga TILL en panelist — moderatorns text riktad till någon.
-     Visuellt: pil-prefix + färgad understruken text i panelistens färg.
-     Skiljs från panelist-mark (panelistens egen replik). */
+     Visuellt: färgad fet text med mjuk bakgrunds-tint i panelistens färg.
+     Färg-källa: data-panelist-color (samma som .panelist-mark). */
   .question-to-mark,
   .ProseMirror .question-to-mark {
-    color: var(--question-fg, hsl(240 6% 20%));
+    color: var(--question-fg, hsl(240 6% 15%));
+    background-color: var(--question-bg, hsl(240 9% 92%));
     font-weight: 600;
-    text-decoration: underline;
-    text-decoration-color: var(--question-accent, hsl(240 6% 50%));
-    text-decoration-thickness: 2px;
-    text-underline-offset: 3px;
-    padding: 0 2px;
-    border-radius: 4px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    box-shadow: inset 0 -2px 0 var(--question-accent, hsl(240 6% 60%));
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
-  .question-to-mark::before,
-  .ProseMirror .question-to-mark::before {
-    content: "→ " attr(data-question-name) ": ";
-    font-size: 0.78em;
+  /* Pil-prefix endast när markeringen täcker en hel frågesats
+     (slutar med ? eller ! — datavalidering via attribut). */
+  .question-to-mark[data-question-name]:where(:not(:empty))::before {
+    content: "→ " attr(data-question-name) " ";
+    font-size: 0.72em;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    text-decoration: none;
-    margin-right: 0.25em;
-    color: var(--question-fg, hsl(240 6% 20%));
-    opacity: 0.85;
+    margin-right: 0.3em;
+    color: var(--question-fg, hsl(240 6% 15%));
+    opacity: 0.75;
   }
 }
 
