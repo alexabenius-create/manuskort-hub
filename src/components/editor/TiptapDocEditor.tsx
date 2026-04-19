@@ -309,7 +309,7 @@ export function TiptapDocEditor({
   return (
     <div className="relative w-full">
       <EditorContent editor={editor} />
-      <FormatBubbleMenu editor={editor} />
+      <FormatBubbleMenu editor={editor} textSize={size} />
     </div>
   );
 }
