@@ -43,6 +43,7 @@ export default function Library() {
   const [dragOver, setDragOver] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<{ title: string; description: string } | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const [openNew, setOpenNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
