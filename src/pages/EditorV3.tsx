@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,7 +6,11 @@ import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
-import { CardChromeFrame } from "@/components/editor/CardChromeFrame";
+import {
+  CardChromeFrame,
+  CHROME_HEADER_HEIGHT,
+  CHROME_GAP_HEIGHT,
+} from "@/components/editor/CardChromeFrame";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { joinCardsToDoc, splitDocToCards, planCardSync } from "@/lib/docSplit";
@@ -14,16 +18,37 @@ import { PanelistsProvider } from "@/hooks/usePanelists";
 import type { TextSize } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 import type { Editor as TiptapEditorType } from "@tiptap/react";
+import type { FrameBreak } from "@/lib/docFrameDecorations";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
 
+interface FragmentLayout {
+  /** index 0..N-1 */
+  index: number;
+  /** ProseMirror dokument-position där fragmentet börjar (block-start). */
+  startDocPos: number;
+  /** ProseMirror dokument-position där fragmentet slutar (block-slut). */
+  endDocPos: number;
+  /** Ordlängd-html för chromen (för wordcount). */
+  html: string;
+  /** Pixel-Y i editor-rooten där fragmentets text börjar. */
+  topPx: number;
+  /** Höjd i pixlar för fragmentets text-zon. */
+  heightPx: number;
+}
+
 /**
  * EditorV3 — v1:s kort-chrome ovanpå v2:s flödes-editor.
  *
- * En enda Tiptap-instans. Chrome-ramar (nummer, anteckning, cues, more-menu)
- * ritas absolut-positionerade per virtuellt kort. Drag är avstängt — ordning
- * följer textflödet.
+ * Princip:
+ *  - splitDocToCards delar texten i N HTML-fragment vid presentations-radgräns
+ *  - Varje fragment-gräns översätts till en ProseMirror-block-position
+ *  - DocFrameDecorations injicerar en spacer-widget vid varje gräns →
+ *    reserverar plats för chrome (footer + gap + nästa header)
+ *  - Vi mäter pixel-Y för start/slut av varje fragment och ritar absolut-
+ *    positionerade header + footer i en overlay
+ *  - Texten i mitten är helt fri → klick på text → editorn fångar
  */
 export default function EditorV3() {
   const { id } = useParams<{ id: string }>();
@@ -38,8 +63,8 @@ export default function EditorV3() {
   const [docHtml, setDocHtml] = useState<string>("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  // Beräknade fragment + Y-positioner per fragment-block (mätt mot editor-DOM)
-  const [frames, setFrames] = useState<{ topPx: number; heightPx: number; html: string }[]>([]);
+  const [layout, setLayout] = useState<FragmentLayout[]>([]);
+  const [frameBreaks, setFrameBreaks] = useState<FrameBreak[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
 
   const editorRef = useRef<TiptapEditorType | null>(null);
@@ -81,83 +106,135 @@ export default function EditorV3() {
     })();
   }, [id, navigate]);
 
-  const handleEditorReady = (ed: TiptapEditorType | null) => {
+  const textSize: TextSize = (manuscript?.text_size as TextSize) ?? "md";
+
+  // Höjd för spacer-decoration:
+  // = footer-utrymme (notes/cues, ungefär) + gap + nästa kort header
+  const SPACER_HEIGHT = 56 + CHROME_GAP_HEIGHT + CHROME_HEADER_HEIGHT;
+
+  const measureLayout = useCallback(() => {
+    const editor = editorRef.current;
+    const root = editorRootRef.current;
+    if (!editor || !root || !manuscript) return;
+
+    // 1) Splitta html i fragments enligt presentations-geometri
+    const fragments = splitDocToCards(docHtml, textSize);
+
+    // 2) Hitta block-gräns-positioner i doc:
+    //    Räkna block (paragraph/heading/blockquote) i samma ordning som splittan
+    //    skapar dem. Vi antar 1 fragment ≈ N hela block i ordning. Mappingen är:
+    //    frag i innehåller blocken [blockOffset[i] .. blockOffset[i+1])
+    const blockEnds: number[] = []; // doc-pos efter varje top-level block
+    editor.state.doc.forEach((node, offset) => {
+      blockEnds.push(offset + node.nodeSize);
+    });
+
+    // Räkna hur många block varje fragment innehåller
+    const blocksPerFrag: number[] = fragments.map((html) => {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = html;
+      // räkna direkta child-element som är block-typer
+      let count = 0;
+      tmp.childNodes.forEach((n) => {
+        if (n.nodeType === 1) count++;
+      });
+      return Math.max(1, count);
+    });
+
+    // Mappa fragment-index → start/slut block-index
+    const fragBlockRanges: { startBlock: number; endBlock: number }[] = [];
+    let acc = 0;
+    for (const b of blocksPerFrag) {
+      fragBlockRanges.push({ startBlock: acc, endBlock: acc + b - 1 });
+      acc += b;
+    }
+
+    // 3) Frame-breaks = positionen EFTER sista blocket i varje fragment (utom sista)
+    const breaks: FrameBreak[] = [];
+    for (let i = 0; i < fragBlockRanges.length - 1; i++) {
+      const endBlockIdx = fragBlockRanges[i].endBlock;
+      const pos = blockEnds[endBlockIdx];
+      if (pos != null) {
+        breaks.push({ pos, heightPx: SPACER_HEIGHT });
+      }
+    }
+
+    // 4) Mät pixel-Y för start/slut av varje fragment via DOM
+    const editorRect = root.getBoundingClientRect();
+    const blockEls = Array.from(root.children).filter(
+      (n) => n.nodeType === 1 && !(n as HTMLElement).hasAttribute("data-frame-spacer"),
+    ) as HTMLElement[];
+
+    const layouts: FragmentLayout[] = [];
+    for (let i = 0; i < fragBlockRanges.length; i++) {
+      const { startBlock, endBlock } = fragBlockRanges[i];
+      const firstEl = blockEls[startBlock];
+      const lastEl = blockEls[endBlock] ?? firstEl;
+      if (!firstEl || !lastEl) continue;
+      const fr = firstEl.getBoundingClientRect();
+      const lr = lastEl.getBoundingClientRect();
+      const topPx = fr.top - editorRect.top;
+      const heightPx = Math.max(40, lr.bottom - fr.top);
+
+      const startBlockOffset = startBlock === 0 ? 0 : blockEnds[startBlock - 1];
+      const endBlockOffset = blockEnds[endBlock] ?? startBlockOffset;
+
+      layouts.push({
+        index: i,
+        startDocPos: startBlockOffset,
+        endDocPos: endBlockOffset,
+        html: fragments[i],
+        topPx,
+        heightPx,
+      });
+    }
+
+    setLayout(layouts);
+    setFrameBreaks(breaks);
+
+    // Aktivt kort = där caret står
+    const sel = editor.state.selection;
+    if (sel) {
+      const from = sel.from;
+      let idx = 0;
+      for (let i = 0; i < layouts.length; i++) {
+        if (from >= layouts[i].startDocPos && from <= layouts[i].endDocPos) {
+          idx = i;
+          break;
+        }
+        idx = i;
+      }
+      setActiveIdx(idx);
+    }
+  }, [docHtml, manuscript, textSize, SPACER_HEIGHT]);
+
+  const scheduleMeasure = useCallback(() => {
+    if (measureRafRef.current) cancelAnimationFrame(measureRafRef.current);
+    measureRafRef.current = requestAnimationFrame(measureLayout);
+  }, [measureLayout]);
+
+  const handleEditorReady = useCallback((ed: TiptapEditorType | null) => {
     editorRef.current = ed;
     editorRootRef.current = ed ? (ed.view.dom as HTMLElement) : null;
     if (ed) {
       ed.on("selectionUpdate", scheduleMeasure);
       ed.on("update", scheduleMeasure);
+      // initial mätning efter en frame
+      requestAnimationFrame(scheduleMeasure);
     }
-  };
-
-  const textSize: TextSize = (manuscript?.text_size as TextSize) ?? "md";
-
-  // Beräkna fragment + Y-positioner när dokumentet ändras eller fönstret resizes
-  function scheduleMeasure() {
-    if (measureRafRef.current) cancelAnimationFrame(measureRafRef.current);
-    measureRafRef.current = requestAnimationFrame(measureFrames);
-  }
-
-  function measureFrames() {
-    const root = editorRootRef.current;
-    if (!root || !manuscript) return;
-
-    const fragments = splitDocToCards(docHtml, textSize);
-    const editorRect = root.getBoundingClientRect();
-
-    // Mappa varje fragment till en text-offset → hitta Y av första och sista karaktär
-    const offsets: number[] = [];
-    let acc = 0;
-    for (const frag of fragments) {
-      const tmp = document.createElement("div");
-      tmp.innerHTML = frag;
-      acc += (tmp.textContent ?? "").length;
-      offsets.push(acc);
-    }
-
-    const next: { topPx: number; heightPx: number; html: string }[] = [];
-    let prevBottom = 0;
-    for (let i = 0; i < fragments.length; i++) {
-      const startOffset = i === 0 ? 0 : offsets[i - 1];
-      const endOffset = offsets[i];
-      const startY = findYAtTextOffset(root, startOffset, "top");
-      const endY = findYAtTextOffset(root, endOffset, "bottom");
-      const top = startY !== null ? startY - editorRect.top : prevBottom;
-      const bottom = endY !== null ? endY - editorRect.top : top + 120;
-      const heightPx = Math.max(60, bottom - top);
-      next.push({ topPx: top, heightPx, html: fragments[i] });
-      prevBottom = bottom;
-    }
-    setFrames(next);
-
-    // Aktivt kort = där caret står
-    const sel = editorRef.current?.state.selection;
-    if (sel) {
-      let anchorOffset = 0;
-      const docNode = editorRef.current!.state.doc;
-      anchorOffset = docNode.textBetween(0, sel.from, "\n", "\n").length;
-      let idx = 0;
-      for (let i = 0; i < offsets.length; i++) {
-        if (anchorOffset <= offsets[i]) { idx = i; break; }
-        idx = i;
-      }
-      setActiveIdx(idx);
-    }
-  }
+  }, [scheduleMeasure]);
 
   // Mät om vid resize
   useEffect(() => {
     const onResize = () => scheduleMeasure();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [scheduleMeasure]);
 
   // Mät när html eller storlek ändras
   useEffect(() => {
     scheduleMeasure();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docHtml, textSize]);
+  }, [docHtml, textSize, scheduleMeasure]);
 
   // Debounced autosave
   const handleDocChange = (html: string) => {
@@ -234,7 +311,6 @@ export default function EditorV3() {
     }
   }
 
-  // Patch på enskilt korts metadata (notes, cues, panik) — sparas direkt
   async function patchCard(cardId: string, patch: Partial<Card>) {
     setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, ...patch } : c)));
     const { error } = await supabase.from("cards").update(patch).eq("id", cardId);
@@ -244,7 +320,6 @@ export default function EditorV3() {
   }
 
   async function deleteCard(cardId: string) {
-    // I v3 = ta bort textintervallet ur editorn → spara
     const fragIdx = cards.findIndex((c) => c.id === cardId);
     if (fragIdx < 0) return;
     const fragments = splitDocToCards(docHtml, textSize);
@@ -306,7 +381,7 @@ export default function EditorV3() {
 
             <div className="ml-auto flex items-center gap-3">
               <span className="text-[12px] text-muted-foreground font-mono">
-                {frames.length} {frames.length === 1 ? "kort" : "kort"}
+                {layout.length} kort
               </span>
               <span
                 className={`text-[12px] font-mono inline-flex items-center gap-1.5 ${
@@ -323,27 +398,30 @@ export default function EditorV3() {
         <main className="flex-1 w-full">
           <div className="max-w-[900px] mx-auto py-8 px-4 relative">
             <div className="relative">
-              {/* Editor — nedanför chrome i z-stack, så texten är klickbar */}
+              {/* Editor — hela texten i en instans */}
               <div className="relative z-0">
                 <TiptapDocEditor
                   value={docHtml}
                   onChange={handleDocChange}
                   size={textSize}
                   onEditorReady={handleEditorReady}
+                  frameBreaks={frameBreaks}
                 />
               </div>
 
-              {/* Chrome-ramar — ovanpå men pointer-events: none förutom på knappar */}
-              <div className="absolute inset-0 z-10" aria-hidden="false">
-                {frames.map((f, i) => {
+              {/* Chrome-overlay — header + footer per fragment, ABSOLUT.
+                  Containern släpper igenom alla pointer-events; bara
+                  header/footer-elementen själva fångar dem. */}
+              <div className="absolute inset-0 pointer-events-none z-10">
+                {layout.map((f, i) => {
                   const card = cards[i] ?? null;
                   return (
                     <CardChromeFrame
                       key={card?.id ?? `virtual-${i}`}
                       card={card}
                       number={i + 1}
-                      total={frames.length}
-                      topPx={f.topPx}
+                      total={layout.length}
+                      topPx={f.topPx - CHROME_HEADER_HEIGHT}
                       heightPx={f.heightPx}
                       isActive={i === activeIdx}
                       contentHtml={f.html}
@@ -367,35 +445,4 @@ export default function EditorV3() {
       </div>
     </PanelistsProvider>
   );
-}
-
-/** Hitta Y-koordinat (top eller bottom) för en text-offset i editor-DOM. */
-function findYAtTextOffset(
-  root: HTMLElement,
-  targetOffset: number,
-  edge: "top" | "bottom",
-): number | null {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-  let acc = 0;
-  let node: Node | null;
-  let lastRect: DOMRect | null = null;
-  while ((node = walker.nextNode())) {
-    const text = node.nodeValue ?? "";
-    if (acc + text.length >= targetOffset) {
-      const offsetInNode = Math.max(0, targetOffset - acc);
-      const range = document.createRange();
-      try {
-        range.setStart(node, Math.min(offsetInNode, text.length));
-        range.setEnd(node, Math.min(offsetInNode, text.length));
-      } catch {
-        return null;
-      }
-      const rects = range.getClientRects();
-      const rect = rects[rects.length - 1] ?? range.getBoundingClientRect();
-      return edge === "top" ? rect.top : rect.bottom;
-    }
-    acc += text.length;
-    lastRect = null;
-  }
-  return lastRect ? (edge === "top" ? lastRect.top : lastRect.bottom) : null;
 }
