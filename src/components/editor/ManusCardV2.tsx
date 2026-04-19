@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical, MoreHorizontal, Pause, Flag, ArrowRight, HelpCircle, X,
-  Scissors, AlertTriangle, Triangle, StickyNote, Sparkles, Clock,
+  Scissors, AlertTriangle, Triangle, StickyNote, Sparkles, Clock, RotateCcw,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import {
@@ -123,6 +123,7 @@ export function ManusCardV2({
       position: card.position,
       is_panic_card: card.is_panic_card ?? false,
       target_seconds: card.target_seconds ?? null,
+      target_seconds_is_manual: card.target_seconds_is_manual ?? false,
     },
   });
 
@@ -201,8 +202,14 @@ export function ManusCardV2({
         <span className="opacity-60">·</span>
         <TargetTimePopover
           value={card.target_seconds ?? null}
+          isManual={card.target_seconds_is_manual ?? false}
           estimated={seconds}
-          onChange={(v) => onLocalChange({ target_seconds: v } as Partial<Card>)}
+          onChange={(seconds, isManual) =>
+            onLocalChange({
+              target_seconds: seconds,
+              target_seconds_is_manual: isManual,
+            } as Partial<Card>)
+          }
         />
 
         {card.is_panic_card && (
@@ -718,11 +725,12 @@ function parseMmSs(input: string): number | null {
 }
 
 function TargetTimePopover({
-  value, estimated, onChange,
+  value, isManual, estimated, onChange,
 }: {
   value: number | null;
+  isManual: boolean;
   estimated: number;
-  onChange: (v: number | null) => void;
+  onChange: (seconds: number | null, isManual: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string>(value != null ? formatMmSs(value) : "");
@@ -731,20 +739,28 @@ function TargetTimePopover({
     setDraft(value != null ? formatMmSs(value) : "");
   }, [value, open]);
 
-  const hasValue = value != null;
-  const display = hasValue ? formatMmSs(value!) : `~${formatDuration(estimated)}`;
+  // "auto"-läge: visa estimering med subtil tagg.
+  // "manuellt"-läge: visa target_seconds som värde, ingen tagg.
+  const showManual = isManual && value != null;
+  const display = showManual ? formatMmSs(value!) : `~${formatDuration(estimated)}`;
 
   const commit = () => {
     const parsed = parseMmSs(draft);
     if (parsed == null) {
-      if (draft.trim() === "") onChange(null);
+      // Tomt fält → återställ till auto
+      if (draft.trim() === "") onChange(null, false);
       return;
     }
-    onChange(parsed);
+    onChange(parsed, true);
   };
 
-  const setAndClose = (n: number | null) => {
-    onChange(n);
+  const setManualAndClose = (n: number) => {
+    onChange(n, true);
+    setOpen(false);
+  };
+
+  const resetToAuto = () => {
+    onChange(null, false);
     setOpen(false);
   };
 
@@ -753,19 +769,25 @@ function TargetTimePopover({
       <PopoverTrigger asChild>
         <button
           type="button"
-          title={hasValue ? "Klicka för att ändra måltid" : `Sätt måltid (uppskattning: ~${formatDuration(estimated)})`}
+          title={showManual ? "Klicka för att ändra måltid" : `Auto-uppskattning baserat på ord × WPM`}
           className={cn(
             "px-1 tabular-nums inline-flex items-center gap-1 hover:underline rounded",
-            hasValue ? "text-foreground" : "text-muted-foreground",
+            showManual ? "text-foreground" : "text-muted-foreground",
           )}
         >
           <Clock className="h-3 w-3 opacity-60" />
           {display}
+          {!showManual && (
+            <span className="text-[9px] font-mono uppercase tracking-wider opacity-60 ml-0.5">auto</span>
+          )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[260px] p-3 rounded-xl">
+      <PopoverContent align="start" className="w-[280px] p-3 rounded-xl">
         <p className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider mb-2">
           Måltid för kortet
+          {showManual && (
+            <span className="ml-1.5 text-[9px] tracking-wider opacity-70">· manuell</span>
+          )}
         </p>
         <div className="flex items-center gap-2 mb-3">
           <input
@@ -788,7 +810,7 @@ function TargetTimePopover({
             <button
               key={s}
               type="button"
-              onClick={() => setAndClose(s)}
+              onClick={() => setManualAndClose(s)}
               className="text-[11px] font-mono px-2 py-1 rounded-md bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors tabular-nums"
             >
               {s < 60 ? `${s}s` : `${s / 60}m`}
@@ -801,19 +823,19 @@ function TargetTimePopover({
         </div>
         <button
           type="button"
-          onClick={() => setAndClose(estimated)}
+          onClick={() => setManualAndClose(estimated)}
           className="w-full text-[12px] px-2.5 py-1.5 rounded-md bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors mb-2"
         >
-          Använd uppskattning
+          Använd uppskattning som måltid
         </button>
 
-        {hasValue && (
+        {showManual && (
           <button
             type="button"
-            onClick={() => setAndClose(null)}
-            className="w-full text-[11px] text-muted-foreground hover:text-destructive inline-flex items-center justify-center gap-1 py-1"
+            onClick={resetToAuto}
+            className="w-full text-[11px] text-muted-foreground hover:text-accent-blue inline-flex items-center justify-center gap-1 py-1"
           >
-            <X className="h-3 w-3" /> Ta bort måltid
+            <RotateCcw className="h-3 w-3" /> Återställ till uppskattad tid
           </button>
         )}
       </PopoverContent>

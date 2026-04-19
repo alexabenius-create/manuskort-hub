@@ -31,6 +31,7 @@ export type Database = {
           role: Database["public"]["Enums"]["card_role"]
           start_time: string
           target_seconds: number | null
+          target_seconds_is_manual: boolean
           title: string
           updated_at: string
           user_id: string
@@ -51,6 +52,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["card_role"]
           start_time?: string
           target_seconds?: number | null
+          target_seconds_is_manual?: boolean
           title?: string
           updated_at?: string
           user_id: string
@@ -71,6 +73,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["card_role"]
           start_time?: string
           target_seconds?: number | null
+          target_seconds_is_manual?: boolean
           title?: string
           updated_at?: string
           user_id?: string
@@ -95,6 +98,7 @@ export type Database = {
           tags: string[]
           target_duration_seconds: number | null
           text_size: string
+          time_cue_display_seconds: number
           time_format: string
           title: string
           updated_at: string
@@ -110,6 +114,7 @@ export type Database = {
           tags?: string[]
           target_duration_seconds?: number | null
           text_size?: string
+          time_cue_display_seconds?: number
           time_format?: string
           title?: string
           updated_at?: string
@@ -125,6 +130,7 @@ export type Database = {
           tags?: string[]
           target_duration_seconds?: number | null
           text_size?: string
+          time_cue_display_seconds?: number
           time_format?: string
           title?: string
           updated_at?: string
@@ -186,6 +192,7 @@ export type Database = {
           manus_tour_completed: boolean
           updated_at: string
           user_id: string
+          wpm: number
         }
         Insert: {
           bibliotek_tour_completed?: boolean
@@ -198,6 +205,7 @@ export type Database = {
           manus_tour_completed?: boolean
           updated_at?: string
           user_id: string
+          wpm?: number
         }
         Update: {
           bibliotek_tour_completed?: boolean
@@ -210,6 +218,7 @@ export type Database = {
           manus_tour_completed?: boolean
           updated_at?: string
           user_id?: string
+          wpm?: number
         }
         Relationships: []
       }
