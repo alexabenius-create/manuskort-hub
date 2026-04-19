@@ -34,7 +34,15 @@ const CUE_ICON: Record<Cue["kind"], string> = {
   time: "⏱",
 };
 
-export function CardBlockView({ node, updateAttributes, editor, getPos }: NodeViewProps) {
+export function CardBlockView(props: NodeViewProps) {
+  return (
+    <CardBlockErrorBoundary attrs={props.node.attrs as Record<string, unknown>}>
+      <CardBlockViewInner {...props} />
+    </CardBlockErrorBoundary>
+  );
+}
+
+function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeViewProps) {
   const a = node.attrs as {
     cardNumber: number;
     totalCards: number;
