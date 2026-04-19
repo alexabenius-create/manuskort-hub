@@ -42,13 +42,14 @@ interface Props {
   onOverflowStateChange?: (cardId: string, isOver: boolean) => void;
   onEditorReady?: (cardId: string, editor: Editor | null) => void;
   onAutoOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
+  onPullBack?: () => void;
 }
 
 export function ManusCard({
   card, number, textSize, showNotes, showTimes, wpm, timeFormat, isModerator, canSyncWithPrevious,
   notesDisplay = "auto",
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
-  onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow,
+  onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow, onPullBack,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
@@ -313,6 +314,7 @@ export function ManusCard({
             onRowCountChange={setCurrentRows}
             onOverflowPaste={onPasteOverflow}
             onOverflow={onAutoOverflow}
+            onPullBack={onPullBack}
           />
           {isOver && (
             <div className="mt-3 flex items-center gap-3 rounded-lg bg-destructive/10 px-3 py-2 border border-destructive/25">

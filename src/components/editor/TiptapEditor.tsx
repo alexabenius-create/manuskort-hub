@@ -30,6 +30,9 @@ interface Props {
   /** Auto-reflow vid skrivning: överskott (HTML) skickas till nästa kort.
    *  caretInOverflow=true → caret ska följa med dit. */
   onOverflow?: (overflowHtml: string, caretInOverflow: boolean) => void;
+  /** Pull-back vid Backspace i början av kortet: drar tillbaka text från
+   *  nuvarande kort upp till föregående kort (om plats finns). */
+  onPullBack?: () => void;
 }
 
 // Editorns textruta speglar presentationsgeometrin (75ch, font-display,
@@ -52,6 +55,7 @@ export function TiptapEditor({
   onRowCountChange,
   onOverflowPaste,
   onOverflow,
+  onPullBack,
 }: Props) {
   // Ref till senaste rad-räkning så handleKeyDown alltid läser färskt värde
   const rowsRef = useRef(0);
@@ -61,6 +65,8 @@ export function TiptapEditor({
   sizeRef.current = size;
   const onOverflowRef = useRef(onOverflow);
   onOverflowRef.current = onOverflow;
+  const onPullBackRef = useRef(onPullBack);
+  onPullBackRef.current = onPullBack;
   // Skydd mot rekursiv reflow (när vi själva sätter content efter split)
   const reflowingRef = useRef(false);
 
@@ -161,12 +167,30 @@ export function TiptapEditor({
       attributes: {
         class: `${sizeClass[size]} focus:outline-none w-full text-foreground`,
       },
-      handleKeyDown: (_view, event) => {
+      handleKeyDown: (view, event) => {
         // "/" → infoga paus (alltid tillåtet, även över gräns)
         if (event.key === "/" && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
           event.preventDefault();
           editor?.chain().focus().insertPause().run();
           return true;
+        }
+        // Backspace vid doc-start → pull-back från föregående kort.
+        // Endast utan modifier-tangenter och utan markering.
+        if (
+          event.key === "Backspace" &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          onPullBackRef.current
+        ) {
+          const sel = view.state.selection;
+          // ProseMirror: doc-start är pos 1 (pos 0 är före första noden).
+          // Vi triggar om caret är vid pos 1 OCH det inte finns markering.
+          if (sel.empty && sel.from <= 1) {
+            event.preventDefault();
+            onPullBackRef.current();
+            return true;
+          }
         }
         // Inmatning är alltid tillåten — överskott visas som varning, inte spärr.
         return false;
