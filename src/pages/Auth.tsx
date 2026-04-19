@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 
-type Mode = "magic" | "password" | "signup";
+type Mode = "magic" | "password" | "signup" | "forgot";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -31,6 +31,12 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate("/bibliotek", { replace: true });
+      } else if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/aterstall-losenord`,
+        });
+        if (error) throw error;
+        toast({ title: "Kolla din e-post", description: "Vi har skickat en länk för att återställa ditt lösenord." });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -94,7 +100,7 @@ export default function Auth() {
               />
             </div>
 
-            {mode !== "magic" && (
+            {(mode === "password" || mode === "signup") && (
               <div className="space-y-1.5">
                 <Label htmlFor="pwd" className="text-[13px] text-muted-foreground font-medium">Lösenord</Label>
                 <Input
@@ -115,9 +121,37 @@ export default function Auth() {
               disabled={busy}
               className="w-full h-11 rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white font-medium text-[15px] mt-2"
             >
-              {busy ? "Skickar…" : mode === "magic" ? "Skicka länk" : mode === "password" ? "Logga in" : "Skapa konto"}
+              {busy
+                ? "Skickar…"
+                : mode === "magic"
+                ? "Skicka länk"
+                : mode === "password"
+                ? "Logga in"
+                : mode === "forgot"
+                ? "Skicka återställningslänk"
+                : "Skapa konto"}
             </Button>
           </form>
+
+          {mode === "password" && (
+            <button
+              type="button"
+              onClick={() => setMode("forgot")}
+              className="block mx-auto mt-5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Glömt lösenord?
+            </button>
+          )}
+
+          {mode === "forgot" && (
+            <button
+              type="button"
+              onClick={() => setMode("password")}
+              className="block mx-auto mt-5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Tillbaka till logga in
+            </button>
+          )}
 
           {mode === "signup" && (
             <p className="text-[13px] text-muted-foreground mt-6 leading-relaxed">
