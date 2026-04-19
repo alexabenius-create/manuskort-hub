@@ -1,16 +1,13 @@
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, MessageCircleQuestion, ChevronDown, User } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Pause, Eraser, MessageCircleQuestion, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
+type PanelistMode = "speaker" | "question";
+const MODE_STORAGE_KEY = "manuskort.bubbleMode";
 
 interface Props {
   editor: Editor | null;
