@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 type PrintFormat = "a4-2up" | "a5-1up";
+type FontSize = 12 | 14 | 16 | 18;
+const FONT_SIZES: FontSize[] = [12, 14, 16, 18];
 
 interface PrintDialogProps {
   open: boolean;
@@ -20,6 +22,7 @@ interface PrintDialogProps {
 
 export function PrintDialog({ open, onOpenChange }: PrintDialogProps) {
   const [format, setFormat] = useState<PrintFormat>("a4-2up");
+  const [fontSize, setFontSize] = useState<FontSize>(16);
 
   const handlePrint = () => {
     const STYLE_ID = "print-page-size-style";
