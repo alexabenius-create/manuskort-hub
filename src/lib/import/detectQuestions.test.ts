@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { annotateQuestionsInHtml, type KnownPanelist } from "@/lib/import/detectQuestions";
+import {
+  annotateQuestionsInHtml,
+  stripQuestionsForTempIds,
+  type KnownPanelist,
+} from "@/lib/import/detectQuestions";
 
 const panelists: KnownPanelist[] = [
   { tempId: "tmp:Anders", name: "Anders", color: "#A8D8B9" },
