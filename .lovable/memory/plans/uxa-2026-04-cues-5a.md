@@ -12,7 +12,7 @@ type: feature
 - Schemat stöder alla fyra kategorier från start. UI/AI exponerar bara delmängd per fas.
 
 ## Faser (UI/AI)
-- **5A.1 (nu):** UI + AI-förslag för `energy` (röd) och `action` (blå). Härleds direkt ur manustext.
+- **5A.1 (klar):** UI + AI-förslag för `energy` (röd) och `action` (blå). Härleds direkt ur manustext. Presentation läser nya `cues` med legacy-fallback. Exempelmanus seedas med nya formatet (dual-write).
 - **5A.2:** Bygg datamodell för paneldeltagare (namn → färg per manus). Aktivera `panel`-cues i UI.
 - **5A.3:** Bygg tidsmodell per kort (uppskattad talartid + checkpoints). Aktivera `time`-cues i UI.
 
