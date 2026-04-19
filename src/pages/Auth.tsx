@@ -14,6 +14,8 @@ export default function Auth() {
   const [mode, setMode] = useState<Mode>("magic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [busy, setBusy] = useState(false);
 
   const handle = async (e: React.FormEvent) => {
@@ -38,12 +40,37 @@ export default function Auth() {
         if (error) throw error;
         toast({ title: "Kolla din e-post", description: "Vi har skickat en länk för att återställa ditt lösenord." });
       } else {
-        const { error } = await supabase.auth.signUp({
+        const trimmedFirst = firstName.trim();
+        const trimmedLast = lastName.trim();
+        if (!trimmedFirst) {
+          throw new Error("Förnamn krävs.");
+        }
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/bibliotek` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/bibliotek`,
+            data: { first_name: trimmedFirst, last_name: trimmedLast },
+          },
         });
         if (error) throw error;
+
+        // Om användaren skapas direkt (auto-confirm eller redan inloggad session) — uppdatera profilen
+        const userId = data.user?.id;
+        if (userId) {
+          const displayName = [trimmedFirst, trimmedLast].filter(Boolean).join(" ");
+          // Best-effort — om ingen session finns ännu (email-bekräftelse krävs) görs detta vid första inloggning via OnboardingModal
+          await supabase
+            .from("profiles")
+            .update({
+              first_name: trimmedFirst,
+              last_name: trimmedLast || null,
+              display_name: displayName,
+              onboarding_completed: true,
+            })
+            .eq("user_id", userId);
+        }
+
         toast({ title: "Konto skapat", description: "Verifiera din e-post om det krävs, sen är du inne." });
       }
     } catch (err: any) {
@@ -86,6 +113,38 @@ export default function Auth() {
           </div>
 
           <form onSubmit={handle} className="space-y-4">
+            {mode === "signup" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="first-name" className="text-[13px] text-muted-foreground font-medium">
+                    Förnamn
+                  </Label>
+                  <Input
+                    id="first-name"
+                    required
+                    autoComplete="given-name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    maxLength={80}
+                    className="h-11 rounded-xl bg-surface-2 border-0 text-[15px] focus-visible:ring-2 focus-visible:ring-accent-blue"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="last-name" className="text-[13px] text-muted-foreground font-medium">
+                    Efternamn
+                  </Label>
+                  <Input
+                    id="last-name"
+                    autoComplete="family-name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    maxLength={80}
+                    className="h-11 rounded-xl bg-surface-2 border-0 text-[15px] focus-visible:ring-2 focus-visible:ring-accent-blue"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-[13px] text-muted-foreground font-medium">E-post</Label>
               <Input

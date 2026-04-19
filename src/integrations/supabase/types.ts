@@ -183,42 +183,54 @@ export type Database = {
       profiles: {
         Row: {
           bibliotek_tour_completed: boolean
+          company: string | null
           created_at: string
           display_name: string | null
           display_org: string | null
           display_title: string | null
           editor_preference: Database["public"]["Enums"]["editor_version"]
           email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           manus_tour_completed: boolean
+          onboarding_completed: boolean
           updated_at: string
           user_id: string
           wpm: number
         }
         Insert: {
           bibliotek_tour_completed?: boolean
+          company?: string | null
           created_at?: string
           display_name?: string | null
           display_org?: string | null
           display_title?: string | null
           editor_preference?: Database["public"]["Enums"]["editor_version"]
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           manus_tour_completed?: boolean
+          onboarding_completed?: boolean
           updated_at?: string
           user_id: string
           wpm?: number
         }
         Update: {
           bibliotek_tour_completed?: boolean
+          company?: string | null
           created_at?: string
           display_name?: string | null
           display_org?: string | null
           display_title?: string | null
           editor_preference?: Database["public"]["Enums"]["editor_version"]
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           manus_tour_completed?: boolean
+          onboarding_completed?: boolean
           updated_at?: string
           user_id?: string
           wpm?: number

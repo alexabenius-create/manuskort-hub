@@ -27,6 +27,7 @@ import { useTourTrigger } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
 import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
@@ -42,6 +43,7 @@ export default function Library() {
   const [dragOver, setDragOver] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<{ title: string; description: string } | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const [openNew, setOpenNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -113,6 +115,24 @@ export default function Library() {
   useEffect(() => {
     if (user) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Kontrollera om användaren behöver fylla i namn (första inloggning)
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && data && !data.onboarding_completed) {
+        setNeedsOnboarding(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   // Trigger bibliotek-rundtur när biblioteket har laddats och exempelmanus finns renderat
@@ -653,6 +673,14 @@ export default function Library() {
         title={upgradeReason?.title}
         description={upgradeReason?.description}
       />
+
+      {user && (
+        <OnboardingModal
+          open={needsOnboarding}
+          userId={user.id}
+          onComplete={() => setNeedsOnboarding(false)}
+        />
+      )}
     </div>
     </>
   );
