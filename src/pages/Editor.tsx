@@ -946,14 +946,10 @@ export default function Editor() {
                       data-tour="editor.present"
                       onClick={startPresentation}
                       disabled={overflowingCardIds.size > 0}
-                      className="h-10 rounded-full px-4 sm:px-5 bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] font-semibold gap-2 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Play className="h-4 w-4 fill-current" />
-                      <span className="hidden sm:inline">Starta presentation</span>
-                      <span className="sm:hidden">Starta</span>
-                      <kbd className="hidden md:inline-flex ml-1 px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono tracking-wider">
-                        {shortcutLabel}
-                      </kbd>
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span className="hidden sm:inline">Starta</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
