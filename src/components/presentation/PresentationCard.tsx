@@ -152,6 +152,8 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   };
   const notesFontSize = NOTES_BASE + notesOffset * 2;
 
+  const hasNotes = !!card.notes && card.notes.trim().length > 0;
+
   // Steg 5A: Läs i första hand från nya cues-arrayen, fallback till legacy-kolumner.
   // I 5A visas bara energy (röd, paus) och action (blå, blixt). Panel/time aktiveras i 5A.2/5A.3.
   const cues = useMemo(() => readCuesWithLegacyFallback(card), [card]);
