@@ -186,7 +186,7 @@ export function SettingsForm({ hasHeadings }: Props) {
               onClick={() => setStrategy(v)}
               data-active={strategy === v}
               className="seg-btn disabled:opacity-40"
-              title={!enabled ? "Dokumentet saknar rubriker" : undefined}
+              title={!enabled ? "Dokumentet saknar formaterade rubriker (Rubrik 1 / Rubrik 2 i Word eller Google Docs)" : undefined}
             >
               {label}
             </button>
