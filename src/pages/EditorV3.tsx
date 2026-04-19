@@ -158,7 +158,7 @@ export default function EditorV3() {
     // 4) Mät pixel-Y för fragmentens text-zon
     const editorRect = root.getBoundingClientRect();
     const blockEls = Array.from(root.children).filter(
-      (n) => n.nodeType === 1 && !(n as HTMLElement).hasAttribute("data-frame-spacer"),
+      (n) => n.nodeType === 1,
     ) as HTMLElement[];
 
     const layouts: FragmentLayout[] = [];
@@ -169,8 +169,11 @@ export default function EditorV3() {
       if (!firstEl || !lastEl) continue;
       const fr = firstEl.getBoundingClientRect();
       const lr = lastEl.getBoundingClientRect();
-      const textTop = fr.top - editorRect.top;
-      const textHeight = Math.max(40, lr.bottom - fr.top);
+      // Om första blocket har spacer-padding → texten börjar SPACER_HEIGHT lägre
+      const hasSpacer = firstEl.hasAttribute("data-frame-break-spacer");
+      const textTop = (fr.top + (hasSpacer ? SPACER_HEIGHT : 0)) - editorRect.top;
+      const textBottom = lr.bottom - editorRect.top;
+      const textHeight = Math.max(40, textBottom - textTop);
 
       // Box = HEADER ovanför text + text-zon + FOOTER under text
       const boxTop = textTop - CHROME_HEADER_HEIGHT;
