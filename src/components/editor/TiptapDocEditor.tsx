@@ -97,13 +97,11 @@ export function TiptapDocEditor({
     editor.commands.setContent(value || "", { emitUpdate: false });
   }, [value, editor]);
 
-  // Uppdatera frame-breaks på extensionen och tvinga ny decoration-pass
+  // Uppdatera frame-breaks via plugin-state (dispatch på editor.view)
   useEffect(() => {
     if (!editor) return;
-    frameOptions.breaks = frameBreaks;
-    // Trigger decorations-omräkning genom en no-op transaction
-    editor.view.dispatch(editor.state.tr.setMeta("docFrameBreaksUpdated", true));
-  }, [frameBreaks, editor, frameOptions]);
+    setFrameBreaks(editor.view, frameBreaks);
+  }, [frameBreaks, editor]);
 
   return (
     <div className="relative w-full">
