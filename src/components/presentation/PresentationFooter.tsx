@@ -1,7 +1,8 @@
-import { Triangle, ZoomIn, ZoomOut } from "lucide-react";
+import { Triangle, ZoomIn, ZoomOut, Pause, Play } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatClock, formatElapsedSeconds } from "@/hooks/usePresentationTimer";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"] & {
   is_panic_card?: boolean;
@@ -22,6 +23,14 @@ interface Props {
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
   visible?: boolean;
+  // Mobil-only: total tid (flyttad från topbar)
+  totalRemainingSeconds?: number;
+  totalTimerMode?: "clock" | "elapsed";
+  totalNow?: number;
+  isPaused?: boolean;
+  onPauseToggle?: () => void;
+  countdownActive?: boolean;
+  showZoomButtons?: boolean;
 }
 
 const SIZE_MIN = -2;
@@ -57,6 +66,13 @@ export function PresentationFooter({
   sizeOffset,
   onSizeChange,
   visible = true,
+  totalRemainingSeconds = 0,
+  totalTimerMode = "elapsed",
+  totalNow = Date.now(),
+  isPaused = false,
+  onPauseToggle,
+  countdownActive = false,
+  showZoomButtons = true,
 }: Props) {
   const isMobile = useIsMobile();
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
@@ -80,16 +96,18 @@ export function PresentationFooter({
 
   const nextRoleLabel = next?.role === "moderator" ? "Moderator" : "Talare";
 
-  // ===== MOBIL: en kompakt rad, max ~32px + 2px progress =====
+  // ===== MOBIL: alltid synlig, kompakt rad med all tidsinfo =====
   if (isMobile) {
+    const totalLabel = totalTimerMode === "clock"
+      ? formatClock(new Date(totalNow), true)
+      : formatElapsedSeconds(totalRemainingSeconds);
+
     return (
       <footer
-        className={`absolute bottom-0 inset-x-0 z-20 pointer-events-none transition-all duration-300 ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-        }`}
+        className="absolute bottom-0 inset-x-0 z-20 pointer-events-none"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px))" }}
       >
-        {/* Tunn progress-bar längst nederst */}
+        {/* Tunn 2px progress-bar längst nederst */}
         {planned && (
           <div className="h-[2px] w-full bg-zinc-800/60 overflow-hidden">
             <div
@@ -99,29 +117,9 @@ export function PresentationFooter({
           </div>
         )}
 
-        <div className="flex items-center justify-between px-2 py-1 gap-2">
-          {/* Vänster: zoom (kompakt) */}
-          <div className="flex items-center gap-0.5 pointer-events-auto">
-            <button
-              onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
-              disabled={sizeOffset <= SIZE_MIN}
-              className="p-1 rounded text-zinc-400 hover:text-zinc-100 disabled:opacity-30"
-              aria-label="Mindre text"
-            >
-              <ZoomOut className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
-              disabled={sizeOffset >= SIZE_MAX}
-              className="p-1 rounded text-zinc-400 hover:text-zinc-100 disabled:opacity-30"
-              aria-label="Större text"
-            >
-              <ZoomIn className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          {/* Mitten: kompakt info-rad */}
-          <div className="flex items-center gap-2 font-mono text-[12px] tabular-nums pointer-events-auto">
+        <div className="flex items-center justify-between px-2 py-1 gap-2 bg-black/40 backdrop-blur-sm">
+          {/* Vänster: kort-räknare + kort-tid */}
+          <div className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums pointer-events-auto">
             <span className="text-zinc-300">
               {String(index + 1).padStart(2, "0")}
               <span className="text-zinc-600">/{String(total).padStart(2, "0")}</span>
@@ -139,7 +137,7 @@ export function PresentationFooter({
             {rawIsOver && !isOverdueDismissed && (
               <button
                 onClick={onDismissOverdue}
-                className="ml-1 px-1.5 py-0.5 rounded bg-red-950/60 text-red-200 text-[10px] font-medium"
+                className="ml-0.5 px-1 rounded bg-red-950/60 text-red-200 text-[9px]"
                 aria-label="Stäng av övertidsvarningen"
                 title="Stäng av övertidsvarningen"
               >
@@ -148,12 +146,50 @@ export function PresentationFooter({
             )}
           </div>
 
-          {/* Höger: panik (om finns) */}
-          <div className="flex items-center gap-1 pointer-events-auto">
+          {/* Mitten: total tid + pause */}
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            <span className="font-mono text-[12px] tabular-nums text-zinc-100">
+              {totalLabel}
+            </span>
+            {totalTimerMode === "elapsed" && onPauseToggle && (
+              <button
+                onClick={onPauseToggle}
+                disabled={countdownActive}
+                className="p-0.5 rounded text-zinc-300 hover:text-zinc-100 disabled:opacity-40"
+                aria-label={isPaused ? "Återuppta" : "Pausa"}
+                title={isPaused ? "Återuppta" : "Pausa"}
+              >
+                {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+              </button>
+            )}
+          </div>
+
+          {/* Höger: zoom (auto-hide) + panik (alltid) */}
+          <div className="flex items-center gap-0.5 pointer-events-auto">
+            {showZoomButtons && (
+              <>
+                <button
+                  onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
+                  disabled={sizeOffset <= SIZE_MIN}
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-100 disabled:opacity-30"
+                  aria-label="Mindre text"
+                >
+                  <ZoomOut className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
+                  disabled={sizeOffset >= SIZE_MAX}
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-100 disabled:opacity-30"
+                  aria-label="Större text"
+                >
+                  <ZoomIn className="h-3 w-3" />
+                </button>
+              </>
+            )}
             {hasPanicCards && (
               <button
                 onClick={onPanic}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-950/60 text-amber-300 text-[11px] font-medium"
+                className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 text-[10px] font-medium"
                 title="Hoppa till nästa panik-kort (P)"
                 aria-label="Panik"
               >
