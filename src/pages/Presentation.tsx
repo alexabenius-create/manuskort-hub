@@ -80,12 +80,8 @@ export default function Presentation() {
   // Lås till liggande på mobil när presentation pågår — fungerar på Android Chrome,
   // no-op på iOS Safari (där visar vi RotateDeviceOverlay i stället).
   useFullscreen(true, isMobile && presentationActive);
-  const [rotateDismissed, setRotateDismissed] = useState(false);
-  const showRotateOverlay = isMobile && presentationActive && orientation === "portrait" && !rotateDismissed;
-  // Återställ dismiss när användaren vrider till liggande, så overlay återkommer om de vrider tillbaka
-  useEffect(() => {
-    if (orientation === "landscape") setRotateDismissed(false);
-  }, [orientation]);
+  // Overlay visas alltid i portrait under aktiv presentation — ingen dismiss möjlig.
+  const showRotateOverlay = isMobile && presentationActive && orientation === "portrait";
 
   // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer.
   // Lägg också min-height + 1px så iOS Safari ser sidan som scrollbar och kan kollapsa URL-baren.
@@ -742,9 +738,7 @@ export default function Presentation() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {showRotateOverlay && (
-        <RotateDeviceOverlay onContinueAnyway={() => setRotateDismissed(true)} />
-      )}
+      {showRotateOverlay && <RotateDeviceOverlay />}
 
       {useMobileV2 && showMobileHint && !showRotateOverlay && (
         <MobileFirstRunHint onDismiss={dismissMobileHint} />
