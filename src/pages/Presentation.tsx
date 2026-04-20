@@ -441,6 +441,23 @@ export default function Presentation() {
   );
   const cardElapsedSeconds = cardTimers.getCardElapsed(currentCardId);
 
+  // Mobil-v2 routing — beräknas före early returns så hooks-ordningen är stabil.
+  const useMobileV2 = isMobile && !menuOpen && viewMode === "cards";
+
+  // Visa första-gången-tips när mobil-v2 visas första gången per enhet.
+  useEffect(() => {
+    if (!useMobileV2) return;
+    try {
+      if (localStorage.getItem(MOBILE_HINT_SEEN_KEY)) return;
+    } catch { /* ignore */ }
+    setShowMobileHint(true);
+  }, [useMobileV2]);
+
+  const dismissMobileHint = useCallback(() => {
+    setShowMobileHint(false);
+    try { localStorage.setItem(MOBILE_HINT_SEEN_KEY, "1"); } catch { /* ignore */ }
+  }, []);
+
   if (loading || !manuscript) {
     return (
       <div className="fixed inset-0 bg-zinc-950 text-zinc-100 flex items-center justify-center">
@@ -464,24 +481,6 @@ export default function Presentation() {
   const next = cards[currentIndex + 1];
   const hasPanicCards = cards.some((c) => c.is_panic_card);
 
-  // Mobil-v2 routing — när vi är på mobil i cards-läge använder vi den nya
-  // mobil-anpassade komponenten. Desktop/tablet och scroll-läget kör oförändrad
-  // desktop-JSX nedan.
-  const useMobileV2 = isMobile && !menuOpen && viewMode === "cards";
-
-  // Visa första-gången-tips när mobil-v2 visas första gången per enhet.
-  useEffect(() => {
-    if (!useMobileV2) return;
-    try {
-      if (localStorage.getItem(MOBILE_HINT_SEEN_KEY)) return;
-    } catch { /* ignore */ }
-    setShowMobileHint(true);
-  }, [useMobileV2]);
-
-  const dismissMobileHint = useCallback(() => {
-    setShowMobileHint(false);
-    try { localStorage.setItem(MOBILE_HINT_SEEN_KEY, "1"); } catch { /* ignore */ }
-  }, []);
   return (
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
