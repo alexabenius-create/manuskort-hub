@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useOrientation } from "@/hooks/useOrientation";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsHandheldDevice } from "@/hooks/useIsHandheldDevice";
 import { usePresentationTimer } from "@/hooks/usePresentationTimer";
 import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
@@ -74,7 +74,10 @@ export default function Presentation() {
   const hasEnteredFullscreenRef = useRef(false);
 
   const wakeLockStatus = useWakeLock(true);
-  const isMobile = useIsMobile();
+  // Stabil signal för "är fysisk handhållen enhet" — påverkas INTE av rotation/viewport-bredd.
+  // Används för all presentationsrouting (mobil-v2 vs desktop-v1) så att vi aldrig
+  // faller tillbaka till v1 när en iPhone i landskap råkar ha bredd > 768 px.
+  const isMobile = useIsHandheldDevice();
   const orientation = useOrientation();
   const presentationActive = !menuOpen;
   // Lås till liggande på mobil när presentation pågår — fungerar på Android Chrome,
@@ -483,7 +486,6 @@ export default function Presentation() {
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
-      key={isMobile ? orientation : "desktop"}
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
       style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
       onTouchStart={useMobileV2 ? undefined : onTouchStart}
