@@ -1,6 +1,7 @@
 import { Triangle, ZoomIn, ZoomOut } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type Card = Database["public"]["Tables"]["cards"]["Row"] & {
   is_panic_card?: boolean;
@@ -13,18 +14,13 @@ interface Props {
   total: number;
   hasPanicCards: boolean;
   onPanic: () => void;
-  /** Faktiskt spenderad tid på detta kort i sekunder. */
   cardElapsedSeconds: number;
-  /** Måltid för aktuellt kort (manuellt satt). Fallback till start/end-diff. */
   cardTargetSeconds: number | null;
-  /** Om användaren har dismissat övertids-varningen för detta kort. */
   isOverdueDismissed: boolean;
-  /** Användaren stänger av röd varning för detta specifika kort. */
   onDismissOverdue: () => void;
   timeFormat: "clock" | "elapsed";
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
-  /** På mobil: dölj footern när false (auto-hide efter inaktivitet). */
   visible?: boolean;
 }
 
@@ -38,7 +34,6 @@ function formatMmSs(totalSeconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/** Räknar ut planerad tid från start_time/end_time som fallback. */
 function fallbackPlannedSeconds(card: Card, format: "clock" | "elapsed"): number | null {
   const start = parseTime(card.start_time ?? "", format);
   const end = parseTime(card.end_time ?? "", format);
@@ -63,6 +58,7 @@ export function PresentationFooter({
   onSizeChange,
   visible = true,
 }: Props) {
+  const isMobile = useIsMobile();
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
   const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
   const ratio = planned ? cardElapsed / planned : 0;
@@ -84,15 +80,102 @@ export function PresentationFooter({
 
   const nextRoleLabel = next?.role === "moderator" ? "Moderator" : "Talare";
 
+  // ===== MOBIL: en kompakt rad, max ~32px + 2px progress =====
+  if (isMobile) {
+    return (
+      <footer
+        className={`absolute bottom-0 inset-x-0 z-20 pointer-events-none transition-all duration-300 ${
+          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        }`}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px))" }}
+      >
+        {/* Tunn progress-bar längst nederst */}
+        {planned && (
+          <div className="h-[2px] w-full bg-zinc-800/60 overflow-hidden">
+            <div
+              className={`h-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between px-2 py-1 gap-2">
+          {/* Vänster: zoom (kompakt) */}
+          <div className="flex items-center gap-0.5 pointer-events-auto">
+            <button
+              onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
+              disabled={sizeOffset <= SIZE_MIN}
+              className="p-1 rounded text-zinc-400 hover:text-zinc-100 disabled:opacity-30"
+              aria-label="Mindre text"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
+              disabled={sizeOffset >= SIZE_MAX}
+              className="p-1 rounded text-zinc-400 hover:text-zinc-100 disabled:opacity-30"
+              aria-label="Större text"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Mitten: kompakt info-rad */}
+          <div className="flex items-center gap-2 font-mono text-[12px] tabular-nums pointer-events-auto">
+            <span className="text-zinc-300">
+              {String(index + 1).padStart(2, "0")}
+              <span className="text-zinc-600">/{String(total).padStart(2, "0")}</span>
+            </span>
+            <span className="text-zinc-700">·</span>
+            <span className={timeColor}>
+              {formatMmSs(cardElapsed)}
+              {planned && (
+                <>
+                  <span className="text-zinc-600">/</span>
+                  <span className="text-zinc-500">{formatMmSs(planned)}</span>
+                </>
+              )}
+            </span>
+            {rawIsOver && !isOverdueDismissed && (
+              <button
+                onClick={onDismissOverdue}
+                className="ml-1 px-1.5 py-0.5 rounded bg-red-950/60 text-red-200 text-[10px] font-medium"
+                aria-label="Stäng av övertidsvarningen"
+                title="Stäng av övertidsvarningen"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Höger: panik (om finns) */}
+          <div className="flex items-center gap-1 pointer-events-auto">
+            {hasPanicCards && (
+              <button
+                onClick={onPanic}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-950/60 text-amber-300 text-[11px] font-medium"
+                title="Hoppa till nästa panik-kort (P)"
+                aria-label="Panik"
+              >
+                <Triangle className="h-2.5 w-2.5 fill-current" strokeWidth={0} />
+                Panik
+              </button>
+            )}
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
+  // ===== DESKTOP: oförändrad layout =====
   return (
     <footer
-      className={`absolute bottom-0 inset-x-0 z-20 px-3 md:px-10 pointer-events-none transition-all duration-300 ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 md:opacity-100 md:translate-y-0"
+      className={`absolute bottom-0 inset-x-0 z-20 px-10 pointer-events-none transition-all duration-300 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0"
       }`}
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)" }}
     >
       <div className="max-w-5xl mx-auto grid grid-cols-3 items-center gap-4">
-        {/* Vänster — A−/A+ */}
         <div className="flex items-center gap-1.5 pointer-events-auto justify-self-start">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
@@ -112,7 +195,6 @@ export function PresentationFooter({
           </button>
         </div>
 
-        {/* Mitten — per-kort-timer (centrerad), med dismiss-knapp till vänster */}
         <div className="flex items-center gap-3 justify-self-center pointer-events-none">
           {rawIsOver && !isOverdueDismissed && (
             <button
@@ -145,7 +227,6 @@ export function PresentationFooter({
           </div>
         </div>
 
-        {/* Höger — kortnummer + nästa + panik */}
         <div className="flex items-center gap-3 justify-self-end">
           <div className="flex flex-col items-end pointer-events-none">
             <span className="font-mono text-[18px] text-zinc-200 tabular-nums leading-none">

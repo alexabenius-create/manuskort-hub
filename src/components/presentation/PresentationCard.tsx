@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Zap, Play, ZoomIn, ZoomOut, Users } from "lucide-react";
+import { Zap, Play, ZoomIn, ZoomOut, Users, X } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   darkAttributionBg,
   darkAttributionBorder,
@@ -84,6 +85,7 @@ const NOTES_MAX_OFFSET = 4;
 const NOTES_KEY = "presentation-notes-size-offset";
 
 export function PresentationCard({ card, panelists, textSize, sizeOffset, showNotes, onToggleNotes, onNotesChange }: Props) {
+  const isMobile = useIsMobile();
   const baseSize = BASE_SIZE[textSize];
   const desiredFontSize = baseSize + sizeOffset * 2;
   const html = useMemo(() => transformHtmlForPresentation(card.content_html ?? "", panelists), [card.content_html, panelists]);
@@ -164,7 +166,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   const hasAnyCue = energyCues.length > 0 || actionCues.length > 0 || panelCues.length > 0;
 
   return (
-    <div className="relative flex w-full h-full min-h-0 gap-4 px-6 md:px-12 py-2">
+    <div className="relative flex w-full h-full min-h-0 gap-4 px-3 md:px-12 py-2">
       {/* Persistenta signaler — absolut positionerade i överkant av kortet, centrerat grupperade */}
       {hasAnyCue && (
         <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10">
@@ -227,10 +229,9 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
         />
       </div>
 
-      {/* Anteckningar — sidokolumn (visas alltid när showNotes på desktop, så man kan börja skriva) */}
-      {showNotes && (
+      {/* Anteckningar — desktop: sidokolumn. Mobil: overlay. */}
+      {showNotes && !isMobile && (
         <div className="hidden md:flex w-[380px] flex-shrink-0 flex-col bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-6 relative">
-          {/* Header med label + zoom + dölj */}
           <div className="flex items-center justify-between mb-4">
             <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
               Anteckningar
@@ -261,22 +262,18 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
               </button>
             </div>
           </div>
-          {/* Redigerbar, centrerad anteckningstext */}
           <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center">
             <textarea
               value={card.notes ?? ""}
               onChange={(e) => onNotesChange?.(e.target.value)}
               onKeyDown={(e) => {
-                // Esc: låt bubbla upp till Presentation.tsx → avslutar presentationen
                 if (e.key === "Escape") return;
-                // Enter utan Shift: lämna fältet (ingen radbrytning)
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   e.stopPropagation();
                   (e.currentTarget as HTMLTextAreaElement).blur();
                   return;
                 }
-                // Shift+Enter och övriga tangenter: stoppa propagation så globala genvägar inte triggas
                 e.stopPropagation();
               }}
               placeholder="Skriv anteckningar…"
@@ -289,14 +286,56 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
         </div>
       )}
 
-      {/* Knapp för att visa anteckningar igen om de är dolda */}
-      {!showNotes && (hasNotes || onNotesChange) && (
+      {/* Mobil: anteckningar som overlay när showNotes är på */}
+      {showNotes && isMobile && hasNotes && (
+        <div className="md:hidden absolute inset-0 z-20 bg-zinc-950/95 backdrop-blur-sm flex flex-col p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+              Anteckningar
+            </span>
+            <button
+              onClick={onToggleNotes}
+              className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
+              aria-label="Stäng anteckningar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center">
+            <textarea
+              value={card.notes ?? ""}
+              onChange={(e) => onNotesChange?.(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") return;
+                e.stopPropagation();
+              }}
+              placeholder="Skriv anteckningar…"
+              spellCheck={false}
+              className="font-mono text-zinc-200 placeholder:text-zinc-600 text-center w-full h-full bg-transparent border-0 outline-none resize-none focus:ring-0"
+              style={{ fontSize: `${Math.max(14, notesFontSize - 2)}px`, lineHeight: 1.5 }}
+              readOnly={!onNotesChange}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Knapp för att visa anteckningar igen — desktop: vertikal flik. Mobil: liten knapp */}
+      {!showNotes && (hasNotes || onNotesChange) && !isMobile && (
         <button
           onClick={onToggleNotes}
           className="hidden md:block absolute right-6 top-1/2 -translate-y-1/2 px-2 py-3 rounded-l-full bg-zinc-900/40 hover:bg-zinc-900/60 text-zinc-500 hover:text-zinc-300 transition-colors text-[10px] font-mono uppercase tracking-wider [writing-mode:vertical-rl]"
           aria-label="Visa anteckningar"
         >
           Anteckningar
+        </button>
+      )}
+      {!showNotes && hasNotes && isMobile && (
+        <button
+          onClick={onToggleNotes}
+          className="md:hidden absolute top-2 right-2 z-10 px-2 py-1 rounded-md bg-zinc-900/70 backdrop-blur text-zinc-400 hover:text-zinc-100 text-[10px] font-mono uppercase tracking-wider"
+          aria-label="Visa anteckningar"
+        >
+          Ant.
         </button>
       )}
     </div>

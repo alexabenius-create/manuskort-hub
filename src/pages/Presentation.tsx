@@ -406,10 +406,10 @@ export default function Presentation() {
       return;
     }
 
-    // Tap (ingen sweep) → tap-zon. Fredar topp 96px och botten 144px (topbar/footer).
+    // Tap (ingen sweep) → tap-zon. Fredar topp 40px och botten 40px (kompakta mobil-barer).
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
       const h = window.innerHeight;
-      if (t.clientY < 96 || t.clientY > h - 144) return;
+      if (t.clientY < 40 || t.clientY > h - 40) return;
       const w = window.innerWidth;
       if (t.clientX > w / 2) goNext(); else goPrev();
     }
@@ -492,7 +492,7 @@ export default function Presentation() {
 
 
 
-      <main className="flex-1 min-h-0 pt-20 md:pt-24 pb-20 md:pb-24 px-3 md:px-10 relative">
+      <main className="flex-1 min-h-0 pt-7 md:pt-24 pb-7 md:pb-24 px-1 md:px-10 relative">
         <div
           className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
             typeof current.target_seconds === "number" &&
