@@ -746,6 +746,10 @@ export default function Presentation() {
       {showRotateOverlay && (
         <RotateDeviceOverlay onContinueAnyway={() => setRotateDismissed(true)} />
       )}
+
+      {useMobileV2 && showMobileHint && !showRotateOverlay && (
+        <MobileFirstRunHint onDismiss={dismissMobileHint} />
+      )}
     </div>
     </>
   );
