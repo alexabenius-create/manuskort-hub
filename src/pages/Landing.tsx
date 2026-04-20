@@ -20,6 +20,7 @@ import {
   Check,
   ArrowRight,
 } from "lucide-react";
+import { MobileNavSheet } from "@/components/MobileNavSheet";
 
 export default function Landing() {
   const { session } = useAuth();
@@ -122,26 +123,53 @@ export default function Landing() {
             Manuskort
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2">
-            <Link
-              to="/priser"
-              className="hidden sm:inline-flex h-9 items-center px-3 rounded-full text-[14px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
-            >
-              Priser
-            </Link>
-            {!session && (
+            {/* Desktop / tablet — full nav */}
+            <div className="hidden md:flex items-center gap-1 sm:gap-2">
               <Link
-                to="/auth"
+                to="/priser"
                 className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
               >
-                Logga in
+                Priser
               </Link>
-            )}
-            <Button
-              asChild
-              className="h-9 rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] px-4 ml-1"
-            >
-              <Link to={primaryCtaTo}>{primaryCtaLabel}</Link>
-            </Button>
+              {!session && (
+                <Link
+                  to="/auth"
+                  className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                >
+                  Logga in
+                </Link>
+              )}
+              <Button
+                asChild
+                className="h-9 rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] px-4 ml-1"
+              >
+                <Link to={primaryCtaTo}>{primaryCtaLabel}</Link>
+              </Button>
+            </div>
+
+            {/* Mobil — hamburger */}
+            <MobileNavSheet title="Manuskort">
+              <Link
+                to="/priser"
+                className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors"
+              >
+                Priser
+              </Link>
+              {!session && (
+                <Link
+                  to="/auth"
+                  className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors"
+                >
+                  Logga in
+                </Link>
+              )}
+              <Link
+                to={primaryCtaTo}
+                className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[15px] font-medium px-5"
+              >
+                {primaryCtaLabel}
+              </Link>
+            </MobileNavSheet>
           </nav>
         </div>
       </header>

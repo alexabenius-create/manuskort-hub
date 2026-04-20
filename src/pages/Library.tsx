@@ -13,6 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X } from "lucide-react";
+import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -326,56 +327,109 @@ export default function Library() {
           <h1>Manuskort</h1>
         </Link>
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-[13px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
-            {user?.email}
-            {(tier === "pro" || tier === "admin") && (
-              <span
-                className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide ${
-                  tier === "admin"
-                    ? "bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40"
-                    : "bg-accent-blue/10 text-accent-blue ring-1 ring-accent-blue/30"
-                }`}
+          {/* Desktop / tablet — full topbar */}
+          <div className="hidden md:flex items-center gap-3">
+            <span className="text-[13px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
+              {user?.email}
+              {(tier === "pro" || tier === "admin") && (
+                <span
+                  className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide ${
+                    tier === "admin"
+                      ? "bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40"
+                      : "bg-accent-blue/10 text-accent-blue ring-1 ring-accent-blue/30"
+                  }`}
+                >
+                  {TIER_LABEL[tier]}
+                </span>
+              )}
+            </span>
+            {tier === "free" && (
+              <Button
+                asChild
+                size="sm"
+                className="rounded-full text-[13px] h-8 bg-accent-blue hover:bg-accent-blue/90 text-white"
               >
-                {TIER_LABEL[tier]}
-              </span>
+                <Link to="/priser"><Sparkle className="h-3.5 w-3.5" /> Uppgradera</Link>
+              </Button>
             )}
-          </span>
-          {tier === "free" && (
-            <Button
-              asChild
-              size="sm"
-              className="rounded-full text-[13px] h-8 bg-accent-blue hover:bg-accent-blue/90 text-white"
-            >
-              <Link to="/priser"><Sparkle className="h-3.5 w-3.5" /> Uppgradera</Link>
-            </Button>
-          )}
-          {tier === "admin" && (
+            {tier === "admin" && (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+              >
+                <a href="/admin"><Shield className="h-3.5 w-3.5" /> Admin</a>
+              </Button>
+            )}
             <Button
               asChild
               variant="ghost"
               size="sm"
               className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
             >
-              <a href="/admin"><Shield className="h-3.5 w-3.5" /> Admin</a>
+              <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> Inställningar</a>
             </Button>
-          )}
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
-          >
-            <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> Inställningar</a>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={signOut}
-            className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
-          >
-            <LogOut className="h-3.5 w-3.5" /> Logga ut
-          </Button>
-          <HelpButton />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Logga ut
+            </Button>
+            <HelpButton />
+          </div>
+
+          {/* Mobil — hjälp + hamburger */}
+          <div className="flex md:hidden items-center gap-1">
+            <HelpButton />
+            <MobileNavSheet title="Konto">
+              <span className="px-3 pb-2 text-[12px] text-muted-foreground break-all">
+                {user?.email}
+                {(tier === "pro" || tier === "admin") && (
+                  <span
+                    className={`ml-2 inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide align-middle ${
+                      tier === "admin"
+                        ? "bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40"
+                        : "bg-accent-blue/10 text-accent-blue ring-1 ring-accent-blue/30"
+                    }`}
+                  >
+                    {TIER_LABEL[tier]}
+                  </span>
+                )}
+              </span>
+              {tier === "free" && (
+                <Link
+                  to="/priser"
+                  className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-accent-blue hover:bg-surface-2 transition-colors"
+                >
+                  <Sparkle className="h-4 w-4" /> Uppgradera
+                </Link>
+              )}
+              {tier === "admin" && (
+                <a
+                  href="/admin"
+                  className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors"
+                >
+                  <Shield className="h-4 w-4" /> Admin
+                </a>
+              )}
+              <a
+                href="/installningar"
+                className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors"
+              >
+                <SettingsIcon className="h-4 w-4" /> Inställningar
+              </a>
+              <button
+                type="button"
+                onClick={signOut}
+                className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors text-left"
+              >
+                <LogOut className="h-4 w-4" /> Logga ut
+              </button>
+            </MobileNavSheet>
+          </div>
         </div>
       </header>
 

@@ -188,7 +188,7 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
       {/* Header */}
       <header
         contentEditable={false}
-        className="px-5 sm:px-6 pt-3 pb-1 flex items-center gap-2 flex-wrap text-[12px] font-mono text-muted-foreground border-b border-border/30"
+        className="px-4 sm:px-6 pt-2.5 pb-1 flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] sm:text-[12px] font-mono text-muted-foreground border-b border-border/30"
       >
         {canDrag && myPos != null && (
           <div className="flex items-center -ml-1">
@@ -227,9 +227,14 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
             </button>
           </div>
         )}
-        <span className="px-1 tracking-wide">Kort {num} / {a.totalCards}</span>
-        <span className="opacity-40">·</span>
-        <CardRolePopover role={a.role ?? "speaker"} onChange={handleRoleChange} />
+        <span className="px-1 tracking-wide">
+          <span className="md:hidden">{num}/{a.totalCards}</span>
+          <span className="hidden md:inline">Kort {num} / {a.totalCards}</span>
+        </span>
+        <span className="opacity-40 hidden md:inline">·</span>
+        <span className="hidden md:inline-flex">
+          <CardRolePopover role={a.role ?? "speaker"} onChange={handleRoleChange} />
+        </span>
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{words} ord</span>
         <span className="opacity-40">·</span>

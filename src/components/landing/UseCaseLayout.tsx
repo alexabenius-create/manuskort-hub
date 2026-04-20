@@ -12,6 +12,7 @@ import {
 import { ArrowRight, Check } from "lucide-react";
 import type { UseCase } from "@/lib/useCases";
 import { useCases } from "@/lib/useCases";
+import { MobileNavSheet } from "@/components/MobileNavSheet";
 
 interface UseCaseLayoutProps {
   useCase: UseCase;
@@ -102,37 +103,73 @@ export function UseCaseLayout({ useCase }: UseCaseLayoutProps) {
           Manuskort
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2">
-          <Button
-            asChild
-            variant="ghost"
-            className="rounded-full text-[13px] h-9 px-3 sm:px-4 text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/priser">Priser</Link>
-          </Button>
-          {session ? (
+          {/* Desktop / tablet */}
+          <div className="hidden md:flex items-center gap-1 sm:gap-2">
             <Button
               asChild
-              className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 px-4 text-[13px]"
+              variant="ghost"
+              className="rounded-full text-[13px] h-9 px-3 sm:px-4 text-muted-foreground hover:text-foreground"
             >
-              <Link to="/bibliotek">Bibliotek</Link>
+              <Link to="/priser">Priser</Link>
             </Button>
-          ) : (
-            <>
+            {session ? (
               <Button
                 asChild
-                variant="ghost"
-                className="rounded-full text-[13px] h-9 px-3 sm:px-4 text-muted-foreground hover:text-foreground"
+                className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-9 px-4 text-[13px]"
               >
-                <Link to="/auth">Logga in</Link>
+                <Link to="/bibliotek">Bibliotek</Link>
               </Button>
-              <Button
-                asChild
-                className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white h-9 px-4 text-[13px]"
+            ) : (
+              <>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="rounded-full text-[13px] h-9 px-3 sm:px-4 text-muted-foreground hover:text-foreground"
+                >
+                  <Link to="/auth">Logga in</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white h-9 px-4 text-[13px]"
+                >
+                  <Link to="/auth">Skapa konto gratis</Link>
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Mobil — hamburger */}
+          <MobileNavSheet title="Manuskort">
+            <Link
+              to="/priser"
+              className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors"
+            >
+              Priser
+            </Link>
+            {session ? (
+              <Link
+                to="/bibliotek"
+                className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-foreground text-background hover:bg-foreground/90 text-[15px] font-medium px-5"
               >
-                <Link to="/auth">Skapa konto gratis</Link>
-              </Button>
-            </>
-          )}
+                Bibliotek
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/auth"
+                  className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors"
+                >
+                  Logga in
+                </Link>
+                <Link
+                  to="/auth"
+                  className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[15px] font-medium px-5"
+                >
+                  Skapa konto gratis
+                </Link>
+              </>
+            )}
+          </MobileNavSheet>
         </nav>
       </header>
 
