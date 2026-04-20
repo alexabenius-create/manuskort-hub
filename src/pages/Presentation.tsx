@@ -284,7 +284,7 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex, menuOpen, viewMode, helpOpen]);
+  }, [exit, cards.length, currentIndex, menuOpen, viewMode, helpOpen, isMobile]);
 
   // Auto-visa hjälp första gången användaren startar en presentation
   useEffect(() => {
