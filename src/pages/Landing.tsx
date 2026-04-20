@@ -526,6 +526,7 @@ export default function Landing() {
           </nav>
         </div>
       </footer>
+      <PWAInstallPrompt />
     </div>
   );
 }

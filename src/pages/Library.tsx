@@ -747,6 +747,7 @@ export default function Library() {
           onComplete={() => setNeedsOnboarding(false)}
         />
       )}
+      <PWAInstallPrompt />
     </div>
     </>
   );
