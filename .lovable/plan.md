@@ -1,58 +1,65 @@
 
+Mål: göra mobil-v2 stabil även efter upprepade rotationer mellan porträtt och landskap, så att presentationen inte faller tillbaka till v1 på riktiga telefoner.
 
-## Plan: Maximera manustexten + alltid synlig tid + fixa rotationsbug
+1. Byt ut mobil-detektorn i presentationsflödet
+- Sluta låta mobil-v2 bero enbart på `window.innerWidth < 768` via `useIsMobile()`.
+- Inför en mer robust mobilbedömning för presentationsläget som prioriterar verklig handhållen enhet:
+  - `navigator.maxTouchPoints > 0`
+  - mobil/tablet user agent som fallback
+  - gärna `matchMedia("(pointer: coarse)")`
+- Låt denna signal vara stabil över rotationer, så att en iPhone i landskap fortfarande räknas som mobil även om viewport-bredden blir större än 768 px.
 
-### 1. Manustexten ska täcka nästan hela skärmen
-**Filer:** `src/pages/Presentation.tsx`, `src/components/presentation/PresentationCard.tsx`
+2. Separera “är mobil enhet” från “är smal viewport”
+- Behåll gärna nuvarande `useIsMobile()` för vanliga responsiva layoutbeslut i andra delar av appen.
+- I `src/pages/Presentation.tsx`, använd en ny signal för presentationsrouting, t.ex.:
+  - `isHandheldPresentationDevice`
+  - `useMobilePresentationUI`
+- Sätt mobil-v2 till:
+  - handhållen enhet
+  - presentation aktiv
+  - `viewMode === "cards"`
 
-- Ta bort `pt-7 pb-7 px-1` på `<main>` på mobil → ersätt med `p-0`. Manustextens svarta ruta (`rounded-3xl`) får hela ytan.
-- Ta bort `rounded-3xl` på mobil — kanten ska gå ut i sidorna. Behåll på desktop.
-- I `PresentationCard.tsx`: minska `px-3 py-2` till `px-2 py-1` på mobil. Tillåt `max-w-[95ch]` istället för `75ch` så texten utnyttjar bredden.
-- Resultat: manusrutan = ~95% av skärmytan istället för ~70%.
+3. Sluta remounta hela presentationscontainern på varje orienteringsbyte
+- Ta bort eller justera `key={isMobile ? orientation : "desktop"}` på root-containern i `Presentation.tsx`.
+- Den nyckeln tvingar ommontering vid rotation och gör fallback-beteendet mer känsligt.
+- Overlayn för rotation ska styras av state, inte av att hela trädet remountas.
 
-### 2. Flytta total-tid (topbar) till botten + alltid synliga element
-**Filer:** `src/components/presentation/PresentationTopbar.tsx`, `src/components/presentation/PresentationFooter.tsx`, `src/pages/Presentation.tsx`
+4. Låt rotations-overlayn använda den nya mobilsignalen
+- Uppdatera `showRotateOverlay` så att den baseras på den robusta handhållen-signalen istället för den gamla breddbaserade.
+- Då visas overlay direkt i porträtt även om viewporten beter sig konstigt efter flera rotationer.
 
-Ny layout på mobil:
-- **Toppen:** Bara en liten `X`-knapp uppe till vänster (~24px) och status-prick uppe till höger. Mycket diskret.
-- **Botten (alltid synlig):** En enda kompakt rad som innehåller:
-  - Vänster: `02/10 · 0:09/1:00` (kort-räknare + kort-tid)
-  - Mitten: `45:46` (total tid kvar — flyttat från top!) + pause-knapp + mode-toggle
-  - Höger: Panik-knapp (om finns)
-  - Tunn 2px progress-bar längst ner mot kanten
-- Denna nedre rad är **alltid synlig** (`visible={true}` hardcoded på mobil), aldrig auto-hide.
-- `xVisible`-state styr nu bara `?` och zoom-knappar (tillval).
+5. Begränsa följdeffekter i presentationens hjälplogik
+- Gå igenom effekter som idag beror på `isMobile` i `Presentation.tsx`:
+  - auto-hide för X
+  - iOS URL-bar-tricket
+  - pointermove-reset
+  - fullscreen exit-logik
+- Byt dem till samma stabila presentationssignal så att beteendet inte hoppar mellan mobil/desktop under rotation.
 
-### 3. Panik vs frågetecken — överlappning
-**Fil:** `src/pages/Presentation.tsx` (rad 481-491 — `?`-knappen är `fixed bottom-6 right-6`)
+6. Teknisk detalj för implementation
+- Mest sannolik fix:
+  - skapa en liten hook, t.ex. `useIsHandheldDevice()` eller `usePresentationDeviceMode()`
+  - använd den endast där upplevelsen ska följa fysisk enhet, inte CSS-bredd
+- Exempel på logik:
+```text
+handheld = coarse pointer OR touch points OR mobile/tablet UA
+useMobileV2 = handheld && !menuOpen && viewMode === "cards"
+showRotateOverlay = handheld && !menuOpen && orientation === "portrait"
+```
 
-- Eftersom panik nu ligger i den persistenta footer-raden längst till höger, flytta `?`-knappen så att den inte krockar:
-  - På mobil: göm `?`-knappen från synlig yta. Den dyker upp som overlay-knapp endast vid **tap i mitten av skärmen** (tillsammans med zoom-knapparna).
-  - Ny tap-zon: en ~80px hög/bred yta i geografiska centrum av skärmen. Tap där → visa zoom + `?` i 3s, sedan göm. Tap någon annanstans → navigation som vanligt.
+7. Verifiering efter implementation
+- Start i porträtt på telefon: overlay syns direkt.
+- Rotera till landskap: overlay försvinner, mobil-v2 ligger kvar.
+- Rotera tillbaka till porträtt: overlay kommer tillbaka.
+- Upprepa 5–10 gånger: appen får aldrig falla tillbaka till v1.
+- Verifiera även att swipe, first-run-hint och footer/topbar i mobil-v2 fortfarande fungerar.
 
-### 4. Fixa rotationsbug:en (IMG_2216) — KRITISK
-**Fil:** `src/pages/Presentation.tsx`
+Tekniska filer att ändra
+- `src/pages/Presentation.tsx`
+- `src/hooks/use-mobile.tsx` eller ny hook bredvid den, beroende på om vi vill hålla nuvarande hook orörd
+- Eventuellt små justeringar i komponenter som idag läser `useIsMobile()` men som i presentationsläge bör följa fysisk enhet istället för viewportbredd
 
-Roten: när användaren roterar landscape→portrait→landscape så:
-- `useEffect` på rad 296-304 trigggar bara på `[menuOpen, isMobile, currentIndex]` — inte på `orientation`. → auto-hide-timern startar inte om.
-- iOS Safari URL-baren kommer tillbaka när orienteringen ändras (Safari beter sig så).
-- Den gamla topbar/footer renderas dubbelt eftersom layouten kanske inte refreshar korrekt.
-
-Åtgärder:
-1. Lägg till `orientation` i dependency-arrayen för auto-hide-timern → timern startar om vid rotation.
-2. Lägg till `orientation` i scroll-trick-effekten (finns redan men bekräfta).
-3. När orientation ändras till `landscape`: kör en `setTimeout(() => window.scrollTo(0, 1), 300)` extra för att åter-trigga URL-bar-kollaps efter rotationsanimationen.
-4. Lägg till `key={orientation}`-prop på root-divet (`<div className="fixed inset-0 ...">`) → tvingar React att unmount/remount hela presentationsträdet vid orientationsbyte. Detta garanterar att layouten räknas om från scratch och inga "spöken" från föregående orientation lever kvar.
-5. Lägg till en explicit höjd-uppdatering: lyssna på `orientationchange` och `resize` → tvinga `window.scrollTo(0, 1)`.
-
-### 5. Filer som ändras
-| Fil | Ändring |
-|---|---|
-| `src/pages/Presentation.tsx` | `key={orientation}` på root, padding bort på mobil, orientation i deps, fixad scroll-trick, `?`-knapp som tap-toggle |
-| `src/components/presentation/PresentationTopbar.tsx` | Mobil: bara X + status-prick uppe. Resten flyttas till footer |
-| `src/components/presentation/PresentationFooter.tsx` | Mobil: ny rad med kort-räknare + total-tid + panik. Alltid synlig |
-| `src/components/presentation/PresentationCard.tsx` | Tunnare padding på mobil, bredare maxbredd |
-
-### Genomförande
-Allt i en runda — ändringarna är beroende av varandra (footer tar över topbar-innehåll, padding ändras tillsammans med rounded-corners).
-
+Förväntad rotorsak
+- Felet verkar ligga i att `useMobileV2` idag bygger på `useIsMobile()`, som bara använder `window.innerWidth < 768`.
+- På riktiga telefoner i landskap kan bredden passera 768 px, särskilt efter flera rotationer / browser chrome-förändringar.
+- Då blir `isMobile = false`, och routingen faller tillbaka till v1 trots att användaren fortfarande är på en telefon.
