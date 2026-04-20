@@ -489,8 +489,8 @@ export default function Presentation() {
           cardElapsedSeconds={cardElapsedSeconds}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
-          showNotes={showNotes}
-          onToggleNotes={() => setShowNotes((s) => !s)}
+          showNotes={mobileNotesOpen}
+          onToggleNotes={() => setMobileNotesOpen((s) => !s)}
           onNotesChange={handleNotesChange}
           onExit={exit}
           onPanic={handlePanic}
