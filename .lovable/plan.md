@@ -1,27 +1,31 @@
 
 
-## Plan: Dynamisk primär-CTA på landningssidan
+## Plan: Värdeförankring på prissidan
 
-### Nuläge
-`src/pages/Landing.tsx` rad 35–36:
-```ts
-const primaryCtaTo = session ? "/bibliotek" : "/auth";
-const primaryCtaLabel = session ? "Till biblioteket" : "Skapa konto gratis";
+### Placering och copy
+Två nya value-props ska läggas till:
+
+1. **"Mindre än priset på en pizza i månaden 🍕"**
+   - Placering: Direkt under PRO-priset (rad ~276) som en extra sub-text med emojin
+   - Syfte: Prisanknytning — får priset att kännas lågt
+
+2. **"Förbered ett anförande på 20 minuter istället för 2 timmar ⏳"**
+   - Placering: Som en egen "social proof/value" bar mellan pris-korten och FAQ-sektionen
+   - Syfte: Tidsbesparing — konkret ROI
+
+### Implementation
+**Fil:** `src/pages/Pricing.tsx`
+
+**Ändringar:**
+1. Lägg till pizza-texten under PRO-prisraden (inom `<header>` i PRO-artikeln, efter price-subtexten)
+2. Skapa en ny sektion mellan pris-grid och FAQ med tidsbesparingstexten — centrerad, med accent-färg och större typografi för att bryta visuellt
+
+### Visuell struktur efter ändring
 ```
-Variablerna används redan i topbar (rad 143), hero (rad 173) och bottenbanner (rad 354 + 472). Utloggad-label är "Skapa konto gratis" — ska bytas till "Testa gratis nu". Inloggad är redan "Till biblioteket".
-
-### Fix
-Ändra rad 36:
-```ts
-const primaryCtaLabel = session ? "Till biblioteket" : "Testa gratis nu";
+[Hero + billing toggle]
+[Gratis-kort] [PRO-kort]
+  └─ pizza-text under pris (ny)
+[Value bar: tidsbesparing] (ny sektion)
+[FAQ]
 ```
-
-Det räcker — alla CTA-instanser (topbar, hero, mid-section, bottenbanner) använder samma variabel och uppdateras automatiskt.
-
-### Fil
-- `src/pages/Landing.tsx` — en rad ändras (rad 36).
-
-### Verifiering
-- Utloggad: hero + bottenbanner visar "Testa gratis nu" → leder till `/auth`.
-- Inloggad: visar "Till biblioteket" → leder till `/bibliotek`.
 
