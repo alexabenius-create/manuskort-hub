@@ -77,76 +77,27 @@ export function PresentationTopbar({
     }
   })();
 
-  // ===== MOBIL: en kompakt rad, max ~32px =====
+  // ===== MOBIL: minimal — bara X uppe vänster + status-dot uppe höger =====
   if (isMobile) {
     return (
       <header
-        className={`absolute top-0 inset-x-0 z-30 flex items-center justify-between px-2 gap-2 pointer-events-none transition-all duration-300 ${
-          xVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
-        }`}
+        className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-2 pointer-events-none"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.25rem)" }}
       >
-        {/* Vänster: X */}
         <button
           onClick={onExit}
-          className="pointer-events-auto p-1.5 rounded-lg text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900/60"
+          className={`pointer-events-auto p-1.5 rounded-lg text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900/60 transition-opacity duration-300 ${
+            xVisible ? "opacity-100" : "opacity-0"
+          }`}
           aria-label="Avsluta presentationsläge"
         >
           <X className="h-4 w-4" />
         </button>
-
-        {/* Mitten/höger: kompakt tidspill */}
-        <div className="pointer-events-auto flex items-center gap-1.5 bg-zinc-900/80 backdrop-blur rounded-lg px-2 py-1">
-          {/* Mode-toggle: bara aktiv ikon, byt vid tap */}
-          <button
-            onClick={() => onModeChange(mode === "clock" ? "elapsed" : "clock")}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-100"
-            aria-label={mode === "clock" ? "Visa förfluten tid" : "Visa klockslag"}
-            title={mode === "clock" ? "Visa förfluten tid" : "Visa klockslag"}
-          >
-            {mode === "clock" ? <Clock className="h-3.5 w-3.5" /> : <Timer className="h-3.5 w-3.5" />}
-          </button>
-
-          {/* Status-prick */}
-          <span
-            className={`inline-block h-1.5 w-1.5 rounded-full ${statusDot}`}
-            title={wakeLockLabel}
-            aria-label={wakeLockLabel}
-          />
-
-          {/* Tid */}
-          {mode === "clock" ? (
-            <span className={`font-mono text-[13px] tabular-nums leading-none ${timeColor}`}>
-              {formatClock(new Date(now), true)}
-              <span className="text-zinc-600">/</span>
-              <span className="text-zinc-400">{targetClockTime}</span>
-            </span>
-          ) : (
-            <button
-              onClick={onDirectionToggle}
-              className={`font-mono text-[13px] tabular-nums leading-none inline-flex items-center gap-1 ${timeColor}`}
-              title={direction === "down" ? "Visa förfluten tid istället" : "Visa återstående tid istället"}
-            >
-              {direction === "down"
-                ? formatElapsedSeconds(remainingSeconds)
-                : formatElapsedSeconds(elapsedSeconds)}
-              <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
-            </button>
-          )}
-
-          {/* Pause-knapp — bara i förfluten-läge */}
-          {mode === "elapsed" && (
-            <button
-              onClick={onPauseToggle}
-              disabled={countdownActive}
-              className="p-1 rounded text-zinc-300 hover:text-zinc-100 disabled:opacity-40"
-              aria-label={isPaused ? "Återuppta timer" : "Pausa timer"}
-              title={isPaused ? "Återuppta" : "Pausa"}
-            >
-              {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-            </button>
-          )}
-        </div>
+        <span
+          className={`pointer-events-none inline-block h-1.5 w-1.5 rounded-full mr-1 ${statusDot}`}
+          title={wakeLockLabel}
+          aria-label={wakeLockLabel}
+        />
       </header>
     );
   }
