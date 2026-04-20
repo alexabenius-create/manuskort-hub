@@ -618,6 +618,8 @@ export default function Presentation() {
           showZoomButtons={xVisible}
         />
       )}
+        </>
+      )}
 
       {/* Speed-chip i scroll-läge */}
       {viewMode === "scroll" && speedChip && Date.now() - speedChip.ts < 2000 && (
