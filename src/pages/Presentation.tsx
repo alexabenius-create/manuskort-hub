@@ -488,8 +488,8 @@ export default function Presentation() {
       key={isMobile ? orientation : "desktop"}
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
       style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
+      onTouchStart={useMobileV2 ? undefined : onTouchStart}
+      onTouchEnd={useMobileV2 ? undefined : onTouchEnd}
     >
       {useMobileV2 ? (
         <PresentationMobile
