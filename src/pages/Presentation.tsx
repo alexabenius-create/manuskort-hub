@@ -48,6 +48,8 @@ export default function Presentation() {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showNotes, setShowNotes] = useState(true);
+  // Mobil-v2: anteckningsöverlägg är dolt vid start; bara ikonen visas. Read-only på mobil.
+  const [mobileNotesOpen, setMobileNotesOpen] = useState(false);
   const [sizeOffset, setSizeOffset] = useState(0);
   const [xVisible, setXVisible] = useState(true);
   const [menuOpen, setMenuOpen] = useState(true);
@@ -487,8 +489,8 @@ export default function Presentation() {
           cardElapsedSeconds={cardElapsedSeconds}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
-          showNotes={showNotes}
-          onToggleNotes={() => setShowNotes((s) => !s)}
+          showNotes={mobileNotesOpen}
+          onToggleNotes={() => setMobileNotesOpen((s) => !s)}
           onNotesChange={handleNotesChange}
           onExit={exit}
           onPanic={handlePanic}
