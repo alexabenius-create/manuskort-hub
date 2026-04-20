@@ -80,15 +80,19 @@ export default function Presentation() {
     if (orientation === "landscape") setRotateDismissed(false);
   }, [orientation]);
 
-  // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer
+  // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer.
+  // Lägg också min-height + 1px så iOS Safari ser sidan som scrollbar och kan kollapsa URL-baren.
   useEffect(() => {
     const prevBody = document.body.style.backgroundColor;
     const prevHtml = document.documentElement.style.backgroundColor;
+    const prevBodyMinH = document.body.style.minHeight;
     document.body.style.backgroundColor = "#09090b";
     document.documentElement.style.backgroundColor = "#09090b";
+    document.body.style.minHeight = "calc(100dvh + 1px)";
     return () => {
       document.body.style.backgroundColor = prevBody;
       document.documentElement.style.backgroundColor = prevHtml;
+      document.body.style.minHeight = prevBodyMinH;
     };
   }, []);
 
