@@ -551,32 +551,42 @@ export default function Library() {
           <>
             {/* Bulk action bar — visas när minst ett kort är markerat */}
             {selectedIds.size > 0 && (
-              <div className="sticky top-14 z-40 -mx-6 sm:-mx-10 px-6 sm:px-10 py-3 mb-5 bg-surface/95 backdrop-blur border-b-hair flex items-center gap-3 animate-fade-in">
-                <span className="text-[14px] font-medium">
-                  {selectedIds.size} markerad{selectedIds.size === 1 ? "" : "e"}
+              <div className="sticky top-14 z-40 -mx-6 sm:-mx-10 px-6 sm:px-10 py-3 mb-5 bg-surface/95 backdrop-blur border-b-hair flex items-center gap-2 md:gap-3 flex-nowrap animate-fade-in">
+                <span className="text-[14px] font-medium inline-flex items-center gap-1.5 flex-shrink-0">
+                  <span className="md:hidden inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-full bg-accent-blue text-white text-[12px] font-semibold">
+                    {selectedIds.size}
+                  </span>
+                  <span className="md:hidden">valda</span>
+                  <span className="hidden md:inline">
+                    {selectedIds.size} markerad{selectedIds.size === 1 ? "" : "e"}
+                  </span>
                 </span>
                 <button
                   type="button"
                   onClick={selectAllVisible}
-                  className="text-[13px] text-accent-blue hover:underline"
+                  className="text-[13px] text-accent-blue hover:underline flex-shrink-0"
                 >
-                  Markera alla synliga ({filtered.length})
+                  <span className="md:hidden">Alla</span>
+                  <span className="hidden md:inline">Markera alla synliga ({filtered.length})</span>
                 </button>
                 <button
                   type="button"
                   onClick={clearSelection}
-                  className="text-[13px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                  aria-label="Avmarkera"
+                  className="text-[13px] text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1 flex-shrink-0 h-9 w-9 md:w-auto md:h-auto rounded-full md:rounded-none border border-border md:border-0"
                 >
-                  <X className="h-3.5 w-3.5" /> Avmarkera
+                  <X className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                  <span className="hidden md:inline">Avmarkera</span>
                 </button>
                 <Button
-                  size="sm"
+                  size="icon"
                   variant="destructive"
                   onClick={() => setBulkDeleteOpen(true)}
-                  className="ml-auto rounded-full gap-1.5 h-9 px-4 text-[13px]"
+                  aria-label="Radera markerade"
+                  className="ml-auto rounded-full h-9 w-9 md:w-auto md:px-4 md:gap-1.5 flex-shrink-0"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Radera markerade
+                  <Trash2 className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                  <span className="hidden md:inline text-[13px]">Radera markerade</span>
                 </Button>
               </div>
             )}
