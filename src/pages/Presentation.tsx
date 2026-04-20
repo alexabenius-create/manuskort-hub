@@ -270,7 +270,9 @@ export default function Presentation() {
       const doc = document as Document & { webkitFullscreenElement?: Element | null };
       const isFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
       if (isFs) hasEnteredFullscreenRef.current = true;
-      else if (hasEnteredFullscreenRef.current) exit();
+      // På mobil triggar orientation-byten ofta exit fullscreen utan att användaren
+      // vill avsluta — RotateDeviceOverlay sköter UX. Endast desktop ska auto-exit.
+      else if (hasEnteredFullscreenRef.current && !isMobile) exit();
     };
 
     window.addEventListener("keydown", onKey);
