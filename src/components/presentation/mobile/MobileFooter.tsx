@@ -1,4 +1,4 @@
-import { Triangle, Pause, Play } from "lucide-react";
+import { Triangle, Pause, Play, ZoomIn, ZoomOut, HelpCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 import { formatClock, formatElapsedSeconds } from "@/hooks/usePresentationTimer";
