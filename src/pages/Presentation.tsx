@@ -292,7 +292,7 @@ export default function Presentation() {
     } catch { /* ignore */ }
   }, [menuOpen]);
 
-  // Mobil: göm topbar/footer aggressivt när presentation startar (efter 2s inaktivitet)
+  // Mobil: göm bara X (och tillvalsknappar) efter 2s — footer är ALLTID synlig.
   useEffect(() => {
     if (menuOpen || !isMobile) return;
     setXVisible(true);
@@ -301,10 +301,10 @@ export default function Presentation() {
     return () => {
       if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
     };
-  }, [menuOpen, isMobile, currentIndex]);
+  }, [menuOpen, isMobile, currentIndex, orientation]);
 
   // iOS Safari URL-bar trick: scrolla 1px så Safari kollapsar sin chrome.
-  // Kräver att body är minimalt scrollbar (se min-height nedan).
+  // Triggas även vid orientationsbyte (extra fördröjning för rotationsanimation).
   useEffect(() => {
     if (menuOpen || !isMobile) return;
     const trigger = () => window.scrollTo(0, 1);
@@ -312,10 +312,17 @@ export default function Presentation() {
     const t1 = window.setTimeout(trigger, 100);
     const t2 = window.setTimeout(trigger, 500);
     const t3 = window.setTimeout(trigger, 1500);
+    const t4 = window.setTimeout(trigger, 300); // efter rotationsanim
+    const onResize = () => trigger();
+    window.addEventListener("orientationchange", onResize);
+    window.addEventListener("resize", onResize);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.clearTimeout(t3);
+      window.clearTimeout(t4);
+      window.removeEventListener("orientationchange", onResize);
+      window.removeEventListener("resize", onResize);
     };
   }, [menuOpen, isMobile, orientation]);
 
@@ -454,6 +461,7 @@ export default function Presentation() {
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
+      key={isMobile ? orientation : "desktop"}
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
       style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
       onTouchStart={onTouchStart}
@@ -478,11 +486,15 @@ export default function Presentation() {
         countdownActive={timer.countdown > 0}
       />
 
-      {/* Diskret hjälp-knapp */}
-      {!menuOpen && (
+      {/* Diskret hjälp-knapp — desktop alltid, mobil endast när xVisible (tap i mitten) */}
+      {!menuOpen && (!isMobile || xVisible) && (
         <button
           onClick={() => setHelpOpen(true)}
-          className="fixed bottom-6 right-6 z-30 w-11 h-11 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors font-mono text-[16px] shadow-lg shadow-black/40"
+          className={`fixed z-30 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all font-mono shadow-lg shadow-black/40 ${
+            isMobile
+              ? "top-1.5 right-10 w-7 h-7 text-[12px]"
+              : "bottom-6 right-6 w-11 h-11 text-[16px]"
+          }`}
           aria-label="Visa hjälp (?)"
           title="Visa hjälp (?)"
         >
@@ -492,9 +504,9 @@ export default function Presentation() {
 
 
 
-      <main className="flex-1 min-h-0 pt-7 md:pt-24 pb-7 md:pb-24 px-1 md:px-10 relative">
+      <main className="flex-1 min-h-0 pt-9 md:pt-24 pb-9 md:pb-24 px-0 md:px-10 relative">
         <div
-          className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
+          className={`h-full w-full bg-black md:rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
             typeof current.target_seconds === "number" &&
             current.target_seconds > 0 &&
             cardElapsedSeconds > current.target_seconds &&
@@ -555,7 +567,14 @@ export default function Presentation() {
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
-          visible={xVisible}
+          visible={isMobile ? true : xVisible}
+          totalRemainingSeconds={timer.remainingSeconds}
+          totalTimerMode={timerMode}
+          totalNow={timer.now}
+          isPaused={timer.isPaused}
+          onPauseToggle={timer.togglePause}
+          countdownActive={timer.countdown > 0}
+          showZoomButtons={xVisible}
         />
       )}
 
