@@ -270,7 +270,9 @@ export default function Presentation() {
       const doc = document as Document & { webkitFullscreenElement?: Element | null };
       const isFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
       if (isFs) hasEnteredFullscreenRef.current = true;
-      else if (hasEnteredFullscreenRef.current) exit();
+      // På mobil triggar orientation-byten ofta exit fullscreen utan att användaren
+      // vill avsluta — RotateDeviceOverlay sköter UX. Endast desktop ska auto-exit.
+      else if (hasEnteredFullscreenRef.current && !isMobile) exit();
     };
 
     window.addEventListener("keydown", onKey);
@@ -282,7 +284,7 @@ export default function Presentation() {
       document.removeEventListener("webkitfullscreenchange", onFsChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exit, cards.length, currentIndex, menuOpen, viewMode, helpOpen]);
+  }, [exit, cards.length, currentIndex, menuOpen, viewMode, helpOpen, isMobile]);
 
   // Auto-visa hjälp första gången användaren startar en presentation
   useEffect(() => {
