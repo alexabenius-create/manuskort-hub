@@ -299,6 +299,34 @@ export default function Presentation() {
     };
   }, [menuOpen, isMobile, currentIndex]);
 
+  // iOS Safari URL-bar trick: scrolla 1px så Safari kollapsar sin chrome.
+  // Kräver att body är minimalt scrollbar (se min-height nedan).
+  useEffect(() => {
+    if (menuOpen || !isMobile) return;
+    const trigger = () => window.scrollTo(0, 1);
+    trigger();
+    const t1 = window.setTimeout(trigger, 100);
+    const t2 = window.setTimeout(trigger, 500);
+    const t3 = window.setTimeout(trigger, 1500);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [menuOpen, isMobile, orientation]);
+
+  // Återställ auto-hide-timer vid pointermove (iPad/trackpad/Pencil)
+  useEffect(() => {
+    if (menuOpen || !isMobile) return;
+    const onMove = () => {
+      setXVisible(true);
+      if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+      xTimerRef.current = window.setTimeout(() => setXVisible(false), 3000);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [menuOpen, isMobile]);
+
   // Navigation
   const goNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(cards.length - 1, i + 1));
