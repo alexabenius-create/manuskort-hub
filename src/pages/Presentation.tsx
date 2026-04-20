@@ -288,6 +288,17 @@ export default function Presentation() {
     } catch { /* ignore */ }
   }, [menuOpen]);
 
+  // Mobil: göm topbar/footer aggressivt när presentation startar (efter 2s inaktivitet)
+  useEffect(() => {
+    if (menuOpen || !isMobile) return;
+    setXVisible(true);
+    if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+    xTimerRef.current = window.setTimeout(() => setXVisible(false), 2000);
+    return () => {
+      if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+    };
+  }, [menuOpen, isMobile, currentIndex]);
+
   // Navigation
   const goNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(cards.length - 1, i + 1));
