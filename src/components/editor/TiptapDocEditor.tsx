@@ -27,10 +27,11 @@ interface Props {
   onEditorReady?: (editor: Editor | null) => void;
 }
 
+// Mobile: halverad textstorlek (~50%) — desktop oförändrat från md:.
 const sizeClass = {
-  sm: "font-display text-[24px] leading-[1.7]",
-  md: "font-display text-[30px] leading-[1.7]",
-  lg: "font-display text-[38px] leading-[1.7]",
+  sm: "font-display text-[14px] md:text-[24px] leading-[1.7]",
+  md: "font-display text-[16px] md:text-[30px] leading-[1.7]",
+  lg: "font-display text-[19px] md:text-[38px] leading-[1.7]",
 };
 
 /**
