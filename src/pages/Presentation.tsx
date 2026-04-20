@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const HELP_SEEN_KEY = "presentation-help-seen-v1";
+const MOBILE_HINT_SEEN_KEY = "presentation-mobile-hint-seen-v1";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
@@ -468,6 +469,19 @@ export default function Presentation() {
   // desktop-JSX nedan.
   const useMobileV2 = isMobile && !menuOpen && viewMode === "cards";
 
+  // Visa första-gången-tips när mobil-v2 visas första gången per enhet.
+  useEffect(() => {
+    if (!useMobileV2) return;
+    try {
+      if (localStorage.getItem(MOBILE_HINT_SEEN_KEY)) return;
+    } catch { /* ignore */ }
+    setShowMobileHint(true);
+  }, [useMobileV2]);
+
+  const dismissMobileHint = useCallback(() => {
+    setShowMobileHint(false);
+    try { localStorage.setItem(MOBILE_HINT_SEEN_KEY, "1"); } catch { /* ignore */ }
+  }, []);
   return (
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
