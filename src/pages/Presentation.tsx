@@ -50,6 +50,8 @@ export default function Presentation() {
   const [showNotes, setShowNotes] = useState(true);
   // Mobil-v2: anteckningsöverlägg är dolt vid start; bara ikonen visas. Read-only på mobil.
   const [mobileNotesOpen, setMobileNotesOpen] = useState(false);
+  // Mobil-v2: första-gången-tips visas en gång per enhet.
+  const [showMobileHint, setShowMobileHint] = useState(false);
   const [sizeOffset, setSizeOffset] = useState(0);
   const [xVisible, setXVisible] = useState(true);
   const [menuOpen, setMenuOpen] = useState(true);
