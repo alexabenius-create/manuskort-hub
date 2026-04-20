@@ -412,6 +412,7 @@ export default function Presentation() {
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
+      style={{ height: "100dvh" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
