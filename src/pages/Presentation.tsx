@@ -449,7 +449,7 @@ export default function Presentation() {
 
 
 
-      <main className="flex-1 min-h-0 pt-24 pb-24 px-6 md:px-10 relative">
+      <main className="flex-1 min-h-0 pt-20 md:pt-24 pb-20 md:pb-24 px-3 md:px-10 relative">
         <div
           className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
             typeof current.target_seconds === "number" &&
