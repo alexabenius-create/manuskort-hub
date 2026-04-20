@@ -678,7 +678,7 @@ export default function EditorV3() {
                 </Popover>
               </Tooltip>
 
-              {/* Paneldeltagare */}
+              {/* Paneldeltagare — desktop position; på mobil flyttad till höger om "Starta" */}
               {isModerator && (
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
@@ -686,7 +686,7 @@ export default function EditorV3() {
                       type="button"
                       onClick={() => setPanelistSidebarOpen(true)}
                       aria-label="Deltagare"
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
+                      className="hidden md:inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
                     >
                       <Users className="h-4 w-4" />
                     </button>
@@ -739,6 +739,25 @@ export default function EditorV3() {
                 </TooltipTrigger>
                 <TooltipContent>{`Starta presentationsläge (${shortcutLabel})`}</TooltipContent>
               </Tooltip>
+
+              {/* Paneldeltagare — mobil position (höger om Starta) */}
+              {isModerator && (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setPanelistSidebarOpen(true)}
+                      aria-label="Deltagare"
+                      className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
+                    >
+                      <Users className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[12px] rounded-lg">
+                    Deltagare
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
               {/* Hitta & ersätt — dolt på mobil */}
               <Tooltip>
