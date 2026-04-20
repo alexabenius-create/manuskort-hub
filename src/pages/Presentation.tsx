@@ -67,7 +67,18 @@ export default function Presentation() {
   const hasEnteredFullscreenRef = useRef(false);
 
   const wakeLockStatus = useWakeLock(true);
-  useFullscreen(true);
+  const isMobile = useIsMobile();
+  const orientation = useOrientation();
+  const presentationActive = !menuOpen;
+  // Lås till liggande på mobil när presentation pågår — fungerar på Android Chrome,
+  // no-op på iOS Safari (där visar vi RotateDeviceOverlay i stället).
+  useFullscreen(true, isMobile && presentationActive);
+  const [rotateDismissed, setRotateDismissed] = useState(false);
+  const showRotateOverlay = isMobile && presentationActive && orientation === "portrait" && !rotateDismissed;
+  // Återställ dismiss när användaren vrider till liggande, så overlay återkommer om de vrider tillbaka
+  useEffect(() => {
+    if (orientation === "landscape") setRotateDismissed(false);
+  }, [orientation]);
 
   // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer
   useEffect(() => {
