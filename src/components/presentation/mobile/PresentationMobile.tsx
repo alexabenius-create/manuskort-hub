@@ -4,9 +4,9 @@ import type { WakeLockStatus } from "@/hooks/useWakeLock";
 import type { usePresentationTimer } from "@/hooks/usePresentationTimer";
 import type { useCardTimers } from "@/hooks/useCardTimers";
 
-import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
-import { PresentationFooter } from "@/components/presentation/PresentationFooter";
-import { PresentationCard } from "@/components/presentation/PresentationCard";
+import { MobileTopbar } from "./MobileTopbar";
+import { MobileFooter } from "./MobileFooter";
+import { MobileCardContent } from "./MobileCardContent";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"] & { is_panic_card: boolean };
@@ -41,77 +41,42 @@ export interface PresentationMobileProps {
 }
 
 /**
- * Mobil-v2 av presentationsläget. Fas 1: stub som återanvänder befintliga
- * desktop-komponenter så att routingen kan verifieras utan visuella regressioner.
- * Fas 2-4 byter ut layouten till CSS Grid + dedikerade mobil-komponenter.
+ * Mobil-v2 av presentationsläget. Fas 2: dedikerad CSS-Grid-layout:
+ *   [topbar 28px] [manus 1fr] [footer ~36px + 2px progress]
+ *
+ * Manustexten är kant-till-kant och får all återstående yta.
+ * Topbar och footer är alltid renderade — `xVisible` styr bara opacity på X-knappen.
  */
 export function PresentationMobile(props: PresentationMobileProps) {
   const {
-    manuscript, cards, panelists, current, next, currentIndex,
-    hasPanicCards, timer, cardElapsedSeconds, sizeOffset, onSizeChange,
-    showNotes, onToggleNotes, onNotesChange, onExit, onPanic, onModeChange,
-    onHelpOpen, wakeLockStatus, xVisible, timerMode, overdueDismissedIds,
+    manuscript, cards, panelists, current, currentIndex,
+    hasPanicCards, timer, cardElapsedSeconds, sizeOffset,
+    onExit, onPanic, wakeLockStatus, xVisible, timerMode, overdueDismissedIds,
     onDismissOverdue,
   } = props;
 
   return (
-    <>
-      <PresentationTopbar
-        mode={timerMode}
-        onModeChange={onModeChange}
-        direction={timer.direction}
-        onDirectionToggle={timer.toggleDirection}
-        isPaused={timer.isPaused}
-        onPauseToggle={timer.togglePause}
-        elapsedSeconds={timer.elapsedSeconds}
-        remainingSeconds={timer.remainingSeconds}
-        targetSeconds={timer.targetSeconds}
-        now={timer.now}
+    <div
+      className="fixed inset-0 grid bg-black z-40"
+      style={{ gridTemplateRows: "28px 1fr auto" }}
+    >
+      <MobileTopbar
+        onExit={onExit}
+        wakeLockStatus={wakeLockStatus}
         isWarning={timer.isWarning}
         isOverdue={timer.isOverdue}
-        wakeLockStatus={wakeLockStatus}
-        onExit={onExit}
         xVisible={xVisible}
-        countdownActive={timer.countdown > 0}
       />
 
-      {xVisible && (
-        <button
-          onClick={onHelpOpen}
-          className="fixed z-30 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-800/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all font-mono shadow-lg shadow-black/40 top-1.5 right-10 w-7 h-7 text-[12px]"
-          aria-label="Visa hjälp (?)"
-          title="Visa hjälp (?)"
-        >
-          ?
-        </button>
-      )}
+      <MobileCardContent
+        card={current}
+        panelists={panelists}
+        textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+        sizeOffset={sizeOffset}
+      />
 
-      <main className="flex-1 min-h-0 pt-9 pb-9 px-0 relative">
-        <div
-          className={`h-full w-full bg-black shadow-2xl overflow-hidden transition-all duration-300 ${
-            typeof current.target_seconds === "number" &&
-            current.target_seconds > 0 &&
-            cardElapsedSeconds > current.target_seconds &&
-            !overdueDismissedIds.has(current.id)
-              ? "ring-4 ring-red-500 shadow-red-500/40"
-              : "shadow-black/40"
-          }`}
-        >
-          <PresentationCard
-            card={current}
-            panelists={panelists}
-            textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
-            sizeOffset={sizeOffset}
-            showNotes={showNotes}
-            onToggleNotes={onToggleNotes}
-            onNotesChange={(notes) => onNotesChange(current.id, notes)}
-          />
-        </div>
-      </main>
-
-      <PresentationFooter
+      <MobileFooter
         current={current}
-        next={next}
         index={currentIndex}
         total={cards.length}
         hasPanicCards={hasPanicCards}
@@ -121,17 +86,13 @@ export function PresentationMobile(props: PresentationMobileProps) {
         isOverdueDismissed={overdueDismissedIds.has(current.id)}
         onDismissOverdue={() => onDismissOverdue(current.id)}
         timeFormat={timerMode}
-        sizeOffset={sizeOffset}
-        onSizeChange={onSizeChange}
-        visible={true}
         totalRemainingSeconds={timer.remainingSeconds}
         totalTimerMode={timerMode}
         totalNow={timer.now}
         isPaused={timer.isPaused}
         onPauseToggle={timer.togglePause}
         countdownActive={timer.countdown > 0}
-        showZoomButtons={xVisible}
       />
-    </>
+    </div>
   );
 }
