@@ -3,12 +3,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useOrientation } from "@/hooks/useOrientation";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { usePresentationTimer } from "@/hooks/usePresentationTimer";
 import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
+import { RotateDeviceOverlay } from "@/components/presentation/RotateDeviceOverlay";
 
 import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/components/presentation/PresentationStartMenu";
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
