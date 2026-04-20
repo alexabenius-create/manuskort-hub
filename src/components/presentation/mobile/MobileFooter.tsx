@@ -24,6 +24,11 @@ interface Props {
   isPaused: boolean;
   onPauseToggle: () => void;
   countdownActive: boolean;
+  /** Visa zoom + hjälp (togglas av central tap-zone). */
+  showAuxControls: boolean;
+  sizeOffset: number;
+  onSizeChange: (offset: number) => void;
+  onHelpOpen: () => void;
 }
 
 function formatMmSs(totalSeconds: number): string {
@@ -63,6 +68,10 @@ export function MobileFooter({
   isPaused,
   onPauseToggle,
   countdownActive,
+  showAuxControls,
+  sizeOffset,
+  onSizeChange,
+  onHelpOpen,
 }: Props) {
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
   const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
