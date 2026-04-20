@@ -621,6 +621,10 @@ export default function Presentation() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {showRotateOverlay && (
+        <RotateDeviceOverlay onContinueAnyway={() => setRotateDismissed(true)} />
+      )}
     </div>
     </>
   );
