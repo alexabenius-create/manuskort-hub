@@ -11,6 +11,7 @@ import { PresentationTopbar } from "@/components/presentation/PresentationTopbar
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { PresentationMobile } from "@/components/presentation/mobile/PresentationMobile";
+import { MobileFirstRunHint } from "@/components/presentation/mobile/MobileFirstRunHint";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
 import { RotateDeviceOverlay } from "@/components/presentation/RotateDeviceOverlay";
 
