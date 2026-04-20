@@ -1,67 +1,67 @@
 
 
-## Plan: Fixa bubble-meny + verklig auto-hide i presentationsläget
+Tittar på skärmbilden: topbar tar ~20% av höjden, footer ~15%, anteckningspanel täcker halva manustexten, bubble-meny från redigeringsläget poppar upp ovanpå (borde inte ens visas i presentation). Manustexten — det viktigaste — får ~50% av ytan och är delvis skymd.
 
-### Problem 1 — Bubble-menyn spränger mobilskärmen
+## Plan: Omdisponering av presentationsläget på mobil (landscape)
 
-**Fil:** `src/components/editor/FormatBubbleMenu.tsx`
+### Mål
+Manustexten ska få **minst 85% av skärmytan**. Allt annat krymper, flyttas eller döljs.
 
-På 390px-skärm: 6 verktygsikoner + separator + 4 panelist-pillar (varje upp till 140px) = långt över skärmens bredd.
+### 1. Anteckningspanelen — döljs som default på mobil
+**Fil:** `src/components/presentation/PresentationCard.tsx`
 
-**Åtgärd (mobil):**
-1. Panelist-pillarna förkortas till **färgpunkt + initial** (t.ex. `[A]` i Annas gula, `[J]` i Johans blå) — ca 28px var i stället för 100–140px.
-2. På mobil: panelist-pillarna går från max-width 140px → fast 28x28 rund knapp med initial.
-3. `flex-wrap` tillåts om det ändå skulle bli för brett, så menyn bryter på två rader hellre än att klippas.
-4. Tooltip/aria-label behåller fullt namn så funktionen är intakt.
+Idag: anteckningar visas alltid sida-vid-sida och täcker halva manustexten.
+Förslag: På mobil **döljs anteckningspanelen helt** som default. Knapp "DÖLJ" blir "VISA ANT." och toggle:ar fram en overlay (inte split). När öppen ligger den ovanpå med backdrop, stäng-knapp tydligt.
 
-### Problem 2 — Topbar/footer försvinner inte i praktiken
+### 2. Topbar — radikalt mindre
+**Fil:** `src/components/presentation/PresentationTopbar.tsx`
 
-Roten av problemet, i prioritetsordning:
+Idag på mobil: stor pill med 43:54 + ikoner, ~80px hög.
+Förslag:
+- Krymp till **en kompakt rad, max 36px hög**
+- Tid: `43:54` i mindre font (text-base istället för text-3xl)
+- Ta bort "kvar av 46:28"-undertexten på mobil — visas i meny istället
+- Pause-knapp blir 28x28 ikon
+- Status-prick (grön/gul/röd) flyttas till en 8px liten dot bredvid tiden
+- Klock-ikon + stoppur-ikon staplas vertikalt → bara aktiv visas, byt via tap
 
-**A) iOS Safari URL-bar visas alltid** (skärmbilden visar exakt detta — `manuskort.se`-baren). Detta är inte vår topbar utan **Safari själv**. iOS Safari döljer URL-baren bara när sidan kan scrollas vertikalt och användaren scrollar nedåt. Vår presentation är `overflow-hidden` → Safari döljer aldrig sin chrome.
+### 3. Footer — kraftigt komprimerad
+**Fil:** `src/components/presentation/PresentationFooter.tsx`
 
-**B) Vår egen topbar/footer** har auto-hide (2s), men timern startar bara om vid `currentIndex`-byte eller meny-öppning. Den startar inte om vid touch (som visar och nollställer till 3s — bra). Logiken funkar, men användaren ser fortfarande Safari-baren och tror att det är vår.
+Idag: stor `0:36 / 1:00`-tid, progress-bar, "02/10 NÄSTA: TALARE...", panelist-knapp, hjälp-ikon. Tar ~120px höjd.
+Förslag:
+- En enda rad, **max 32px hög**
+- Format: `02/10 · 0:36/1:00 ──────── [P] [?]`
+- Progress-bar blir 2px tunn linje längst ner mot kanten
+- "NÄSTA: TALARE..."-texten döljs på mobil — visas bara vid tap
+- Zoom-knapparna (+/−) flyttas till hjälp-menyn istället för att ligga synliga
+- Panelist-pillen krymps till 28x28 färgknapp
 
-### Föreslagna åtgärder
+### 4. Bubble-menyn ska INTE visas i presentationsläget
+**Fil:** `src/pages/Presentation.tsx` eller `src/components/presentation/PresentationCard.tsx`
 
-**Steg 1 — Knäcka iOS Safari URL-bar (A)**
-Lägg in en *minimal scroll-trigger*: gör presentationsytan 1px högre än viewport så Safari känner att sidan är scrollbar, och scrolla 1px ned vid mount. Detta tvingar iOS att kollapsa URL-baren när presentation startar. Standard-trick på iOS-webbappar.
+Skärmbilden visar att FormatBubbleMenu poppar upp ("Fortsätt med", "Byt plats på scen") — det är **redigeringsmenyn** som inte borde finnas i presentation. Behöver verifiera om PresentationCard använder TiptapEditor med `editable={false}` eller om bubble-menyn felaktigt är aktiv.
 
-```tsx
-useEffect(() => {
-  if (!isMobile || menuOpen) return;
-  // Trigga iOS URL-bar-kollaps
-  window.scrollTo(0, 1);
-  const t = setTimeout(() => window.scrollTo(0, 1), 100);
-  return () => clearTimeout(t);
-}, [isMobile, menuOpen]);
-```
+Förslag: säkerställ att bubble-menyn är helt avstängd i presentation, alternativt att text-selection inte triggar någon meny.
 
-Plus: lägg till `min-height: calc(100dvh + 1px)` på root-elementet så Safari ser sidan som scrollbar.
+### 5. Manustexten får hela ytan
+Med ovanstående minskningar:
+- Topbar: 80px → 36px (sparar 44px)
+- Footer: 120px → 32px + 2px progress (sparar 86px)
+- Anteckningar: 50% bredd → 0 (dubblar manustextens bredd)
+- Total vinst: ~130px höjd + dubbel bredd för manustexten
 
-**Steg 2 — Lägg till "Lägg till på hemskärmen"-tips i Rotate-overlayen**
-För iPhone-användare: en kort textrad i `RotateDeviceOverlay` om att "Lägg till manuskort.se på hemskärmen för fullskärm utan Safari-chrome". PWA-läge är enda sättet att helt bli av med Safaris URL-bar på iOS.
-
-**Steg 3 — Säkra vår egen auto-hide (B)**
-- Garantera att tap *bara visar* topbar i 3s, sen göms igen — det funkar redan men dubbelkolla att `xTimerRef`-cleanup fungerar.
-- Lägg till en återställning av timern vid `pointermove` också (för iPad med trackpad/Pencil), inte bara touchend.
-
-**Steg 4 — Manifest-fil för PWA-stöd**
-Lägg till `public/manifest.webmanifest` med `display: "standalone"` så att om användaren lägger till på hemskärmen körs appen utan Safari-chrome överhuvudtaget. Länka från `index.html`.
+### 6. Auto-hide intakt
+Topbar/footer fortsätter fade:a ut efter 2s — då får manustexten 100% av skärmen.
 
 ### Filer som ändras
-
 | Fil | Ändring |
 |---|---|
-| `src/components/editor/FormatBubbleMenu.tsx` | Panelist-pillar → färg+initial på mobil, flex-wrap fallback |
-| `src/pages/Presentation.tsx` | iOS scroll-trick + pointermove-återställning av auto-hide |
-| `src/components/presentation/RotateDeviceOverlay.tsx` | iOS-tips om hemskärm |
-| `public/manifest.webmanifest` (ny) | PWA-manifest för standalone-läge |
-| `index.html` | Länka manifest + apple-mobile-web-app-meta |
+| `src/components/presentation/PresentationCard.tsx` | Anteckningar → overlay-toggle på mobil, ej split |
+| `src/components/presentation/PresentationTopbar.tsx` | Mobil: kompakt rad 36px, mindre font, dot-status |
+| `src/components/presentation/PresentationFooter.tsx` | Mobil: enkelrad 32px, dölj NÄSTA-text, flytta zoom |
+| `src/pages/Presentation.tsx` | Verifiera att bubble-menyn ej kan triggas |
 
 ### Genomförandeordning
-
-Förslag: kör Steg 1 + 3 först (snabba quick wins som löser kärnproblemet), verifiera på iPhone, sen Steg 2 + 4 (PWA + tipset) som långsiktig lösning.
-
-**Vill du köra alla 4 stegen direkt, eller dela upp 1+3 → verifiera → 2+4?**
+Förslag: kör allt i en runda — alla ändringar är samverkande och gör först nytta tillsammans.
 
