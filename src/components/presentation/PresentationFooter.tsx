@@ -24,6 +24,8 @@ interface Props {
   timeFormat: "clock" | "elapsed";
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
+  /** På mobil: dölj footern när false (auto-hide efter inaktivitet). */
+  visible?: boolean;
 }
 
 const SIZE_MIN = -2;
