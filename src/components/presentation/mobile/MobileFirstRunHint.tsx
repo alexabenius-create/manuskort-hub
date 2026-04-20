@@ -18,8 +18,8 @@ export function MobileFirstRunHint({ onDismiss }: Props) {
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = window.setTimeout(() => setFading(true), 2600);
-    const dismissTimer = window.setTimeout(() => onDismiss(), 3000);
+    const fadeTimer = window.setTimeout(() => setFading(true), 5600);
+    const dismissTimer = window.setTimeout(() => onDismiss(), 6000);
     return () => {
       window.clearTimeout(fadeTimer);
       window.clearTimeout(dismissTimer);
