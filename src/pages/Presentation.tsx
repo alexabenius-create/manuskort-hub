@@ -11,6 +11,7 @@ import { PresentationTopbar } from "@/components/presentation/PresentationTopbar
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { PresentationMobile } from "@/components/presentation/mobile/PresentationMobile";
+import { MobileFirstRunHint } from "@/components/presentation/mobile/MobileFirstRunHint";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
 import { RotateDeviceOverlay } from "@/components/presentation/RotateDeviceOverlay";
 
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const HELP_SEEN_KEY = "presentation-help-seen-v1";
+const MOBILE_HINT_SEEN_KEY = "presentation-mobile-hint-seen-v1";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import type { Panelist } from "@/hooks/usePanelists";
@@ -50,6 +52,8 @@ export default function Presentation() {
   const [showNotes, setShowNotes] = useState(true);
   // Mobil-v2: anteckningsöverlägg är dolt vid start; bara ikonen visas. Read-only på mobil.
   const [mobileNotesOpen, setMobileNotesOpen] = useState(false);
+  // Mobil-v2: första-gången-tips visas en gång per enhet.
+  const [showMobileHint, setShowMobileHint] = useState(false);
   const [sizeOffset, setSizeOffset] = useState(0);
   const [xVisible, setXVisible] = useState(true);
   const [menuOpen, setMenuOpen] = useState(true);
@@ -465,6 +469,19 @@ export default function Presentation() {
   // desktop-JSX nedan.
   const useMobileV2 = isMobile && !menuOpen && viewMode === "cards";
 
+  // Visa första-gången-tips när mobil-v2 visas första gången per enhet.
+  useEffect(() => {
+    if (!useMobileV2) return;
+    try {
+      if (localStorage.getItem(MOBILE_HINT_SEEN_KEY)) return;
+    } catch { /* ignore */ }
+    setShowMobileHint(true);
+  }, [useMobileV2]);
+
+  const dismissMobileHint = useCallback(() => {
+    setShowMobileHint(false);
+    try { localStorage.setItem(MOBILE_HINT_SEEN_KEY, "1"); } catch { /* ignore */ }
+  }, []);
   return (
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
@@ -728,6 +745,10 @@ export default function Presentation() {
 
       {showRotateOverlay && (
         <RotateDeviceOverlay onContinueAnyway={() => setRotateDismissed(true)} />
+      )}
+
+      {useMobileV2 && showMobileHint && !showRotateOverlay && (
+        <MobileFirstRunHint onDismiss={dismissMobileHint} />
       )}
     </div>
     </>
