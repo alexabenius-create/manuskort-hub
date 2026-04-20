@@ -86,11 +86,16 @@ export default {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
         "accordion-up":   { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" } },
         "fade-up":        { from: { opacity: "0", transform: "translateY(12px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        "rotate-device": {
+          "0%, 40%":   { transform: "rotate(0deg)" },
+          "60%, 100%": { transform: "rotate(-90deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-up": "fade-up 0.35s cubic-bezier(0.4, 0, 0.2, 1) both",
+        "rotate-device": "rotate-device 2.4s ease-in-out infinite",
       },
     },
   },
