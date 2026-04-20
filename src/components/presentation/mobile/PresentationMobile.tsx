@@ -4,10 +4,12 @@ import type { WakeLockStatus } from "@/hooks/useWakeLock";
 import type { usePresentationTimer } from "@/hooks/usePresentationTimer";
 import type { useCardTimers } from "@/hooks/useCardTimers";
 
+import { StickyNote } from "lucide-react";
 import { MobileTopbar } from "./MobileTopbar";
 import { MobileFooter } from "./MobileFooter";
 import { MobileCardContent } from "./MobileCardContent";
 import { MobileHelpZone } from "./MobileHelpZone";
+import { MobileNotesOverlay } from "./MobileNotesOverlay";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"] & { is_panic_card: boolean };
@@ -59,9 +61,12 @@ export function PresentationMobile(props: PresentationMobileProps) {
   const {
     manuscript, cards, panelists, current, currentIndex,
     hasPanicCards, timer, cardElapsedSeconds, sizeOffset, onSizeChange,
+    showNotes, onToggleNotes, onNotesChange,
     onExit, onPanic, onHelpOpen, onCenterTap, onNext, onPrev,
     wakeLockStatus, xVisible, timerMode, overdueDismissedIds, onDismissOverdue,
   } = props;
+
+  const hasNotes = !!(current.notes && current.notes.trim().length > 0);
 
   return (
     <div
@@ -92,6 +97,17 @@ export function PresentationMobile(props: PresentationMobileProps) {
           onSwipeLeft={onNext}
           onSwipeRight={onPrev}
         />
+        {/* Alltid synlig anteckningsknapp uppe i höger hörn av manusytan (z-30, ovanför HelpZone z-20) */}
+        <button
+          onClick={onToggleNotes}
+          className={`absolute top-1 right-1 z-30 p-1.5 rounded active:bg-zinc-800/60 transition-colors ${
+            hasNotes ? "text-amber-300" : "text-zinc-500 hover:text-zinc-300"
+          }`}
+          aria-label={hasNotes ? "Visa anteckningar" : "Lägg till anteckningar"}
+          title={hasNotes ? "Visa anteckningar" : "Lägg till anteckningar"}
+        >
+          <StickyNote className="h-4 w-4" />
+        </button>
       </div>
 
       <MobileFooter
