@@ -10,6 +10,7 @@ import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
+import { PresentationMobile } from "@/components/presentation/mobile/PresentationMobile";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
 import { RotateDeviceOverlay } from "@/components/presentation/RotateDeviceOverlay";
 
