@@ -738,9 +738,7 @@ export default function Presentation() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {showRotateOverlay && (
-        <RotateDeviceOverlay onContinueAnyway={() => setRotateDismissed(true)} />
-      )}
+      {showRotateOverlay && <RotateDeviceOverlay />}
 
       {useMobileV2 && showMobileHint && !showRotateOverlay && (
         <MobileFirstRunHint onDismiss={dismissMobileHint} />

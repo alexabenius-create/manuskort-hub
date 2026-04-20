@@ -1,14 +1,10 @@
 import { Smartphone } from "lucide-react";
 
-interface Props {
-  onContinueAnyway: () => void;
-}
-
 /**
- * Overlay som uppmanar användaren att vrida telefonen till liggande läge
- * för bästa läsupplevelse. Visas bara på mobil i porträtt under aktiv presentation.
+ * Overlay som uppmanar användaren att vrida telefonen till liggande läge.
+ * Visas alltid på mobil i porträtt under aktiv presentation — ingen dismiss möjlig.
  */
-export function RotateDeviceOverlay({ onContinueAnyway }: Props) {
+export function RotateDeviceOverlay() {
   return (
     <div
       className="fixed inset-0 z-[60] bg-zinc-950/95 backdrop-blur-sm flex flex-col items-center justify-center px-8 text-center"
@@ -35,12 +31,6 @@ export function RotateDeviceOverlay({ onContinueAnyway }: Props) {
         💡 Tips för iPhone: tryck på <span className="text-zinc-300">Dela</span> i Safari och välj{" "}
         <span className="text-zinc-300">Lägg till på hemskärmen</span> för att köra Manuskort i fullskärm utan adressfält.
       </p>
-      <button
-        onClick={onContinueAnyway}
-        className="mt-8 text-zinc-500 hover:text-zinc-300 text-[13px] underline underline-offset-4 transition-colors"
-      >
-        Fortsätt ändå i stående läge
-      </button>
     </div>
   );
 }
