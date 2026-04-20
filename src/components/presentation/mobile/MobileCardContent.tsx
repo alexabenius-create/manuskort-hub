@@ -170,16 +170,17 @@ export function MobileCardContent({ card, panelists, textSize, sizeOffset }: Pro
       <div
         ref={containerRef}
         className="w-full h-full flex flex-col items-center justify-center overflow-hidden px-3"
-        style={
-          overflowAtMin
+        style={{
+          paddingTop: hasAnyCue ? 36 : 0,
+          ...(overflowAtMin
             ? {
                 WebkitMaskImage:
                   "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
                 maskImage:
                   "linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)",
               }
-            : undefined
-        }
+            : {}),
+        }}
       >
         <article
           ref={articleRef}
