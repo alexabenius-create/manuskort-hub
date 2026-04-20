@@ -556,8 +556,8 @@ export default function EditorV3() {
               </span>
             </div>
 
-            {/* Rad 2 (mobil) / höger (desktop): actions */}
-            <div className="flex items-center gap-1 sm:gap-1.5 md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
+            {/* Rad 2 (mobil, centrerad) / höger (desktop): actions */}
+            <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-start md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
               {/* Måltid */}
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
