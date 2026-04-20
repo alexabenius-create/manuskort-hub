@@ -1,4 +1,4 @@
-import { Triangle, Pause, Play } from "lucide-react";
+import { Triangle, Pause, Play, ZoomIn, ZoomOut, HelpCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 import { formatClock, formatElapsedSeconds } from "@/hooks/usePresentationTimer";
@@ -24,6 +24,11 @@ interface Props {
   isPaused: boolean;
   onPauseToggle: () => void;
   countdownActive: boolean;
+  /** Visa zoom + hjälp (togglas av central tap-zone). */
+  showAuxControls: boolean;
+  sizeOffset: number;
+  onSizeChange: (offset: number) => void;
+  onHelpOpen: () => void;
 }
 
 function formatMmSs(totalSeconds: number): string {
@@ -63,6 +68,10 @@ export function MobileFooter({
   isPaused,
   onPauseToggle,
   countdownActive,
+  showAuxControls,
+  sizeOffset,
+  onSizeChange,
+  onHelpOpen,
 }: Props) {
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
   const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
@@ -149,12 +158,44 @@ export function MobileFooter({
           )}
         </div>
 
-        {/* Höger: panik (alltid synlig om finns) */}
-        <div className="flex items-center min-w-[44px] justify-end">
+        {/* Höger: zoom + hjälp (auto-hide) + panik (alltid synlig om finns) */}
+        <div className="flex items-center justify-end gap-1">
+          <div
+            className={`flex items-center gap-0.5 transition-opacity duration-200 ${
+              showAuxControls ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          >
+            <button
+              onClick={() => onSizeChange(Math.max(-6, sizeOffset - 1))}
+              className="p-1 rounded text-zinc-300 hover:text-zinc-100 active:bg-zinc-800/60 disabled:opacity-40"
+              aria-label="Mindre text"
+              title="Mindre text"
+              disabled={sizeOffset <= -6}
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onSizeChange(Math.min(6, sizeOffset + 1))}
+              className="p-1 rounded text-zinc-300 hover:text-zinc-100 active:bg-zinc-800/60 disabled:opacity-40"
+              aria-label="Större text"
+              title="Större text"
+              disabled={sizeOffset >= 6}
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onHelpOpen}
+              className="p-1 rounded text-zinc-300 hover:text-zinc-100 active:bg-zinc-800/60"
+              aria-label="Hjälp"
+              title="Hjälp"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+            </button>
+          </div>
           {hasPanicCards && (
             <button
               onClick={onPanic}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 text-[10px] font-medium active:bg-amber-900/80"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 text-[10px] font-medium active:bg-amber-900/80 ml-1"
               title="Hoppa till nästa panik-kort (P)"
               aria-label="Panik"
             >

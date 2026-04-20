@@ -7,6 +7,7 @@ import type { useCardTimers } from "@/hooks/useCardTimers";
 import { MobileTopbar } from "./MobileTopbar";
 import { MobileFooter } from "./MobileFooter";
 import { MobileCardContent } from "./MobileCardContent";
+import { MobileHelpZone } from "./MobileHelpZone";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"] & { is_panic_card: boolean };
@@ -35,24 +36,31 @@ export interface PresentationMobileProps {
   onHelpOpen: () => void;
   wakeLockStatus: WakeLockStatus;
   xVisible: boolean;
+  /** Toggla aux-UI (X, zoom, hjälp) — anropas av central tap-zone. */
+  onCenterTap: () => void;
+  /** Bläddra till nästa kort (svep åt vänster). */
+  onNext: () => void;
+  /** Bläddra till föregående kort (svep åt höger). */
+  onPrev: () => void;
   timerMode: "clock" | "elapsed";
   overdueDismissedIds: Set<string>;
   onDismissOverdue: (cardId: string) => void;
 }
 
 /**
- * Mobil-v2 av presentationsläget. Fas 2: dedikerad CSS-Grid-layout:
- *   [topbar 28px] [manus 1fr] [footer ~36px + 2px progress]
+ * Mobil-v2 av presentationsläget. CSS-Grid layout:
+ *   [topbar safe-area+] [manus 1fr] [footer ~36px + 2px progress]
  *
- * Manustexten är kant-till-kant och får all återstående yta.
- * Topbar och footer är alltid renderade — `xVisible` styr bara opacity på X-knappen.
+ * MobileHelpZone ligger som overlay i row-start-2 och fångar:
+ *  - Tap i mitten → toggla X/zoom/hjälp (auto-hide igen efter 3s via parent-timer)
+ *  - Svep vänster/höger → byt kort
  */
 export function PresentationMobile(props: PresentationMobileProps) {
   const {
     manuscript, cards, panelists, current, currentIndex,
-    hasPanicCards, timer, cardElapsedSeconds, sizeOffset,
-    onExit, onPanic, wakeLockStatus, xVisible, timerMode, overdueDismissedIds,
-    onDismissOverdue,
+    hasPanicCards, timer, cardElapsedSeconds, sizeOffset, onSizeChange,
+    onExit, onPanic, onHelpOpen, onCenterTap, onNext, onPrev,
+    wakeLockStatus, xVisible, timerMode, overdueDismissedIds, onDismissOverdue,
   } = props;
 
   return (
@@ -72,12 +80,19 @@ export function PresentationMobile(props: PresentationMobileProps) {
         xVisible={xVisible}
       />
 
-      <MobileCardContent
-        card={current}
-        panelists={panelists}
-        textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
-        sizeOffset={sizeOffset}
-      />
+      <div className="row-start-2 relative w-full h-full min-h-0">
+        <MobileCardContent
+          card={current}
+          panelists={panelists}
+          textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
+          sizeOffset={sizeOffset}
+        />
+        <MobileHelpZone
+          onCenterTap={onCenterTap}
+          onSwipeLeft={onNext}
+          onSwipeRight={onPrev}
+        />
+      </div>
 
       <MobileFooter
         current={current}
@@ -96,6 +111,10 @@ export function PresentationMobile(props: PresentationMobileProps) {
         isPaused={timer.isPaused}
         onPauseToggle={timer.togglePause}
         countdownActive={timer.countdown > 0}
+        showAuxControls={xVisible}
+        sizeOffset={sizeOffset}
+        onSizeChange={onSizeChange}
+        onHelpOpen={onHelpOpen}
       />
     </div>
   );
