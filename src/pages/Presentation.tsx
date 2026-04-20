@@ -523,6 +523,7 @@ export default function Presentation() {
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
+          visible={xVisible}
         />
       )}
 
