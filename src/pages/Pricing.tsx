@@ -274,6 +274,10 @@ export default function Pricing() {
               <div className="h-4 text-[12px] text-muted-foreground">
                 {billing === "year" ? "890 kr faktureras årligen, inkl. moms" : "Inkl. moms"}
               </div>
+              <p className="text-[13px] text-foreground/80 mt-3 flex items-center gap-1.5">
+                <span aria-hidden>🍕</span>
+                <span>Mindre än priset på en pizza i månaden</span>
+              </p>
             </header>
 
             <ul className="flex flex-col gap-3">
@@ -289,6 +293,15 @@ export default function Pricing() {
               Uppgradera
             </Button>
           </article>
+        </section>
+
+        {/* Value bar */}
+        <section className="bg-surface rounded-2xl shadow-card px-6 py-8 sm:py-10 text-center">
+          <p className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Förbered ett anförande på{" "}
+            <span className="text-accent-blue">20 minuter</span> istället för 2 timmar{" "}
+            <span aria-hidden>⏳</span>
+          </p>
         </section>
 
         {/* FAQ */}
