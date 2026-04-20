@@ -93,6 +93,7 @@ export function PresentationMobile(props: PresentationMobileProps) {
           textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
           sizeOffset={sizeOffset}
         />
+        <MobileEdgeFlash currentIndex={currentIndex} />
         <MobileHelpZone
           onCenterTap={onCenterTap}
           onSwipeLeft={onNext}
