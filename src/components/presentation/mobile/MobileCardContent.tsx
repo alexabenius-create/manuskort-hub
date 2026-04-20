@@ -171,7 +171,8 @@ export function MobileCardContent({ card, panelists, textSize, sizeOffset }: Pro
         ref={containerRef}
         className="w-full h-full flex flex-col items-center justify-center overflow-hidden px-3"
         style={{
-          paddingTop: hasAnyCue ? 36 : 0,
+          paddingTop: hasAnyCue ? 48 : 12,
+          paddingBottom: 12,
           ...(overflowAtMin
             ? {
                 WebkitMaskImage:
