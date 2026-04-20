@@ -35,6 +35,12 @@ export function MobileHelpZone({ onCenterTap, onSwipeLeft, onSwipeRight }: Props
     const dt = Date.now() - start.t;
 
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) && dt < 600) {
+      // Lätt haptisk feedback (no-op om enheten saknar stöd)
+      try {
+        navigator.vibrate?.(10);
+      } catch {
+        /* ignore */
+      }
       if (dx < 0) onSwipeLeft();
       else onSwipeRight();
       return;

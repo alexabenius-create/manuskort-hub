@@ -10,6 +10,7 @@ import { MobileFooter } from "./MobileFooter";
 import { MobileCardContent } from "./MobileCardContent";
 import { MobileHelpZone } from "./MobileHelpZone";
 import { MobileNotesOverlay } from "./MobileNotesOverlay";
+import { MobileEdgeFlash } from "./MobileEdgeFlash";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"] & { is_panic_card: boolean };
@@ -92,6 +93,7 @@ export function PresentationMobile(props: PresentationMobileProps) {
           textSize={(manuscript.text_size as "sm" | "md" | "lg") ?? "md"}
           sizeOffset={sizeOffset}
         />
+        <MobileEdgeFlash currentIndex={currentIndex} />
         <MobileHelpZone
           onCenterTap={onCenterTap}
           onSwipeLeft={onNext}
