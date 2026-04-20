@@ -132,6 +132,14 @@ export function PresentationMobile(props: PresentationMobileProps) {
         onSizeChange={onSizeChange}
         onHelpOpen={onHelpOpen}
       />
+
+      {showNotes && (
+        <MobileNotesOverlay
+          card={current}
+          onNotesChange={onNotesChange}
+          onClose={onToggleNotes}
+        />
+      )}
     </div>
   );
 }
