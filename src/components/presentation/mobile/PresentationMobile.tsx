@@ -58,7 +58,11 @@ export function PresentationMobile(props: PresentationMobileProps) {
   return (
     <div
       className="fixed inset-0 grid bg-black z-40"
-      style={{ gridTemplateRows: "28px 1fr auto" }}
+      style={{
+        gridTemplateRows: "max(28px, env(safe-area-inset-top, 0px)) 1fr auto",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      }}
     >
       <MobileTopbar
         onExit={onExit}
