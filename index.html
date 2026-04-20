@@ -21,6 +21,14 @@
     <meta name="twitter:description" content="Skapa manus i kortformat, håll tiden och tala tryggt inför publik. Stöd för presentation, anförande och panelsamtal. Gratis att testa — utan kort." />
     <meta name="twitter:image" content="https://manuskort.se/og-image.png" />
 
+    <!-- PWA / Add to Home Screen (iOS Safari + Android Chrome) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Manuskort" />
+
     <!-- Speed up Stripe checkout when user opens it (no TLS handshake until needed) -->
     <link rel="dns-prefetch" href="https://js.stripe.com" />
     <link rel="dns-prefetch" href="https://m.stripe.network" />

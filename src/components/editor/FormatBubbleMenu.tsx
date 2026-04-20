@@ -155,7 +155,7 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
       }}
     >
       <div
-        className="flex items-center gap-0.5 rounded-full border border-border bg-popover px-1 py-1 shadow-pop"
+        className="flex items-center gap-0.5 rounded-full border border-border bg-popover px-1 py-1 shadow-pop flex-wrap max-w-[calc(100vw-1rem)]"
         onMouseDown={(e) => e.preventDefault()}
       >
         {buttons.map(({ key, label, icon: Icon, isActive, onClick }) => {
@@ -189,6 +189,7 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
 
             {panelists.map((p) => {
               const isActiveHere = activePanelistId === p.id;
+              const initial = (p.name?.trim() || "?").charAt(0).toUpperCase();
               return (
                 <button
                   key={p.id}
@@ -198,13 +199,15 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
                   title={`Panelist: ${p.name || "Namnlös"}`}
                   onClick={() => applyPanelist(p)}
                   className={cn(
-                    "inline-flex h-7 items-center justify-center rounded-full px-2.5 text-[12px] font-medium leading-none transition-all max-w-[140px]",
-                    "ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
+                    "inline-flex items-center justify-center rounded-full font-medium leading-none transition-all ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
+                    // Mobil: rund 28px-knapp med initial. Desktop: full pill med namn.
+                    "h-7 w-7 text-[12px] md:w-auto md:max-w-[140px] md:px-2.5",
                     isActiveHere && "ring-2 ring-foreground/60 scale-105",
                   )}
                   style={{ backgroundColor: p.color, color: hexToDarkText(p.color) }}
                 >
-                  <span className="truncate">{p.name?.trim() || "Namnlös"}</span>
+                  <span className="md:hidden">{initial}</span>
+                  <span className="hidden md:inline truncate">{p.name?.trim() || "Namnlös"}</span>
                 </button>
               );
             })}

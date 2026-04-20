@@ -80,15 +80,19 @@ export default function Presentation() {
     if (orientation === "landscape") setRotateDismissed(false);
   }, [orientation]);
 
-  // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer
+  // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer.
+  // Lägg också min-height + 1px så iOS Safari ser sidan som scrollbar och kan kollapsa URL-baren.
   useEffect(() => {
     const prevBody = document.body.style.backgroundColor;
     const prevHtml = document.documentElement.style.backgroundColor;
+    const prevBodyMinH = document.body.style.minHeight;
     document.body.style.backgroundColor = "#09090b";
     document.documentElement.style.backgroundColor = "#09090b";
+    document.body.style.minHeight = "calc(100dvh + 1px)";
     return () => {
       document.body.style.backgroundColor = prevBody;
       document.documentElement.style.backgroundColor = prevHtml;
+      document.body.style.minHeight = prevBodyMinH;
     };
   }, []);
 
@@ -299,6 +303,34 @@ export default function Presentation() {
     };
   }, [menuOpen, isMobile, currentIndex]);
 
+  // iOS Safari URL-bar trick: scrolla 1px så Safari kollapsar sin chrome.
+  // Kräver att body är minimalt scrollbar (se min-height nedan).
+  useEffect(() => {
+    if (menuOpen || !isMobile) return;
+    const trigger = () => window.scrollTo(0, 1);
+    trigger();
+    const t1 = window.setTimeout(trigger, 100);
+    const t2 = window.setTimeout(trigger, 500);
+    const t3 = window.setTimeout(trigger, 1500);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [menuOpen, isMobile, orientation]);
+
+  // Återställ auto-hide-timer vid pointermove (iPad/trackpad/Pencil)
+  useEffect(() => {
+    if (menuOpen || !isMobile) return;
+    const onMove = () => {
+      setXVisible(true);
+      if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+      xTimerRef.current = window.setTimeout(() => setXVisible(false), 3000);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [menuOpen, isMobile]);
+
   // Navigation
   const goNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(cards.length - 1, i + 1));
@@ -423,7 +455,7 @@ export default function Presentation() {
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
-      style={{ height: "100dvh" }}
+      style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
