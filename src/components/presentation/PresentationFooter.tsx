@@ -24,6 +24,8 @@ interface Props {
   timeFormat: "clock" | "elapsed";
   sizeOffset: number;
   onSizeChange: (offset: number) => void;
+  /** På mobil: dölj footern när false (auto-hide efter inaktivitet). */
+  visible?: boolean;
 }
 
 const SIZE_MIN = -2;
@@ -59,6 +61,7 @@ export function PresentationFooter({
   timeFormat,
   sizeOffset,
   onSizeChange,
+  visible = true,
 }: Props) {
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
   const cardElapsed = Math.max(0, Math.floor(cardElapsedSeconds));
@@ -83,8 +86,10 @@ export function PresentationFooter({
 
   return (
     <footer
-      className="absolute bottom-0 inset-x-0 z-20 px-6 md:px-10 pointer-events-none"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)" }}
+      className={`absolute bottom-0 inset-x-0 z-20 px-3 md:px-10 pointer-events-none transition-all duration-300 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 md:opacity-100 md:translate-y-0"
+      }`}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)" }}
     >
       <div className="max-w-5xl mx-auto grid grid-cols-3 items-center gap-4">
         {/* Vänster — A−/A+ */}

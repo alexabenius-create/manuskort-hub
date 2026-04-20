@@ -72,22 +72,24 @@ export function PresentationTopbar({
 
   return (
     <header
-      className="absolute top-0 inset-x-0 z-30 flex items-start justify-between px-6 md:px-10 gap-4 pointer-events-none"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}
+      className={`absolute top-0 inset-x-0 z-30 flex items-start justify-between px-3 md:px-10 gap-2 md:gap-4 pointer-events-none transition-all duration-300 ${
+        xVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 md:opacity-100 md:translate-y-0"
+      }`}
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
     >
       {/* Vänster — X + wake lock dot */}
       <div className="flex items-center gap-2 pointer-events-auto">
         <button
           onClick={onExit}
-          className={`p-3 rounded-xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900 transition-opacity duration-300 ${
+          className={`p-2 md:p-3 rounded-xl text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900 transition-opacity duration-300 ${
             xVisible ? "opacity-100" : "opacity-0 hover:opacity-100"
           }`}
           aria-label="Avsluta presentationsläge"
         >
-          <X className="h-7 w-7" />
+          <X className="h-5 w-5 md:h-7 md:w-7" />
         </button>
         <span
-          className={`h-2.5 w-2.5 rounded-full ${wakeLockDot}`}
+          className={`hidden md:inline-block h-2.5 w-2.5 rounded-full ${wakeLockDot}`}
           title={wakeLockLabel}
           aria-label={wakeLockLabel}
         />
@@ -95,12 +97,12 @@ export function PresentationTopbar({
 
       {/* Höger — kompakt tidsblock */}
       <div className="pointer-events-auto">
-        <div className="flex items-stretch gap-2 bg-zinc-900 rounded-2xl p-2">
-          {/* Mode-toggle ikon-only, vertikal */}
-          <div className="flex flex-col gap-1">
+        <div className="flex items-stretch gap-1 md:gap-2 bg-zinc-900 rounded-xl md:rounded-2xl p-1 md:p-2">
+          {/* Mode-toggle ikon-only, vertikal på desktop, horisontell på mobil */}
+          <div className="flex flex-row md:flex-col gap-0.5 md:gap-1">
             <button
               onClick={() => onModeChange("clock")}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-colors ${
                 mode === "clock" ? "bg-zinc-700 text-zinc-100" : "text-zinc-500 hover:text-zinc-200"
               }`}
               title="Klockslag"
@@ -110,7 +112,7 @@ export function PresentationTopbar({
             </button>
             <button
               onClick={() => onModeChange("elapsed")}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-colors ${
                 mode === "elapsed" ? "bg-zinc-700 text-zinc-100" : "text-zinc-500 hover:text-zinc-200"
               }`}
               title="Förfluten tid"
@@ -121,15 +123,15 @@ export function PresentationTopbar({
           </div>
 
           {/* Tidsdisplay */}
-          <div className="flex flex-col items-end px-4 py-1 min-w-[260px]">
+          <div className="flex flex-col items-end px-2 md:px-4 py-0.5 md:py-1 min-w-[140px] md:min-w-[260px]">
             {mode === "clock" ? (
               <>
-                <span className={`font-mono text-[40px] tabular-nums leading-none ${timeColor}`}>
+                <span className={`font-mono text-[20px] md:text-[40px] tabular-nums leading-none ${timeColor}`}>
                   {formatClock(new Date(now), true)}
-                  <span className="text-zinc-600 mx-1.5">/</span>
+                  <span className="text-zinc-600 mx-1 md:mx-1.5">/</span>
                   <span className="text-zinc-400">{targetClockTime}</span>
                 </span>
-                <span className="font-mono text-[13px] text-zinc-500 mt-1.5">
+                <span className="font-mono text-[10px] md:text-[13px] text-zinc-500 mt-1 md:mt-1.5">
                   {formatMinutesLeft(remainingSeconds)}
                 </span>
               </>
@@ -137,15 +139,15 @@ export function PresentationTopbar({
               <>
                 <button
                   onClick={onDirectionToggle}
-                  className={`font-mono text-[40px] tabular-nums leading-none inline-flex items-center gap-2 hover:text-zinc-300 transition-colors ${timeColor}`}
+                  className={`font-mono text-[20px] md:text-[40px] tabular-nums leading-none inline-flex items-center gap-1 md:gap-2 hover:text-zinc-300 transition-colors ${timeColor}`}
                   title={direction === "down" ? "Visa förfluten tid istället" : "Visa återstående tid istället"}
                 >
                   {direction === "down"
                     ? formatElapsedSeconds(remainingSeconds)
                     : formatElapsedSeconds(elapsedSeconds)}
-                  <ArrowUpDown className="h-4 w-4 opacity-50" />
+                  <ArrowUpDown className="h-3 w-3 md:h-4 md:w-4 opacity-50" />
                 </button>
-                <span className="font-mono text-[13px] text-zinc-500 mt-1.5">
+                <span className="font-mono text-[10px] md:text-[13px] text-zinc-500 mt-1 md:mt-1.5">
                   {direction === "down" ? "kvar av" : "av"} {formatElapsedSeconds(targetSeconds)}
                 </span>
               </>
@@ -157,11 +159,11 @@ export function PresentationTopbar({
             <button
               onClick={onPauseToggle}
               disabled={countdownActive}
-              className="p-2.5 rounded-lg text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-40 self-center"
+              className="p-2 md:p-2.5 rounded-md md:rounded-lg text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-40 self-center"
               aria-label={isPaused ? "Återuppta timer" : "Pausa timer"}
               title={isPaused ? "Återuppta" : "Pausa"}
             >
-              {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+              {isPaused ? <Play className="h-4 w-4 md:h-5 md:w-5" /> : <Pause className="h-4 w-4 md:h-5 md:w-5" />}
             </button>
           )}
         </div>

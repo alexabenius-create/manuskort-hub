@@ -3,12 +3,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useOrientation } from "@/hooks/useOrientation";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { usePresentationTimer } from "@/hooks/usePresentationTimer";
 import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
+import { RotateDeviceOverlay } from "@/components/presentation/RotateDeviceOverlay";
 
 import { PresentationStartMenu, type ViewMode, type FocusStyle } from "@/components/presentation/PresentationStartMenu";
 import { ScrollingTeleprompter, computeRequiredSpeedFactor } from "@/components/presentation/ScrollingTeleprompter";
@@ -64,7 +67,18 @@ export default function Presentation() {
   const hasEnteredFullscreenRef = useRef(false);
 
   const wakeLockStatus = useWakeLock(true);
-  useFullscreen(true);
+  const isMobile = useIsMobile();
+  const orientation = useOrientation();
+  const presentationActive = !menuOpen;
+  // Lås till liggande på mobil när presentation pågår — fungerar på Android Chrome,
+  // no-op på iOS Safari (där visar vi RotateDeviceOverlay i stället).
+  useFullscreen(true, isMobile && presentationActive);
+  const [rotateDismissed, setRotateDismissed] = useState(false);
+  const showRotateOverlay = isMobile && presentationActive && orientation === "portrait" && !rotateDismissed;
+  // Återställ dismiss när användaren vrider till liggande, så overlay återkommer om de vrider tillbaka
+  useEffect(() => {
+    if (orientation === "landscape") setRotateDismissed(false);
+  }, [orientation]);
 
   // Sätt body/html till svart medan presentation är monterad — undviker vita iOS safe-area-barer
   useEffect(() => {
@@ -274,6 +288,17 @@ export default function Presentation() {
     } catch { /* ignore */ }
   }, [menuOpen]);
 
+  // Mobil: göm topbar/footer aggressivt när presentation startar (efter 2s inaktivitet)
+  useEffect(() => {
+    if (menuOpen || !isMobile) return;
+    setXVisible(true);
+    if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+    xTimerRef.current = window.setTimeout(() => setXVisible(false), 2000);
+    return () => {
+      if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+    };
+  }, [menuOpen, isMobile, currentIndex]);
+
   // Navigation
   const goNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(cards.length - 1, i + 1));
@@ -398,6 +423,7 @@ export default function Presentation() {
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
       className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
+      style={{ height: "100dvh" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -434,7 +460,7 @@ export default function Presentation() {
 
 
 
-      <main className="flex-1 min-h-0 pt-24 pb-24 px-6 md:px-10 relative">
+      <main className="flex-1 min-h-0 pt-20 md:pt-24 pb-20 md:pb-24 px-3 md:px-10 relative">
         <div
           className={`h-full w-full bg-black rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
             typeof current.target_seconds === "number" &&
@@ -497,6 +523,7 @@ export default function Presentation() {
           timeFormat={timerMode}
           sizeOffset={sizeOffset}
           onSizeChange={handleSizeChange}
+          visible={xVisible}
         />
       )}
 
@@ -595,6 +622,10 @@ export default function Presentation() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {showRotateOverlay && (
+        <RotateDeviceOverlay onContinueAnyway={() => setRotateDismissed(true)} />
+      )}
     </div>
     </>
   );
