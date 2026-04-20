@@ -31,9 +31,13 @@ export function RotateDeviceOverlay({ onContinueAnyway }: Props) {
       <p className="text-zinc-400 text-[15px] leading-relaxed max-w-xs">
         Liggande läge ger dig en mycket större läsyta för manuset.
       </p>
+      <p className="text-zinc-500 text-[12px] leading-relaxed max-w-xs mt-6">
+        💡 Tips för iPhone: tryck på <span className="text-zinc-300">Dela</span> i Safari och välj{" "}
+        <span className="text-zinc-300">Lägg till på hemskärmen</span> för att köra Manuskort i fullskärm utan adressfält.
+      </p>
       <button
         onClick={onContinueAnyway}
-        className="mt-10 text-zinc-500 hover:text-zinc-300 text-[13px] underline underline-offset-4 transition-colors"
+        className="mt-8 text-zinc-500 hover:text-zinc-300 text-[13px] underline underline-offset-4 transition-colors"
       >
         Fortsätt ändå i stående läge
       </button>
