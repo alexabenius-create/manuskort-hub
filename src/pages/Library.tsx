@@ -391,44 +391,22 @@ export default function Library() {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap gap-3 items-center mb-8">
-          <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Sök titel eller tagg"
-              className="pl-11 h-11 rounded-full bg-surface-2 border-0 text-[14px] focus-visible:ring-2 focus-visible:ring-accent-blue"
-            />
-          </div>
-
-          <div className="seg-group">
-            {filters.map(([v, label]) => (
-              <button
-                key={v}
-                onClick={() => setFilterMode(v)}
-                data-active={filterMode === v}
-                className="seg-btn"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="ml-auto flex items-center gap-2" data-tour="library.new-button">
-            <Button
-              variant="ghost"
-              onClick={requestImport}
-              className="h-11 rounded-full px-4 text-[14px] font-medium gap-1.5 hover:bg-surface-2"
-            >
-              <Upload className="h-4 w-4" /> Importera
-            </Button>
+        <div className="flex flex-col md:flex-row md:flex-wrap md:items-center gap-3 mb-8">
+          {/* Mobil: actions först (Nytt manus vänster, Importera höger). Desktop: ml-auto via md:order. */}
+          <div className="flex items-center gap-2 order-1 md:order-3 md:ml-auto" data-tour="library.new-button">
             <Dialog open={openNew} onOpenChange={setOpenNew}>
               <Button
                 onClick={requestNew}
                 className="h-11 rounded-full px-5 bg-accent-blue hover:bg-accent-blue/90 text-white text-[14px] font-medium gap-1.5"
               >
                 <Plus className="h-4 w-4" /> Nytt manus
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={requestImport}
+                className="h-11 rounded-full px-4 text-[14px] font-medium gap-1.5 hover:bg-surface-2"
+              >
+                <Upload className="h-4 w-4" /> Importera
               </Button>
               <DialogContent className="rounded-2xl">
                 <DialogHeader>
@@ -471,6 +449,29 @@ export default function Library() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </div>
+
+          <div className="relative flex-1 min-w-[220px] md:max-w-md order-2 md:order-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Sök titel eller tagg"
+              className="pl-11 h-11 rounded-full bg-surface-2 border-0 text-[14px] focus-visible:ring-2 focus-visible:ring-accent-blue"
+            />
+          </div>
+
+          <div className="seg-group order-3 md:order-2">
+            {filters.map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => setFilterMode(v)}
+                data-active={filterMode === v}
+                className="seg-btn"
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -540,32 +541,6 @@ export default function Library() {
                   }`}
                 >
                   <div className="flex items-stretch">
-                    {/* Checkbox-zon — alltid synlig på hover, alltid synlig i selection-mode */}
-                    <div
-                      onClick={(e) => { e.stopPropagation(); toggleSelect(m.id); }}
-                      role="checkbox"
-                      aria-checked={isSelected}
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === " " || e.key === "Enter") {
-                          e.preventDefault();
-                          toggleSelect(m.id);
-                        }
-                      }}
-                      aria-label={isSelected ? "Avmarkera manus" : "Markera manus"}
-                      className={`flex items-center justify-center pl-5 pr-2 cursor-pointer transition-opacity ${
-                        selectionMode || isSelected
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100 focus:opacity-100"
-                      }`}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        className="h-5 w-5 pointer-events-none"
-                        tabIndex={-1}
-                        aria-hidden
-                      />
-                    </div>
                     <button
                       onClick={() => {
                         if (selectionMode) {
@@ -574,7 +549,7 @@ export default function Library() {
                           navigate(`/manus/${m.id}`);
                         }
                       }}
-                      className="flex-1 text-left pr-6 py-5 min-w-0"
+                      className="flex-1 text-left pl-5 pr-3 py-5 min-w-0"
                     >
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span
@@ -597,7 +572,8 @@ export default function Library() {
                         Uppdaterad {new Date(m.updated_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     </button>
-                    <div className="flex items-center pr-3">
+                    {/* Höger kolumn: "..." högst upp, checkruta nedanför */}
+                    <div className="flex flex-col items-center justify-between py-3 pr-3 gap-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -614,6 +590,31 @@ export default function Library() {
                           <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">Radera</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <div
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(m.id); }}
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === " " || e.key === "Enter") {
+                            e.preventDefault();
+                            toggleSelect(m.id);
+                          }
+                        }}
+                        aria-label={isSelected ? "Avmarkera manus" : "Markera manus"}
+                        className={`flex items-center justify-center h-9 w-9 rounded-full cursor-pointer transition-opacity ${
+                          selectionMode || isSelected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          className="h-5 w-5 pointer-events-none"
+                          tabIndex={-1}
+                          aria-hidden
+                        />
+                      </div>
                     </div>
                   </div>
                 </li>

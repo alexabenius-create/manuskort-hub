@@ -183,9 +183,13 @@ export default function Landing() {
               </Button>
             </div>
 
-            <p className="mt-6 text-[13px] text-muted-foreground">
-              Gratis att testa · Inget kreditkort · Igång på under en minut
-            </p>
+            <ul className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1 sm:gap-x-2 text-[13px] text-muted-foreground">
+              <li className="whitespace-nowrap">Gratis att testa</li>
+              <li aria-hidden className="hidden sm:inline">·</li>
+              <li className="whitespace-nowrap">Inget kreditkort</li>
+              <li aria-hidden className="hidden sm:inline">·</li>
+              <li className="whitespace-nowrap">Igång på under en minut</li>
+            </ul>
           </div>
 
           {/* Mockup */}
@@ -328,8 +332,9 @@ export default function Landing() {
       {/* Friktionsreducering */}
       <section className="px-6 sm:px-10 py-24 sm:py-28">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight mb-6">
-            Inga hinder. Bara att köra.
+          <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight mb-6 text-balance">
+            <span className="whitespace-nowrap">Inga hinder.</span>{" "}
+            <span className="whitespace-nowrap">Bara att köra.</span>
           </h2>
           <p className="text-[16.5px] text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Du behöver inga inställningar, inga plug-ins och inget kort. Skapa ett konto, klistra in
@@ -391,8 +396,9 @@ export default function Landing() {
             <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-accent-blue mb-3">
               Vanliga frågor
             </p>
-            <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight">
-              Allt du undrar — kort förklarat.
+            <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-tight text-balance">
+              <span className="whitespace-nowrap">Allt du undrar</span>{" "}
+              <span className="whitespace-nowrap">— kort förklarat.</span>
             </h2>
           </div>
 
