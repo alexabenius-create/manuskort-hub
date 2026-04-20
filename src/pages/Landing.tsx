@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { MobileNavSheet } from "@/components/MobileNavSheet";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 export default function Landing() {
   const { session } = useAuth();
@@ -525,6 +526,7 @@ export default function Landing() {
           </nav>
         </div>
       </footer>
+      <PWAInstallPrompt />
     </div>
   );
 }
