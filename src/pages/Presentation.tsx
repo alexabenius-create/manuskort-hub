@@ -496,6 +496,13 @@ export default function Presentation() {
           onHelpOpen={() => setHelpOpen(true)}
           wakeLockStatus={wakeLockStatus}
           xVisible={xVisible}
+          onCenterTap={() => {
+            setXVisible(true);
+            if (xTimerRef.current) window.clearTimeout(xTimerRef.current);
+            xTimerRef.current = window.setTimeout(() => setXVisible(false), 3000);
+          }}
+          onNext={goNext}
+          onPrev={goPrev}
           timerMode={timerMode}
           overdueDismissedIds={overdueDismissedIds}
           onDismissOverdue={(cardId) =>
