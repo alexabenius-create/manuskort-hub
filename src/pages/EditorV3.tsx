@@ -523,26 +523,41 @@ export default function EditorV3() {
 
       <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border/60 bg-background/95 backdrop-blur sticky top-0 z-30">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center gap-2 sm:gap-3">
-            <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0">
-              <Link to="/bibliotek">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Bibliotek</span>
-              </Link>
-            </Button>
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
+            {/* Rad 1: Bibliotek · titel · kortantal · sparat (mobil); flex-1 på desktop */}
+            <div className="flex items-center gap-2 min-w-0 md:flex-1">
+              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3">
+                <Link to="/bibliotek">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Bibliotek</span>
+                </Link>
+              </Button>
 
-            <div className="flex items-center gap-2 min-w-0">
               <input
                 value={manuscript.title}
                 onChange={(e) => updateMeta({ title: e.target.value })}
-                className="font-display text-[17px] font-semibold tracking-tight bg-transparent border-0 outline-none min-w-[80px] max-w-[260px] truncate"
+                className="font-display text-[16px] sm:text-[17px] font-semibold tracking-tight bg-transparent border-0 outline-none min-w-0 flex-1 md:flex-none md:min-w-[80px] md:max-w-[260px] truncate"
               />
               <span className="text-[12px] text-muted-foreground hidden md:inline whitespace-nowrap">
                 · {manuscript.mode === "moderator" ? "moderator" : "talare"}
               </span>
+
+              {/* Mobil: kortantal + sparat-status inline. */}
+              <span className="md:hidden text-[11px] text-muted-foreground font-mono whitespace-nowrap ml-auto">
+                {cardCount} kort
+              </span>
+              <span
+                className={`md:hidden text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
+                  saving === "error" ? "text-destructive" : "text-muted-foreground"
+                }`}
+              >
+                <Save className="h-3 w-3" />
+                {saving === "saving" ? "…" : saving === "error" ? "fel" : "✓"}
+              </span>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
+            {/* Rad 2 (mobil) / höger (desktop): actions */}
+            <div className="flex items-center gap-1 sm:gap-1.5 md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
               {/* Måltid */}
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
@@ -554,7 +569,7 @@ export default function EditorV3() {
                       setTargetDialogOpen(true);
                     }}
                     aria-label={targetTip}
-                    className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                    className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
                   >
                     <Target className="h-4 w-4" />
                     {hasWarn && (
@@ -570,8 +585,6 @@ export default function EditorV3() {
                 </TooltipContent>
               </Tooltip>
 
-              {/* Storlek flyttad till Vy-popover nedan */}
-
               {/* Vy-popover */}
               <Tooltip delayDuration={200}>
                 <Popover>
@@ -580,7 +593,7 @@ export default function EditorV3() {
                       <button
                         type="button"
                         aria-label="Vy-inställningar"
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors data-[state=open]:bg-surface-2 data-[state=open]:text-foreground"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors data-[state=open]:bg-surface-2 data-[state=open]:text-foreground flex-shrink-0"
                       >
                         <Settings2 className="h-4 w-4" />
                       </button>
@@ -673,7 +686,7 @@ export default function EditorV3() {
                       type="button"
                       onClick={() => setPanelistSidebarOpen(true)}
                       aria-label="Deltagare"
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
                     >
                       <Users className="h-4 w-4" />
                     </button>
@@ -684,14 +697,14 @@ export default function EditorV3() {
                 </Tooltip>
               )}
 
-              {/* Skriv ut */}
+              {/* Skriv ut — dolt på mobil */}
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={() => navigate(`/manus/${id}/utskrift`)}
                     aria-label="Skriv ut manus"
-                    className="relative inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+                    className="hidden md:inline-flex relative items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex-shrink-0"
                   >
                     <Printer className="h-4 w-4" />
                   </button>
@@ -707,7 +720,7 @@ export default function EditorV3() {
               {/* Nytt kort */}
               <Button
                 onClick={addCard}
-                className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
+                className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5 flex-shrink-0"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Nytt kort</span>
@@ -718,7 +731,7 @@ export default function EditorV3() {
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => startPresentation()}
-                    className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5"
+                    className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5 flex-shrink-0"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
                     <span className="hidden sm:inline">Starta</span>
@@ -727,14 +740,14 @@ export default function EditorV3() {
                 <TooltipContent>{`Starta presentationsläge (${shortcutLabel})`}</TooltipContent>
               </Tooltip>
 
-              {/* Sök */}
+              {/* Hitta & ersätt — dolt på mobil */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setFindReplaceOpen(true)}
-                    className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2"
+                    className="hidden md:inline-flex h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 flex-shrink-0"
                     aria-label="Hitta & ersätt"
                   >
                     <Search className="h-4 w-4" />
@@ -745,7 +758,7 @@ export default function EditorV3() {
 
               <HelpButton />
 
-              {/* Sparindikator + kortantal (sekundära, längst till höger) */}
+              {/* Sparindikator + kortantal (desktop, längst till höger) */}
               <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-border/40">
                 <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
                   {cardCount} kort
