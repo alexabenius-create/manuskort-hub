@@ -166,7 +166,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   const hasAnyCue = energyCues.length > 0 || actionCues.length > 0 || panelCues.length > 0;
 
   return (
-    <div className="relative flex w-full h-full min-h-0 gap-4 px-3 md:px-12 py-2">
+    <div className="relative flex w-full h-full min-h-0 gap-4 px-2 md:px-12 py-1 md:py-2">
       {/* Persistenta signaler — absolut positionerade i överkant av kortet, centrerat grupperade */}
       {hasAnyCue && (
         <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10">
@@ -223,7 +223,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       >
         <article
           ref={articleRef}
-          className="presentation-prose max-w-[75ch] mx-auto font-display text-zinc-100"
+          className="presentation-prose max-w-[95ch] mx-auto font-display text-zinc-100"
           style={{ fontSize: `${fontSize}px`, lineHeight }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
