@@ -10,6 +10,7 @@ import { useCardTimers } from "@/hooks/useCardTimers";
 import { PresentationTopbar } from "@/components/presentation/PresentationTopbar";
 import { PresentationFooter } from "@/components/presentation/PresentationFooter";
 import { PresentationCard } from "@/components/presentation/PresentationCard";
+import { PresentationMobile } from "@/components/presentation/mobile/PresentationMobile";
 import { CountdownOverlay } from "@/components/presentation/CountdownOverlay";
 import { RotateDeviceOverlay } from "@/components/presentation/RotateDeviceOverlay";
 
@@ -457,6 +458,11 @@ export default function Presentation() {
   const next = cards[currentIndex + 1];
   const hasPanicCards = cards.some((c) => c.is_panic_card);
 
+  // Mobil-v2 routing — när vi är på mobil i cards-läge använder vi den nya
+  // mobil-anpassade komponenten. Desktop/tablet och scroll-läget kör oförändrad
+  // desktop-JSX nedan.
+  const useMobileV2 = isMobile && !menuOpen && viewMode === "cards";
+
   return (
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
@@ -467,6 +473,41 @@ export default function Presentation() {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      {useMobileV2 ? (
+        <PresentationMobile
+          manuscript={manuscript}
+          cards={cards}
+          panelists={panelists}
+          currentIndex={currentIndex}
+          current={current}
+          next={next}
+          hasPanicCards={hasPanicCards}
+          timer={timer}
+          cardTimers={cardTimers}
+          cardElapsedSeconds={cardElapsedSeconds}
+          sizeOffset={sizeOffset}
+          onSizeChange={handleSizeChange}
+          showNotes={showNotes}
+          onToggleNotes={() => setShowNotes((s) => !s)}
+          onNotesChange={handleNotesChange}
+          onExit={exit}
+          onPanic={handlePanic}
+          onModeChange={handleModeChange}
+          onHelpOpen={() => setHelpOpen(true)}
+          wakeLockStatus={wakeLockStatus}
+          xVisible={xVisible}
+          timerMode={timerMode}
+          overdueDismissedIds={overdueDismissedIds}
+          onDismissOverdue={(cardId) =>
+            setOverdueDismissedIds((prev) => {
+              const next = new Set(prev);
+              next.add(cardId);
+              return next;
+            })
+          }
+        />
+      ) : (
+        <>
       <PresentationTopbar
         mode={timerMode}
         onModeChange={handleModeChange}
@@ -576,6 +617,8 @@ export default function Presentation() {
           countdownActive={timer.countdown > 0}
           showZoomButtons={xVisible}
         />
+      )}
+        </>
       )}
 
       {/* Speed-chip i scroll-läge */}
