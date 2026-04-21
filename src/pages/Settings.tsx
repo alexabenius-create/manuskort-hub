@@ -7,12 +7,13 @@ import { TIER_LABEL } from "@/lib/tierLimits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2, User as UserIcon, Check } from "lucide-react";
+import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2, User as UserIcon, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 
 
 export default function Settings() {
@@ -20,6 +21,7 @@ export default function Settings() {
   const { resetTour } = useTour();
   const { tier, isFree, isPro } = useTier();
   const [portalLoading, setPortalLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Profil-fält (autofyller manus-platshållare)
   const [displayName, setDisplayName] = useState("");
@@ -317,7 +319,39 @@ export default function Settings() {
             </button>
           </div>
         </section>
+
+        {/* Faro-zon: radera konto */}
+        <section className="flex flex-col gap-4 pt-4 border-t border-border">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-destructive">Farligt</h2>
+          <p className="text-[14px] text-muted-foreground -mt-2">
+            Radering tar bort alla dina manus, kort, paneldeltagare och din profil för alltid.
+            Åtgärden kan inte ångras.
+          </p>
+          <div className="bg-surface rounded-2xl shadow-card px-5 py-5 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-medium text-[15px]">Radera konto</p>
+              <p className="text-[12px] text-muted-foreground">
+                {isPro
+                  ? "Du har en aktiv PRO-prenumeration. Avsluta den först."
+                  : "All din data raderas permanent."}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteOpen(true)}
+              className="rounded-full text-[13px] text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 shrink-0"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Radera konto
+            </Button>
+          </div>
+        </section>
       </main>
+
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        isPro={isPro}
+      />
     </div>
   );
 }
