@@ -23,6 +23,11 @@ interface Options {
 }
 
 const STORAGE_PREFIX = "presentation-timer:";
+// Persisterad state är endast giltig om den är "färsk" — annars startar vi om
+// från nedräkning. Skyddar mot att en gammal session i sessionStorage (efter
+// reload, kraschad flik eller utveckling med HMR) hoppar över countdown och
+// gör att klockan/scroll-offset hoppar långt fram.
+const PERSIST_FRESHNESS_MS = 5 * 60 * 1000;
 
 function loadState(manuscriptId: string): PersistedState | null {
   try {
@@ -30,6 +35,12 @@ function loadState(manuscriptId: string): PersistedState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PersistedState;
     if (typeof parsed.startedAtMs !== "number") return null;
+    // Om referensklockan (paus eller startedAt) är äldre än TTL → behandla som stale.
+    const reference = parsed.pausedAtMs ?? parsed.startedAtMs;
+    if (Date.now() - reference > PERSIST_FRESHNESS_MS) {
+      sessionStorage.removeItem(STORAGE_PREFIX + manuscriptId);
+      return null;
+    }
     return parsed;
   } catch {
     return null;
