@@ -7,12 +7,13 @@ import { TIER_LABEL } from "@/lib/tierLimits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2, User as UserIcon, Check } from "lucide-react";
+import { ArrowLeft, LogOut, RotateCcw, Sparkles, Settings as SettingsIcon, Loader2, User as UserIcon, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 
 
 export default function Settings() {
@@ -20,6 +21,7 @@ export default function Settings() {
   const { resetTour } = useTour();
   const { tier, isFree, isPro } = useTier();
   const [portalLoading, setPortalLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Profil-fält (autofyller manus-platshållare)
   const [displayName, setDisplayName] = useState("");
