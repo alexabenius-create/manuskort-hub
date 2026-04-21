@@ -319,7 +319,39 @@ export default function Settings() {
             </button>
           </div>
         </section>
+
+        {/* Faro-zon: radera konto */}
+        <section className="flex flex-col gap-4 pt-4 border-t border-border">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-destructive">Farligt</h2>
+          <p className="text-[14px] text-muted-foreground -mt-2">
+            Radering tar bort alla dina manus, kort, paneldeltagare och din profil för alltid.
+            Åtgärden kan inte ångras.
+          </p>
+          <div className="bg-surface rounded-2xl shadow-card px-5 py-5 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-medium text-[15px]">Radera konto</p>
+              <p className="text-[12px] text-muted-foreground">
+                {isPro
+                  ? "Du har en aktiv PRO-prenumeration. Avsluta den först."
+                  : "All din data raderas permanent."}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteOpen(true)}
+              className="rounded-full text-[13px] text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 shrink-0"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Radera konto
+            </Button>
+          </div>
+        </section>
       </main>
+
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        isPro={isPro}
+      />
     </div>
   );
 }
