@@ -322,7 +322,7 @@ export default function Settings() {
 
         {/* Faro-zon: radera konto */}
         <section className="flex flex-col gap-4 pt-4 border-t border-border">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-destructive">Farligt</h2>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-destructive">Radera konto</h2>
           <p className="text-[14px] text-muted-foreground -mt-2">
             Radering tar bort alla dina manus, kort, paneldeltagare och din profil för alltid.
             Åtgärden kan inte ångras.
