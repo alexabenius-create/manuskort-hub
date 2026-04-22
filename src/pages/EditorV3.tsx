@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
@@ -775,6 +776,7 @@ export default function EditorV3() {
                 <TooltipContent>Hitta &amp; ersätt</TooltipContent>
               </Tooltip>
 
+              <FeedbackButton source="editor" manuscriptId={id ?? null} className="hidden md:inline-flex" />
               <HelpButton />
 
               {/* Sparindikator + kortantal (desktop, längst till höger) */}

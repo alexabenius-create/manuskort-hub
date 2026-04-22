@@ -13,9 +13,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TIER_LABEL, type Tier } from "@/lib/tierLimits";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
+import { useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
 
 interface UserRow {
   user_id: string;
@@ -33,6 +36,12 @@ export default function Admin() {
   const [q, setQ] = useState("");
   const [pending, setPending] = useState<{ row: UserRow; newTier: Tier } | null>(null);
   const [working, setWorking] = useState(false);
+  const [tab, setTab] = useState<"users" | "feedback">(() => {
+    if (typeof window === "undefined") return "users";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "feedback" ? "feedback" : "users";
+  });
+  const adminUnread = useAdminUnreadMessages(tier === "admin");
 
   // Skydd: bara admin
   useEffect(() => {
@@ -132,94 +141,132 @@ export default function Admin() {
       </header>
 
       <main className="max-w-[1100px] mx-auto px-6 sm:px-10 pt-12 pb-20">
-        <div className="mb-8">
-          <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">Användare</h2>
-          <p className="text-muted-foreground text-[15px] mt-2">
-            Promota till PRO eller degradera till Gratis. Admin-rollen hanteras direkt i databasen.
-          </p>
-        </div>
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            setTab(v as "users" | "feedback");
+            const url = new URL(window.location.href);
+            if (v === "feedback") url.searchParams.set("tab", "feedback");
+            else url.searchParams.delete("tab");
+            window.history.replaceState({}, "", url.toString());
+          }}
+        >
+          <TabsList className="bg-surface-2 rounded-full p-1 h-11 mb-8">
+            <TabsTrigger value="users" className="rounded-full px-5 text-[14px] data-[state=active]:bg-background">
+              Användare
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="rounded-full px-5 text-[14px] data-[state=active]:bg-background relative gap-2">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Feedback
+              {adminUnread > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                  {adminUnread}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="mb-6 max-w-md relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök e-post"
-            className="pl-11 h-11 rounded-full bg-surface-2 border-0 text-[14px] focus-visible:ring-2 focus-visible:ring-accent-blue"
-          />
-        </div>
+          <TabsContent value="users">
+            <div className="mb-8">
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">Användare</h2>
+              <p className="text-muted-foreground text-[15px] mt-2">
+                Promota till PRO eller degradera till Gratis. Admin-rollen hanteras direkt i databasen.
+              </p>
+            </div>
 
-        <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
-          {loading ? (
-            <p className="text-center text-muted-foreground py-16">Laddar användare…</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-16">Inga användare matchar.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-b-hair">
-                  <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium">E-post</TableHead>
-                  <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[120px]">Nivå</TableHead>
-                  <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[100px] text-right">Manus</TableHead>
-                  <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[180px] text-right">Åtgärd</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => {
-                  const isAdmin = r.tier === "admin";
-                  const isPro = r.tier === "pro";
-                  return (
-                    <TableRow key={r.user_id} className="border-b-hair hover:bg-surface-2/40">
-                      <TableCell className="font-medium text-[14px]">
-                        {r.email ?? <span className="text-muted-foreground italic">(ingen e-post)</span>}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide ${
-                            isAdmin
-                              ? "bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40"
-                              : isPro
-                              ? "bg-accent-blue/10 text-accent-blue ring-1 ring-accent-blue/30"
-                              : "bg-surface-2 text-muted-foreground"
-                          }`}
-                        >
-                          {TIER_LABEL[r.tier].toUpperCase()}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right text-[14px] tabular-nums">{r.manuscript_count}</TableCell>
-                      <TableCell className="text-right">
-                        {isAdmin ? (
-                          <span className="text-[12px] text-muted-foreground italic">Skyddad</span>
-                        ) : isPro ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-full text-[13px] h-8"
-                            onClick={() => setPending({ row: r, newTier: "free" })}
-                          >
-                            Degradera till Gratis
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] h-8 gap-1"
-                            onClick={() => setPending({ row: r, newTier: "pro" })}
-                          >
-                            <Sparkles className="h-3 w-3" /> Promota till PRO
-                          </Button>
-                        )}
-                      </TableCell>
+            <div className="mb-6 max-w-md relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Sök e-post"
+                className="pl-11 h-11 rounded-full bg-surface-2 border-0 text-[14px] focus-visible:ring-2 focus-visible:ring-accent-blue"
+              />
+            </div>
+
+            <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
+              {loading ? (
+                <p className="text-center text-muted-foreground py-16">Laddar användare…</p>
+              ) : filtered.length === 0 ? (
+                <p className="text-center text-muted-foreground py-16">Inga användare matchar.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-b-hair">
+                      <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium">E-post</TableHead>
+                      <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[120px]">Nivå</TableHead>
+                      <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[100px] text-right">Manus</TableHead>
+                      <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[180px] text-right">Åtgärd</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((r) => {
+                      const isAdmin = r.tier === "admin";
+                      const isPro = r.tier === "pro";
+                      return (
+                        <TableRow key={r.user_id} className="border-b-hair hover:bg-surface-2/40">
+                          <TableCell className="font-medium text-[14px]">
+                            {r.email ?? <span className="text-muted-foreground italic">(ingen e-post)</span>}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide ${
+                                isAdmin
+                                  ? "bg-[hsl(var(--cue-amber))]/15 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/40"
+                                  : isPro
+                                  ? "bg-accent-blue/10 text-accent-blue ring-1 ring-accent-blue/30"
+                                  : "bg-surface-2 text-muted-foreground"
+                              }`}
+                            >
+                              {TIER_LABEL[r.tier].toUpperCase()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right text-[14px] tabular-nums">{r.manuscript_count}</TableCell>
+                          <TableCell className="text-right">
+                            {isAdmin ? (
+                              <span className="text-[12px] text-muted-foreground italic">Skyddad</span>
+                            ) : isPro ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="rounded-full text-[13px] h-8"
+                                onClick={() => setPending({ row: r, newTier: "free" })}
+                              >
+                                Degradera till Gratis
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] h-8 gap-1"
+                                onClick={() => setPending({ row: r, newTier: "pro" })}
+                              >
+                                <Sparkles className="h-3 w-3" /> Promota till PRO
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
 
-        <p className="text-[12px] text-muted-foreground mt-4">
-          Totalt {rows.length} användare · {rows.filter((r) => r.tier === "pro").length} PRO · {rows.filter((r) => r.tier === "admin").length} admin
-        </p>
+            <p className="text-[12px] text-muted-foreground mt-4">
+              Totalt {rows.length} användare · {rows.filter((r) => r.tier === "pro").length} PRO · {rows.filter((r) => r.tier === "admin").length} admin
+            </p>
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <div className="mb-8">
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">Feedback</h2>
+              <p className="text-muted-foreground text-[15px] mt-2">
+                Inkomna meddelanden från användare. Svara, stäng eller läs konversationer.
+              </p>
+            </div>
+            <FeedbackAdminPanel />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>

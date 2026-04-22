@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 
 export default function Landing() {
   const { session } = useAuth();
@@ -132,6 +133,7 @@ export default function Landing() {
               >
                 Priser
               </Link>
+              <FeedbackButton source="landing" withLabel className="!h-9" />
               {!session && (
                 <Link
                   to="/auth"
@@ -156,6 +158,7 @@ export default function Landing() {
               >
                 Priser
               </Link>
+              <FeedbackButton source="landing" withLabel className="!justify-start !h-11 !px-3 !rounded-xl !text-[15px] !text-foreground" />
               {!session && (
                 <Link
                   to="/auth"

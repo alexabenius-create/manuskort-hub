@@ -12,7 +12,10 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X, Inbox } from "lucide-react";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { UnreadBadge } from "@/components/feedback/UnreadBadge";
+import { useUnreadMessages, useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
 import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -39,6 +42,8 @@ export default function Library() {
   const { tier } = useTier();
   const limits = LIMITS[tier];
   const navigate = useNavigate();
+  const unreadMessages = useUnreadMessages();
+  const adminUnread = useAdminUnreadMessages(tier === "admin");
   const [items, setItems] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -372,9 +377,12 @@ export default function Library() {
                 asChild
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+                className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8 relative"
               >
-                <a href="/admin"><Shield className="h-3.5 w-3.5" /> Admin</a>
+                <a href="/admin?tab=feedback">
+                  <Shield className="h-3.5 w-3.5" /> Admin
+                  <UnreadBadge count={adminUnread} />
+                </a>
               </Button>
             )}
             <Button
@@ -385,6 +393,18 @@ export default function Library() {
             >
               <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> Inställningar</a>
             </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8 relative"
+            >
+              <a href="/meddelanden" aria-label="Mina meddelanden">
+                <Inbox className="h-3.5 w-3.5" /> Meddelanden
+                <UnreadBadge count={unreadMessages} />
+              </a>
+            </Button>
+            <FeedbackButton source="library" withLabel />
             <Button
               variant="ghost"
               size="sm"
@@ -436,6 +456,18 @@ export default function Library() {
               >
                 <SettingsIcon className="h-4 w-4" /> Inställningar
               </a>
+              <a
+                href="/meddelanden"
+                className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors relative"
+              >
+                <Inbox className="h-4 w-4" /> Mina meddelanden
+                {unreadMessages > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    {unreadMessages}
+                  </span>
+                )}
+              </a>
+              <FeedbackButton source="library" withLabel className="!justify-start !h-11 !px-3 !rounded-xl !text-[15px] !text-foreground" />
               <button
                 type="button"
                 onClick={signOut}
