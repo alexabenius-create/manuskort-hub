@@ -27,6 +27,18 @@ interface UserRow {
   manuscript_count: number;
 }
 
+interface AdminListUserRow {
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  tier: Tier;
+  manuscript_count: number;
+  created_at: string;
+}
+
 export default function Admin() {
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useTier();
@@ -52,33 +64,19 @@ export default function Admin() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: profiles }, { data: roles }, { data: manuscripts }] = await Promise.all([
-      supabase.from("profiles").select("user_id, email"),
-      supabase.from("user_roles").select("user_id, role"),
-      supabase.from("manuscripts").select("user_id"),
-    ]);
-
-    const roleMap = new Map<string, Tier>();
-    (roles ?? []).forEach((r) => {
-      const current = roleMap.get(r.user_id);
-      // admin > pro > free
-      if (r.role === "admin") roleMap.set(r.user_id, "admin");
-      else if (r.role === "pro" && current !== "admin") roleMap.set(r.user_id, "pro");
-      else if (!current) roleMap.set(r.user_id, "free");
-    });
-
-    const countMap = new Map<string, number>();
-    (manuscripts ?? []).forEach((m) => {
-      countMap.set(m.user_id, (countMap.get(m.user_id) ?? 0) + 1);
-    });
-
-    const list: UserRow[] = (profiles ?? []).map((p) => ({
-      user_id: p.user_id,
-      email: p.email,
-      tier: roleMap.get(p.user_id) ?? "free",
-      manuscript_count: countMap.get(p.user_id) ?? 0,
+    const { data, error } = await supabase.rpc("admin_list_users");
+    if (error) {
+      toast({ title: "Kunde inte ladda användare", description: error.message, variant: "destructive" });
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    const list: UserRow[] = ((data ?? []) as AdminListUserRow[]).map((r) => ({
+      user_id: r.user_id,
+      email: r.email,
+      tier: r.tier,
+      manuscript_count: Number(r.manuscript_count ?? 0),
     }));
-
     list.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
     setRows(list);
     setLoading(false);

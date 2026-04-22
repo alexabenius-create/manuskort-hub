@@ -7,6 +7,9 @@ import { SEO } from "@/components/SEO";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, Inbox, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ShareRequestCard } from "@/components/feedback/ShareRequestCard";
+import { OwnerSupportBanner } from "@/components/SupportModeBanner";
+import { useThreadShareRequests } from "@/hooks/useShareRequests";
 
 interface Thread {
   id: string;
@@ -35,6 +38,20 @@ const SOURCE_LABEL: Record<string, string> = {
 
 function formatDate(s: string) {
   return new Date(s).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
+}
+
+/** Visar alla delningsbegäran för aktiv tråd (live). */
+function ThreadShareSection({ threadId }: { threadId: string }) {
+  const { items } = useThreadShareRequests(threadId);
+  // Visa bara de som inte är i terminal-state mer än 24h gamla — håll det enkelt: visa alla
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      {items.map((r) => (
+        <ShareRequestCard key={r.id} request={r} />
+      ))}
+    </div>
+  );
 }
 
 export default function Messages() {
@@ -151,6 +168,8 @@ export default function Messages() {
     <div className="min-h-screen">
       <SEO title="Mina meddelanden – Manuskort" noindex nofollow />
 
+      <OwnerSupportBanner />
+
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Button
           variant="ghost"
@@ -231,6 +250,7 @@ export default function Messages() {
               </header>
 
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+                <ThreadShareSection threadId={activeThread.id} />
                 {messages.map((m) => {
                   const fromAdmin = m.sender_role === "admin";
                   return (

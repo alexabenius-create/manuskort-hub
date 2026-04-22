@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { HelpButton } from "@/components/HelpButton";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { SupportEditorBanner } from "@/components/SupportModeBanner";
+import { useShareRequestStatus } from "@/hooks/useShareRequests";
 import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
 import {
   TargetDurationDialog,
@@ -85,10 +87,41 @@ export default function EditorV3() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const supportShareId = searchParams.get("support");
+  const isSupportMode = !!supportShareId;
+  const supportStatus = useShareRequestStatus(supportShareId);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+
+  // Watcher: om delningen återkallas → kicka admin tillbaka till panelen
+  useEffect(() => {
+    if (!isSupportMode) return;
+    if (supportStatus && supportStatus !== "granted") {
+      toast({
+        title: "Delningen är avslutad",
+        description: "Användaren har avslutat delningen.",
+      });
+      navigate("/admin?tab=feedback", { replace: true });
+    }
+  }, [isSupportMode, supportStatus, navigate]);
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Hämta ägar-email i support-läge
+  useEffect(() => {
+    if (!isSupportMode || !manuscript) {
+      setOwnerEmail(null);
+      return;
+    }
+    supabase
+      .from("profiles")
+      .select("email")
+      .eq("user_id", manuscript.user_id)
+      .maybeSingle()
+      .then(({ data }) => setOwnerEmail(data?.email ?? null));
+  }, [isSupportMode, manuscript]);
 
   const [docHtml, setDocHtml] = useState<string>("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -523,6 +556,13 @@ export default function EditorV3() {
       <SEO title={`${manuscript.title} – Editor`} />
 
       <div className="min-h-screen bg-background flex flex-col">
+        {isSupportMode && supportStatus === "granted" && (
+          <SupportEditorBanner
+            ownerEmail={ownerEmail}
+            manuscriptTitle={manuscript.title}
+            onClose={() => navigate("/admin?tab=feedback")}
+          />
+        )}
         <header className="border-b border-border/60 bg-background/95 backdrop-blur sticky top-0 z-30">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
             {/* Rad 1: Bibliotek · titel · kortantal · sparat (mobil); flex-1 på desktop */}
