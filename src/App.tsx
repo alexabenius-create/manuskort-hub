@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
+import { usePresence } from "@/hooks/usePresence";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -45,6 +46,11 @@ const LegacyEditorRedirect = () => {
   return <Navigate to={`/manus/${id}`} replace />;
 };
 
+const PresenceTracker = () => {
+  usePresence();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -52,6 +58,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <PresenceTracker />
           <TourProvider>
             <TierProvider>
               <Suspense fallback={<RouteFallback />}>
