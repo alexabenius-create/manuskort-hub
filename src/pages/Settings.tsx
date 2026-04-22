@@ -14,6 +14,8 @@ import { getStripeEnvironment } from "@/lib/stripe";
 import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { AffiliateSection } from "@/components/settings/AffiliateSection";
+import { AffiliatePromoModal } from "@/components/AffiliatePromoModal";
 
 
 export default function Settings() {
@@ -285,6 +287,9 @@ export default function Settings() {
             </p>
           </div>
         </section>
+        {/* Affiliate-program */}
+        <AffiliateSection />
+
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>
           <p className="text-[14px] text-muted-foreground -mt-2">
@@ -352,6 +357,7 @@ export default function Settings() {
         onOpenChange={setDeleteOpen}
         isPro={isPro}
       />
+      <AffiliatePromoModal />
     </div>
   );
 }

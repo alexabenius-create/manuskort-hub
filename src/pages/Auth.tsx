@@ -1,22 +1,29 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
+import { registerPendingReferral } from "@/hooks/useAffiliate";
 
 type Mode = "magic" | "password" | "signup" | "forgot";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("magic");
+  const [searchParams] = useSearchParams();
+  const initialMode: Mode = searchParams.get("mode") === "signup" ? "signup" : "magic";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [hasAffiliatePending] = useState(() => {
+    try { return !!localStorage.getItem("affiliate_pending"); } catch { return false; }
+  });
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +85,7 @@ export default function Auth() {
 
         // Navigera direkt in i biblioteket — auto-confirm är aktiverat så session finns.
         if (data.session) {
+          await registerPendingReferral();
           navigate("/bibliotek", { replace: true });
         } else {
           // Fallback: ingen session (kan hända om e-postbekräftelse är på). Försök logga in.
@@ -86,6 +94,7 @@ export default function Auth() {
             toast({ title: "Konto skapat", description: "Logga in för att fortsätta." });
             setMode("password");
           } else {
+            await registerPendingReferral();
             navigate("/bibliotek", { replace: true });
           }
         }
@@ -113,6 +122,12 @@ export default function Auth() {
             Manus i kortformat. För talare och moderatorer.
           </p>
         </header>
+
+        {hasAffiliatePending && mode === "signup" && (
+          <div className="mb-5 px-4 py-3 rounded-xl bg-accent-blue/10 text-accent-blue text-[13px] text-center">
+            🎁 Du har blivit inbjuden — skapa konto för att aktivera inbjudan.
+          </div>
+        )}
 
         <div className="bg-surface rounded-2xl shadow-card p-8">
           <div className="seg-group w-full mb-7">

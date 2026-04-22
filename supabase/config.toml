@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.create-portal-session]
 verify_jwt = false
+
+[functions.get-affiliate-referrer]
+verify_jwt = false

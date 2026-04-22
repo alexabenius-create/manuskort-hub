@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_codes: {
+        Row: {
+          code: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      affiliate_referrals: {
+        Row: {
+          code: string
+          id: string
+          referred_user_id: string
+          referrer_user_id: string
+          reward_months: number | null
+          rewarded_at: string | null
+          signed_up_at: string
+          subscription_interval: string | null
+        }
+        Insert: {
+          code: string
+          id?: string
+          referred_user_id: string
+          referrer_user_id: string
+          reward_months?: number | null
+          rewarded_at?: string | null
+          signed_up_at?: string
+          subscription_interval?: string | null
+        }
+        Update: {
+          code?: string
+          id?: string
+          referred_user_id?: string
+          referrer_user_id?: string
+          reward_months?: number | null
+          rewarded_at?: string | null
+          signed_up_at?: string
+          subscription_interval?: string | null
+        }
+        Relationships: []
+      }
+      affiliate_rewards: {
+        Row: {
+          expires_at: string
+          granted_at: string
+          id: string
+          months: number
+          referral_id: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          granted_at?: string
+          id?: string
+          months: number
+          referral_id: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          months?: number
+          referral_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           content_html: string
@@ -469,10 +555,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_affiliate_code: { Args: never; Returns: string }
+      get_affiliate_stats: {
+        Args: { _user_id: string }
+        Returns: {
+          active_until: string
+          conversions: number
+          signups: number
+          total_months: number
+        }[]
+      }
+      get_or_create_affiliate_code: { Args: never; Returns: string }
       get_user_tier: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_active_affiliate_pro: { Args: { _user_id: string }; Returns: boolean }
       has_active_share: {
         Args: { _admin_id: string; _manuscript_id: string }
         Returns: boolean
@@ -491,6 +589,11 @@ export type Database = {
       import_manuscript: {
         Args: { p_cards: Json; p_manuscript: Json; p_panelists: Json }
         Returns: string
+      }
+      lookup_affiliate_referrer: { Args: { _code: string }; Returns: string }
+      register_affiliate_referral: {
+        Args: { _code: string }
+        Returns: undefined
       }
     }
     Enums: {

@@ -95,6 +95,109 @@ async function upsertSubscription(subscription: any, env: StripeEnv) {
 
   // Sync user_roles based on subscription status
   await syncUserTier(userId, subscription.status, priceId);
+
+  // Process affiliate referral reward (only on new active subscription)
+  const isActiveSub = subscription.status === "active" || subscription.status === "trialing";
+  if (isActiveSub) {
+    const interval = item?.price?.recurring?.interval as string | undefined;
+    await processAffiliateReward(userId, interval);
+  }
+}
+
+async function processAffiliateReward(referredUserId: string, interval?: string) {
+  try {
+    // Hitta öppen referral
+    const { data: referral } = await supabase
+      .from("affiliate_referrals")
+      .select("id, referrer_user_id, code")
+      .eq("referred_user_id", referredUserId)
+      .is("rewarded_at", null)
+      .maybeSingle();
+
+    if (!referral) {
+      console.log("No pending affiliate referral for user:", referredUserId);
+      return;
+    }
+
+    const months = interval === "year" ? 3 : 1;
+
+    // Beräkna expires_at: addera months ovanpå senaste expires_at om aktiv, annars now()
+    const { data: existingRewards } = await supabase
+      .from("affiliate_rewards")
+      .select("expires_at")
+      .eq("user_id", referral.referrer_user_id)
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1);
+
+    const baseDate = existingRewards && existingRewards.length > 0
+      ? new Date(existingRewards[0].expires_at)
+      : new Date();
+    const expiresAt = new Date(baseDate);
+    expiresAt.setMonth(expiresAt.getMonth() + months);
+
+    // Skapa reward
+    const { error: rewardErr } = await supabase
+      .from("affiliate_rewards")
+      .insert({
+        user_id: referral.referrer_user_id,
+        referral_id: referral.id,
+        months,
+        expires_at: expiresAt.toISOString(),
+      });
+    if (rewardErr) {
+      console.error("Failed to insert affiliate reward:", rewardErr);
+      return;
+    }
+
+    // Markera referral som rewarded
+    await supabase
+      .from("affiliate_referrals")
+      .update({
+        rewarded_at: new Date().toISOString(),
+        reward_months: months,
+        subscription_interval: interval || "month",
+      })
+      .eq("id", referral.id);
+
+    // Skapa inkorgsmeddelande till värvaren
+    const { data: thread, error: threadErr } = await supabase
+      .from("feedback_threads")
+      .insert({
+        user_id: referral.referrer_user_id,
+        source: "system",
+        subject: "🎉 Du har fått kostnadsfri PRO",
+        status: "open",
+      })
+      .select("id")
+      .single();
+
+    if (threadErr || !thread) {
+      console.error("Failed to create feedback thread:", threadErr);
+      return;
+    }
+
+    const body = `Bra jobbat! 🎉
+
+Någon har just köpt PRO via din affiliate-länk och du har fått **${months} ${months === 1 ? "månad" : "månader"} kostnadsfri PRO**.
+
+Din kostnadsfria PRO är aktiv till och med ${expiresAt.toLocaleDateString("sv-SE")}.
+
+Du kan se din totala intjänade tid och din affiliate-länk under Inställningar.`;
+
+    await supabase
+      .from("feedback_messages")
+      .insert({
+        thread_id: thread.id,
+        sender_role: "admin",
+        sender_user_id: null,
+        body,
+      });
+
+    console.log("Affiliate reward granted:", referral.referrer_user_id, months);
+  } catch (e) {
+    console.error("processAffiliateReward error:", e);
+  }
 }
 
 // deno-lint-ignore no-explicit-any

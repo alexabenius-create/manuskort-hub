@@ -28,6 +28,7 @@ const Moderator = lazy(() => import("./pages/usecase/Moderator"));
 const Talare = lazy(() => import("./pages/usecase/Talare"));
 const Panelsamtal = lazy(() => import("./pages/usecase/Panelsamtal"));
 const Forelasning = lazy(() => import("./pages/usecase/Forelasning"));
+const AffiliateLanding = lazy(() => import("./pages/AffiliateLanding"));
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="/talare" element={<Talare />} />
                   <Route path="/panelsamtal" element={<Panelsamtal />} />
                   <Route path="/forelasning" element={<Forelasning />} />
+                  <Route path="/affiliate/:code" element={<AffiliateLanding />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
