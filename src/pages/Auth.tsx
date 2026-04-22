@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,6 +116,14 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center px-6 bg-background">
       <SEO title="Logga in – Manuskort" description="Logga in eller skapa konto." noindex />
       <div className="w-full max-w-[420px]">
+        <div className="mb-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Till startsidan
+          </Link>
+        </div>
         <header className="text-center mb-12">
           <h1 className="font-display text-5xl font-semibold tracking-tight">Manuskort</h1>
           <p className="text-muted-foreground mt-3 text-[15px]">
