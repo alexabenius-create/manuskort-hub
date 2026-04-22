@@ -14,6 +14,8 @@ import { getStripeEnvironment } from "@/lib/stripe";
 import { SEO } from "@/components/SEO";
 import { HelpButton } from "@/components/HelpButton";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { AffiliateSection } from "@/components/settings/AffiliateSection";
+import { AffiliatePromoModal } from "@/components/AffiliatePromoModal";
 
 
 export default function Settings() {
