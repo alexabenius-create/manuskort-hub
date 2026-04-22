@@ -761,6 +761,11 @@ export default function Library() {
           onComplete={() => setNeedsOnboarding(false)}
         />
       )}
+      <WelcomeAfterSignupModal
+        open={!!welcomeEmail && !needsOnboarding}
+        email={welcomeEmail}
+        onClose={dismissWelcome}
+      />
       <PWAInstallPrompt />
     </div>
     </>
