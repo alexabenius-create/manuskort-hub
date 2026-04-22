@@ -1,111 +1,116 @@
 
 
-# Feedback & meddelanden — plan
+# Säker support-delning av manus (med redigeringsrätt)
 
-Bygger ett tvåvägs meddelandesystem mellan användare och admin: feedback-formulär på landningssida, bibliotek och redigeringsläge → "Mina meddelanden" för användaren → svarsfunktion i Admin-panelen → röd notis-badge med antal olästa.
+Tar bort all bred admin-läsåtkomst och ersätter den med ett **explicit, användarstyrt delningsflöde** kopplat till feedback-trådar. När användaren godkänt delning får admin **full redigeringsrätt** på det valda manuset tills användaren återkallar.
 
-## 1. Databas
+## 1. Stoppa läckan först
 
-Två nya tabeller (skapas via migration):
+Migration som droppar de breda admin-policyerna:
+- `admins_select_all_manuscripts` på `manuscripts`
+- `admins_select_all_profiles` på `profiles`
+- `admins_select_all_subscriptions` på `subscriptions`
 
-**`feedback_threads`** — en tråd per inskickad feedback
-- `id` uuid PK
-- `user_id` uuid (nullable — landningssida kan vara anonym om utloggad)
-- `email` text (för anonyma trådar)
-- `subject` text
-- `source` text (`landing` | `library` | `editor`)
-- `manuscript_id` uuid nullable (om från editor)
-- `status` text (`open` | `closed`) default `open`
-- `created_at`, `updated_at` timestamptz
+Efter detta ser ingen — admin eller ej — andras manus i `/bibliotek` eller editorn. Befintliga `*_select_own`-policyer räcker.
 
-**`feedback_messages`** — varje meddelande i en tråd
-- `id` uuid PK
-- `thread_id` uuid → feedback_threads
-- `sender_role` text (`user` | `admin`)
-- `sender_user_id` uuid nullable
-- `body` text
-- `read_by_user` boolean default false
-- `read_by_admin` boolean default false
-- `created_at` timestamptz
+## 2. Admin-panel utan databrott
 
-**RLS-policyer:**
-- Användare: SELECT/INSERT på egna trådar och deras meddelanden (matchat på `user_id`).
-- Anonym INSERT tillåten på `feedback_threads` + `feedback_messages` från landningssida (med rate-limit-tanke).
-- Admin (via `has_role(auth.uid(), 'admin')`): SELECT/UPDATE/INSERT på allt.
+Admin-panelens "Användare"-flik byts till en `SECURITY DEFINER`-funktion `admin_list_users()` som returnerar `user_id, email, tier, manuscript_count` (kontrollerar `has_role(auth.uid(),'admin')` internt). Inga direktselects mot `profiles`/`manuscripts`.
 
-## 2. UI — Feedback-formulär (användare)
+Feedback-policyerna är redan tråd-baserade och påverkas inte.
 
-**Komponent:** `src/components/feedback/FeedbackDialog.tsx`
-- Dialog med fält: ämne (kort), meddelande (textarea, max 2000 tecken), e-post (om utloggad).
-- Validering med zod.
-- Skickar in tråd + första meddelandet i en transaktion.
-- Bekräftelse-toast: "Tack! Vi svarar på Mina meddelanden."
+## 3. Ny tabell: `manuscript_share_requests`
 
-**Trigger-knapp:** `src/components/feedback/FeedbackButton.tsx` — liten "Feedback"-knapp (MessageSquare-ikon) som öppnar dialogen. Placeras:
-- **Landing** (`src/pages/Landing.tsx`): i topbar bredvid "Logga in/Priser".
-- **Library** (`src/pages/Library.tsx`): i topbar nära `HelpButton`.
-- **EditorV3** (`src/pages/EditorV3.tsx`): i topbar nära `HelpButton`.
-- **EJ** i Presentation/Print/Mobile-presentation.
-- I `MobileNavSheet` på landing/library: en länk "Skicka feedback".
+Begäran-och-samtycke-modell knuten till feedback-trådar.
 
-`source` sätts automatiskt utifrån var dialogen öppnas. På editor skickas `manuscript_id` med.
+Kolumner:
+- `id uuid PK`
+- `thread_id uuid` → `feedback_threads`
+- `requested_by uuid` (admin)
+- `user_id uuid` (manus-ägaren)
+- `manuscript_id uuid nullable` (sätts när användaren väljer manus)
+- `status text` — `pending` | `granted` | `revoked` | `denied`
+- `requested_at`, `granted_at`, `revoked_at timestamptz`
 
-## 3. UI — Mina meddelanden (användare)
+**RLS:**
+- Admin: SELECT/INSERT/UPDATE där `has_role(...,'admin')`.
+- Användare: SELECT/UPDATE där `auth.uid() = user_id`.
 
-**Ny sida:** `src/pages/Messages.tsx` på route `/meddelanden` (RequireAuth).
-- Lista av användarens trådar (senaste först), visar ämne, källa, datum, badge "Nytt svar" om `read_by_user = false` på admin-meddelanden.
-- Klick öppnar tråd-vy: chronologisk konversation, möjlighet att skriva uppföljningsmeddelande till samma tråd.
-- När tråden öppnas → markerar admin-meddelanden som lästa (`read_by_user = true`).
+## 4. Smal admin-åtkomst (SELECT + UPDATE) via aktiv delning
 
-**Notis-badge:** Liten röd cirkel med antal olästa admin-svar bredvid användar-menyn i Library + Editor + i `MobileNavSheet`. 
-- Hook: `src/hooks/useUnreadMessages.tsx` — räknar `read_by_user = false AND sender_role = 'admin'` för aktuell user, med Supabase Realtime-subscription för live-uppdatering.
+Hjälpfunktion `has_active_share(_manuscript_id uuid, _admin_id uuid)` (SECURITY DEFINER) returnerar true om en `granted`-rad finns för det manuset/admin.
 
-**Länk till sidan:** Lägg till "Mina meddelanden" i:
-- Library topbar (ikon med badge).
-- DropdownMenu i Library + Settings-länkar.
-- `MobileNavSheet`.
+Nya RLS-policyer på `manuscripts`, `cards`, `panelists`:
 
-## 4. UI — Admin-panel
+```sql
+-- SELECT
+USING (
+  has_role(auth.uid(),'admin')
+  AND public.has_active_share(<manuscript_id-kolumn>, auth.uid())
+)
 
-**Utökar `src/pages/Admin.tsx`:**
-- Ny tabbar (Tabs): "Användare" (befintlig) + "Feedback".
-- **Feedback-tabben:**
-  - Lista över alla trådar, sortering: olästa (admin) först, sedan datum.
-  - Filter: alla / öppna / stängda, sökning på ämne/e-post.
-  - Badge med antal olästa visas i tab-rubriken och i topbarens "Admin"-länk.
-  - Klick → tråd-detalj (modal eller expanderad rad): visar konversation, formulär för svar, knapp "Stäng tråd".
-  - När admin öppnar tråd → markerar user-meddelanden som lästa (`read_by_admin = true`).
-  - Admin-svar sparas som nytt `feedback_messages` med `sender_role = 'admin'`.
+-- UPDATE
+USING (samma villkor) WITH CHECK (samma villkor)
+```
 
-**Notis-badge för admin:** I admin-länken i Library topbar (Shield-ikon) — liten röd siffra om olästa user-meddelanden finns.
+För `cards`/`panelists` matchas via raden's `manuscript_id`. Admin får **inte** INSERT eller DELETE på manus/kort/deltagare i andras data — bara läs och uppdatering av befintligt innehåll. Det räcker för supportscenarier (rätta text, justera cues, fixa tider) utan risk att radera eller skapa nya rader hos användaren.
 
-## 5. Routing & navigering
+Åtkomsten upphör i samma ögonblick `status` byter från `granted` — RLS utvärderas per query.
 
-- Ny route i `App.tsx`: `/meddelanden` → `<RequireAuth><Messages /></RequireAuth>` (lazy).
-- Admin-flikar drivs av URL-param `?tab=feedback`.
+## 5. UI — användarflödet
 
-## Tekniska detaljer
+I tråd-vyn på `/meddelanden`:
 
-- **Realtime:** Aktivera realtime på `feedback_messages` så badges + tråd-vyer uppdateras live (`ALTER PUBLICATION supabase_realtime ADD TABLE public.feedback_messages;`).
-- **Validering:** zod-scheman både på klient och i edge function.
-- **Rate-limit för anonym feedback:** enkel kontroll i RLS-policy att max N rader per IP/email per timme — eller skippas i v1 och läggs till om missbruk uppstår.
-- **Stil:** följer befintlig design (rounded-2xl, shadow-card, accent-blue, font-display) — matchar Settings/Admin-mönster.
-- **Notis-badge:** röd `bg-destructive` cirkel, 16x16, vit text 10px, position: absolut top-right på ikonen.
-- **Inga filändringar** i Presentation, PrintView, MobilePresentation.
+- När admin skickat begäran visas ett kort i tråden:
+  > "Admin ber om tillåtelse att redigera ett av dina manus för att hjälpa dig."
+  > Knappar: **Välj manus att dela** / **Avslå**
+- "Välj manus" → dialog med användarens manus-lista → bekräfta → `status='granted'`, `manuscript_id` sätts.
+- När delning är aktiv visas ett rött varningsband överst i `/meddelanden` och `/bibliotek`:
+  > "Admin kan just nu redigera '{titel}'. **Sluta dela mitt manuskort med Admin**"
+- Klick → `status='revoked'`, `revoked_at=now()`. Admin tappar åtkomst direkt.
+
+## 6. UI — adminflödet
+
+I `FeedbackAdminPanel` tråd-vy:
+
+- Knapp: **Be om tillgång till manus** → skapar `share_request` med `status='pending'` + system-meddelande i tråden.
+- När `status='granted'`: knapp **Öppna delat manus** → öppnar editorn på `/manus/{id}?support=1` med full redigeringsrätt.
+- Banner i editorn: "Stödläge — du redigerar {ägarens email}s manus. **Stäng**" → tillbaka till adminpanelen.
+- Realtime-prenumeration på `manuscript_share_requests`: när `status` ändras till `revoked` → toast "Användaren har avslutat delningen" + automatisk `navigate('/admin?tab=feedback')`.
+
+## 7. Editor i stödläge
+
+`EditorV3` får `supportMode` (URL-param `?support=1`):
+- Redigering, autosave och cues fungerar normalt (admin har UPDATE-rätt via RLS).
+- Tydlig orange/röd banner överst med ägarens e-post + "Stäng support-vy".
+- Realtime-watcher var 5:e sekund mot `manuscript_share_requests`: om `status != 'granted'` → omedelbar redirect till `/admin?tab=feedback`.
+
+## 8. Realtime
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.manuscript_share_requests;
+```
 
 ## Filer som skapas
 
-- `supabase/migrations/<timestamp>_feedback_system.sql`
-- `src/components/feedback/FeedbackDialog.tsx`
-- `src/components/feedback/FeedbackButton.tsx`
-- `src/components/feedback/UnreadBadge.tsx`
-- `src/hooks/useUnreadMessages.tsx`
-- `src/pages/Messages.tsx`
+- `supabase/migrations/<ts>_secure_support_sharing.sql` (drop policyer + ny tabell + RLS + `admin_list_users` + `has_active_share` + nya share-baserade policyer på manuscripts/cards/panelists)
+- `src/hooks/useShareRequests.tsx` (realtime-prenumeration för båda roller)
+- `src/components/feedback/ShareRequestCard.tsx` (användarens accept/välj-manus-UI i tråden)
+- `src/components/feedback/AdminShareRequestPanel.tsx` (admins begäran-knapp + status)
+- `src/components/SupportModeBanner.tsx` (ägarens "delar nu"-band + admins "stödläge"-band)
 
 ## Filer som ändras
 
-- `src/App.tsx` (route)
-- `src/pages/Landing.tsx`, `src/pages/Library.tsx`, `src/pages/EditorV3.tsx` (feedback-knapp + meddelanden-länk)
-- `src/pages/Admin.tsx` (Tabs + feedback-vy)
-- `src/components/MobileNavSheet.tsx`-användning på landing/library (lägga till länkar)
+- `src/pages/Admin.tsx` — `admin_list_users` RPC istället för direkt `profiles`-select.
+- `src/pages/Messages.tsx` — `ShareRequestCard` i tråden + global "Sluta dela"-banner.
+- `src/components/feedback/FeedbackAdminPanel.tsx` — `AdminShareRequestPanel` per tråd.
+- `src/pages/EditorV3.tsx` — `?support=1`-stöd, banner, revoke-watcher.
+- `src/pages/Library.tsx` — global "Du delar X med Admin"-banner om aktiv delning finns.
+
+## Verifiering
+
+1. Logga in som alexander@abenius.com → `/bibliotek` visar **endast** dina manus. SVA-manuset borta.
+2. Som admin i feedback-tråd → "Be om tillgång" → användaren ser begäran i `/meddelanden`.
+3. Användaren väljer manus → admin öppnar och kan **redigera** (ändringar sparas).
+4. Användaren trycker "Sluta dela" → admins editor stängs inom sekunder och hamnar på `/admin?tab=feedback`. Vidare skrivförsök blockeras av RLS.
 
