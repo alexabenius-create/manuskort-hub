@@ -556,6 +556,13 @@ export default function EditorV3() {
       <SEO title={`${manuscript.title} – Editor`} />
 
       <div className="min-h-screen bg-background flex flex-col">
+        {isSupportMode && supportStatus === "granted" && (
+          <SupportEditorBanner
+            ownerEmail={ownerEmail}
+            manuscriptTitle={manuscript.title}
+            onClose={() => navigate("/admin?tab=feedback")}
+          />
+        )}
         <header className="border-b border-border/60 bg-background/95 backdrop-blur sticky top-0 z-30">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
             {/* Rad 1: Bibliotek · titel · kortantal · sparat (mobil); flex-1 på desktop */}
