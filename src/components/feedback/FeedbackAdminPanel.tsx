@@ -9,6 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Search, Send, Inbox, MessageSquare, X, Lock } from "lucide-react";
+import { AdminShareRequestPanel } from "@/components/feedback/AdminShareRequestPanel";
 
 interface Thread {
   id: string;
@@ -291,32 +292,35 @@ export function FeedbackAdminPanel() {
             </div>
           ) : (
             <>
-              <header className="px-6 py-4 border-b-hair flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-[17px] font-semibold tracking-tight truncate">{activeThread.subject}</h2>
-                  <p className="text-[12px] text-muted-foreground mt-0.5">
-                    {activeThread.email ?? "(ingen e-post)"} · {SOURCE_LABEL[activeThread.source] ?? activeThread.source} · {formatDate(activeThread.created_at)}
-                  </p>
+              <header className="px-6 py-4 border-b-hair flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-display text-[17px] font-semibold tracking-tight truncate">{activeThread.subject}</h2>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">
+                      {activeThread.email ?? "(ingen e-post)"} · {SOURCE_LABEL[activeThread.source] ?? activeThread.source} · {formatDate(activeThread.created_at)}
+                    </p>
+                  </div>
+                  {activeThread.status === "open" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={closeThread}
+                      className="rounded-full text-[12px] h-7 text-muted-foreground"
+                    >
+                      <X className="h-3 w-3" /> Stäng
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={reopenThread}
+                      className="rounded-full text-[12px] h-7 text-muted-foreground"
+                    >
+                      <Lock className="h-3 w-3" /> Öppna igen
+                    </Button>
+                  )}
                 </div>
-                {activeThread.status === "open" ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={closeThread}
-                    className="rounded-full text-[12px] h-7 text-muted-foreground"
-                  >
-                    <X className="h-3 w-3" /> Stäng
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={reopenThread}
-                    className="rounded-full text-[12px] h-7 text-muted-foreground"
-                  >
-                    <Lock className="h-3 w-3" /> Öppna igen
-                  </Button>
-                )}
+                <AdminShareRequestPanel threadId={activeThread.id} threadUserId={activeThread.user_id} />
               </header>
 
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 max-h-[50vh]">

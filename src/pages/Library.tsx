@@ -34,6 +34,7 @@ import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { WelcomeAfterSignupModal } from "@/components/WelcomeAfterSignupModal";
+import { OwnerSupportBanner } from "@/components/SupportModeBanner";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
