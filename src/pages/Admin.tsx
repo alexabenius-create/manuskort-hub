@@ -36,6 +36,12 @@ export default function Admin() {
   const [q, setQ] = useState("");
   const [pending, setPending] = useState<{ row: UserRow; newTier: Tier } | null>(null);
   const [working, setWorking] = useState(false);
+  const [tab, setTab] = useState<"users" | "feedback">(() => {
+    if (typeof window === "undefined") return "users";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "feedback" ? "feedback" : "users";
+  });
+  const adminUnread = useAdminUnreadMessages(tier === "admin");
 
   // Skydd: bara admin
   useEffect(() => {
