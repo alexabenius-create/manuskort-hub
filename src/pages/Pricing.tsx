@@ -186,6 +186,9 @@ export default function Pricing() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="font-display text-[17px] font-semibold tracking-tight">Priser</h1>
+        <div className="ml-auto">
+          <FeedbackButton source="landing" withLabel className="!h-9" />
+        </div>
       </header>
 
       <main className="max-w-[960px] mx-auto px-6 sm:px-10 pt-12 pb-20 flex flex-col gap-10">
