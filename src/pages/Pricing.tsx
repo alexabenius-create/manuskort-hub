@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/accordion";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 
 type Feature = { label: string; included: boolean };
 type Billing = "month" | "year";
