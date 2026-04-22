@@ -40,6 +40,20 @@ function formatDate(s: string) {
   return new Date(s).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
 }
 
+/** Visar alla delningsbegäran för aktiv tråd (live). */
+function ThreadShareSection({ threadId }: { threadId: string }) {
+  const { items } = useThreadShareRequests(threadId);
+  // Visa bara de som inte är i terminal-state mer än 24h gamla — håll det enkelt: visa alla
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      {items.map((r) => (
+        <ShareRequestCard key={r.id} request={r} />
+      ))}
+    </div>
+  );
+}
+
 export default function Messages() {
   const { user } = useAuth();
   const navigate = useNavigate();
