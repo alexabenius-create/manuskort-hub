@@ -453,6 +453,39 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visits: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          ip_hash: string
+          notified: boolean
+          path: string
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip_hash: string
+          notified?: boolean
+          path?: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          notified?: boolean
+          path?: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean
