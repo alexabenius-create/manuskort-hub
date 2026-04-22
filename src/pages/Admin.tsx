@@ -104,7 +104,7 @@ export default function Admin() {
       manuscript_count: Number(r.manuscript_count ?? 0),
       last_seen_at: r.last_seen_at,
     }));
-    list.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
+    // Behåll RPC-sortering (online först, sen senast aktiv)
     setRows(list);
     setLoading(false);
   };
