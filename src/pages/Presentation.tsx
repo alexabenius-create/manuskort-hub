@@ -92,8 +92,8 @@ export default function Presentation() {
     const prevBody = document.body.style.backgroundColor;
     const prevHtml = document.documentElement.style.backgroundColor;
     const prevBodyMinH = document.body.style.minHeight;
-    document.body.style.backgroundColor = "#09090b";
-    document.documentElement.style.backgroundColor = "#09090b";
+    document.body.style.backgroundColor = "#0a0a0c";
+    document.documentElement.style.backgroundColor = "#0a0a0c";
     document.body.style.minHeight = "calc(100dvh + 1px)";
     return () => {
       document.body.style.backgroundColor = prevBody;
