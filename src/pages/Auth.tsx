@@ -123,6 +123,12 @@ export default function Auth() {
           </p>
         </header>
 
+        {hasAffiliatePending && mode === "signup" && (
+          <div className="mb-5 px-4 py-3 rounded-xl bg-accent-blue/10 text-accent-blue text-[13px] text-center">
+            🎁 Du har blivit inbjuden — skapa konto för att aktivera inbjudan.
+          </div>
+        )}
+
         <div className="bg-surface rounded-2xl shadow-card p-8">
           <div className="seg-group w-full mb-7">
             {tabs.map(([m, label]) => (

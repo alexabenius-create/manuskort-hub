@@ -287,6 +287,9 @@ export default function Settings() {
             </p>
           </div>
         </section>
+        {/* Affiliate-program */}
+        <AffiliateSection />
+
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>
           <p className="text-[14px] text-muted-foreground -mt-2">
