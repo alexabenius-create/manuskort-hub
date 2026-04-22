@@ -12,7 +12,10 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X, Inbox } from "lucide-react";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { UnreadBadge } from "@/components/feedback/UnreadBadge";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
