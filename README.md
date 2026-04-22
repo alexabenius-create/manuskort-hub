@@ -1,3 +1,5 @@
-# Welcome to your Lovable project
+# Manuskort
 
-TODO: Document your project here
+Manus i kortformat för presentationer, tal och panelsamtal.
+
+Webbplats: [manuskort.se](https://manuskort.se)
