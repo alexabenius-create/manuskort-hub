@@ -295,7 +295,7 @@ export default function Admin() {
             </div>
 
             <p className="text-[12px] text-muted-foreground mt-4">
-              Totalt {rows.length} användare · {rows.filter((r) => r.tier === "pro").length} PRO · {rows.filter((r) => r.tier === "admin").length} admin
+              Totalt {rows.length} användare · {rows.filter((r) => r.last_seen_at && now - new Date(r.last_seen_at).getTime() < ONLINE_THRESHOLD_MS).length} online nu · {rows.filter((r) => r.tier === "pro").length} PRO · {rows.filter((r) => r.tier === "admin").length} admin
             </p>
           </TabsContent>
 
