@@ -342,6 +342,7 @@ export default function Library() {
           </div>
         </div>
       )}
+      <OwnerSupportBanner />
       {/* Topbar */}
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-6">
         <Link to="/" className="font-display text-[17px] font-semibold tracking-tight hover:opacity-70 transition-opacity" aria-label="Till startsidan">
