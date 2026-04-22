@@ -23,6 +23,7 @@ import {
 import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Landing() {
   const { session } = useAuth();
@@ -33,6 +34,22 @@ export default function Landing() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Anonym besökstracking — fire & forget. Filtrerar bort ägare, automation och preview-miljöer.
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      if (localStorage.getItem("mk_is_owner") === "1") return;
+      if ((navigator as any).webdriver) return;
+      const host = window.location.hostname;
+      if (/lovableproject\.com|id-preview|localhost|127\.0\.0\.1/i.test(host)) return;
+      void supabase.functions.invoke("track-visit", {
+        body: { referrer: document.referrer || null, path: "/" },
+      });
+    } catch {
+      // tyst — tracking ska aldrig påverka UX
+    }
   }, []);
 
   const primaryCtaTo = session ? "/bibliotek" : "/auth";
