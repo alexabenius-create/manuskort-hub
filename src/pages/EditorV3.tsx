@@ -87,10 +87,41 @@ export default function EditorV3() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const supportShareId = searchParams.get("support");
+  const isSupportMode = !!supportShareId;
+  const supportStatus = useShareRequestStatus(supportShareId);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+
+  // Watcher: om delningen återkallas → kicka admin tillbaka till panelen
+  useEffect(() => {
+    if (!isSupportMode) return;
+    if (supportStatus && supportStatus !== "granted") {
+      toast({
+        title: "Delningen är avslutad",
+        description: "Användaren har avslutat delningen.",
+      });
+      navigate("/admin?tab=feedback", { replace: true });
+    }
+  }, [isSupportMode, supportStatus, navigate]);
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Hämta ägar-email i support-läge
+  useEffect(() => {
+    if (!isSupportMode || !manuscript) {
+      setOwnerEmail(null);
+      return;
+    }
+    supabase
+      .from("profiles")
+      .select("email")
+      .eq("user_id", manuscript.user_id)
+      .maybeSingle()
+      .then(({ data }) => setOwnerEmail(data?.email ?? null));
+  }, [isSupportMode, manuscript]);
 
   const [docHtml, setDocHtml] = useState<string>("");
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
