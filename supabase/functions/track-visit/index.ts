@@ -75,12 +75,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Check throttle: any visit from this IP within 24h?
+    // Check throttle: only suppress if a notification was actually delivered within 24h.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: existing } = await supabase
       .from("site_visits")
       .select("id")
       .eq("ip_hash", ipHash)
+      .eq("notified", true)
       .gte("created_at", since)
       .limit(1)
       .maybeSingle();
@@ -134,6 +135,8 @@ Deno.serve(async (req) => {
       `🕐 ${fmtTime(new Date())}`,
     ].join("\n");
 
+    let notificationDelivered = false;
+
     try {
       const tgRes = await fetch(`${GATEWAY_URL}/sendMessage`, {
         method: "POST",
@@ -154,12 +157,13 @@ Deno.serve(async (req) => {
         console.error("[track-visit] telegram failed", tgRes.status, tgData);
       } else {
         await supabase.from("site_visits").update({ notified: true }).eq("id", inserted.id);
+        notificationDelivered = true;
       }
     } catch (e) {
       console.error("[track-visit] telegram error", e);
     }
 
-    return new Response(JSON.stringify({ ok: true, notified: true }), {
+    return new Response(JSON.stringify({ ok: true, notified: notificationDelivered }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
