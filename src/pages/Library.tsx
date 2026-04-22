@@ -30,6 +30,7 @@ import { useTier } from "@/hooks/useTier";
 import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
+import { WelcomeAfterSignupModal } from "@/components/WelcomeAfterSignupModal";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
@@ -46,6 +47,18 @@ export default function Library() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<{ title: string; description: string } | null>(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  // Välkomstpopup efter signup — läses från sessionStorage som sätts i Auth.tsx
+  const [welcomeEmail, setWelcomeEmail] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem("mk:welcome-pending");
+    } catch {
+      return null;
+    }
+  });
+  const dismissWelcome = () => {
+    try { sessionStorage.removeItem("mk:welcome-pending"); } catch { /* ignore */ }
+    setWelcomeEmail(null);
+  };
 
   const [openNew, setOpenNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -137,9 +150,10 @@ export default function Library() {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Trigger bibliotek-rundtur när biblioteket har laddats och exempelmanus finns renderat
+  // Trigger bibliotek-rundtur när biblioteket har laddats och exempelmanus finns renderat.
+  // Försenas tills välkomstpopupen är stängd så den inte krockar med tour-overlay.
   const exampleExists = items.some((m) => (m.tags ?? []).includes(EXAMPLE_TAG));
-  useTourTrigger("bibliotek", !loading && exampleExists);
+  useTourTrigger("bibliotek", !loading && exampleExists && !welcomeEmail && !needsOnboarding);
 
   const filtered = useMemo(() => {
     return items.filter((m) => {
@@ -747,6 +761,11 @@ export default function Library() {
           onComplete={() => setNeedsOnboarding(false)}
         />
       )}
+      <WelcomeAfterSignupModal
+        open={!!welcomeEmail && !needsOnboarding}
+        email={welcomeEmail}
+        onClose={dismissWelcome}
+      />
       <PWAInstallPrompt />
     </div>
     </>
