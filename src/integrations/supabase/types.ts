@@ -406,6 +406,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          last_seen_at: string | null
           manus_tour_completed: boolean
           onboarding_completed: boolean
           updated_at: string
@@ -424,6 +425,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_seen_at?: string | null
           manus_tour_completed?: boolean
           onboarding_completed?: boolean
           updated_at?: string
@@ -442,6 +444,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_seen_at?: string | null
           manus_tour_completed?: boolean
           onboarding_completed?: boolean
           updated_at?: string
@@ -543,6 +546,7 @@ export type Database = {
           email: string
           first_name: string
           last_name: string
+          last_seen_at: string
           manuscript_count: number
           tier: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -595,6 +599,7 @@ export type Database = {
         Args: { _code: string }
         Returns: undefined
       }
+      update_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "free" | "pro" | "admin"
