@@ -776,6 +776,7 @@ export default function EditorV3() {
                 <TooltipContent>Hitta &amp; ersätt</TooltipContent>
               </Tooltip>
 
+              <FeedbackButton source="editor" manuscriptId={id ?? null} className="hidden md:inline-flex" />
               <HelpButton />
 
               {/* Sparindikator + kortantal (desktop, längst till höger) */}
