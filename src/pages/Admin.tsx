@@ -80,6 +80,14 @@ export default function Admin() {
     }
   }, [tier, tierLoading, navigate]);
 
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick var 30:e sekund så "X min sedan" uppdateras
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.rpc("admin_list_users");
@@ -94,6 +102,7 @@ export default function Admin() {
       email: r.email,
       tier: r.tier,
       manuscript_count: Number(r.manuscript_count ?? 0),
+      last_seen_at: r.last_seen_at,
     }));
     list.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
     setRows(list);
