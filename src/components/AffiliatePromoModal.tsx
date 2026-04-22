@@ -38,26 +38,29 @@ export function AffiliatePromoModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[440px]">
-        <DialogHeader>
-          <div className="mx-auto mb-2 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue">
+      <DialogContent className="max-w-[440px] p-0 overflow-hidden">
+        <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue mb-4">
             <Gift className="h-6 w-6" />
           </div>
-          <DialogTitle className="text-center font-display text-2xl tracking-tight">
-            Bjud in andra — få kostnadsfri PRO
-          </DialogTitle>
-        </DialogHeader>
 
-        <div className="flex flex-col gap-4 mt-2">
-          <div className="text-[14px] text-muted-foreground text-center leading-relaxed">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="font-display text-[22px] leading-tight tracking-tight text-center">
+              Bjud in andra — få kostnadsfri PRO
+            </DialogTitle>
+          </DialogHeader>
+
+          <p className="text-[14px] text-muted-foreground leading-relaxed mt-3">
             Dela din affiliate-länk. När någon köper PRO via din länk får du:
-            <br />• <strong>1 månad</strong> kostnadsfri PRO per månadsprenumerant
-            <br />• <strong>3 månader</strong> kostnadsfri PRO per årsprenumerant
-          </div>
+          </p>
+          <ul className="text-[14px] text-muted-foreground leading-relaxed mt-1 space-y-0.5">
+            <li><strong className="text-foreground">1 månad</strong> kostnadsfri PRO per månadsprenumerant</li>
+            <li><strong className="text-foreground">3 månader</strong> kostnadsfri PRO per årsprenumerant</li>
+          </ul>
 
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-11 rounded-xl bg-surface-2 px-3 flex items-center text-[13px] font-mono truncate">
-              {link}
+          <div className="flex items-center gap-2 w-full mt-6">
+            <div className="flex-1 h-11 rounded-xl bg-surface-2 px-3 flex items-center text-[13px] font-mono truncate min-w-0">
+              <span className="truncate">{link}</span>
             </div>
             <Button
               type="button"
@@ -72,7 +75,7 @@ export function AffiliatePromoModal() {
           <Button
             variant="ghost"
             onClick={() => setOpen(false)}
-            className="rounded-full text-[13px] text-muted-foreground"
+            className="rounded-full text-[13px] text-muted-foreground mt-4"
           >
             Stäng
           </Button>
