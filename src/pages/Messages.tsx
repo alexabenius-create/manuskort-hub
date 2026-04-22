@@ -236,6 +236,7 @@ export default function Messages() {
               </header>
 
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+                <ThreadShareSection threadId={activeThread.id} />
                 {messages.map((m) => {
                   const fromAdmin = m.sender_role === "admin";
                   return (
