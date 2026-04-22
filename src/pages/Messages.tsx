@@ -7,6 +7,9 @@ import { SEO } from "@/components/SEO";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, Inbox, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ShareRequestCard } from "@/components/feedback/ShareRequestCard";
+import { OwnerSupportBanner } from "@/components/SupportModeBanner";
+import { useThreadShareRequests } from "@/hooks/useShareRequests";
 
 interface Thread {
   id: string;
