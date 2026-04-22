@@ -165,6 +165,56 @@ export type Database = {
         }
         Relationships: []
       }
+      manuscript_share_requests: {
+        Row: {
+          created_at: string
+          granted_at: string | null
+          id: string
+          manuscript_id: string | null
+          requested_at: string
+          requested_by: string
+          revoked_at: string | null
+          status: string
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_at?: string | null
+          id?: string
+          manuscript_id?: string | null
+          requested_at?: string
+          requested_by: string
+          revoked_at?: string | null
+          status?: string
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_at?: string | null
+          id?: string
+          manuscript_id?: string | null
+          requested_at?: string
+          requested_by?: string
+          revoked_at?: string | null
+          status?: string
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manuscript_share_requests_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manuscripts: {
         Row: {
           created_at: string
@@ -388,6 +438,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_user_manuscripts: {
+        Args: { _target_user_id: string }
+        Returns: {
+          card_count: number
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          company: string
+          created_at: string
+          display_name: string
+          email: string
+          first_name: string
+          last_name: string
+          manuscript_count: number
+          tier: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       admin_set_user_tier: {
         Args: {
           _new_tier: Database["public"]["Enums"]["app_role"]
@@ -398,6 +472,10 @@ export type Database = {
       get_user_tier: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_active_share: {
+        Args: { _admin_id: string; _manuscript_id: string }
+        Returns: boolean
       }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
