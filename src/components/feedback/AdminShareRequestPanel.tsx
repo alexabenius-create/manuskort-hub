@@ -80,7 +80,7 @@ export function AdminShareRequestPanel({ threadId, threadUserId }: Props) {
 
       {active ? (
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-[12px] text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-1.5 text-[12px] text-[hsl(var(--cue-teal))]">
             <ShieldCheck className="h-3.5 w-3.5" />
             Aktiv delning
           </div>
