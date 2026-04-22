@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { HelpButton } from "@/components/HelpButton";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { SupportEditorBanner } from "@/components/SupportModeBanner";
+import { useShareRequestStatus } from "@/hooks/useShareRequests";
 import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
 import {
   TargetDurationDialog,
