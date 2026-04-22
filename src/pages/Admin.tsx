@@ -25,6 +25,7 @@ interface UserRow {
   email: string | null;
   tier: Tier;
   manuscript_count: number;
+  last_seen_at: string | null;
 }
 
 interface AdminListUserRow {
@@ -37,6 +38,23 @@ interface AdminListUserRow {
   tier: Tier;
   manuscript_count: number;
   created_at: string;
+  last_seen_at: string | null;
+}
+
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
+
+function formatLastSeen(iso: string | null, nowMs: number): { label: string; online: boolean } {
+  if (!iso) return { label: "Aldrig", online: false };
+  const t = new Date(iso).getTime();
+  const diff = nowMs - t;
+  if (diff < ONLINE_THRESHOLD_MS) return { label: "Online nu", online: true };
+  const min = Math.floor(diff / 60_000);
+  if (min < 60) return { label: `${min} min sedan`, online: false };
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return { label: `${hrs} h sedan`, online: false };
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return { label: `${days} d sedan`, online: false };
+  return { label: new Date(iso).toLocaleDateString("sv-SE"), online: false };
 }
 
 export default function Admin() {
@@ -62,6 +80,14 @@ export default function Admin() {
     }
   }, [tier, tierLoading, navigate]);
 
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick var 30:e sekund så "X min sedan" uppdateras
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.rpc("admin_list_users");
@@ -76,8 +102,9 @@ export default function Admin() {
       email: r.email,
       tier: r.tier,
       manuscript_count: Number(r.manuscript_count ?? 0),
+      last_seen_at: r.last_seen_at,
     }));
-    list.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
+    // Behåll RPC-sortering (online först, sen senast aktiv)
     setRows(list);
     setLoading(false);
   };
@@ -192,6 +219,7 @@ export default function Admin() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-b-hair">
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium">E-post</TableHead>
+                      <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[160px]">Status</TableHead>
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[120px]">Nivå</TableHead>
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[100px] text-right">Manus</TableHead>
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[180px] text-right">Åtgärd</TableHead>
@@ -201,10 +229,26 @@ export default function Admin() {
                     {filtered.map((r) => {
                       const isAdmin = r.tier === "admin";
                       const isPro = r.tier === "pro";
+                      const seen = formatLastSeen(r.last_seen_at, now);
                       return (
                         <TableRow key={r.user_id} className="border-b-hair hover:bg-surface-2/40">
                           <TableCell className="font-medium text-[14px]">
                             {r.email ?? <span className="text-muted-foreground italic">(ingen e-post)</span>}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
+                              <span
+                                className={`h-2 w-2 rounded-full ${
+                                  seen.online
+                                    ? "bg-[hsl(var(--cue-teal))] shadow-[0_0_0_3px_hsl(var(--cue-teal)/0.18)]"
+                                    : "bg-muted-foreground/40"
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <span className={seen.online ? "text-foreground font-medium" : ""}>
+                                {seen.label}
+                              </span>
+                            </span>
                           </TableCell>
                           <TableCell>
                             <span
@@ -251,7 +295,7 @@ export default function Admin() {
             </div>
 
             <p className="text-[12px] text-muted-foreground mt-4">
-              Totalt {rows.length} användare · {rows.filter((r) => r.tier === "pro").length} PRO · {rows.filter((r) => r.tier === "admin").length} admin
+              Totalt {rows.length} användare · {rows.filter((r) => r.last_seen_at && now - new Date(r.last_seen_at).getTime() < ONLINE_THRESHOLD_MS).length} online nu · {rows.filter((r) => r.tier === "pro").length} PRO · {rows.filter((r) => r.tier === "admin").length} admin
             </p>
           </TabsContent>
 
