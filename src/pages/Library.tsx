@@ -376,9 +376,12 @@ export default function Library() {
                 asChild
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8"
+                className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8 relative"
               >
-                <a href="/admin"><Shield className="h-3.5 w-3.5" /> Admin</a>
+                <a href="/admin?tab=feedback">
+                  <Shield className="h-3.5 w-3.5" /> Admin
+                  <UnreadBadge count={adminUnread} />
+                </a>
               </Button>
             )}
             <Button
