@@ -12,12 +12,18 @@ type Mode = "magic" | "password" | "signup" | "forgot";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("magic");
+  const [searchParams] = useSearchParams();
+  const initialMode: Mode = searchParams.get("mode") === "signup" ? "signup" : "magic";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [hasAffiliatePending] = useState(() => {
+    try { return !!localStorage.getItem("affiliate_pending"); } catch { return false; }
+  });
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +85,7 @@ export default function Auth() {
 
         // Navigera direkt in i biblioteket — auto-confirm är aktiverat så session finns.
         if (data.session) {
+          await registerPendingReferral();
           navigate("/bibliotek", { replace: true });
         } else {
           // Fallback: ingen session (kan hända om e-postbekräftelse är på). Försök logga in.
@@ -87,6 +94,7 @@ export default function Auth() {
             toast({ title: "Konto skapat", description: "Logga in för att fortsätta." });
             setMode("password");
           } else {
+            await registerPendingReferral();
             navigate("/bibliotek", { replace: true });
           }
         }
