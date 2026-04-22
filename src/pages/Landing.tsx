@@ -158,6 +158,7 @@ export default function Landing() {
               >
                 Priser
               </Link>
+              <FeedbackButton source="landing" withLabel className="!justify-start !h-11 !px-3 !rounded-xl !text-[15px] !text-foreground" />
               {!session && (
                 <Link
                   to="/auth"
