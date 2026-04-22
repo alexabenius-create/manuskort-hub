@@ -1,65 +1,111 @@
 
-Mål: göra mobil-v2 stabil även efter upprepade rotationer mellan porträtt och landskap, så att presentationen inte faller tillbaka till v1 på riktiga telefoner.
 
-1. Byt ut mobil-detektorn i presentationsflödet
-- Sluta låta mobil-v2 bero enbart på `window.innerWidth < 768` via `useIsMobile()`.
-- Inför en mer robust mobilbedömning för presentationsläget som prioriterar verklig handhållen enhet:
-  - `navigator.maxTouchPoints > 0`
-  - mobil/tablet user agent som fallback
-  - gärna `matchMedia("(pointer: coarse)")`
-- Låt denna signal vara stabil över rotationer, så att en iPhone i landskap fortfarande räknas som mobil även om viewport-bredden blir större än 768 px.
+# Feedback & meddelanden — plan
 
-2. Separera “är mobil enhet” från “är smal viewport”
-- Behåll gärna nuvarande `useIsMobile()` för vanliga responsiva layoutbeslut i andra delar av appen.
-- I `src/pages/Presentation.tsx`, använd en ny signal för presentationsrouting, t.ex.:
-  - `isHandheldPresentationDevice`
-  - `useMobilePresentationUI`
-- Sätt mobil-v2 till:
-  - handhållen enhet
-  - presentation aktiv
-  - `viewMode === "cards"`
+Bygger ett tvåvägs meddelandesystem mellan användare och admin: feedback-formulär på landningssida, bibliotek och redigeringsläge → "Mina meddelanden" för användaren → svarsfunktion i Admin-panelen → röd notis-badge med antal olästa.
 
-3. Sluta remounta hela presentationscontainern på varje orienteringsbyte
-- Ta bort eller justera `key={isMobile ? orientation : "desktop"}` på root-containern i `Presentation.tsx`.
-- Den nyckeln tvingar ommontering vid rotation och gör fallback-beteendet mer känsligt.
-- Overlayn för rotation ska styras av state, inte av att hela trädet remountas.
+## 1. Databas
 
-4. Låt rotations-overlayn använda den nya mobilsignalen
-- Uppdatera `showRotateOverlay` så att den baseras på den robusta handhållen-signalen istället för den gamla breddbaserade.
-- Då visas overlay direkt i porträtt även om viewporten beter sig konstigt efter flera rotationer.
+Två nya tabeller (skapas via migration):
 
-5. Begränsa följdeffekter i presentationens hjälplogik
-- Gå igenom effekter som idag beror på `isMobile` i `Presentation.tsx`:
-  - auto-hide för X
-  - iOS URL-bar-tricket
-  - pointermove-reset
-  - fullscreen exit-logik
-- Byt dem till samma stabila presentationssignal så att beteendet inte hoppar mellan mobil/desktop under rotation.
+**`feedback_threads`** — en tråd per inskickad feedback
+- `id` uuid PK
+- `user_id` uuid (nullable — landningssida kan vara anonym om utloggad)
+- `email` text (för anonyma trådar)
+- `subject` text
+- `source` text (`landing` | `library` | `editor`)
+- `manuscript_id` uuid nullable (om från editor)
+- `status` text (`open` | `closed`) default `open`
+- `created_at`, `updated_at` timestamptz
 
-6. Teknisk detalj för implementation
-- Mest sannolik fix:
-  - skapa en liten hook, t.ex. `useIsHandheldDevice()` eller `usePresentationDeviceMode()`
-  - använd den endast där upplevelsen ska följa fysisk enhet, inte CSS-bredd
-- Exempel på logik:
-```text
-handheld = coarse pointer OR touch points OR mobile/tablet UA
-useMobileV2 = handheld && !menuOpen && viewMode === "cards"
-showRotateOverlay = handheld && !menuOpen && orientation === "portrait"
-```
+**`feedback_messages`** — varje meddelande i en tråd
+- `id` uuid PK
+- `thread_id` uuid → feedback_threads
+- `sender_role` text (`user` | `admin`)
+- `sender_user_id` uuid nullable
+- `body` text
+- `read_by_user` boolean default false
+- `read_by_admin` boolean default false
+- `created_at` timestamptz
 
-7. Verifiering efter implementation
-- Start i porträtt på telefon: overlay syns direkt.
-- Rotera till landskap: overlay försvinner, mobil-v2 ligger kvar.
-- Rotera tillbaka till porträtt: overlay kommer tillbaka.
-- Upprepa 5–10 gånger: appen får aldrig falla tillbaka till v1.
-- Verifiera även att swipe, first-run-hint och footer/topbar i mobil-v2 fortfarande fungerar.
+**RLS-policyer:**
+- Användare: SELECT/INSERT på egna trådar och deras meddelanden (matchat på `user_id`).
+- Anonym INSERT tillåten på `feedback_threads` + `feedback_messages` från landningssida (med rate-limit-tanke).
+- Admin (via `has_role(auth.uid(), 'admin')`): SELECT/UPDATE/INSERT på allt.
 
-Tekniska filer att ändra
-- `src/pages/Presentation.tsx`
-- `src/hooks/use-mobile.tsx` eller ny hook bredvid den, beroende på om vi vill hålla nuvarande hook orörd
-- Eventuellt små justeringar i komponenter som idag läser `useIsMobile()` men som i presentationsläge bör följa fysisk enhet istället för viewportbredd
+## 2. UI — Feedback-formulär (användare)
 
-Förväntad rotorsak
-- Felet verkar ligga i att `useMobileV2` idag bygger på `useIsMobile()`, som bara använder `window.innerWidth < 768`.
-- På riktiga telefoner i landskap kan bredden passera 768 px, särskilt efter flera rotationer / browser chrome-förändringar.
-- Då blir `isMobile = false`, och routingen faller tillbaka till v1 trots att användaren fortfarande är på en telefon.
+**Komponent:** `src/components/feedback/FeedbackDialog.tsx`
+- Dialog med fält: ämne (kort), meddelande (textarea, max 2000 tecken), e-post (om utloggad).
+- Validering med zod.
+- Skickar in tråd + första meddelandet i en transaktion.
+- Bekräftelse-toast: "Tack! Vi svarar på Mina meddelanden."
+
+**Trigger-knapp:** `src/components/feedback/FeedbackButton.tsx` — liten "Feedback"-knapp (MessageSquare-ikon) som öppnar dialogen. Placeras:
+- **Landing** (`src/pages/Landing.tsx`): i topbar bredvid "Logga in/Priser".
+- **Library** (`src/pages/Library.tsx`): i topbar nära `HelpButton`.
+- **EditorV3** (`src/pages/EditorV3.tsx`): i topbar nära `HelpButton`.
+- **EJ** i Presentation/Print/Mobile-presentation.
+- I `MobileNavSheet` på landing/library: en länk "Skicka feedback".
+
+`source` sätts automatiskt utifrån var dialogen öppnas. På editor skickas `manuscript_id` med.
+
+## 3. UI — Mina meddelanden (användare)
+
+**Ny sida:** `src/pages/Messages.tsx` på route `/meddelanden` (RequireAuth).
+- Lista av användarens trådar (senaste först), visar ämne, källa, datum, badge "Nytt svar" om `read_by_user = false` på admin-meddelanden.
+- Klick öppnar tråd-vy: chronologisk konversation, möjlighet att skriva uppföljningsmeddelande till samma tråd.
+- När tråden öppnas → markerar admin-meddelanden som lästa (`read_by_user = true`).
+
+**Notis-badge:** Liten röd cirkel med antal olästa admin-svar bredvid användar-menyn i Library + Editor + i `MobileNavSheet`. 
+- Hook: `src/hooks/useUnreadMessages.tsx` — räknar `read_by_user = false AND sender_role = 'admin'` för aktuell user, med Supabase Realtime-subscription för live-uppdatering.
+
+**Länk till sidan:** Lägg till "Mina meddelanden" i:
+- Library topbar (ikon med badge).
+- DropdownMenu i Library + Settings-länkar.
+- `MobileNavSheet`.
+
+## 4. UI — Admin-panel
+
+**Utökar `src/pages/Admin.tsx`:**
+- Ny tabbar (Tabs): "Användare" (befintlig) + "Feedback".
+- **Feedback-tabben:**
+  - Lista över alla trådar, sortering: olästa (admin) först, sedan datum.
+  - Filter: alla / öppna / stängda, sökning på ämne/e-post.
+  - Badge med antal olästa visas i tab-rubriken och i topbarens "Admin"-länk.
+  - Klick → tråd-detalj (modal eller expanderad rad): visar konversation, formulär för svar, knapp "Stäng tråd".
+  - När admin öppnar tråd → markerar user-meddelanden som lästa (`read_by_admin = true`).
+  - Admin-svar sparas som nytt `feedback_messages` med `sender_role = 'admin'`.
+
+**Notis-badge för admin:** I admin-länken i Library topbar (Shield-ikon) — liten röd siffra om olästa user-meddelanden finns.
+
+## 5. Routing & navigering
+
+- Ny route i `App.tsx`: `/meddelanden` → `<RequireAuth><Messages /></RequireAuth>` (lazy).
+- Admin-flikar drivs av URL-param `?tab=feedback`.
+
+## Tekniska detaljer
+
+- **Realtime:** Aktivera realtime på `feedback_messages` så badges + tråd-vyer uppdateras live (`ALTER PUBLICATION supabase_realtime ADD TABLE public.feedback_messages;`).
+- **Validering:** zod-scheman både på klient och i edge function.
+- **Rate-limit för anonym feedback:** enkel kontroll i RLS-policy att max N rader per IP/email per timme — eller skippas i v1 och läggs till om missbruk uppstår.
+- **Stil:** följer befintlig design (rounded-2xl, shadow-card, accent-blue, font-display) — matchar Settings/Admin-mönster.
+- **Notis-badge:** röd `bg-destructive` cirkel, 16x16, vit text 10px, position: absolut top-right på ikonen.
+- **Inga filändringar** i Presentation, PrintView, MobilePresentation.
+
+## Filer som skapas
+
+- `supabase/migrations/<timestamp>_feedback_system.sql`
+- `src/components/feedback/FeedbackDialog.tsx`
+- `src/components/feedback/FeedbackButton.tsx`
+- `src/components/feedback/UnreadBadge.tsx`
+- `src/hooks/useUnreadMessages.tsx`
+- `src/pages/Messages.tsx`
+
+## Filer som ändras
+
+- `src/App.tsx` (route)
+- `src/pages/Landing.tsx`, `src/pages/Library.tsx`, `src/pages/EditorV3.tsx` (feedback-knapp + meddelanden-länk)
+- `src/pages/Admin.tsx` (Tabs + feedback-vy)
+- `src/components/MobileNavSheet.tsx`-användning på landing/library (lägga till länkar)
+
