@@ -1,4 +1,4 @@
-import { Triangle, ZoomIn, ZoomOut, Pause, Play } from "lucide-react";
+import { Triangle, ZoomIn, ZoomOut, Pause, Play, RotateCcw } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +31,10 @@ interface Props {
   onPauseToggle?: () => void;
   countdownActive?: boolean;
   showZoomButtons?: boolean;
+  // Per-kort timer-kontroller
+  isCardPaused?: boolean;
+  onCardPauseToggle?: () => void;
+  onCardReset?: () => void;
 }
 
 const SIZE_MIN = -2;
@@ -73,6 +77,9 @@ export function PresentationFooter({
   onPauseToggle,
   countdownActive = false,
   showZoomButtons = true,
+  isCardPaused = false,
+  onCardPauseToggle,
+  onCardReset,
 }: Props) {
   const isMobile = useIsMobile();
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
@@ -203,67 +210,99 @@ export function PresentationFooter({
     );
   }
 
-  // ===== DESKTOP: oförändrad layout =====
+  // ===== DESKTOP: tre-kolumns layout med stabilt centerblock =====
   return (
     <footer
-      className={`absolute bottom-0 inset-x-0 z-20 px-10 pointer-events-none transition-all duration-300 ${
-        visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0"
-      }`}
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)" }}
+      className="absolute bottom-0 inset-x-0 z-20 px-10 pointer-events-none"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
     >
-      <div className="max-w-5xl mx-auto grid grid-cols-3 items-center gap-4">
-        <div className="flex items-center gap-1.5 pointer-events-auto justify-self-start">
+      <div className="w-full max-w-7xl mx-auto grid grid-cols-[1fr_auto_1fr] items-end gap-8">
+        {/* VÄNSTER: zoom-knappar */}
+        <div className="flex items-center gap-1.5 pointer-events-auto justify-self-start pb-1">
           <button
             onClick={() => onSizeChange(Math.max(SIZE_MIN, sizeOffset - 1))}
             disabled={sizeOffset <= SIZE_MIN}
-            className="p-2.5 rounded-xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            className="p-2.5 rounded-xl bg-zinc-900/80 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             aria-label="Mindre text"
+            title="Mindre text"
           >
             <ZoomOut className="h-5 w-5" />
           </button>
           <button
             onClick={() => onSizeChange(Math.min(SIZE_MAX, sizeOffset + 1))}
             disabled={sizeOffset >= SIZE_MAX}
-            className="p-2.5 rounded-xl bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            className="p-2.5 rounded-xl bg-zinc-900/80 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             aria-label="Större text"
+            title="Större text"
           >
             <ZoomIn className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3 justify-self-center pointer-events-none">
-          {rawIsOver && !isOverdueDismissed && (
-            <button
-              onClick={onDismissOverdue}
-              className="pointer-events-auto inline-flex items-center px-4 py-2.5 rounded-xl bg-red-950/50 hover:bg-red-900/60 text-red-200 hover:text-red-100 border border-red-700/40 transition-colors text-[14px] font-medium"
-              aria-label="Stäng av övertidsvarningen för detta kort"
-              title="Stäng av övertidsvarningen för detta kort"
-            >
-              Stäng av övertidsvarningen
-            </button>
-          )}
-          <div className="flex flex-col items-center gap-2">
-            <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor}`}>
-              {formatMmSs(cardElapsed)}
-              {planned && (
-                <span className="text-zinc-600">
-                  {" / "}
-                  <span className="text-zinc-400">{formatMmSs(planned)}</span>
-                </span>
-              )}
-            </div>
+        {/* MITTEN: per-kort timer-block (stabil höjd) */}
+        <div className="flex flex-col items-center gap-1.5 justify-self-center pointer-events-none">
+          {/* Liten kontrollrad: pause + reset (alltid renderad så layouten inte hoppar) */}
+          <div className="flex items-center gap-1 pointer-events-auto h-7">
+            {onCardPauseToggle && (
+              <button
+                onClick={onCardPauseToggle}
+                className="p-1.5 rounded-lg bg-zinc-900/70 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                aria-label={isCardPaused ? "Återuppta kort-timer" : "Pausa kort-timer"}
+                title={isCardPaused ? "Återuppta kort-timer" : "Pausa kort-timer"}
+              >
+                {isCardPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            {onCardReset && (
+              <button
+                onClick={onCardReset}
+                className="p-1.5 rounded-lg bg-zinc-900/70 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                aria-label="Nollställ kort-timer"
+                title="Nollställ kort-timer"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Tid-siffrorna */}
+          <div className={`font-mono text-[28px] tabular-nums leading-none ${timeColor} ${isCardPaused ? "opacity-60" : ""}`}>
+            {formatMmSs(cardElapsed)}
             {planned && (
-              <div className="h-1.5 w-[200px] rounded-full bg-zinc-800 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
+              <span className="text-zinc-600">
+                {" / "}
+                <span className="text-zinc-400">{formatMmSs(planned)}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Progress-bar (alltid samma yta även när planned saknas) */}
+          <div className="h-1.5 w-[220px] rounded-full bg-zinc-800/70 overflow-hidden">
+            {planned && (
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${barColor} ${isOver ? "animate-pulse" : ""}`}
+                style={{ width: `${percent}%` }}
+              />
+            )}
+          </div>
+
+          {/* Reserverad rad för "stäng av övertidsvarningen" — höjd alltid avsatt */}
+          <div className="h-7 flex items-center pointer-events-auto">
+            {rawIsOver && !isOverdueDismissed && (
+              <button
+                onClick={onDismissOverdue}
+                className="inline-flex items-center px-3 py-1 rounded-full bg-red-950/60 hover:bg-red-900/70 text-red-200 hover:text-red-100 border border-red-800/50 transition-colors text-[11px] font-mono uppercase tracking-wider"
+                aria-label="Stäng av övertidsvarningen för detta kort"
+                title="Stäng av övertidsvarningen för detta kort"
+              >
+                Stäng av övertidsvarningen
+              </button>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 justify-self-end">
+        {/* HÖGER: kort-räknare + nästa-info + panik */}
+        <div className="flex items-center gap-3 justify-self-end pb-1">
           <div className="flex flex-col items-end pointer-events-none">
             <span className="font-mono text-[18px] text-zinc-200 tabular-nums leading-none">
               {String(index + 1).padStart(2, "0")}
