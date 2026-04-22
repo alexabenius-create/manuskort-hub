@@ -219,6 +219,7 @@ export default function Admin() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-b-hair">
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium">E-post</TableHead>
+                      <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[160px]">Status</TableHead>
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[120px]">Nivå</TableHead>
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[100px] text-right">Manus</TableHead>
                       <TableHead className="text-[12px] uppercase tracking-wide text-muted-foreground font-medium w-[180px] text-right">Åtgärd</TableHead>
@@ -228,10 +229,26 @@ export default function Admin() {
                     {filtered.map((r) => {
                       const isAdmin = r.tier === "admin";
                       const isPro = r.tier === "pro";
+                      const seen = formatLastSeen(r.last_seen_at, now);
                       return (
                         <TableRow key={r.user_id} className="border-b-hair hover:bg-surface-2/40">
                           <TableCell className="font-medium text-[14px]">
                             {r.email ?? <span className="text-muted-foreground italic">(ingen e-post)</span>}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
+                              <span
+                                className={`h-2 w-2 rounded-full ${
+                                  seen.online
+                                    ? "bg-[hsl(var(--cue-teal))] shadow-[0_0_0_3px_hsl(var(--cue-teal)/0.18)]"
+                                    : "bg-muted-foreground/40"
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <span className={seen.online ? "text-foreground font-medium" : ""}>
+                                {seen.label}
+                              </span>
+                            </span>
                           </TableCell>
                           <TableCell>
                             <span
