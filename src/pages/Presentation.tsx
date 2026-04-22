@@ -486,7 +486,7 @@ export default function Presentation() {
     <>
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
-      className="fixed inset-0 bg-zinc-800 text-zinc-100 overflow-hidden flex flex-col"
+      className="fixed inset-0 bg-[#0a0a0c] text-zinc-100 overflow-hidden flex flex-col"
       style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
       onTouchStart={useMobileV2 ? undefined : onTouchStart}
       onTouchEnd={useMobileV2 ? undefined : onTouchEnd}
@@ -641,6 +641,9 @@ export default function Presentation() {
           onPauseToggle={timer.togglePause}
           countdownActive={timer.countdown > 0}
           showZoomButtons={xVisible}
+          isCardPaused={cardTimers.isCardPaused}
+          onCardPauseToggle={cardTimers.toggleCardPause}
+          onCardReset={cardTimers.resetCardElapsed}
         />
       )}
         </>
