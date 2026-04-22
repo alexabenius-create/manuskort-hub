@@ -13,12 +13,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Search, Sparkles, MessageSquare } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, MessageSquare, Eye } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TIER_LABEL, type Tier } from "@/lib/tierLimits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
 import { useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
+import { VisitsPanel } from "@/components/admin/VisitsPanel";
 
 interface UserRow {
   user_id: string;
@@ -66,10 +67,13 @@ export default function Admin() {
   const [q, setQ] = useState("");
   const [pending, setPending] = useState<{ row: UserRow; newTier: Tier } | null>(null);
   const [working, setWorking] = useState(false);
-  const [tab, setTab] = useState<"users" | "feedback">(() => {
+  const [tab, setTab] = useState<"users" | "feedback" | "visits">(() => {
     if (typeof window === "undefined") return "users";
     const params = new URLSearchParams(window.location.search);
-    return params.get("tab") === "feedback" ? "feedback" : "users";
+    const t = params.get("tab");
+    if (t === "feedback") return "feedback";
+    if (t === "visits") return "visits";
+    return "users";
   });
   const adminUnread = useAdminUnreadMessages(tier === "admin");
 
@@ -169,10 +173,10 @@ export default function Admin() {
         <Tabs
           value={tab}
           onValueChange={(v) => {
-            setTab(v as "users" | "feedback");
+            setTab(v as "users" | "feedback" | "visits");
             const url = new URL(window.location.href);
-            if (v === "feedback") url.searchParams.set("tab", "feedback");
-            else url.searchParams.delete("tab");
+            if (v === "users") url.searchParams.delete("tab");
+            else url.searchParams.set("tab", v);
             window.history.replaceState({}, "", url.toString());
           }}
         >
@@ -188,6 +192,10 @@ export default function Admin() {
                   {adminUnread}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="visits" className="rounded-full px-5 text-[14px] data-[state=active]:bg-background gap-2">
+              <Eye className="h-3.5 w-3.5" />
+              Besök
             </TabsTrigger>
           </TabsList>
 
@@ -307,6 +315,16 @@ export default function Admin() {
               </p>
             </div>
             <FeedbackAdminPanel />
+          </TabsContent>
+
+          <TabsContent value="visits">
+            <div className="mb-8">
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">Besök</h2>
+              <p className="text-muted-foreground text-[15px] mt-2">
+                Anonym logg av besök på landningssidan. Notiser skickas till Telegram (max 1/dygn per besökare).
+              </p>
+            </div>
+            <VisitsPanel />
           </TabsContent>
         </Tabs>
       </main>
