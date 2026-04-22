@@ -452,6 +452,18 @@ export default function Library() {
               >
                 <SettingsIcon className="h-4 w-4" /> Inställningar
               </a>
+              <a
+                href="/meddelanden"
+                className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-foreground hover:bg-surface-2 transition-colors relative"
+              >
+                <Inbox className="h-4 w-4" /> Mina meddelanden
+                {unreadMessages > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    {unreadMessages}
+                  </span>
+                )}
+              </a>
+              <FeedbackButton source="library" withLabel className="!justify-start !h-11 !px-3 !rounded-xl !text-[15px] !text-foreground" />
               <button
                 type="button"
                 onClick={signOut}
