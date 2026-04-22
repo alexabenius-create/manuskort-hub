@@ -357,6 +357,7 @@ export default function Settings() {
         onOpenChange={setDeleteOpen}
         isPro={isPro}
       />
+      <AffiliatePromoModal />
     </div>
   );
 }
