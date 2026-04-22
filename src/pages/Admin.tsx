@@ -13,9 +13,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TIER_LABEL, type Tier } from "@/lib/tierLimits";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
+import { useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
 
 interface UserRow {
   user_id: string;
