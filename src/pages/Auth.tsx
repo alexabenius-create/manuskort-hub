@@ -71,7 +71,24 @@ export default function Auth() {
             .eq("user_id", userId);
         }
 
-        toast({ title: "Konto skapat", description: "Verifiera din e-post om det krävs, sen är du inne." });
+        // Markera att välkomstpopup ska visas i biblioteket innan rundturen startar.
+        try {
+          sessionStorage.setItem("mk:welcome-pending", email);
+        } catch { /* ignore */ }
+
+        // Navigera direkt in i biblioteket — auto-confirm är aktiverat så session finns.
+        if (data.session) {
+          navigate("/bibliotek", { replace: true });
+        } else {
+          // Fallback: ingen session (kan hända om e-postbekräftelse är på). Försök logga in.
+          const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInErr) {
+            toast({ title: "Konto skapat", description: "Logga in för att fortsätta." });
+            setMode("password");
+          } else {
+            navigate("/bibliotek", { replace: true });
+          }
+        }
       }
     } catch (err: any) {
       toast({ title: "Något gick fel", description: err?.message ?? String(err), variant: "destructive" });
