@@ -154,6 +154,8 @@ export default function Messages() {
     <div className="min-h-screen">
       <SEO title="Mina meddelanden – Manuskort" noindex nofollow />
 
+      <OwnerSupportBanner />
+
       <header className="topbar-blur sticky top-0 z-50 border-b-hair px-6 sm:px-10 h-14 flex items-center gap-4">
         <Button
           variant="ghost"
