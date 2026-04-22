@@ -390,6 +390,18 @@ export default function Library() {
               <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> Inställningar</a>
             </Button>
             <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 h-8 relative"
+            >
+              <a href="/meddelanden" aria-label="Mina meddelanden">
+                <Inbox className="h-3.5 w-3.5" /> Meddelanden
+                <UnreadBadge count={unreadMessages} />
+              </a>
+            </Button>
+            <FeedbackButton source="library" withLabel />
+            <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
