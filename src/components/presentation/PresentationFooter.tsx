@@ -1,4 +1,4 @@
-import { Triangle, ZoomIn, ZoomOut, Pause, Play } from "lucide-react";
+import { Triangle, ZoomIn, ZoomOut, Pause, Play, RotateCcw } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { parseTime } from "@/lib/timeChain";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +31,10 @@ interface Props {
   onPauseToggle?: () => void;
   countdownActive?: boolean;
   showZoomButtons?: boolean;
+  // Per-kort timer-kontroller
+  isCardPaused?: boolean;
+  onCardPauseToggle?: () => void;
+  onCardReset?: () => void;
 }
 
 const SIZE_MIN = -2;
@@ -73,6 +77,9 @@ export function PresentationFooter({
   onPauseToggle,
   countdownActive = false,
   showZoomButtons = true,
+  isCardPaused = false,
+  onCardPauseToggle,
+  onCardReset,
 }: Props) {
   const isMobile = useIsMobile();
   const planned = cardTargetSeconds ?? fallbackPlannedSeconds(current, timeFormat);
