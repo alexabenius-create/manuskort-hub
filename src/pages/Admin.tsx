@@ -25,6 +25,7 @@ interface UserRow {
   email: string | null;
   tier: Tier;
   manuscript_count: number;
+  last_seen_at: string | null;
 }
 
 interface AdminListUserRow {
@@ -37,6 +38,23 @@ interface AdminListUserRow {
   tier: Tier;
   manuscript_count: number;
   created_at: string;
+  last_seen_at: string | null;
+}
+
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
+
+function formatLastSeen(iso: string | null, nowMs: number): { label: string; online: boolean } {
+  if (!iso) return { label: "Aldrig", online: false };
+  const t = new Date(iso).getTime();
+  const diff = nowMs - t;
+  if (diff < ONLINE_THRESHOLD_MS) return { label: "Online nu", online: true };
+  const min = Math.floor(diff / 60_000);
+  if (min < 60) return { label: `${min} min sedan`, online: false };
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return { label: `${hrs} h sedan`, online: false };
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return { label: `${days} d sedan`, online: false };
+  return { label: new Date(iso).toLocaleDateString("sv-SE"), online: false };
 }
 
 export default function Admin() {
