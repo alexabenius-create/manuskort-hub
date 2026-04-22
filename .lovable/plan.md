@@ -1,78 +1,38 @@
 
 
-# Telegram-notiser vid besök på landningssidan
+## Spår av Lovable som besökare kan se
 
-## 1. Telegram-koppling
-Du behöver koppla en Telegram-bot via Lovable's connector. Jag triggar dialogen så du kan skapa botten via @BotFather och välja vilken chatt notiserna ska gå till.
+Jag scannade igenom hela kodbasen. Lovable-badgen är redan dold på publicerade deployer. Det finns dock fyra synliga spår kvar:
 
-## 2. Databas
+### 1. PaymentTestModeBanner — länk till `docs.lovable.dev`
+`src/components/PaymentTestModeBanner.tsx` länkar "Läs mer" till `https://docs.lovable.dev/features/payments`. Bannern visas bara i testläge (preview), men om en besökare öppnar preview-URL:en ser de länken.
+**Åtgärd:** Ta bort länken (behåll bara texten "Alla betalningar i preview körs i testläge.").
 
-**Ny tabell `site_visits`** — anonym besökslogg.
-- `id uuid PK`
-- `path text` — alltid `/` i denna första version
-- `ip_hash text` — SHA-256 av IP (anonymiserat, för throttling)
-- `country text nullable` — från Cloudflare/edge-headers om tillgängligt
-- `referrer text nullable`
-- `user_agent text nullable`
-- `notified boolean default false`
-- `created_at timestamptz default now()`
+### 2. README.md
+Innehåller "Welcome to your Lovable project". Syns bara om repot delas publikt — men säkrast att städa.
+**Åtgärd:** Ersätt med en neutral projekt-README ("# Manuskort").
 
-Index på `(ip_hash, created_at DESC)` för snabb dygns-throttling-kontroll.
+### 3. PWA-manifest använder `/placeholder.svg` som ikon
+`public/manifest.webmanifest` pekar på Lovables platshållar-SVG. När någon installerar appen till hemskärmen får de fel ikon.
+**Åtgärd:** Byt till `/favicon.png` (din nya logotyp).
 
-**RLS:** Endast admin kan SELECT. INSERT görs via service role från edge function (ingen INSERT-policy → klienten kan inte skriva direkt).
+### 4. Preview-värdens URL
+`https://manuskort-hub.lovable.app` (publicerad URL) och preview-URL:en avslöjar Lovable. Lösning: använd alltid `manuskort.se` / `manuskort.com` publikt och dela aldrig `*.lovable.app`-länkar. Ingen kodändring behövs — bara en vana.
 
-## 3. Edge function `track-visit` (verify_jwt=false)
+---
 
-Anropas från `Landing.tsx` vid mount.
+### Inte synligt för besökare (kan ignoreras)
+- `vite.config.ts` + `package.json` → `lovable-tagger`. Körs bara i dev-läge, inte i production-bundlen.
+- `supabase/functions/payments-webhook/index.ts` → läser `lovable_external_id` från Stripe-metadata. Server-side, osynligt.
+- `src/pages/Landing.tsx` → kollar `lovableproject.com` i hostname för att skippa visit-tracking i preview. Osynligt för besökare.
+- `.lovable/` mapp → lokalt minne, inte deployat.
+- `tsconfig.node.tsbuildinfo`, lockfiler → inte deployat.
 
-Logik:
-1. Läs IP från `x-forwarded-for` / `cf-connecting-ip`, hasha med SHA-256 + salt.
-2. Slå upp `site_visits` där `ip_hash = ?` och `created_at > now() - interval '1 day'`.
-3. Spara alltid raden (för dashboard-statistik).
-4. Om ingen tidigare träff inom 24h → skicka Telegram-notis via connector gateway:
+---
 
-> 🔔 **Nytt besök på manuskort.se**
-> 🌍 Sverige · 📱 Safari iOS
-> 🔗 Från: google.com
-> 🕐 22 apr 14:32
+### Plan (när du godkänner växlar jag till edit-läge)
 
-5. Markera raden `notified=true`.
-
-Bot-egna besök filtreras bort via UA-check (`bot|crawler|spider|preview|lighthouse`).
-
-## 4. Frontend
-
-**`Landing.tsx`** — `useEffect` vid mount kallar `supabase.functions.invoke("track-visit", { body: { referrer: document.referrer } })`. Fire-and-forget, ingen UI-påverkan.
-
-**Filtrering klient:**
-- Skippa om `localStorage["mk_is_owner"] === "1"` (sätts automatiskt när din admin-användare öppnar landingen → så du inte triggar notiser på dig själv).
-- Skippa om `navigator.webdriver` (preview/Lovable iframe).
-- Skippa om host innehåller `lovableproject.com` eller `id-preview` (preview-miljöer).
-
-## 5. Admin-dashboard
-
-Ny flik **"Besök"** i `/admin` bredvid Feedback/Användare:
-- Räknare: "Idag · Senaste 7 dagar · Totalt"
-- Tabell: tid, land, referrer, user-agent (förkortad), unik (ny IP) eller återbesök
-- Sortering: senaste först
-- Auto-refresh var 30 sekund
-
-## 6. Filer
-
-**Skapas:**
-- `supabase/migrations/<ts>_site_visits.sql`
-- `supabase/functions/track-visit/index.ts`
-- `src/components/admin/VisitsPanel.tsx`
-
-**Ändras:**
-- `src/pages/Landing.tsx` — lägg till tracking-anrop
-- `src/pages/Admin.tsx` — ny tabb
-- `supabase/config.toml` — `[functions.track-visit] verify_jwt = false`
-
-## 7. Verifiering
-1. Koppla Telegram-bot → välj chatt-ID.
-2. Öppna `/` i incognito → notis i Telegram inom 1–2 sekunder.
-3. Ladda om `/` → ingen ny notis (samma IP < 24h).
-4. Admin → flik "Besök" visar raden.
-5. Annan IP / nästa dag → ny notis.
+1. Ta bort docs.lovable.dev-länken i `src/components/PaymentTestModeBanner.tsx`.
+2. Skriv om `README.md` till en neutral Manuskort-README.
+3. Uppdatera `public/manifest.webmanifest` så `icons.src` pekar på `/favicon.png` med rätt `type` (`image/png`).
 
