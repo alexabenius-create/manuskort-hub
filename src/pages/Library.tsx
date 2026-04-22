@@ -42,6 +42,7 @@ export default function Library() {
   const { tier } = useTier();
   const limits = LIMITS[tier];
   const navigate = useNavigate();
+  const unreadMessages = useUnreadMessages();
   const [items, setItems] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
