@@ -18,6 +18,7 @@ import {
   type OwnTurnKind,
 } from "@/components/debate/TurnCardOwn";
 import { PhaseCard } from "@/components/debate/PhaseCard";
+import { RoleSelectorDialog } from "@/components/debate/RoleSelectorDialog";
 import {
   computePhase,
   nextReplierLabel,
@@ -78,6 +79,8 @@ export default function DebattBuddyThread() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<DraftState>({ kind: "none" });
   const [waiving, setWaiving] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [roleAutoOpened, setRoleAutoOpened] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!threadId) return;
@@ -108,6 +111,14 @@ export default function DebattBuddyThread() {
   useEffect(() => {
     if (user) fetchAll();
   }, [user, fetchAll]);
+
+  // Auto-öppna roll-dialog en gång när tråden är tom (rollen kan väljas om/ändras när som helst)
+  useEffect(() => {
+    if (!loading && thread && turns.length === 0 && !roleAutoOpened) {
+      setRoleDialogOpen(true);
+      setRoleAutoOpened(true);
+    }
+  }, [loading, thread, turns.length, roleAutoOpened]);
 
   const phaseTurns: PhaseTurn[] = useMemo(
     () =>
@@ -247,8 +258,21 @@ export default function DebattBuddyThread() {
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-6 pb-32">
         <ThreadHeader
           thread={thread}
-          showRoleSelector={turns.length === 0}
+          onEditRole={() => setRoleDialogOpen(true)}
           onChanged={(patch) => setThread({ ...thread, ...patch })}
+        />
+
+        <RoleSelectorDialog
+          open={roleDialogOpen}
+          onOpenChange={setRoleDialogOpen}
+          value={thread.user_role}
+          onChange={async (role) => {
+            const { error } = await supabase
+              .from("debate_threads")
+              .update({ user_role: role })
+              .eq("id", thread.id);
+            if (!error) setThread({ ...thread, user_role: role });
+          }}
         />
 
         {turns.length > 0 && (
