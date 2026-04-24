@@ -9,43 +9,49 @@ import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
 import { usePresence } from "@/hooks/usePresence";
-import Landing from "./pages/Landing";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
-const LandingV2 = lazy(() => import("./pages/LandingV2"));
+// V2 är default sedan 2026-04-24. v1-sidor ligger kvar som alias (-v1-suffix saknas;
+// gamla filer behålls 1-2 veckor som backup innan radering enligt cutover-plan.)
+const Landing = lazy(() => import("./pages/LandingV2"));
+const Auth = lazy(() => import("./pages/AuthV2"));
+const ResetPassword = lazy(() => import("./pages/ResetPasswordV2"));
+const Library = lazy(() => import("./pages/LibraryV2"));
+const Editor = lazy(() => import("./pages/EditorV4"));
+const Settings = lazy(() => import("./pages/SettingsV2"));
+const Import = lazy(() => import("./pages/ImportV2"));
+const Pricing = lazy(() => import("./pages/PricingV2"));
+const Admin = lazy(() => import("./pages/AdminV2"));
+const Messages = lazy(() => import("./pages/MessagesV2"));
+const Moderator = lazy(() => import("./pages/usecase/ModeratorV2"));
+const Talare = lazy(() => import("./pages/usecase/TalareV2"));
+const Panelsamtal = lazy(() => import("./pages/usecase/PanelsamtalV2"));
+const Forelasning = lazy(() => import("./pages/usecase/ForelasningV2"));
+const AffiliateLanding = lazy(() => import("./pages/AffiliateLandingV2"));
 
-// Lazy-load tunga / sällan besökta sidor → mindre initial bundle
-const Library = lazy(() => import("./pages/Library"));
-const LibraryV2 = lazy(() => import("./pages/LibraryV2"));
-const EditorV3 = lazy(() => import("./pages/EditorV3"));
-const EditorV4 = lazy(() => import("./pages/EditorV4"));
+// Alias-routes (-v2-suffix) renderar samma V2-komponenter — behålls tills v1-filer raderas.
+const LandingV2 = Landing;
+const AuthV2 = Auth;
+const ResetPasswordV2 = ResetPassword;
+const LibraryV2 = Library;
+const SettingsV2 = Settings;
+const ImportV2 = Import;
+const PricingV2 = Pricing;
+const AdminV2 = Admin;
+const MessagesV2 = Messages;
+const ModeratorV2 = Moderator;
+const TalareV2 = Talare;
+const PanelsamtalV2 = Panelsamtal;
+const ForelasningV2 = Forelasning;
+const AffiliateLandingV2 = AffiliateLanding;
+
+// Specialvyer — egen estetik, behåller v1.
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PrintView = lazy(() => import("./components/print/PrintView"));
-const Settings = lazy(() => import("./pages/Settings"));
-const SettingsV2 = lazy(() => import("./pages/SettingsV2"));
-const Import = lazy(() => import("./pages/Import"));
-const ImportV2 = lazy(() => import("./pages/ImportV2"));
-const Pricing = lazy(() => import("./pages/Pricing"));
-const PricingV2 = lazy(() => import("./pages/PricingV2"));
-const Admin = lazy(() => import("./pages/Admin"));
-const AdminV2 = lazy(() => import("./pages/AdminV2"));
-const Messages = lazy(() => import("./pages/Messages"));
-const MessagesV2 = lazy(() => import("./pages/MessagesV2"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
-const Moderator = lazy(() => import("./pages/usecase/Moderator"));
-const ModeratorV2 = lazy(() => import("./pages/usecase/ModeratorV2"));
-const Talare = lazy(() => import("./pages/usecase/Talare"));
-const TalareV2 = lazy(() => import("./pages/usecase/TalareV2"));
-const Panelsamtal = lazy(() => import("./pages/usecase/Panelsamtal"));
-const PanelsamtalV2 = lazy(() => import("./pages/usecase/PanelsamtalV2"));
-const Forelasning = lazy(() => import("./pages/usecase/Forelasning"));
-const ForelasningV2 = lazy(() => import("./pages/usecase/ForelasningV2"));
-const AffiliateLanding = lazy(() => import("./pages/AffiliateLanding"));
-const AffiliateLandingV2 = lazy(() => import("./pages/AffiliateLandingV2"));
-const AuthV2 = lazy(() => import("./pages/AuthV2"));
-const ResetPasswordV2 = lazy(() => import("./pages/ResetPasswordV2"));
+
+// Legacy editor-filer (EditorV3) ligger kvar som backup men routas inte längre.
+const EditorV4 = Editor;
 
 const queryClient = new QueryClient();
 
