@@ -22,6 +22,7 @@ const Settings = lazy(() => import("./pages/SettingsV2"));
 const Import = lazy(() => import("./pages/ImportV2"));
 const Pricing = lazy(() => import("./pages/PricingV2"));
 const DebattBuddy = lazy(() => import("./pages/DebattBuddy"));
+const DebattBuddyThread = lazy(() => import("./pages/DebattBuddyThread"));
 const Admin = lazy(() => import("./pages/AdminV2"));
 const Messages = lazy(() => import("./pages/MessagesV2"));
 const Moderator = lazy(() => import("./pages/usecase/ModeratorV2"));
@@ -123,6 +124,7 @@ const App = () => (
                   <Route path="/meddelanden" element={<RequireAuth><Messages /></RequireAuth>} />
                   <Route path="/meddelanden-v2" element={<RequireAuth><MessagesV2 /></RequireAuth>} />
                   <Route path="/debatt-buddy" element={<RequireAuth><DebattBuddy /></RequireAuth>} />
+                  <Route path="/debatt-buddy/:threadId" element={<RequireAuth><DebattBuddyThread /></RequireAuth>} />
                   <Route path="/checkout/return" element={<CheckoutReturn />} />
                   <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
                   <Route path="*" element={<NotFound />} />

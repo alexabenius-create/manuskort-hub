@@ -639,20 +639,32 @@ export default function EditorV4() {
 
             {/* Rad 2 (mobil, centrerad) / höger (desktop): actions */}
             <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-start md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
-              {manuscript.mode === "debate" && manuscript.debate_session_id && (
+              {manuscript.mode === "debate" && (
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      onClick={() => navigate(`/debatt-buddy?mode=reply&parent=${manuscript.debate_session_id}`)}
+                      onClick={async () => {
+                        if (!manuscript) return;
+                        const { data, error } = await supabase
+                          .from("debate_threads")
+                          .insert({
+                            user_id: manuscript.user_id,
+                            title: manuscript.title || "Debatt från manus",
+                          })
+                          .select("id")
+                          .single();
+                        if (error || !data) return;
+                        navigate(`/debatt-buddy/${data.id}`);
+                      }}
                       className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[12.5px] font-semibold text-white whitespace-nowrap flex-shrink-0"
                       style={{ backgroundImage: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      Skriv replik
+                      Starta debatt
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Skapa AI-replik mot motdebattören</TooltipContent>
+                  <TooltipContent>Starta en ny debatt-tråd kopplad till detta manus</TooltipContent>
                 </Tooltip>
               )}
               {/* Måltid */}
