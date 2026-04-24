@@ -303,11 +303,6 @@ export function InsightsPanel() {
                             <p className="text-[11px] text-muted-foreground mt-1.5">
                               {SOURCE_LABEL[i.source]}{i.source_label ? ` · ${i.source_label}` : ""}
                               {" · "}{STATUS_LABEL[i.status]}
-                              {i.linked_user_id && (() => {
-                                const u = userMap.get(i.linked_user_id);
-                                const name = u?.display_name || u?.email;
-                                return name ? <> · <span className="text-accent-blue">👤 {name}</span></> : null;
-                              })()}
                             </p>
                           </button>
                         </li>
