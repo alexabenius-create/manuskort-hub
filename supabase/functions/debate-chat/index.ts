@@ -451,17 +451,6 @@ async function handleScripted(
     }
   }
 
-  // intake_mode — fritext fallback (om användaren skriver något oväntat)
-  if (phase === "intake_mode") {
-    // Återvisa knapparna istället för att gå till LLM
-    return { text: SCRIPTED_PROMPTS.intake_mode.text, quick_replies: SCRIPTED_PROMPTS.intake_mode.quick_replies };
-  }
-
-  // intake_speech_length — fritext fallback
-  if (phase === "intake_speech_length") {
-    return { text: SCRIPTED_PROMPTS.intake_speech_length.text, quick_replies: SCRIPTED_PROMPTS.intake_speech_length.quick_replies };
-  }
-
   // intake_mode
   if (phase === "intake_mode") {
     if (msg === "hålla anförande" || msg === "halla anforande" || msg.includes("anförande") || msg.includes("anforande")) {
