@@ -10,6 +10,7 @@ import { HelpButton } from "@/components/HelpButton";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
+import { DebateChatWidget } from "@/components/debate/chat/DebateChatWidget";
 import { SupportEditorBanner } from "@/components/SupportModeBanner";
 import { useShareRequestStatus } from "@/hooks/useShareRequests";
 import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
@@ -126,6 +127,7 @@ export default function EditorV4() {
   const supportShareId = searchParams.get("support");
   const isSupportMode = !!supportShareId;
   const supportStatus = useShareRequestStatus(supportShareId);
+  const debateBuddyThreadId = searchParams.get("debattbuddy");
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
 
   // Watcher: om delningen återkallas → kicka admin tillbaka till panelen
@@ -979,6 +981,8 @@ export default function EditorV4() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {debateBuddyThreadId && <DebateChatWidget threadId={debateBuddyThreadId} />}
       </div>
     </PanelistsProvider>
   );
