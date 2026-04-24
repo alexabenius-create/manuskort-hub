@@ -215,7 +215,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       {/* Manustexten — huvudyta */}
       <div
         ref={containerRef}
-        className="flex-1 min-w-0 flex flex-col items-center justify-center overflow-y-auto relative"
+        className="flex-1 min-w-0 flex flex-col items-center justify-center overflow-hidden relative"
         style={
           overflowAtMin
             ? {
