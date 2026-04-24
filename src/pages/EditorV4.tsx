@@ -847,13 +847,13 @@ export default function EditorV4() {
               <HelpButton />
 
               {/* Sparindikator + kortantal (desktop, längst till höger) */}
-              <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-border/40">
-                <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
+              <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-v2-line">
+                <span className="text-[11px] text-v2-muted font-mono whitespace-nowrap">
                   {cardCount} kort
                 </span>
                 <span
                   className={`text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
-                    saving === "error" ? "text-destructive" : "text-muted-foreground"
+                    saving === "error" ? "text-destructive" : "text-v2-muted"
                   }`}
                 >
                   <Save className="h-3 w-3" />
