@@ -592,9 +592,9 @@ export default function EditorV4() {
             onClose={() => navigate("/admin?tab=feedback")}
           />
         )}
-        <header className="border-b border-border/60 bg-background/95 backdrop-blur sticky top-0 z-30">
+        <header className="sticky top-0 z-30 border-b border-v2-line bg-white/70 backdrop-blur-xl">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
-            {/* Rad 1: Bibliotek · titel · kortantal · sparat (mobil); flex-1 på desktop */}
+            {/* Rad 1 */}
             <div className="flex items-center gap-2 min-w-0 md:flex-1">
               <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3">
                 <Link to="/bibliotek">
