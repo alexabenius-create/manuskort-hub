@@ -1,4 +1,4 @@
-export type InsightStatus = "new" | "processing" | "ready" | "implemented" | "archived";
+export type InsightStatus = "new" | "processing" | "ready" | "implemented" | "wont_fix" | "archived";
 export type InsightPriority = "low" | "medium" | "high";
 export type InsightSource = "email" | "call" | "dm" | "own" | "meeting" | "other";
 
@@ -33,6 +33,7 @@ export const STATUS_LABEL: Record<InsightStatus, string> = {
   processing: "Bearbetas",
   ready: "Klar för bygge",
   implemented: "Implementerad",
+  wont_fix: "Åtgärdas ej",
   archived: "Arkiverad",
 };
 

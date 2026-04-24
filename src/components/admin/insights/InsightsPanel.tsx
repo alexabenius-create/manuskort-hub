@@ -15,6 +15,7 @@ const STATUS_FILTERS: Array<{ key: "all" | InsightStatus; label: string }> = [
   { key: "processing", label: STATUS_LABEL.processing },
   { key: "ready", label: STATUS_LABEL.ready },
   { key: "implemented", label: STATUS_LABEL.implemented },
+  { key: "wont_fix", label: STATUS_LABEL.wont_fix },
   { key: "archived", label: STATUS_LABEL.archived },
 ];
 
@@ -79,14 +80,21 @@ export function InsightsPanel() {
 
   const filtered = useMemo(() => {
     return insights.filter((i) => {
-      if (filter !== "all" && i.status !== filter) return false;
+      if (filter === "all") {
+        // "Alla" döljer wont_fix
+        if (i.status === "wont_fix") return false;
+      } else if (i.status !== filter) {
+        return false;
+      }
       if (themeFilter && i.theme !== themeFilter) return false;
       return true;
     });
   }, [insights, filter, themeFilter]);
 
   const statusCounts = useMemo(() => {
-    const c: Record<string, number> = { all: insights.length };
+    const c: Record<string, number> = {
+      all: insights.filter((i) => i.status !== "wont_fix").length,
+    };
     insights.forEach((i) => { c[i.status] = (c[i.status] ?? 0) + 1; });
     return c;
   }, [insights]);

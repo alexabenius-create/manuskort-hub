@@ -1,33 +1,38 @@
-## Mål
-Admin ska se trådar de själva startat (t.ex. återkoppling på insikter) i sin egen `/meddelanden`-inkorg, så det fungerar som en tvåvägs-konversation.
+## Ny status "Åtgärdas ej" för insikter
 
-## Ändringar
+### 1. Migration
+Uppdatera `validate_admin_insight()` så `status` accepterar `'wont_fix'`:
+```sql
+CREATE OR REPLACE FUNCTION public.validate_admin_insight()
+RETURNS trigger LANGUAGE plpgsql SET search_path TO 'public' AS $$
+BEGIN
+  IF NEW.source NOT IN ('email','call','dm','own','meeting','other') THEN
+    RAISE EXCEPTION 'Invalid source: %', NEW.source;
+  END IF;
+  IF NEW.priority NOT IN ('low','medium','high') THEN
+    RAISE EXCEPTION 'Invalid priority: %', NEW.priority;
+  END IF;
+  IF NEW.status NOT IN ('new','processing','ready','implemented','wont_fix','archived') THEN
+    RAISE EXCEPTION 'Invalid status: %', NEW.status;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+```
 
-### `src/pages/Messages.tsx`
-- Hämta trådar i två steg och slå ihop:
-  1. Trådar där `user_id = auth.uid()` (mottagna).
-  2. För admins: trådar där användaren skickat meddelanden som admin — hämta distinkta `thread_id` från `feedback_messages` där `sender_user_id = auth.uid()` AND `sender_role = 'admin'`, sedan trådarna för dessa id:n.
-- Deduplicera på `id`, sortera på `updated_at desc`.
-- För trådar där `thread.user_id !== currentUser.id` (admin-vy): visa mottagarens namn (via `admin_list_users` RPC eller direkt profile-lookup) i list-objektet.
-- Bubble-rendering: rendera till höger om `m.sender_user_id === currentUser.id`, annars vänster (oberoende av roll).
-- Skicka svar: om `activeThread.user_id !== currentUser.id` → skicka som `sender_role: 'admin'`. Annars `sender_role: 'user'` som idag.
-- Olästa per tråd:
-  - Om ägare (`thread.user_id === currentUser.id`): räkna admin-meddelanden där `read_by_user = false` (som idag).
-  - Om admin-vy: räkna meddelanden där `sender_role = 'user'` och `read_by_admin = false`.
-- Markera som läst när en tråd öppnas:
-  - Ägare → uppdatera `read_by_user = true` på olästa admin-meddelanden.
-  - Admin → uppdatera `read_by_admin = true` på olästa user-meddelanden.
+### 2. `src/components/admin/insights/types.ts`
+- Lägg till `"wont_fix"` i `InsightStatus`-unionen.
+- `STATUS_LABEL.wont_fix = "Åtgärdas ej"`.
 
-### `src/hooks/useUnreadMessages.tsx`
-- `useUnreadMessages` (för inloggad user-badge): utöka så att admin också får antal olästa user-svar i trådar de själva initierat. Räkna unionen av:
-  - Admin-meddelanden i egna trådar med `read_by_user = false` (befintligt).
-  - User-meddelanden i trådar där den inloggade har skickat som admin, med `read_by_admin = false`.
+### 3. `src/components/admin/insights/InsightsPanel.tsx`
+- Lägg till `{ key: "wont_fix", label: STATUS_LABEL.wont_fix }` i `STATUS_FILTERS`.
+- I `filtered`: när `filter === "all"`, exkludera insikter med `status === "wont_fix"`.
+- I `statusCounts`: räkna `all` som antal insikter där `status !== "wont_fix"`; räkna `wont_fix` separat.
 
-## Inga DB-ändringar
-RLS tillåter redan admins att läsa/uppdatera alla trådar och meddelanden.
+### 4. `src/components/admin/insights/InsightDetail.tsx`
+Inga ändringar krävs — status-väljaren itererar redan över `STATUS_LABEL`-nycklarna, så `wont_fix` blir automatiskt valbart när det läggs till där.
 
-## Acceptanskriterier
-- När admin skickar återkoppling på en insikt syns tråden i admin-kontots `/meddelanden`.
-- Egna utgående meddelanden visas i höger bubbla; mottagarens svar i vänster.
-- Mottagarens namn syns i list-objektet för admin-initierade trådar.
-- Olästa-badge ökar för admin när användaren svarar.
+### Resultat
+- Ny statusflik "Åtgärdas ej" syns i sidofiltret med egen räknare.
+- Insikter med denna status visas inte under "Alla" — bara när man aktivt väljer fliken.
+- Befintliga insikter påverkas inte.
