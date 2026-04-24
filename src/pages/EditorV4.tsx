@@ -621,13 +621,12 @@ export default function EditorV4() {
                 {manuscript.mode === "moderator" ? "Moderator" : "Talare"}
               </span>
 
-              {/* Mobil: kortantal + sparat-status inline. */}
-              <span className="md:hidden text-[11px] text-muted-foreground font-mono whitespace-nowrap ml-auto">
+              <span className="md:hidden text-[11px] text-v2-muted font-mono whitespace-nowrap ml-auto">
                 {cardCount} kort
               </span>
               <span
                 className={`md:hidden text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
-                  saving === "error" ? "text-destructive" : "text-muted-foreground"
+                  saving === "error" ? "text-destructive" : "text-v2-muted"
                 }`}
               >
                 <Save className="h-3 w-3" />
