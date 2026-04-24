@@ -143,5 +143,36 @@ export function useDebateChat(threadId: string | null) {
     }
   }, [loading, threadId, messages.length, sendMessage]);
 
+  // Efter avslutad presentation: trigga post_perform_check-frågan
+  useEffect(() => {
+    if (loading || !threadId || !user) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("from") !== "presentation") return;
+    // Rensa flaggan så det bara körs en gång
+    url.searchParams.delete("from");
+    window.history.replaceState({}, "", url.toString());
+
+    (async () => {
+      // Sätt fas + skriv scripted assistant-meddelande direkt
+      const { data: t } = await supabase
+        .from("debate_threads")
+        .select("bot_state")
+        .eq("id", threadId)
+        .maybeSingle();
+      const botState = (t?.bot_state as Record<string, unknown>) || {};
+      await supabase
+        .from("debate_threads")
+        .update({ bot_state: { ...botState, phase: "post_perform_check" } })
+        .eq("id", threadId);
+      await supabase.from("debate_chat_messages").insert({
+        thread_id: threadId,
+        user_id: user.id,
+        role: "assistant",
+        content: "Bra jobbat med anförandet! Fick du några repliker som du behöver bemöta?",
+        metadata: { scripted: true, quick_replies: ["Ja", "Nej, klart"] },
+      });
+    })();
+  }, [loading, threadId, user]);
+
   return { messages, sending, uploading, sendMessage, uploadBrief, threadState, loading };
 }

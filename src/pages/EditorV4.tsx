@@ -575,7 +575,8 @@ export default function EditorV4() {
         }
       }
     }
-    navigate(`/manus/${manuscript.id}/presentera`);
+    const suffix = debateBuddyThreadId ? `?debattbuddy=${debateBuddyThreadId}` : "";
+    navigate(`/manus/${manuscript.id}/presentera${suffix}`);
   };
   startPresentationRef.current = () => startPresentation();
 
@@ -958,7 +959,8 @@ export default function EditorV4() {
           onSave={(seconds) => {
             void updateMeta({ target_duration_seconds: seconds } as Partial<Manuscript>);
             if (targetSaveLabel === "Spara och starta" && seconds !== null) {
-              navigate(`/manus/${manuscript.id}/presentera`);
+              const suffix = debateBuddyThreadId ? `?debattbuddy=${debateBuddyThreadId}` : "";
+              navigate(`/manus/${manuscript.id}/presentera${suffix}`);
             }
           }}
         />

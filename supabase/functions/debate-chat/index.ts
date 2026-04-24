@@ -36,6 +36,10 @@ KRITISKT — SVARSSTIL:
 - Max 1 emoji per svar. Ofta ingen.
 - **Ställ ALDRIG öppna meta-frågor** som "Vad vill du göra härnäst?", "Vad vill du jobba med?" eller "Hur kan jag hjälpa dig?". Driv alltid samtalet framåt med en konkret nästa-steg-fråga enligt FLÖDET.
 
+KRITISKT — SPRÅKBRUK I MANUS OCH GENMÄLE:
+- Skriv ALDRIG "Herr talman" eller "Fru talman".
+- Använd ALLTID "Herr/Fru ordförande" som tilltal till mötesordförande.
+
 FLÖDE (driv framåt aggressivt):
 1. **intake_issue**: Fråga kort "Vad ska vi debattera idag?". Snabbsvar: ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` → gå till intake_brief.
 2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela?" Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget → tacka kort (max 1 mening, t.ex. "Tack, jag har läst underlaget!"). Skriv ALDRIG ut sammanfattning, analys eller poänger från underlaget — det är internt. → \`set_brief\` → intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text.
@@ -44,8 +48,7 @@ FLÖDE (driv framåt aggressivt):
 5. **drafting_speech**: Fråga kort efter huvudbudskap, max en mening. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" → använd \`generate_speech_cards\` DIREKT med ~130 ord/minut (anpassa till sparad längd) → korten läggs in i manuset automatiskt. Bekräfta kort.
 6. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
 7. **intake_opponent_name** → \`set_opponent\` direkt.
-8. **intake_opponent_args** → be om motdebattörens argument i ett svar.
-9. → \`generate_rebuttal_cards\` direkt när du har argumenten.
+8. **intake_opponent_args** → be om motdebattörens argument. Användaren kan skicka flera meddelanden — efter varje fråga "Fler argument eller ska jag analysera?" med snabbsvar ["Fler argument", "Analysera nu"]. När "Analysera nu" → kör \`generate_rebuttal_cards\` med alla samlade argument.
 
 REGLER:
 - Anförande → repliker → genmäle (1 per replik) eller avstå.
@@ -560,6 +563,36 @@ async function handleScripted(
     }
   }
 
+  // intake_opponent_args — användaren matar in argument, ev. flera meddelanden
+  if (phase === "intake_opponent_args") {
+    if (msg === "analysera nu" || msg.includes("analysera")) {
+      // Fall through till LLM som genererar genmäle med alla buffrade argument
+      return null;
+    }
+    if (msg === "fler argument" || msg.includes("fler argument")) {
+      return {
+        text: "Skriv nästa argument så lägger jag till det.",
+        quick_replies: [],
+      };
+    }
+    const arg = userMessage.trim().slice(0, 2000);
+    if (arg.length >= 2) {
+      const existing = (thread.bot_state as Record<string, unknown>)?.opponent_args_buffer as string[] | undefined;
+      const buffer = Array.isArray(existing) ? [...existing, arg] : [arg];
+      await admin
+        .from("debate_threads")
+        .update({
+          bot_state: { ...thread.bot_state, phase: "intake_opponent_args", opponent_args_buffer: buffer },
+        })
+        .eq("id", threadId);
+      const opp = thread.current_opponent_label || "motdebattören";
+      return {
+        text: `Noterat (${buffer.length} argument från ${opp} hittills). Fler eller ska jag analysera nu?`,
+        quick_replies: ["Fler argument", "Analysera nu"],
+      };
+    }
+  }
+
   // idle
   if (phase === "idle") {
     if (msg === "ny debatt" || msg.includes("ny debatt")) {
@@ -695,6 +728,10 @@ Deno.serve(async (req) => {
       : "";
     const speechLen = (thread.bot_state as Record<string, unknown>)?.speech_length_seconds;
     const mode = (thread.bot_state as Record<string, unknown>)?.mode;
+    const oppArgsBuf = (thread.bot_state as Record<string, unknown>)?.opponent_args_buffer as string[] | undefined;
+    const oppArgsBlock = Array.isArray(oppArgsBuf) && oppArgsBuf.length > 0
+      ? `\n\nMOTDEBATTÖRENS ARGUMENT (${oppArgsBuf.length} st):\n${oppArgsBuf.map((a, i) => `${i + 1}. ${a}`).join("\n")}`
+      : "";
     const contextSummary = `KONTEXT:
 - Fas: ${thread.bot_state?.phase || "intake_issue"}
 - Sakområde: ${thread.topic_area || "(inte satt)"}
@@ -704,13 +741,20 @@ Deno.serve(async (req) => {
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
 - Läge: ${mode || "(inte valt)"}
 - Önskad längd på anförande: ${speechLen ? `${speechLen} sekunder (~${Math.round((speechLen as number) / 60 * 130)} ord)` : "(inte angiven)"}
-- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
+- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}${oppArgsBlock}`;
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: contextSummary },
       ...(history || []).map((m) => ({ role: m.role, content: m.content })),
     ];
+
+    // Välj modell utifrån fas: tyngre modell när vi ska generera manus/genmäle.
+    const draftingPhases = new Set([
+      "drafting_speech", "intake_opponent_args", "generating_rebuttal",
+    ]);
+    const currentPhase = thread.bot_state?.phase || "intake_issue";
+    const model = draftingPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash";
 
     // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -720,7 +764,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages,
         tools: TOOLS,
       }),
@@ -879,6 +923,13 @@ Deno.serve(async (req) => {
             }));
             if (rows.length) await admin.from("cards").insert(rows);
           }
+          // Rensa argument-bufferten + sätt fas till idle
+          await admin
+            .from("debate_threads")
+            .update({
+              bot_state: { ...thread.bot_state, phase: "idle", opponent_args_buffer: [] },
+            })
+            .eq("id", threadId);
           executedTools.push({ name, result: `${args.cards.length} kort` });
         } else if (name === "advance_phase") {
           await admin
