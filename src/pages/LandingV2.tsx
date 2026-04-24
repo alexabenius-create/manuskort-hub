@@ -28,6 +28,7 @@ import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { supabase } from "@/integrations/supabase/client";
+import manuskortLogo from "@/assets/manuskort-logo.png";
 
 /**
  * Landing v2 — Linear-inspirerat designspråk.
@@ -101,11 +102,12 @@ export default function LandingV2() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-10 h-16 flex items-center justify-between">
-          <Link to="/v2" className="flex items-center gap-2 group">
-            <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-v2-violet to-v2-blue shadow-[0_4px_12px_-2px_rgba(99,102,241,0.4)] transition-transform group-hover:scale-105">
-              <span className="absolute inset-[2px] rounded-[6px] bg-white/10" />
-              <span className="relative font-display text-white text-[13px] font-bold">M</span>
-            </span>
+          <Link to="/v2" className="flex items-center gap-2.5 group">
+            <img
+              src={manuskortLogo}
+              alt="Manuskort"
+              className="h-8 w-auto transition-transform group-hover:scale-105"
+            />
             <span className="font-display text-[18px] font-semibold tracking-tight">Manuskort</span>
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2">
@@ -649,25 +651,70 @@ function fmtMin(seconds: number) {
   return `${m} min`;
 }
 
+const CARD_DURATION_MS = 4000;
+
 function CardDemo() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  // 0..1 — hur långt vi kommit på det aktuella kortet (drivs av rAF)
+  const [cardProgress, setCardProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number>(0);
+  const elapsedRef = useRef<number>(0);
 
-  const next = useCallback(() => setIndex((i) => (i + 1) % DEMO_CARDS.length), []);
-  const prev = useCallback(() => setIndex((i) => (i - 1 + DEMO_CARDS.length) % DEMO_CARDS.length), []);
+  const goTo = useCallback((i: number) => {
+    setIndex(((i % DEMO_CARDS.length) + DEMO_CARDS.length) % DEMO_CARDS.length);
+    setCardProgress(0);
+    elapsedRef.current = 0;
+    startRef.current = performance.now();
+  }, []);
+  const next = useCallback(() => goTo((indexRefHack.current ?? 0) + 1), [goTo]);
+  const prev = useCallback(() => goTo((indexRefHack.current ?? 0) - 1), [goTo]);
 
+  // Synka ref med state så next/prev alltid har färskt värde
+  const indexRefHack = useRef(index);
+  useEffect(() => { indexRefHack.current = index; }, [index]);
+
+  // rAF-loop som fyller progressbaren och bläddrar vid 100%
   useEffect(() => {
-    if (paused) return;
-    timerRef.current = window.setTimeout(next, 4000);
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
+    startRef.current = performance.now() - elapsedRef.current;
+    const tick = (now: number) => {
+      if (paused) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const elapsed = now - startRef.current;
+      elapsedRef.current = elapsed;
+      const p = Math.min(1, elapsed / CARD_DURATION_MS);
+      setCardProgress(p);
+      if (p >= 1) {
+        elapsedRef.current = 0;
+        startRef.current = now;
+        setIndex((i) => (i + 1) % DEMO_CARDS.length);
+        setCardProgress(0);
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
+      }
     };
-  }, [index, paused, next]);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [index, paused]);
+
+  // Pausa loopen när fliken inte är synlig (sparar batteri)
+  useEffect(() => {
+    const onVis = () => setPaused((p) => (document.hidden ? true : p && document.hidden));
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   const card = DEMO_CARDS[index];
-  const elapsedSeconds = card.startSeconds + card.cardSeconds;
-  const progress = Math.min(100, (elapsedSeconds / TOTAL_SECONDS) * 100);
+  // Simulerad "förfluten kort-tid" som tickar upp i takt med progress
+  const cardElapsedSec = Math.floor(card.cardSeconds * cardProgress);
+  const totalElapsedSec = card.startSeconds + cardElapsedSec;
+  const totalProgressPct = Math.min(100, (totalElapsedSec / TOTAL_SECONDS) * 100);
+  const cardProgressPct = cardProgress * 100;
 
   return (
     <div
@@ -698,67 +745,79 @@ function CardDemo() {
         {/* Aktivt kort — A5 liggande, 3:2 */}
         <article
           key={index}
-          className="absolute inset-0 bg-white rounded-2xl border border-v2-line shadow-[0_20px_50px_-20px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] p-6 sm:p-7 flex flex-col v2-card-enter"
+          className="absolute inset-0 bg-white rounded-2xl border border-v2-line shadow-[0_20px_50px_-20px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] overflow-hidden flex flex-col v2-card-enter"
         >
-          {/* Top row — chip + tid */}
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-br from-v2-violet/10 to-v2-blue/10 border border-v2-violet/20 text-v2-violet text-[11px] font-semibold tracking-wider">
-                KORT {index + 1}/{DEMO_CARDS.length}
-              </span>
-              <span
-                className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded text-v2-ink/85"
-                style={{ background: card.speakerColor }}
-              >
-                {card.speaker}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 font-mono text-[12px] text-v2-muted">
-              <Timer className="h-3.5 w-3.5" />
-              {Math.floor(card.cardSeconds / 60)}:{String(card.cardSeconds % 60).padStart(2, "0")}
-            </div>
-          </div>
-
-          {/* Rubrik */}
-          <h3 className="font-display text-[20px] sm:text-[22px] font-semibold tracking-tight text-v2-ink leading-tight mb-3">
-            {card.title}
-          </h3>
-
-          {/* Bullets */}
-          <ul className="space-y-2 flex-1">
-            {card.bullets.map((b, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-[14px] text-v2-ink/80 leading-relaxed">
-                <span className="mt-2 inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-br from-v2-violet to-v2-blue shrink-0" />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Cue tag */}
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wider ${
-                card.cue.label === "PAUS"
-                  ? "bg-rose-50 text-rose-600 border border-rose-200/70"
-                  : card.cue.label === "BILD"
-                  ? "bg-amber-50 text-amber-700 border border-amber-200/70"
-                  : "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
-              }`}
-            >
-              <card.cue.icon className="h-3 w-3" />
-              {card.cue.label}
-            </span>
-            <span className="text-[11px] font-mono text-v2-muted">
-              {fmtMin(elapsedSeconds)} av {fmtMin(TOTAL_SECONDS)}
-            </span>
-          </div>
-
-          {/* Progressbar */}
-          <div className="mt-3 h-1 w-full rounded-full bg-v2-line/70 overflow-hidden">
+          {/* Rörlig kort-timebar — fylls under de 4 sek kortet visas */}
+          <div className="h-1 w-full bg-v2-line/60 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
+              className="h-full bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink"
+              style={{ width: `${cardProgressPct}%`, transition: paused ? "none" : "width 80ms linear" }}
             />
+          </div>
+
+          <div className="p-6 sm:p-7 flex flex-col flex-1">
+            {/* Top row — chip + tid */}
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-br from-v2-violet/10 to-v2-blue/10 border border-v2-violet/20 text-v2-violet text-[11px] font-semibold tracking-wider">
+                  KORT {index + 1}/{DEMO_CARDS.length}
+                </span>
+                <span
+                  className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded text-v2-ink/85"
+                  style={{ background: card.speakerColor }}
+                >
+                  {card.speaker}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[12px] text-v2-muted tabular-nums">
+                <Timer className="h-3.5 w-3.5" />
+                {Math.floor(cardElapsedSec / 60)}:{String(cardElapsedSec % 60).padStart(2, "0")}
+                <span className="text-v2-muted/50">/</span>
+                {Math.floor(card.cardSeconds / 60)}:{String(card.cardSeconds % 60).padStart(2, "0")}
+              </div>
+            </div>
+
+            {/* Rubrik */}
+            <h3 className="font-display text-[20px] sm:text-[22px] font-semibold tracking-tight text-v2-ink leading-tight mb-3">
+              {card.title}
+            </h3>
+
+            {/* Bullets */}
+            <ul className="space-y-2 flex-1">
+              {card.bullets.map((b, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-[14px] text-v2-ink/80 leading-relaxed">
+                  <span className="mt-2 inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-br from-v2-violet to-v2-blue shrink-0" />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Cue tag */}
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wider ${
+                  card.cue.label === "PAUS"
+                    ? "bg-rose-50 text-rose-600 border border-rose-200/70"
+                    : card.cue.label === "BILD"
+                    ? "bg-amber-50 text-amber-700 border border-amber-200/70"
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
+                }`}
+              >
+                <card.cue.icon className="h-3 w-3" />
+                {card.cue.label}
+              </span>
+              <span className="text-[11px] font-mono text-v2-muted tabular-nums">
+                {fmtMin(totalElapsedSec)} av {fmtMin(TOTAL_SECONDS)}
+              </span>
+            </div>
+
+            {/* Total progressbar — hela presentationen */}
+            <div className="mt-3 h-1 w-full rounded-full bg-v2-line/70 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink"
+                style={{ width: `${totalProgressPct}%`, transition: paused ? "none" : "width 120ms linear" }}
+              />
+            </div>
           </div>
         </article>
 
@@ -786,7 +845,7 @@ function CardDemo() {
         {DEMO_CARDS.map((_, i) => (
           <button
             key={i}
-            onClick={() => setIndex(i)}
+            onClick={() => goTo(i)}
             aria-label={`Gå till kort ${i + 1}`}
             className={`h-1.5 rounded-full transition-all ${
               i === index
