@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useTier } from "@/hooks/useTier";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,21 +14,26 @@ import { useThreadShareRequests } from "@/hooks/useShareRequests";
 
 interface Thread {
   id: string;
+  user_id: string | null;
   subject: string;
   source: string;
   status: string;
   created_at: string;
   updated_at: string;
   unread: number;
+  /** Visningsnamn på motparten (mottagaren) — bara satt för admin-vy. */
+  counterpartyName?: string | null;
 }
 
 interface Message {
   id: string;
   thread_id: string;
   sender_role: "user" | "admin";
+  sender_user_id: string | null;
   body: string;
   created_at: string;
   read_by_user: boolean;
+  read_by_admin: boolean;
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -45,7 +51,6 @@ function formatDate(s: string) {
 /** Visar alla delningsbegäran för aktiv tråd (live). */
 function ThreadShareSection({ threadId }: { threadId: string }) {
   const { items } = useThreadShareRequests(threadId);
-  // Visa bara de som inte är i terminal-state mer än 24h gamla — håll det enkelt: visa alla
   if (items.length === 0) return null;
   return (
     <div className="space-y-2">
@@ -58,6 +63,8 @@ function ThreadShareSection({ threadId }: { threadId: string }) {
 
 export default function Messages() {
   const { user } = useAuth();
+  const { tier } = useTier();
+  const isAdmin = tier === "admin";
   const navigate = useNavigate();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,34 +76,101 @@ export default function Messages() {
   const loadThreads = async () => {
     if (!user) return;
     setLoading(true);
-    const { data: t } = await supabase
-      .from("feedback_threads")
-      .select("id, subject, source, status, created_at, updated_at")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
 
-    if (!t) {
+    // 1) Trådar där jag är mottagare
+    const { data: ownThreads } = await supabase
+      .from("feedback_threads")
+      .select("id, user_id, subject, source, status, created_at, updated_at")
+      .eq("user_id", user.id);
+
+    const all = new Map<string, Omit<Thread, "unread">>();
+    (ownThreads ?? []).forEach((t) => {
+      all.set(t.id, { ...t });
+    });
+
+    // 2) För admins: trådar där jag har skickat som admin
+    if (isAdmin) {
+      const { data: sentMsgs } = await supabase
+        .from("feedback_messages")
+        .select("thread_id")
+        .eq("sender_user_id", user.id)
+        .eq("sender_role", "admin");
+
+      const sentThreadIds = Array.from(new Set((sentMsgs ?? []).map((m) => m.thread_id)));
+      const newIds = sentThreadIds.filter((id) => !all.has(id));
+
+      if (newIds.length > 0) {
+        const { data: extraThreads } = await supabase
+          .from("feedback_threads")
+          .select("id, user_id, subject, source, status, created_at, updated_at")
+          .in("id", newIds);
+        (extraThreads ?? []).forEach((t) => {
+          all.set(t.id, { ...t });
+        });
+      }
+    }
+
+    const list = Array.from(all.values());
+    if (list.length === 0) {
       setThreads([]);
       setLoading(false);
       return;
     }
 
-    // Räkna olästa per tråd
-    const ids = t.map((x) => x.id);
-    let unreadMap = new Map<string, number>();
-    if (ids.length > 0) {
-      const { data: msgs } = await supabase
-        .from("feedback_messages")
-        .select("thread_id")
-        .in("thread_id", ids)
-        .eq("sender_role", "admin")
-        .eq("read_by_user", false);
-      (msgs ?? []).forEach((m) => {
-        unreadMap.set(m.thread_id, (unreadMap.get(m.thread_id) ?? 0) + 1);
-      });
+    const ids = list.map((t) => t.id);
+
+    // Hämta motpartens namn för admin-trådar
+    const counterMap = new Map<string, string | null>();
+    if (isAdmin) {
+      const recipientIds = Array.from(
+        new Set(
+          list
+            .filter((t) => t.user_id && t.user_id !== user.id)
+            .map((t) => t.user_id as string),
+        ),
+      );
+      if (recipientIds.length > 0) {
+        const { data: users } = await supabase.rpc("admin_list_users");
+        (users as Array<{ user_id: string; display_name: string | null; email: string | null }> | null)?.forEach((u) => {
+          if (recipientIds.includes(u.user_id)) {
+            counterMap.set(u.user_id, u.display_name || u.email || null);
+          }
+        });
+      }
     }
 
-    setThreads(t.map((x) => ({ ...x, unread: unreadMap.get(x.id) ?? 0 })));
+    // Räkna olästa per tråd
+    const { data: msgs } = await supabase
+      .from("feedback_messages")
+      .select("thread_id, sender_role, sender_user_id, read_by_user, read_by_admin")
+      .in("thread_id", ids);
+
+    const unreadMap = new Map<string, number>();
+    (msgs ?? []).forEach((m) => {
+      const t = all.get(m.thread_id);
+      if (!t) return;
+      const isOwner = t.user_id === user.id;
+      let unread = false;
+      if (isOwner) {
+        unread = m.sender_role === "admin" && !m.read_by_user;
+      } else {
+        // Admin-vy
+        unread = m.sender_role === "user" && !m.read_by_admin;
+      }
+      if (unread) {
+        unreadMap.set(m.thread_id, (unreadMap.get(m.thread_id) ?? 0) + 1);
+      }
+    });
+
+    const enriched: Thread[] = list
+      .map((t) => ({
+        ...t,
+        unread: unreadMap.get(t.id) ?? 0,
+        counterpartyName: t.user_id && t.user_id !== user.id ? counterMap.get(t.user_id) ?? null : null,
+      }))
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+    setThreads(enriched);
     setLoading(false);
   };
 
@@ -120,24 +194,40 @@ export default function Messages() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isAdmin]);
 
   const loadMessages = async (threadId: string) => {
     const { data } = await supabase
       .from("feedback_messages")
-      .select("id, thread_id, sender_role, body, created_at, read_by_user")
+      .select("id, thread_id, sender_role, sender_user_id, body, created_at, read_by_user, read_by_admin")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true });
     setMessages((data ?? []) as Message[]);
 
-    // Markera admin-meddelanden som lästa
-    const unread = (data ?? []).filter((m) => m.sender_role === "admin" && !m.read_by_user);
-    if (unread.length > 0) {
-      await supabase
-        .from("feedback_messages")
-        .update({ read_by_user: true })
-        .in("id", unread.map((m) => m.id));
-      loadThreads();
+    if (!user) return;
+    const thread = threads.find((t) => t.id === threadId);
+    const isOwner = thread?.user_id === user.id;
+
+    if (isOwner) {
+      // Markera admin-meddelanden som lästa av user
+      const unread = (data ?? []).filter((m) => m.sender_role === "admin" && !m.read_by_user);
+      if (unread.length > 0) {
+        await supabase
+          .from("feedback_messages")
+          .update({ read_by_user: true })
+          .in("id", unread.map((m) => m.id));
+        loadThreads();
+      }
+    } else if (isAdmin) {
+      // Admin-vy: markera user-meddelanden som lästa av admin
+      const unread = (data ?? []).filter((m) => m.sender_role === "user" && !m.read_by_admin);
+      if (unread.length > 0) {
+        await supabase
+          .from("feedback_messages")
+          .update({ read_by_admin: true })
+          .in("id", unread.map((m) => m.id));
+        loadThreads();
+      }
     }
   };
 
@@ -148,10 +238,14 @@ export default function Messages() {
 
   const sendReply = async () => {
     if (!activeId || !reply.trim() || !user) return;
+    const thread = threads.find((t) => t.id === activeId);
+    const isOwner = thread?.user_id === user.id;
+    const senderRole: "user" | "admin" = isOwner ? "user" : "admin";
+
     setSending(true);
     const { error } = await supabase.from("feedback_messages").insert({
       thread_id: activeId,
-      sender_role: "user",
+      sender_role: senderRole,
       sender_user_id: user.id,
       body: reply.trim(),
     });
@@ -201,6 +295,7 @@ export default function Messages() {
             <ul className="divide-y divide-border/40">
               {threads.map((t) => {
                 const isActive = t.id === activeId;
+                const isAdminThread = user && t.user_id !== user.id;
                 return (
                   <li key={t.id}>
                     <button
@@ -218,6 +313,11 @@ export default function Messages() {
                           </span>
                         )}
                       </div>
+                      {isAdminThread && t.counterpartyName && (
+                        <div className="text-[11px] text-accent-blue mb-0.5 truncate">
+                          → {t.counterpartyName}
+                        </div>
+                      )}
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>{SOURCE_LABEL[t.source] ?? t.source}</span>
                         <span>{formatDate(t.updated_at)}</span>
@@ -247,6 +347,7 @@ export default function Messages() {
               <header className="px-6 py-4 border-b-hair">
                 <h2 className="font-display text-[17px] font-semibold tracking-tight">{activeThread.subject}</h2>
                 <p className="text-[12px] text-muted-foreground mt-0.5">
+                  {activeThread.counterpartyName && <>Med {activeThread.counterpartyName} · </>}
                   {SOURCE_LABEL[activeThread.source] ?? activeThread.source} · {formatDate(activeThread.created_at)}
                 </p>
               </header>
@@ -254,23 +355,23 @@ export default function Messages() {
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
                 <ThreadShareSection threadId={activeThread.id} />
                 {messages.map((m) => {
-                  const fromAdmin = m.sender_role === "admin";
+                  const isMine = m.sender_user_id === user?.id;
                   return (
-                    <div key={m.id} className={`flex ${fromAdmin ? "justify-start" : "justify-end"}`}>
+                    <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-[14px] whitespace-pre-wrap ${
-                          fromAdmin
-                            ? "bg-surface-2 text-foreground"
-                            : "bg-accent-blue text-white"
+                          isMine
+                            ? "bg-accent-blue text-white"
+                            : "bg-surface-2 text-foreground"
                         }`}
                       >
-                        {fromAdmin && (
+                        {!isMine && (
                           <div className="text-[10px] font-bold uppercase tracking-wide mb-1 opacity-70">
-                            Manuskort-team
+                            {m.sender_role === "admin" ? "Manuskort-team" : "Användare"}
                           </div>
                         )}
                         <div>{m.body}</div>
-                        <div className={`text-[10px] mt-1 ${fromAdmin ? "text-muted-foreground" : "text-white/70"}`}>
+                        <div className={`text-[10px] mt-1 ${isMine ? "text-white/70" : "text-muted-foreground"}`}>
                           {formatDate(m.created_at)}
                         </div>
                       </div>
