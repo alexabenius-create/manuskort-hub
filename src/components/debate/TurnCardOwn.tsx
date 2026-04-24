@@ -18,21 +18,46 @@ interface CardSplit {
   content: string;
 }
 
+export type OwnTurnKind = "own_speech" | "own_reply" | "rebuttal";
+
 interface Props {
   threadId: string;
   position: number;
-  turnKind: "own_speech" | "own_reply";
+  turnKind: OwnTurnKind;
+  parentTurnId?: string | null;
+  roundNumber?: number;
+  contextLabel?: string; // e.g. "Genmäle till Replikant A"
   onGenerated: () => void;
   onCancel?: () => void;
 }
 
-export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, onCancel }: Props) {
+const titleFor = (kind: OwnTurnKind, fallback?: string): string => {
+  if (fallback) return fallback;
+  if (kind === "own_speech") return "Mitt anförande";
+  if (kind === "rebuttal") return "Mitt genmäle";
+  return "Min replik";
+};
+
+const placeholderFor = (kind: OwnTurnKind): string => {
+  if (kind === "own_speech") return "Klistra in eller skriv ditt anförande här…";
+  if (kind === "rebuttal") return "Skriv ditt utkast till genmäle på den specifika repliken — AI bemöter punktvis.";
+  return "Skriv ditt utkast till replik — AI tar med motdebattörens anförande i kontexten.";
+};
+
+export function TurnCardOwnDraft({
+  threadId,
+  position,
+  turnKind,
+  parentTurnId,
+  roundNumber,
+  contextLabel,
+  onGenerated,
+  onCancel,
+}: Props) {
   const [text, setText] = useState("");
   const [freedom, setFreedom] = useState(100);
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-
-  const isReply = turnKind === "own_reply";
 
   const generate = async () => {
     if (running) return;
@@ -51,6 +76,8 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
           turn_kind: turnKind,
           new_source_text: text,
           maxLengthPercent: freedom,
+          parent_turn_id: parentTurnId ?? null,
+          round_number: roundNumber ?? 1,
         },
       });
       if (error) {
@@ -73,6 +100,9 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
     }
   };
 
+  const heading = titleFor(turnKind, contextLabel);
+  const verb = turnKind === "own_speech" ? "anförande" : turnKind === "rebuttal" ? "genmäle" : "replik";
+
   return (
     <div className="rounded-2xl bg-white border border-v2-violet/30 p-5 space-y-4">
       <div className="flex items-center gap-3">
@@ -81,21 +111,15 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
         </div>
         <div className="flex items-center gap-2">
           <Mic className="h-4 w-4 text-v2-violet" />
-          <h3 className="text-[15px] font-semibold text-v2-ink">
-            {isReply ? "Mitt genmäle" : "Mitt anförande"}
-          </h3>
+          <h3 className="text-[15px] font-semibold text-v2-ink">{heading}</h3>
         </div>
       </div>
 
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={
-          isReply
-            ? "Skriv ditt utkast till genmäle… AI tar med hela debatten i kontexten."
-            : "Klistra in eller skriv ditt anförande här…"
-        }
-        rows={isReply ? 6 : 10}
+        placeholder={placeholderFor(turnKind)}
+        rows={turnKind === "own_speech" ? 10 : 6}
         className="rounded-xl"
       />
       <div className="text-right text-[11px] text-v2-muted">{text.length} tecken</div>
@@ -127,7 +151,7 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
         <div className="flex items-center gap-3 p-3 rounded-xl bg-v2-violet/5 border border-v2-violet/20">
           <Loader2 className="h-4 w-4 animate-spin text-v2-violet shrink-0" />
           <div className="flex-1 text-[12.5px] text-v2-ink">
-            <div className="font-semibold">AI skriver ditt {isReply ? "genmäle" : "anförande"}…</div>
+            <div className="font-semibold">AI skriver ditt {verb}…</div>
             <div className="text-v2-muted text-[11.5px]">
               Tar oftast 5–15 sekunder. {elapsed > 0 && <>Förflutet: {elapsed}s</>}
             </div>
@@ -143,7 +167,7 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
         )}
         <Button type="button" onClick={generate} disabled={running} className="rounded-full">
           {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {running ? "Genererar…" : isReply ? "Generera genmäle" : "Förbättra med AI"}
+          {running ? "Genererar…" : turnKind === "own_speech" ? "Förbättra med AI" : `Generera ${verb}`}
         </Button>
       </div>
     </div>
@@ -157,16 +181,18 @@ export function TurnCardOwnDisplay({
   aiOutputText,
   cardSplit,
   rationale,
+  contextLabel,
 }: {
   position: number;
-  turnKind: "own_speech" | "own_reply";
+  turnKind: OwnTurnKind;
   sourceText: string;
   aiOutputText: string;
   cardSplit: CardSplit[];
   rationale: string;
+  contextLabel?: string;
 }) {
   const [showOriginal, setShowOriginal] = useState(false);
-  const isReply = turnKind === "own_reply";
+  const heading = titleFor(turnKind, contextLabel);
 
   return (
     <div className="rounded-2xl bg-white border border-v2-line p-5 space-y-3">
@@ -176,9 +202,7 @@ export function TurnCardOwnDisplay({
         </div>
         <div className="flex items-center gap-2">
           <Mic className="h-4 w-4 text-v2-violet" />
-          <h3 className="text-[14px] font-semibold text-v2-ink">
-            {isReply ? "Mitt genmäle" : "Mitt anförande"}
-          </h3>
+          <h3 className="text-[14px] font-semibold text-v2-ink">{heading}</h3>
           <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-v2-violet/10 text-v2-violet font-semibold inline-flex items-center gap-1">
             <Sparkles className="h-2.5 w-2.5" /> AI
           </span>
@@ -224,6 +248,25 @@ export function TurnCardOwnDisplay({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+export function TurnCardWaivedDisplay({
+  position,
+  contextLabel,
+}: {
+  position: number;
+  contextLabel?: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-v2-surface/60 border border-dashed border-v2-line p-4 flex items-center gap-3">
+      <div className="h-7 w-7 rounded-full bg-v2-line/40 text-v2-muted flex items-center justify-center text-[12px] font-semibold shrink-0">
+        {position + 1}
+      </div>
+      <div className="text-[13px] text-v2-muted">
+        {contextLabel || "Du valde att avstå genmäle."}
+      </div>
     </div>
   );
 }

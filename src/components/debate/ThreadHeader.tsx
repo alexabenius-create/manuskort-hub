@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopicAreaPicker } from "./TopicAreaPicker";
 import { IssueUpload } from "./IssueUpload";
+import { RoleSelector } from "./RoleSelector";
 import { cn } from "@/lib/utils";
 
 interface DebateThread {
@@ -16,14 +17,16 @@ interface DebateThread {
   issue_document_text: string;
   issue_document_filename: string | null;
   own_position: string;
+  user_role: "speaker" | "replier";
 }
 
 interface Props {
   thread: DebateThread;
   onChanged: (patch: Partial<DebateThread>) => void;
+  showRoleSelector?: boolean;
 }
 
-export function ThreadHeader({ thread, onChanged }: Props) {
+export function ThreadHeader({ thread, onChanged, showRoleSelector }: Props) {
   const [title, setTitle] = useState(thread.title);
   const [topicArea, setTopicArea] = useState(thread.topic_area);
   const [issueText, setIssueText] = useState(thread.issue_text);
@@ -67,6 +70,17 @@ export function ThreadHeader({ thread, onChanged }: Props) {
         className="w-full font-display text-3xl font-semibold tracking-tight text-v2-ink bg-transparent border-0 outline-none focus:bg-v2-surface focus:rounded-lg focus:px-2 transition-all"
         maxLength={120}
       />
+
+      {/* Roll-väljare (visas bara innan första turen) */}
+      {showRoleSelector && (
+        <RoleSelector
+          value={thread.user_role}
+          onChange={(role) => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            persist({ user_role: role });
+          }}
+        />
+      )}
 
       {/* Sakområde */}
       <div className="rounded-2xl bg-white border border-v2-line p-5">

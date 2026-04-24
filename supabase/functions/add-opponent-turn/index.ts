@@ -43,6 +43,14 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const threadId: string = String(body?.thread_id ?? "").trim();
     const mode: "structured" | "freeform" = body?.mode === "freeform" ? "freeform" : "structured";
+    const allowedKinds = ["opponent_input", "opponent_speech", "reply"] as const;
+    const kindRaw = String(body?.kind ?? "opponent_input");
+    const kind = (allowedKinds as readonly string[]).includes(kindRaw)
+      ? (kindRaw as typeof allowedKinds[number])
+      : "opponent_input";
+    const parentTurnId: string | null = body?.parent_turn_id ? String(body.parent_turn_id) : null;
+    const speakerLabel: string = String(body?.speaker_label ?? "").trim().slice(0, 40);
+    const roundNumber: number = Math.max(1, Math.min(99, Number(body?.round_number) || 1));
 
     if (!threadId) return json({ error: "thread_id krävs" }, 400);
 
@@ -84,9 +92,12 @@ Deno.serve(async (req) => {
         thread_id: threadId,
         user_id: userId,
         position: nextPosition,
-        kind: "opponent_input",
+        kind,
         opponent_input_mode: mode,
         source_text: sourceText,
+        parent_turn_id: parentTurnId,
+        speaker_label: speakerLabel || (kind === "opponent_speech" ? "Y" : ""),
+        round_number: roundNumber,
       })
       .select()
       .single();
