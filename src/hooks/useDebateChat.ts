@@ -23,6 +23,7 @@ export function useDebateChat(threadId: string | null) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [threadState, setThreadState] = useState<ThreadState | null>(null);
   const [loading, setLoading] = useState(true);
   const initSentRef = useRef(false);
@@ -89,6 +90,43 @@ export function useDebateChat(threadId: string | null) {
     [threadId, sending],
   );
 
+  const uploadBrief = useCallback(
+    async (file: File) => {
+      if (!threadId || uploading) return;
+      setUploading(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) throw new Error("Ej inloggad");
+
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-issue-document`;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: form,
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+          throw new Error(result?.error || "Kunde inte läsa filen");
+        }
+        const summary: string = result.summary || "";
+        const fullText: string = result.full_text || "";
+
+        // Skicka in i chatten som ett user-meddelande som boten kan analysera
+        const briefMessage = `[BRIEF UPPLADDAD: ${file.name}]\n\nSammanfattning:\n${summary}\n\n---\nFulltext (${fullText.length} tecken):\n${fullText.slice(0, 6000)}${fullText.length > 6000 ? "\n…[förkortad]" : ""}`;
+        await sendMessage(briefMessage);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Något gick fel vid uppladdning";
+        toast({ title: "Underlag", description: msg, variant: "destructive" });
+      } finally {
+        setUploading(false);
+      }
+    },
+    [threadId, uploading, sendMessage],
+  );
+
   // Skicka initialt välkomstmeddelande om chatten är tom
   useEffect(() => {
     if (loading || !threadId || initSentRef.current) return;
@@ -98,5 +136,5 @@ export function useDebateChat(threadId: string | null) {
     }
   }, [loading, threadId, messages.length, sendMessage]);
 
-  return { messages, sending, sendMessage, threadState, loading };
+  return { messages, sending, uploading, sendMessage, uploadBrief, threadState, loading };
 }
