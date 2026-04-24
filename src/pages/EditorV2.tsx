@@ -132,7 +132,7 @@ export default function EditorV2() {
               manuscript_id: manuscript.id,
               user_id: user.id,
               position: i.position,
-              role: manuscript.mode,
+              role: manuscript.mode === "moderator" ? "moderator" as const : "speaker" as const,
               content_html: i.content_html,
             })),
           )
