@@ -680,75 +680,72 @@ export default function EditorV4() {
                   <TooltipContent side="bottom" className="text-[12px] rounded-lg">
                     Vy-inställningar
                   </TooltipContent>
-                  <PopoverContent align="end" className="w-[300px] p-4 rounded-xl">
+                  <PopoverContent
+                    align="end"
+                    className="w-[300px] p-5 rounded-2xl border border-v2-line bg-white shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]"
+                  >
                     <div className="flex flex-col gap-4">
                       <ViewSection label="Textstorlek">
-                        <div className="seg-group w-full">
+                        <V4Seg>
                           {sizes.map((s) => (
-                            <button
+                            <V4SegBtn
                               key={s}
-                              data-active={manuscript.text_size === s}
+                              active={manuscript.text_size === s}
                               onClick={() => updateMeta({ text_size: s })}
-                              className="seg-btn flex-1"
                               title={`Textstorlek: ${s.toUpperCase()}`}
                             >
                               {s.toUpperCase()}
-                            </button>
+                            </V4SegBtn>
                           ))}
-                        </div>
+                        </V4Seg>
                       </ViewSection>
 
                       <ViewSection label="Anteckningar">
-                        <div className="seg-group w-full">
-                          <button
-                            data-active={manuscript.show_notes}
+                        <V4Seg>
+                          <V4SegBtn
+                            active={!!manuscript.show_notes}
                             onClick={() => updateMeta({ show_notes: true })}
-                            className="seg-btn flex-1"
                           >
                             Visa
-                          </button>
-                          <button
-                            data-active={!manuscript.show_notes}
+                          </V4SegBtn>
+                          <V4SegBtn
+                            active={!manuscript.show_notes}
                             onClick={() => updateMeta({ show_notes: false })}
-                            className="seg-btn flex-1"
                           >
                             Dölj
-                          </button>
-                        </div>
+                          </V4SegBtn>
+                        </V4Seg>
                       </ViewSection>
 
                       <ViewSection label="Tider">
-                        <div className="seg-group w-full">
-                          <button
-                            data-active={manuscript.show_times}
+                        <V4Seg>
+                          <V4SegBtn
+                            active={!!manuscript.show_times}
                             onClick={() => updateMeta({ show_times: !manuscript.show_times })}
-                            className="seg-btn flex-1"
                           >
                             {manuscript.show_times ? "Visa tider" : "Dölj tider"}
-                          </button>
-                        </div>
+                          </V4SegBtn>
+                        </V4Seg>
                       </ViewSection>
 
                       {manuscript.show_times && (
                         <ViewSection label="Tidsformat">
-                          <div className="seg-group w-full">
-                            <button
-                              data-active={timeFormat === "clock"}
+                          <V4Seg>
+                            <V4SegBtn
+                              active={timeFormat === "clock"}
                               onClick={() => updateMeta({ time_format: "clock" })}
-                              className="seg-btn flex-1"
                               title="Klockslag på dygnet (HH:MM)"
                             >
                               Klockslag
-                            </button>
-                            <button
-                              data-active={timeFormat === "elapsed"}
+                            </V4SegBtn>
+                            <V4SegBtn
+                              active={timeFormat === "elapsed"}
                               onClick={() => updateMeta({ time_format: "elapsed" })}
-                              className="seg-btn flex-1"
                               title="Förfluten tid från programmets start (MM:SS)"
                             >
                               Förfluten
-                            </button>
-                          </div>
+                            </V4SegBtn>
+                          </V4Seg>
                         </ViewSection>
                       )}
                     </div>
