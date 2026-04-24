@@ -168,6 +168,32 @@ export default function Presentation() {
     })();
   }, [id, navigate]);
 
+  // Sektioner — distinkta section_id i den ordning de förekommer i manuset.
+  const sections = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; cardCount: number }>();
+    for (const c of allCards) {
+      const sid = (c.section_id as string | null) ?? null;
+      if (!sid) continue;
+      const label = (c.section_label as string | null) || "Sektion";
+      const existing = seen.get(sid);
+      if (existing) existing.cardCount += 1;
+      else seen.set(sid, { id: sid, label, cardCount: 1 });
+    }
+    return Array.from(seen.values());
+  }, [allCards]);
+
+  useEffect(() => {
+    if (activeSectionId === null && sections.length > 0) {
+      setActiveSectionId(sections[sections.length - 1].id);
+    }
+  }, [sections, activeSectionId]);
+
+  const cards = useMemo(() => {
+    if (sections.length === 0) return allCards;
+    if (!activeSectionId) return allCards;
+    return allCards.filter((c) => (c.section_id as string | null) === activeSectionId);
+  }, [allCards, sections.length, activeSectionId]);
+
   // Tidsmodul
   const targetSeconds = manuscript?.target_duration_seconds ?? 0;
   const timerMode = (manuscript?.time_format === "elapsed" ? "elapsed" : "clock") as "clock" | "elapsed";
