@@ -24,10 +24,13 @@ const EditorV4 = lazy(() => import("./pages/EditorV4"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PrintView = lazy(() => import("./components/print/PrintView"));
 const Settings = lazy(() => import("./pages/Settings"));
+const SettingsV2 = lazy(() => import("./pages/SettingsV2"));
 const Import = lazy(() => import("./pages/Import"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminV2 = lazy(() => import("./pages/AdminV2"));
 const Messages = lazy(() => import("./pages/Messages"));
+const MessagesV2 = lazy(() => import("./pages/MessagesV2"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
 const Moderator = lazy(() => import("./pages/usecase/Moderator"));
 const Talare = lazy(() => import("./pages/usecase/Talare"));
@@ -90,7 +93,10 @@ const App = () => (
                   <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                   <Route path="/manus/:id/utskrift" element={<RequireAuth><PrintView /></RequireAuth>} />
                   <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+                  <Route path="/admin-v2" element={<RequireAuth><AdminV2 /></RequireAuth>} />
+                  <Route path="/installningar-v2" element={<RequireAuth><SettingsV2 /></RequireAuth>} />
                   <Route path="/meddelanden" element={<RequireAuth><Messages /></RequireAuth>} />
+                  <Route path="/meddelanden-v2" element={<RequireAuth><MessagesV2 /></RequireAuth>} />
                   <Route path="/checkout/return" element={<CheckoutReturn />} />
                   <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
                   <Route path="*" element={<NotFound />} />
