@@ -411,7 +411,6 @@ async function handleScripted(
     }
   }
 
-  }
 
   // intake_brief
   if (phase === "intake_brief") {
