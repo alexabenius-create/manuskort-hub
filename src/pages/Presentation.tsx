@@ -712,8 +712,13 @@ export default function Presentation() {
       {menuOpen && (
         <PresentationStartMenu
           estimatedSpeedFactor={1.0}
+          sections={sections}
           onStartCountdown={(opts) => {
-            const placeholders = scanCardsForPlaceholders(cards);
+            if (opts.sectionId) setActiveSectionId(opts.sectionId);
+            const filtered = opts.sectionId
+              ? allCards.filter((c) => (c.section_id as string | null) === opts.sectionId)
+              : cards;
+            const placeholders = scanCardsForPlaceholders(filtered);
             if (placeholders.length > 0) {
               setPendingStart({ mode: "countdown", viewMode: opts.viewMode, focusStyle: opts.focusStyle, placeholders });
               return;
@@ -724,7 +729,11 @@ export default function Presentation() {
             setMenuOpen(false);
           }}
           onStartInstant={(opts) => {
-            const placeholders = scanCardsForPlaceholders(cards);
+            if (opts.sectionId) setActiveSectionId(opts.sectionId);
+            const filtered = opts.sectionId
+              ? allCards.filter((c) => (c.section_id as string | null) === opts.sectionId)
+              : cards;
+            const placeholders = scanCardsForPlaceholders(filtered);
             if (placeholders.length > 0) {
               setPendingStart({ mode: "instant", viewMode: opts.viewMode, focusStyle: opts.focusStyle, placeholders });
               return;
