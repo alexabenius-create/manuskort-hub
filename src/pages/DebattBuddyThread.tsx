@@ -130,6 +130,8 @@ export default function DebattBuddyThread() {
     },
     [threadId],
   );
+
+  const fetchAll = useCallback(async () => {
     if (!threadId) return;
     const [threadRes, turnsRes] = await Promise.all([
       supabase
