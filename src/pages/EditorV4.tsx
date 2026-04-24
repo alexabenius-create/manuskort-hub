@@ -611,14 +611,16 @@ export default function EditorV4() {
               <span
                 className="hidden md:inline-flex items-center text-[10.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap"
                 style={{
-                  color: manuscript.mode === "moderator" ? "#6366f1" : "#3b82f6",
+                  color: manuscript.mode === "moderator" ? "#6366f1" : manuscript.mode === "debate" ? "#a855f7" : "#3b82f6",
                   background: manuscript.mode === "moderator"
                     ? "linear-gradient(135deg, rgba(99,102,241,0.10), rgba(59,130,246,0.10))"
+                    : manuscript.mode === "debate"
+                    ? "linear-gradient(135deg, rgba(168,85,247,0.10), rgba(236,72,153,0.10))"
                     : "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(14,165,233,0.10))",
-                  border: `1px solid ${manuscript.mode === "moderator" ? "rgba(99,102,241,0.22)" : "rgba(59,130,246,0.22)"}`,
+                  border: `1px solid ${manuscript.mode === "moderator" ? "rgba(99,102,241,0.22)" : manuscript.mode === "debate" ? "rgba(168,85,247,0.22)" : "rgba(59,130,246,0.22)"}`,
                 }}
               >
-                {manuscript.mode === "moderator" ? "Moderator" : "Talare"}
+                {manuscript.mode === "moderator" ? "Moderator" : manuscript.mode === "debate" ? "Debatt" : "Talare"}
               </span>
 
               <span className="md:hidden text-[11px] text-v2-muted font-mono whitespace-nowrap ml-auto">
