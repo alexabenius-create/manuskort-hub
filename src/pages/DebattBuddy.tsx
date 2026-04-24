@@ -109,8 +109,9 @@ export default function DebattBuddy() {
         return;
       }
     } else {
-      if (!parent) {
-        toast({ title: "Originalanförandet saknas", variant: "destructive" });
+      // Reply: antingen parent (från Editor) ELLER ownPosition (fristående)
+      if (!parent && ownPosition.trim().length < 20) {
+        toast({ title: "Skriv din ståndpunkt först (minst 20 tecken)", description: "AI behöver veta vad du står för.", variant: "destructive" });
         return;
       }
       const cleanArgs = opponentArgs.map((a) => a.trim()).filter(Boolean);
@@ -125,10 +126,12 @@ export default function DebattBuddy() {
       const fnName = mode === "speech" ? "debate-improve" : "debate-counter";
       const body =
         mode === "speech"
-          ? { speech, issue, maxLengthPercent: freedom }
+          ? { speech, issue, issue_document_text: issueDocumentText || undefined, maxLengthPercent: freedom }
           : {
-              original_speech: parent!.improved_text || parent!.original_text,
+              original_speech: parent ? (parent.improved_text || parent.original_text) : undefined,
+              own_position: !parent ? ownPosition : undefined,
               issue,
+              issue_document_text: issueDocumentText || undefined,
               opponent_arguments: opponentArgs.map((a) => a.trim()).filter(Boolean),
               maxLengthPercent: freedom,
             };
