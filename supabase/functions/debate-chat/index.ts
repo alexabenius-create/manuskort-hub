@@ -309,7 +309,7 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
     quick_replies: [],
   },
   intake_opponent_args: {
-    text: "Skriv in motdebattörens argument så formulerar jag ett genmäle.",
+    text: "Skriv in **ett argument i taget** från motdebattören — du kan skicka flera meddelanden i följd. När alla argument är inlagda trycker du på **Analysera nu**, så genererar jag ett genmäle som bemöter dem punktvis.",
     quick_replies: [],
   },
   idle: {
@@ -557,7 +557,7 @@ async function handleScripted(
         })
         .eq("id", threadId);
       return {
-        text: `Tack! Skriv in ${name}s argument så formulerar jag ett genmäle åt dig.`,
+        text: `Tack! Skriv in **ett argument i taget** från ${name} — du kan skicka flera meddelanden i följd. När du har lagt in alla argument trycker du på **Analysera nu**, så genererar jag ett förslag till genmäle som bemöter dem punktvis.`,
         quick_replies: [],
       };
     }
@@ -751,12 +751,12 @@ Deno.serve(async (req) => {
       ...(history || []).map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    // Välj modell utifrån fas: tyngre modell när vi ska generera manus/genmäle.
-    const draftingPhases = new Set([
-      "drafting_speech", "intake_opponent_args", "generating_rebuttal",
-    ]);
+    // Välj modell utifrån fas:
+    // - Tung (gpt-5) endast vid faktisk manus-/genmäles-generering.
+    // - Snabb (gemini-2.5-flash-lite) vid replik-skiften och korta konversationella svar.
+    const heavyPhases = new Set(["drafting_speech", "generating_rebuttal"]);
     const currentPhase = thread.bot_state?.phase || "intake_issue";
-    const model = draftingPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash";
+    const model = heavyPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash-lite";
 
     // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
