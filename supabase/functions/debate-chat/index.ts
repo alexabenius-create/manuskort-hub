@@ -660,7 +660,7 @@ Deno.serve(async (req) => {
     const aiData = await aiResp.json();
     const choice = aiData.choices?.[0];
     const assistantMsg = choice?.message;
-    let assistantText: string = stripToolJunk(assistantMsg?.content || "");
+    let assistantText: string = trimToTwoSentences(stripToolJunk(assistantMsg?.content || ""));
     const toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
     let quickReplies: string[] = [];
@@ -837,7 +837,7 @@ Deno.serve(async (req) => {
       });
       if (followup.ok) {
         const fd = await followup.json();
-        assistantText = stripToolJunk(fd.choices?.[0]?.message?.content || "");
+        assistantText = trimToTwoSentences(stripToolJunk(fd.choices?.[0]?.message?.content || ""));
       }
     }
 
