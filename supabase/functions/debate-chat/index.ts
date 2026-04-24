@@ -640,6 +640,7 @@ function json(body: unknown, status = 200) {
 }
 
 /** Ta bort tool-call-läckor (t.ex. `{ "quick_replies": [...] }` eller ```json-block) som modellen ibland skriver in i fritexten. */
+/** Ta bort tool-call-läckor (t.ex. `{ "quick_replies": [...] }` eller ```json-block) som modellen ibland skriver in i fritexten. */
 function stripToolJunk(text: string): string {
   if (!text) return "";
   let out = text;
@@ -650,6 +651,30 @@ function stripToolJunk(text: string): string {
   // Städa upp dubbla mellanslag/radbrytningar
   out = out.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   return out;
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function textToHtml(text: string): string {
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  return (paragraphs.length ? paragraphs : [text.trim() || " "])
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+}
+
+function splitIntoCards(text: string): Array<{ title: string; body: string }> {
+  const cleaned = text.replace(/^här är[^\n:]*:?\s*/i, "").trim();
+  const paragraphs = cleaned.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (paragraphs.length >= 2) {
+    const splitAt = Math.ceil(paragraphs.length / 2);
+    return [
+      { title: "Genmäle", body: paragraphs.slice(0, splitAt).join("\n\n") },
+      { title: "Avslut", body: paragraphs.slice(splitAt).join("\n\n") },
+    ].filter((c) => c.body.trim());
+  }
+  return [{ title: "Genmäle", body: cleaned || text }];
 }
 
 Deno.serve(async (req) => {
