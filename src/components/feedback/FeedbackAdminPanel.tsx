@@ -328,25 +328,46 @@ export function FeedbackAdminPanel() {
                       {activeThread.email ?? "(ingen e-post)"} · {SOURCE_LABEL[activeThread.source] ?? activeThread.source} · {formatDate(activeThread.created_at)}
                     </p>
                   </div>
-                  {activeThread.status === "open" ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={closeThread}
-                      className="rounded-full text-[12px] h-7 text-muted-foreground"
-                    >
-                      <X className="h-3 w-3" /> Stäng
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={reopenThread}
-                      className="rounded-full text-[12px] h-7 text-muted-foreground"
-                    >
-                      <Lock className="h-3 w-3" /> Öppna igen
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {activeThread.user_id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          openInsightFromText(
+                            `${activeThread.subject}\n\n${messages
+                              .filter((m) => m.sender_role === "user")
+                              .map((m) => m.body)
+                              .join("\n\n---\n\n")}`,
+                            activeThread,
+                          )
+                        }
+                        className="rounded-full text-[12px] h-7 text-muted-foreground hover:text-accent-blue"
+                        title="Skapa insikt från hela tråden"
+                      >
+                        <Lightbulb className="h-3 w-3" /> Skapa insikt
+                      </Button>
+                    )}
+                    {activeThread.status === "open" ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={closeThread}
+                        className="rounded-full text-[12px] h-7 text-muted-foreground"
+                      >
+                        <X className="h-3 w-3" /> Stäng
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={reopenThread}
+                        className="rounded-full text-[12px] h-7 text-muted-foreground"
+                      >
+                        <Lock className="h-3 w-3" /> Öppna igen
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <AdminShareRequestPanel threadId={activeThread.id} threadUserId={activeThread.user_id} />
               </header>
