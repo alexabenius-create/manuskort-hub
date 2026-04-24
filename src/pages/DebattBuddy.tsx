@@ -14,6 +14,7 @@ interface ThreadRow {
   title: string;
   topic_area: string;
   updated_at: string;
+  manuscript_id: string | null;
 }
 
 export default function DebattBuddy() {
@@ -30,7 +31,7 @@ export default function DebattBuddy() {
     (async () => {
       const { data, error } = await supabase
         .from("debate_threads")
-        .select("id, title, topic_area, updated_at")
+        .select("id, title, topic_area, updated_at, manuscript_id")
         .is("archived_at", null)
         .order("updated_at", { ascending: false });
       setLoading(false);
@@ -41,17 +42,41 @@ export default function DebattBuddy() {
   const createThread = async () => {
     if (!user || creating) return;
     setCreating(true);
-    const { data, error } = await supabase
+
+    // 1. Skapa manus
+    const { data: manus, error: mErr } = await supabase
+      .from("manuscripts")
+      .insert({ user_id: user.id, title: "Debatt – nytt manus" })
+      .select("id")
+      .single();
+    if (mErr || !manus) {
+      setCreating(false);
+      toast({ title: "Kunde inte skapa manus", description: mErr?.message, variant: "destructive" });
+      return;
+    }
+
+    // 2. Skapa tråd kopplad till manus
+    const { data: thread, error: tErr } = await supabase
       .from("debate_threads")
-      .insert({ user_id: user.id, title: "Ny debatt" })
+      .insert({ user_id: user.id, title: "Ny debatt", manuscript_id: manus.id })
       .select("id")
       .single();
     setCreating(false);
-    if (error || !data) {
-      toast({ title: "Kunde inte skapa debatt", description: error?.message, variant: "destructive" });
+    if (tErr || !thread) {
+      toast({ title: "Kunde inte skapa debatt", description: tErr?.message, variant: "destructive" });
       return;
     }
-    navigate(`/debatt-buddy/${data.id}`);
+
+    navigate(`/manus/${manus.id}?debattbuddy=${thread.id}`);
+  };
+
+  const openThread = (t: ThreadRow) => {
+    if (t.manuscript_id) {
+      navigate(`/manus/${t.manuscript_id}?debattbuddy=${t.id}`);
+    } else {
+      // Legacy-tråd utan manus → gamla flödet
+      navigate(`/debatt-buddy/${t.id}`);
+    }
   };
 
   if (tierLoading || betaLoading) {
@@ -93,7 +118,7 @@ export default function DebattBuddy() {
 
   return (
     <div className="min-h-screen bg-v2-surface">
-      <SEO title="Debatt-buddy – AI för debatter | Manuskort" description="Trådbaserade debattsessioner med AI som följer hela debatten." canonical="/debatt-buddy" />
+      <SEO title="Debatt-buddy – AI för debatter | Manuskort" description="Chatta med en AI-coach som hjälper dig förbereda anföranden, repliker och genmälen." canonical="/debatt-buddy" />
       <BackHeader />
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="flex items-end justify-between mb-8">
@@ -102,7 +127,7 @@ export default function DebattBuddy() {
               <h1 className="font-display text-4xl font-semibold tracking-tight text-v2-ink">Debatt-buddy</h1>
               <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-v2-violet/10 text-v2-violet">BETA</span>
             </div>
-            <p className="text-v2-muted text-[15px]">Dina debattsessioner — AI följer hela tråden.</p>
+            <p className="text-v2-muted text-[15px]">Chatta med en AI-coach medan du jobbar i manuset.</p>
           </div>
           <Button onClick={createThread} disabled={creating} className="rounded-full">
             {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
@@ -118,7 +143,7 @@ export default function DebattBuddy() {
           <div className="text-center py-16 rounded-2xl bg-white border border-v2-line">
             <Sparkles className="h-8 w-8 mx-auto text-v2-violet mb-3" />
             <h2 className="font-display text-xl font-semibold text-v2-ink mb-2">Ingen debatt än</h2>
-            <p className="text-v2-muted mb-5 text-[14px]">Starta en ny för att börja förbereda anförande och repliker.</p>
+            <p className="text-v2-muted mb-5 text-[14px]">Starta en ny för att börja chatta med Debatt-buddy.</p>
             <Button onClick={createThread} disabled={creating} className="rounded-full">
               <Plus className="h-4 w-4 mr-2" /> Skapa min första debatt
             </Button>
@@ -127,14 +152,17 @@ export default function DebattBuddy() {
           <ul className="space-y-2">
             {threads.map((t) => (
               <li key={t.id}>
-                <Link
-                  to={`/debatt-buddy/${t.id}`}
-                  className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-v2-line hover:border-v2-violet/40 transition-colors"
+                <button
+                  onClick={() => openThread(t)}
+                  className="w-full text-left flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-v2-line hover:border-v2-violet/40 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <MessagesSquare className="h-4 w-4 text-v2-violet shrink-0" />
                       <span className="text-[15px] font-semibold text-v2-ink truncate">{t.title}</span>
+                      {!t.manuscript_id && (
+                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-v2-muted/10 text-v2-muted">klassisk</span>
+                      )}
                     </div>
                     {t.topic_area && (
                       <div className="text-[12px] text-v2-muted mt-1">🏷 {t.topic_area}</div>
@@ -143,7 +171,7 @@ export default function DebattBuddy() {
                   <span className="text-[11px] text-v2-muted shrink-0">
                     {new Date(t.updated_at).toLocaleDateString("sv-SE")}
                   </span>
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
