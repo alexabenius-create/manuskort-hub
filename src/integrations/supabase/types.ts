@@ -303,14 +303,55 @@ export type Database = {
           },
         ]
       }
+      debate_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debate_chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "debate_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debate_threads: {
         Row: {
           archived_at: string | null
+          bot_state: Json
           created_at: string
+          current_opponent_label: string
           id: string
           issue_document_filename: string | null
           issue_document_text: string
           issue_text: string
+          manuscript_id: string | null
           own_position: string
           title: string
           topic_area: string
@@ -320,11 +361,14 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          bot_state?: Json
           created_at?: string
+          current_opponent_label?: string
           id?: string
           issue_document_filename?: string | null
           issue_document_text?: string
           issue_text?: string
+          manuscript_id?: string | null
           own_position?: string
           title?: string
           topic_area?: string
@@ -334,11 +378,14 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          bot_state?: Json
           created_at?: string
+          current_opponent_label?: string
           id?: string
           issue_document_filename?: string | null
           issue_document_text?: string
           issue_text?: string
+          manuscript_id?: string | null
           own_position?: string
           title?: string
           topic_area?: string
