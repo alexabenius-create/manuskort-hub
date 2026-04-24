@@ -278,13 +278,17 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: true })
       .limit(MAX_HISTORY);
 
+    const briefSnippet = thread.issue_document_text
+      ? thread.issue_document_text.slice(0, 4000)
+      : "";
     const contextSummary = `KONTEXT:
 - Fas: ${thread.bot_state?.phase || "intake_issue"}
 - Sakområde: ${thread.topic_area || "(inte satt)"}
 - Ärende: ${thread.issue_text || "(inte beskrivet)"}
+- Underlag: ${thread.issue_document_text ? `JA (${thread.issue_document_filename || "text"}, ${thread.issue_document_text.length} tecken)` : "(inget)"}
 - Egen ståndpunkt: ${thread.own_position || "(inte angiven)"}
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
-- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}`;
+- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
