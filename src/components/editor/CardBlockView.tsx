@@ -190,16 +190,21 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
 
   const showSectionBanner =
     sectionInfo?.isFirstInSection && !!a.sectionId && !!a.sectionLabel;
+  const isFirstInCollapsedSection =
+    isCollapsed && sectionInfo?.isFirstInSection === true;
 
   return (
     <NodeViewWrapper
       as="article"
       data-card-block="true"
       data-section-id={a.sectionId ?? undefined}
+      data-section-collapsed-first={isFirstInCollapsedSection ? "true" : undefined}
       draggable={false}
       style={hideForCollapse ? { display: "none" } : undefined}
-      className={`card-block relative rounded-2xl border bg-surface shadow-subtle mb-4 transition-all ${
-        a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"
+      className={`card-block relative rounded-2xl mb-4 transition-all ${
+        isFirstInCollapsedSection
+          ? "border-0 bg-transparent shadow-none p-0"
+          : `border bg-surface shadow-subtle ${a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"}`
       } ${isBeingDragged ? "opacity-40" : ""}`}
     >
       {showSectionBanner && manuscriptId && a.sectionId && (
