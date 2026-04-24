@@ -1,94 +1,85 @@
-# Debatt-buddy (BETA)
 
-Ny AI-driven funktion för debattanföranden + repliker. Ligger låst bakom BETA-flagga, admin låser upp per användare.
+# Debatt-buddy v2 — Toggle + Ärende-uppladdning
 
-## 1. Databas (migration)
+## 1. Ny edge function: `parse-issue-document`
 
-**Ny tabell `beta_features`** — per-user feature flags
-- `id uuid pk`, `user_id uuid`, `feature text` (t.ex. `'debate_buddy'`), `granted_at timestamptz`, `granted_by uuid`
-- RLS: användaren får läsa egna; admin får läsa/skriva alla
-- Helper-funktion `has_beta_access(_user_id, _feature)` (security definer)
+Fil: `supabase/functions/parse-issue-document/index.ts`
+Config: lägg till `[functions.parse-issue-document]` med `verify_jwt = false` i `supabase/config.toml` (auth valideras i koden).
 
-**Ny tabell `debate_sessions`**
-- `id`, `user_id`, `manuscript_id` (nullable, sätts vid publicering)
-- `kind text` — `'speech'` | `'reply'`
-- `parent_session_id uuid` (för repliker → original)
-- `issue_text text` (ärendet, valfritt)
-- `original_text text` (användarens råa anförande / motdebattörens argument)
-- `improved_text text` (AI-output)
-- `card_split jsonb` (AI:s föreslagna kort-uppdelning)
-- `max_length_percent int default 100`
-- `created_at`, `updated_at`
-- RLS: ägare CRUD egna
+- Tar emot `multipart/form-data` med `file` (PDF / DOCX / PPTX, max 10 MB).
+- Validerar JWT (Bearer) + tier (`pro`/`admin`) + `has_beta_access('debate_buddy')`.
+- **PDF**: skickas direkt till `google/gemini-2.5-pro` via Lovable AI Gateway som `image_url`-style inline data (`data:application/pdf;base64,…`) — Gemini hanterar PDF native.
+- **DOCX**: extraherar text med `mammoth` (`https://esm.sh/mammoth@1.8.0`) → skickar texten till Gemini.
+- **PPTX**: unzippar med `https://deno.land/x/zipjs` och plockar ut text från `ppt/slides/slide*.xml` → skickar till Gemini.
+- Gemini-prompt (tool-call `extract_issue`): returnera `{ summary: string (max 1500 tecken, sammanfattning av ärendet), full_text: string (rensad fulltext) }`.
+- Räknas mot 200/mån via `ai_usage` (samma som övriga AI-anrop).
+- Returnerar `{ summary, full_text, char_count, usage }`.
+- Fel: 413 (för stor fil), 415 (fel mime), 429/402 (AI-gränser), 403 (beta/tier).
 
-**Enum-tillägg**: `manuscript_mode` += `'debate'`
+## 2. Uppdatera `debate-improve` och `debate-counter`
 
-**Tillägg på `manuscripts`**: `debate_session_id uuid` (nullable) — länk tillbaka till sessionen som skapade manuset.
+`supabase/functions/debate-improve/index.ts`:
+- Ta emot nytt fält `issue_document_text?: string`.
+- Om satt: lägg till som **"DOKUMENT-KONTEXT (ärendehandling)"**-block i system-prompt, separerat från `issue` (användarens egen sammanfattning).
 
-## 2. Edge functions
+`supabase/functions/debate-counter/index.ts`:
+- Ta emot `issue_document_text?: string` (samma hantering som ovan).
+- Ta emot `own_position?: string` — användarens egen ståndpunkt/anförande när **fristående replikskifte** körs (utan `parent_session_id`).
+- Logik: om klienten skickar `parent_session_id` → ladda `original_text` från `debate_sessions` (som idag). Annars: kräv `own_position` (min 20 tecken) och använd det som `originalSpeech` i prompten. Felmeddelande "Lägg in din egen ståndpunkt så AI förstår skiljelinjen" om fältet saknas.
+- `charCap`-formel: oförändrad (baserad på opponent-argumenten).
 
-**`debate-improve`** (POST)
-- Input: `{ speech, issue?, maxLengthPercent }`
-- Auth + tier-check (pro/admin) + beta-check (`has_beta_access`)
-- Räknas mot 200/mån (samma `ai_usage`-tabell som `improve-sentence`)
-- Prompt: skärp argumenten, behåll ståndpunkt, **hard cap på tecken** = `originalLen * maxLengthPercent/100`
-- Andra-pass om output > cap: be modellen korta ner
-- Tool-call returnerar `{ improved_text, card_split: [{title, content}], rationale }`
+## 3. Frontend — `src/pages/DebattBuddy.tsx`
 
-**`debate-counter`** (POST)
-- Input: `{ original_speech, issue?, opponent_arguments[], maxLengthPercent }`
-- Samma auth/tier/beta/usage-logik
-- Prompt: hitta motargument mot motdebattörens punkter, baserat på användarens ståndpunkt
-- Cap = `sum(opponent_arguments).length * maxLengthPercent/100`
-- Returnerar samma struktur som `debate-improve`
+### Toggle högst upp
+- `ToggleGroup` (segmented control) med två lägen: **Debattanförande** (default) / **Replikskifte**.
+- Synkas mot URL `?mode=speech|reply` (bakåtkompatibelt — `?mode=reply&parent=...` fortsätter funka från Editor-knappen).
+- När man växlar utan `parent` → fristående replik-läge (inputfält för "din ståndpunkt").
 
-## 3. Frontend
+### Uppdaterad beskrivning under rubriken
+> "Skärp ditt debattanförande med AI — eller lägg in motdebattörens argument vid replikskifte och få förslag på motargument."
 
-**Ny hook `src/hooks/useBetaAccess.ts`**
-- `useBetaAccess('debate_buddy') → { hasAccess, loading }`
-- Admin har alltid access
+### Ny komponent: `src/components/debate/IssueUpload.tsx`
+- Drop-zone + filväljare (accept: `.pdf,.docx,.pptx`, max 10 MB).
+- Vid val: POSTar fil till `parse-issue-document` via `fetch` (med Authorization-header).
+- Visar progress: "Läser dokumentet…" → vid klar fyller `issue`-textarean med `summary`.
+- Sparar `full_text` i parent-state (`issueDocumentText`) som skickas vidare till `debate-improve`/`debate-counter`.
+- Knapp "Ta bort dokument" rensar både `summary` (om användaren vill) och `full_text`.
+- Felhantering med toast (för stor fil, fel format, AI-kvot slut, etc.).
 
-**Ny sida `src/pages/DebattBuddy.tsx`** — route `/debatt-buddy` och `/debatt-buddy/:sessionId`
-- Två lägen via query/state: `mode=speech` (default) och `mode=reply`
-- **Speech-läge**: textarea för anförande + valfri textarea för ärende + slider "AI:s frihet" (Strikt 100% / Lite mer 110% / Mer 125%) + "Förbättra"-knapp
-- Visar AI-resultat + diff/jämförelse + "Publicera som manus"-knapp
-- Publicering: skapar `manuscript` med `mode='debate'`, splittar AI:s `card_split` till `cards`, navigerar till `/manus/:id`
-- **Reply-läge**: laddar parent-session, visar lista där användaren lägger in motdebattörens argument (kan lägga till flera) + slider + "Generera replik"-knapp
-- Publicering av replik: skapar **nytt eget manus** (mode `'debate'`, `parent_session_id` satt)
+### Reply-läge i `DebattBuddy.tsx`
+- **Med `?parent=<id>`**: laddar parent från `debate_sessions` (oförändrat).
+- **Utan parent**: visar nytt fält **"Din ståndpunkt / ditt anförande"** (Textarea, krävs, min 20 tecken) ovanför opponent-argumenten. Hjälptext: "AI behöver veta vad du står för för att kunna hitta motargument."
+- Skickar `own_position` till `debate-counter` när parent saknas.
 
-**Editor (`src/pages/EditorV4.tsx`)**
-- När `manuscript.mode === 'debate'`: visa **Replik-knapp** i toolbar
-- Klick → navigerar till `/debatt-buddy?mode=reply&parent=<session_id>`
-- Lägg till `'debate'` i mode-väljaren (jämförs med Talare/Moderator), gated bakom `useBetaAccess`
+### Båda lägen
+- `IssueUpload` placeras ovanför fritext-`issue`-fältet — användaren kan ladda upp **och/eller** skriva fritt. Uppladdning fyller fältet, sedan redigerbart.
+- `issue_document_text` skickas alltid med om laddat (även om användaren redigerat `summary`).
 
-**Library (`src/pages/LibraryV2.tsx`)**
-- Ny entry-card "Debatt-buddy (BETA)" — endast synlig om `useBetaAccess('debate_buddy')` är true
-- Liten BETA-badge
+## 4. Behåll "Skriv replik"-knappen i Editor
 
-**Admin-panel (`src/components/admin/BetaAccessPanel.tsx`)**
-- Ny flik i `AdminV2`
-- Lista alla users med checkbox per beta-feature
-- Sök/filter på email
-- Toggle skriver/raderar i `beta_features`
-
-## 4. Sidoeffekter / övrigt
-
-- Lägg till routes i `App.tsx`: `/debatt-buddy`, `/debatt-buddy/:sessionId` (RequireAuth)
-- Mode-translation (Talare/Moderator/**Debatt**) i alla mode-pickers
-- Print/Presentation behöver inga ändringar — debate-manus är vanliga manus med `mode='debate'`
+`src/pages/EditorV4.tsx` — oförändrad. Knappen länkar fortsatt till `/debatt-buddy?mode=reply&parent=<session_id>` (parent-läge med originalanförandet förladdat).
 
 ## 5. Säkerhet
 
-- Alla edge functions: dubbelkollar tier + beta-access server-side (klient-check är bara UI-gate)
-- RLS på `debate_sessions` strikt per ägare
-- `beta_features`: bara admin får INSERT/UPDATE/DELETE
+- All filuppladdning gated server-side: tier (`pro`/`admin`) + `has_beta_access('debate_buddy')`.
+- 10 MB-gräns validerad både klient (innan upload) och server (innan AI-anrop).
+- Endast vita-listade mime-typer: `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.openxmlformats-officedocument.presentationml.presentation`.
+- Inga filer lagras i Storage — extraherad text returneras direkt och hålls i klient-state under sessionen.
 
-## Leveransordning
+## 6. Filer
 
-1. Migration (tabeller + enum + RLS)
-2. Edge functions (`debate-improve`, `debate-counter`)
-3. `useBetaAccess`-hook
-4. `DebattBuddy.tsx` (speech-läge först, reply-läge sen)
-5. Editor: mode `'debate'` + Replik-knapp
-6. Library: gated entry
-7. Admin: BetaAccessPanel
+**Skapas:**
+- `supabase/functions/parse-issue-document/index.ts`
+- `src/components/debate/IssueUpload.tsx`
+
+**Ändras:**
+- `supabase/functions/debate-improve/index.ts` (acceptera `issue_document_text`)
+- `supabase/functions/debate-counter/index.ts` (acceptera `issue_document_text` + `own_position`, gör `parent` valfri)
+- `src/pages/DebattBuddy.tsx` (toggle, IssueUpload, fristående reply, uppdaterad beskrivning)
+- `supabase/config.toml` (registrera `parse-issue-document`)
+
+## 7. Utanför scope
+
+- Inget `.doc` (gammalt format) — bara `.docx`.
+- Ingen lagring av uppladdade filer.
+- Ingen DB-migration behövs (inga schemaändringar).
