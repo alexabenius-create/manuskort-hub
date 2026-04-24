@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Plus, Sparkles, Loader2, X } from "lucide-react";
+import { Plus, Sparkles, Loader2, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { NewInsightDialog } from "./NewInsightDialog";
 import { InsightDetail } from "./InsightDetail";
 import {
