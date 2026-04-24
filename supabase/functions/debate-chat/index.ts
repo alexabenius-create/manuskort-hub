@@ -762,6 +762,18 @@ Deno.serve(async (req) => {
     const currentPhase = thread.bot_state?.phase || "intake_issue";
     const model = heavyPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash-lite";
 
+    // Tving fram rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
+    let toolChoice: unknown = "auto";
+    if (currentPhase === "generating_rebuttal") {
+      toolChoice = { type: "function", function: { name: "generate_rebuttal_cards" } };
+    } else if (currentPhase === "drafting_speech") {
+      // drafting_speech tvingar bara om användaren bett om utkast (annars vill vi ha vanligt svar).
+      const lastUser = userMessage.toLowerCase();
+      if (lastUser.includes("skriv utkast") || lastUser.includes("utkast åt mig")) {
+        toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
+      }
+    }
+
     // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -773,6 +785,7 @@ Deno.serve(async (req) => {
         model,
         messages,
         tools: TOOLS,
+        tool_choice: toolChoice,
       }),
     });
 
