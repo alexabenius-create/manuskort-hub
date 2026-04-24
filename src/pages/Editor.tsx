@@ -276,7 +276,7 @@ export default function Editor() {
         manuscript_id: manuscript.id,
         user_id: user.id,
         position,
-        role: manuscript.mode,
+        role: manuscript.mode === "moderator" ? "moderator" : "speaker",
       })
       .select()
       .single();

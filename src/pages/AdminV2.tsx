@@ -13,7 +13,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Search, Sparkles, MessageSquare, Eye, Lightbulb } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, MessageSquare, Eye, Lightbulb, FlaskConical } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { TIER_LABEL, type Tier } from "@/lib/tierLimits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ import { useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
 import { VisitsPanel } from "@/components/admin/VisitsPanel";
 import { InsightsPanel } from "@/components/admin/insights/InsightsPanel";
 import { AiUsagePanel } from "@/components/admin/AiUsagePanel";
+import { BetaAccessPanel } from "@/components/admin/BetaAccessPanel";
 
 interface UserRow {
   user_id: string;
@@ -69,7 +70,7 @@ export default function AdminV2() {
   const [q, setQ] = useState("");
   const [pending, setPending] = useState<{ row: UserRow; newTier: Tier } | null>(null);
   const [working, setWorking] = useState(false);
-  const [tab, setTab] = useState<"users" | "feedback" | "visits" | "insikter" | "ai">(() => {
+  const [tab, setTab] = useState<"users" | "feedback" | "visits" | "insikter" | "ai" | "beta">(() => {
     if (typeof window === "undefined") return "users";
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab");
@@ -77,6 +78,7 @@ export default function AdminV2() {
     if (t === "visits") return "visits";
     if (t === "insikter") return "insikter";
     if (t === "ai") return "ai";
+    if (t === "beta") return "beta";
     return "users";
   });
   const adminUnread = useAdminUnreadMessages(tier === "admin");
@@ -185,7 +187,7 @@ export default function AdminV2() {
         <Tabs
           value={tab}
           onValueChange={(v) => {
-            setTab(v as "users" | "feedback" | "visits" | "insikter" | "ai");
+            setTab(v as "users" | "feedback" | "visits" | "insikter" | "ai" | "beta");
             const url = new URL(window.location.href);
             if (v === "users") url.searchParams.delete("tab");
             else url.searchParams.set("tab", v);
@@ -236,6 +238,14 @@ export default function AdminV2() {
             >
               <Sparkles className="h-3.5 w-3.5" />
               AI
+            </TabsTrigger>
+            <TabsTrigger
+              value="beta"
+              className="rounded-full px-5 text-[14px] text-v2-muted data-[state=active]:text-white gap-2"
+              style={tab === "beta" ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
+            >
+              <FlaskConical className="h-3.5 w-3.5" />
+              BETA
             </TabsTrigger>
           </TabsList>
 
@@ -381,6 +391,10 @@ export default function AdminV2() {
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-v2-line shadow-sm p-4 sm:p-6">
               <AiUsagePanel />
             </div>
+          </TabsContent>
+
+          <TabsContent value="beta">
+            <BetaAccessPanel />
           </TabsContent>
         </Tabs>
       </main>
