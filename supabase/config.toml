@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.debate-counter]
 verify_jwt = false
+
+[functions.parse-issue-document]
+verify_jwt = false
