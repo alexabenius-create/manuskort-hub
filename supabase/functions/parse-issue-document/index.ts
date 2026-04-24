@@ -149,6 +149,14 @@ Returnera ALLT via verktygsanropet 'extract_issue':
         tool_choice: { type: "function", function: { name: "extract_issue" } },
       }),
     });
+    } catch (e) {
+      clearTimeout(timeoutId);
+      if (e instanceof Error && e.name === "AbortError") {
+        return json({ error: "ai_timeout", message: "AI-tjänsten tog för lång tid. Försök med en mindre/kortare fil." }, 504);
+      }
+      throw e;
+    }
+    clearTimeout(timeoutId);
 
     if (aiResponse.status === 429) return json({ error: "ai_rate_limited" }, 429);
     if (aiResponse.status === 402) return json({ error: "ai_credits_exhausted" }, 402);
