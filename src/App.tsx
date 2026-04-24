@@ -66,6 +66,7 @@ const App = () => (
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
+                  <Route path="/v2" element={<LandingV2 />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/aterstall-losenord" element={<ResetPassword />} />
                   <Route path="/priser" element={<Pricing />} />
