@@ -596,7 +596,7 @@ export default function EditorV4() {
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
             {/* Rad 1 */}
             <div className="flex items-center gap-2 min-w-0 md:flex-1">
-              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3">
+              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface">
                 <Link to="/bibliotek">
                   <ArrowLeft className="h-4 w-4" />
                   <span className="hidden sm:inline">Bibliotek</span>
