@@ -76,10 +76,16 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const threadId: string = String(body?.thread_id ?? "").trim();
-    const turnKind: "own_speech" | "own_reply" =
-      body?.turn_kind === "own_reply" ? "own_reply" : "own_speech";
+    const allowedTurnKinds = ["own_speech", "own_reply", "rebuttal"] as const;
+    const turnKindRaw = String(body?.turn_kind ?? "own_speech");
+    const turnKind: "own_speech" | "own_reply" | "rebuttal" =
+      (allowedTurnKinds as readonly string[]).includes(turnKindRaw)
+        ? (turnKindRaw as "own_speech" | "own_reply" | "rebuttal")
+        : "own_speech";
     const newSourceText: string = String(body?.new_source_text ?? "").trim();
     const maxLengthPercent: number = Math.max(80, Math.min(150, Number(body?.maxLengthPercent) || 100));
+    const parentTurnId: string | null = body?.parent_turn_id ? String(body.parent_turn_id) : null;
+    const roundNumber: number = Math.max(1, Math.min(99, Number(body?.round_number) || 1));
 
     if (!threadId) return json({ error: "thread_id krävs" }, 400);
     if (newSourceText.length < 20) return json({ error: "Texten är för kort (minst 20 tecken)" }, 400);
