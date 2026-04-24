@@ -846,7 +846,7 @@ Deno.serve(async (req) => {
     const choice = aiData.choices?.[0];
     const assistantMsg = choice?.message;
     let assistantText: string = trimToTwoSentences(stripToolJunk(assistantMsg?.content || ""));
-    const toolCalls = assistantMsg?.tool_calls || [];
+    let toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
     let quickReplies: string[] = [];
 
