@@ -39,6 +39,7 @@ export function InsightsPanel() {
   const [dupBusy, setDupBusy] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [listCollapsed, setListCollapsed] = useState(false);
+  const [userMap, setUserMap] = useState<Map<string, { display_name: string | null; email: string | null }>>(new Map());
 
   const load = async () => {
     setLoading(true);
@@ -57,6 +58,15 @@ export function InsightsPanel() {
 
   useEffect(() => {
     load();
+    // Förladda användarlistan så vi kan visa namn på kopplade insikter
+    supabase.rpc("admin_list_users").then(({ data }) => {
+      if (!data) return;
+      const m = new Map<string, { display_name: string | null; email: string | null }>();
+      (data as Array<{ user_id: string; display_name: string | null; email: string | null }>).forEach((u) => {
+        m.set(u.user_id, { display_name: u.display_name, email: u.email });
+      });
+      setUserMap(m);
+    });
   }, []);
 
   const themes = useMemo(() => {
