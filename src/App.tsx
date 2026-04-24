@@ -18,6 +18,7 @@ const LandingV2 = lazy(() => import("./pages/LandingV2"));
 
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
 const Library = lazy(() => import("./pages/Library"));
+const LibraryV2 = lazy(() => import("./pages/LibraryV2"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PrintView = lazy(() => import("./components/print/PrintView"));
@@ -76,6 +77,7 @@ const App = () => (
                   <Route path="/forelasning" element={<Forelasning />} />
                   <Route path="/affiliate/:code" element={<AffiliateLanding />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
+                  <Route path="/bibliotek-v2" element={<RequireAuth><LibraryV2 /></RequireAuth>} />
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
                   <Route path="/manus/:id" element={<RequireAuth><EditorV3 /></RequireAuth>} />
