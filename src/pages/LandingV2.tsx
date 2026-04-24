@@ -651,7 +651,7 @@ function fmtMin(seconds: number) {
   return `${m} min`;
 }
 
-const CARD_DURATION_MS = 4000;
+const CARD_DURATION_MS = 9000;
 
 function CardDemo() {
   const [index, setIndex] = useState(0);
