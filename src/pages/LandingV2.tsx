@@ -651,25 +651,70 @@ function fmtMin(seconds: number) {
   return `${m} min`;
 }
 
+const CARD_DURATION_MS = 4000;
+
 function CardDemo() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  // 0..1 — hur långt vi kommit på det aktuella kortet (drivs av rAF)
+  const [cardProgress, setCardProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number>(0);
+  const elapsedRef = useRef<number>(0);
 
-  const next = useCallback(() => setIndex((i) => (i + 1) % DEMO_CARDS.length), []);
-  const prev = useCallback(() => setIndex((i) => (i - 1 + DEMO_CARDS.length) % DEMO_CARDS.length), []);
+  const goTo = useCallback((i: number) => {
+    setIndex(((i % DEMO_CARDS.length) + DEMO_CARDS.length) % DEMO_CARDS.length);
+    setCardProgress(0);
+    elapsedRef.current = 0;
+    startRef.current = performance.now();
+  }, []);
+  const next = useCallback(() => goTo((indexRefHack.current ?? 0) + 1), [goTo]);
+  const prev = useCallback(() => goTo((indexRefHack.current ?? 0) - 1), [goTo]);
 
+  // Synka ref med state så next/prev alltid har färskt värde
+  const indexRefHack = useRef(index);
+  useEffect(() => { indexRefHack.current = index; }, [index]);
+
+  // rAF-loop som fyller progressbaren och bläddrar vid 100%
   useEffect(() => {
-    if (paused) return;
-    timerRef.current = window.setTimeout(next, 4000);
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
+    startRef.current = performance.now() - elapsedRef.current;
+    const tick = (now: number) => {
+      if (paused) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const elapsed = now - startRef.current;
+      elapsedRef.current = elapsed;
+      const p = Math.min(1, elapsed / CARD_DURATION_MS);
+      setCardProgress(p);
+      if (p >= 1) {
+        elapsedRef.current = 0;
+        startRef.current = now;
+        setIndex((i) => (i + 1) % DEMO_CARDS.length);
+        setCardProgress(0);
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
+      }
     };
-  }, [index, paused, next]);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [index, paused]);
+
+  // Pausa loopen när fliken inte är synlig (sparar batteri)
+  useEffect(() => {
+    const onVis = () => setPaused((p) => (document.hidden ? true : p && document.hidden));
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   const card = DEMO_CARDS[index];
-  const elapsedSeconds = card.startSeconds + card.cardSeconds;
-  const progress = Math.min(100, (elapsedSeconds / TOTAL_SECONDS) * 100);
+  // Simulerad "förfluten kort-tid" som tickar upp i takt med progress
+  const cardElapsedSec = Math.floor(card.cardSeconds * cardProgress);
+  const totalElapsedSec = card.startSeconds + cardElapsedSec;
+  const totalProgressPct = Math.min(100, (totalElapsedSec / TOTAL_SECONDS) * 100);
+  const cardProgressPct = cardProgress * 100;
 
   return (
     <div
