@@ -52,10 +52,10 @@ export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        onStartCountdown({ viewMode, focusStyle });
+        onStartCountdown({ viewMode, focusStyle, sectionId: selectedSectionId });
       } else if (e.key === " ") {
         e.preventDefault();
-        onStartInstant({ viewMode, focusStyle });
+        onStartInstant({ viewMode, focusStyle, sectionId: selectedSectionId });
       } else if (e.key === "Escape") {
         e.preventDefault();
         onExit();
@@ -63,7 +63,7 @@ export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () => window.removeEventListener("keydown", onKey, { capture: true } as any);
-  }, [onStartCountdown, onStartInstant, onExit, viewMode, focusStyle]);
+  }, [onStartCountdown, onStartInstant, onExit, viewMode, focusStyle, selectedSectionId]);
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-12 bg-zinc-900/95 backdrop-blur-md animate-in fade-in duration-500 px-8 overflow-y-auto py-12">
