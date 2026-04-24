@@ -114,10 +114,10 @@ function V4SegBtn({
 
 
 /**
- * EditorV3 — NodeView-arkitektur. Toolbaren speglar v1: Måltid, storlek, vy,
- * paneldeltagare, utskrift, +Nytt kort, Starta, sök, hjälp.
+ * EditorV4 — samma logik som v3 men med Landing v2-designspråket
+ * (ljus mesh-bakgrund, glas-topbar, violett/blå gradients, font-display).
  */
-export default function EditorV3() {
+export default function EditorV4() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
