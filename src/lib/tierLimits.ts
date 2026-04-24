@@ -1,5 +1,8 @@
 export type Tier = "free" | "pro" | "admin";
 
+/** Hård gräns för AI-förbättringar per månad för Pro-användare. */
+export const AI_MONTHLY_LIMIT_PRO = 200;
+
 export const LIMITS = {
   free: {
     manuscripts: 2,

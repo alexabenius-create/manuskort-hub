@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.track-visit]
 verify_jwt = false
+
+[functions.improve-sentence]
+verify_jwt = false

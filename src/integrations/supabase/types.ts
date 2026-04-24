@@ -178,6 +178,33 @@ export type Database = {
           },
         ]
       }
+      ai_usage: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           content_html: string
@@ -678,6 +705,13 @@ export type Database = {
           conversions: number
           signups: number
           total_months: number
+        }[]
+      }
+      get_ai_usage_this_month: {
+        Args: { _user_id: string }
+        Returns: {
+          limit: number
+          used: number
         }[]
       }
       get_or_create_affiliate_code: { Args: never; Returns: string }
