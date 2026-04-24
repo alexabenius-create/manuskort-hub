@@ -127,7 +127,7 @@ Returnera ALLT via verktygsanropet 'extract_issue':
         }
       : {
           role: "user",
-          content: `Här är ärendet (extraherad text från ${mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 60000)}`,
+          content: `Här är ärendet (extraherad text från ${mime === MIME_PDF ? "PDF" : mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 120000)}`,
         };
 
     // AbortController för att inte hänga edge-functionen mot 150s idle-timeout.
