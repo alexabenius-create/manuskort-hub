@@ -50,6 +50,7 @@
     "@stripe/react-stripe-js": "^6.2.0",
     "@stripe/stripe-js": "^9.2.0",
     "@supabase/supabase-js": "^2.103.3",
+    "@tanstack/query-core": "^5.100.1",
     "@tanstack/react-query": "^5.83.0",
     "@tiptap/core": "^3.22.3",
     "@tiptap/extension-blockquote": "^3.22.4",
