@@ -14,6 +14,8 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
+const LandingV2 = lazy(() => import("./pages/LandingV2"));
+
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
 const Library = lazy(() => import("./pages/Library"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
@@ -64,6 +66,7 @@ const App = () => (
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
+                  <Route path="/v2" element={<LandingV2 />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/aterstall-losenord" element={<ResetPassword />} />
                   <Route path="/priser" element={<Pricing />} />

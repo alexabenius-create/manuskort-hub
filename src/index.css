@@ -307,6 +307,202 @@
   100% { box-shadow: 0 0 0 2px hsl(var(--destructive) / 0.6) inset; }
 }
 
+/* =====================================================================
+   Landing v2 — Linear-inspirerad design (skopad till .bg-v2-bg subträd)
+   ===================================================================== */
+@layer utilities {
+  /* Färgtokens v2 — ljusa surfaces, livfulla accenter */
+  .bg-v2-bg      { background-color: #fafafe; }
+  .bg-v2-surface { background-color: #f3f4fb; }
+  .text-v2-ink     { color: #0f172a; }
+  .text-v2-muted   { color: #5b6478; }
+  .border-v2-line  { border-color: rgba(15, 23, 42, 0.08); }
+
+  .text-v2-violet { color: #6366f1; }
+  .bg-v2-violet   { background-color: #6366f1; }
+  .from-v2-violet { --tw-gradient-from: #6366f1 var(--tw-gradient-from-position); --tw-gradient-to: rgb(99 102 241 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .via-v2-violet  { --tw-gradient-to: rgb(99 102 241 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), #6366f1 var(--tw-gradient-via-position), var(--tw-gradient-to); }
+  .to-v2-violet   { --tw-gradient-to: #6366f1 var(--tw-gradient-to-position); }
+
+  .text-v2-blue { color: #3b82f6; }
+  .bg-v2-blue   { background-color: #3b82f6; }
+  .from-v2-blue { --tw-gradient-from: #3b82f6 var(--tw-gradient-from-position); --tw-gradient-to: rgb(59 130 246 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .via-v2-blue  { --tw-gradient-to: rgb(59 130 246 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), #3b82f6 var(--tw-gradient-via-position), var(--tw-gradient-to); }
+  .to-v2-blue   { --tw-gradient-to: #3b82f6 var(--tw-gradient-to-position); }
+
+  .text-v2-pink { color: #ec4899; }
+  .bg-v2-pink   { background-color: #ec4899; }
+  .from-v2-pink { --tw-gradient-from: #ec4899 var(--tw-gradient-from-position); --tw-gradient-to: rgb(236 72 153 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .via-v2-pink  { --tw-gradient-to: rgb(236 72 153 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), #ec4899 var(--tw-gradient-via-position), var(--tw-gradient-to); }
+  .to-v2-pink   { --tw-gradient-to: #ec4899 var(--tw-gradient-to-position); }
+
+  .hover\:border-v2-violet\/40:hover { border-color: rgb(99 102 241 / 0.4); }
+  .hover\:text-v2-violet:hover       { color: #6366f1; }
+  .hover\:bg-v2-violet:hover         { background-color: #6366f1; }
+  .group:hover .group-hover\:text-v2-violet { color: #6366f1; }
+  .group:hover .group-hover\:bg-v2-violet   { background-color: #6366f1; }
+  .group:hover .group-hover\:border-v2-violet { border-color: #6366f1; }
+}
+
+@layer components {
+  /* Primär CTA med shimmer */
+  .v2-btn-primary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    background-image: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+    box-shadow: 0 4px 14px -2px rgba(99, 102, 241, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .v2-btn-primary::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -120%;
+    width: 80%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    transition: left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .v2-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px -4px rgba(99, 102, 241, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .v2-btn-primary:hover::before { left: 130%; }
+  .v2-btn-lg { height: 48px; padding: 0 28px; font-size: 15px; border-radius: 9999px; }
+  .v2-btn-on-dark { box-shadow: 0 8px 28px -4px rgba(99, 102, 241, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+
+  .v2-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: 0 28px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #0f172a;
+    background-color: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .v2-btn-ghost:hover {
+    transform: translateY(-1px);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.12);
+  }
+
+  /* Universellt v2-kort (benefits / use cases / friction / quotes) */
+  .v2-card {
+    background-color: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+                0 8px 24px -12px rgba(15, 23, 42, 0.08);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.3s ease;
+  }
+  .v2-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 8px rgba(15, 23, 42, 0.05),
+                0 20px 40px -16px rgba(99, 102, 241, 0.22);
+  }
+
+  /* Ikon-pill i v2-card */
+  .v2-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    width: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.12));
+    color: #6366f1;
+    margin-bottom: 20px;
+    transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  }
+  .v2-card:hover .v2-card-icon {
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    color: #ffffff;
+    transform: scale(1.05);
+  }
+}
+
+/* Reveal-animationer */
+.v2-reveal {
+  animation: v2RevealUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.v2-reveal-onscroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.v2-reveal-onscroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.v2-stagger-parent.is-visible > * {
+  animation: v2RevealUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.v2-stagger-parent.is-visible > *:nth-child(1) { animation-delay: 0.1s; }
+.v2-stagger-parent.is-visible > *:nth-child(2) { animation-delay: 0.2s; }
+.v2-stagger-parent.is-visible > *:nth-child(3) { animation-delay: 0.3s; }
+.v2-stagger-parent.is-visible > *:nth-child(4) { animation-delay: 0.4s; }
+.v2-stagger-parent > * { opacity: 0; }
+.v2-stagger-parent.is-visible > * { opacity: 1; }
+
+@keyframes v2RevealUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.v2-card-enter {
+  animation: v2CardEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes v2CardEnter {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.v2-pulse-dot {
+  animation: v2PulseDot 2s ease-in-out infinite;
+}
+@keyframes v2PulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(2.2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-reveal,
+  .v2-reveal-onscroll,
+  .v2-stagger-parent.is-visible > *,
+  .v2-card-enter,
+  .v2-pulse-dot,
+  .v2-btn-primary::before {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* Gammal @media print-block borttagen — utskrift sker nu via dedikerad
    PDF-vy på /manus/:id/utskrift (se src/components/print/). */
 
