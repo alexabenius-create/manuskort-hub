@@ -70,7 +70,7 @@ export default function AdminV2() {
   const [q, setQ] = useState("");
   const [pending, setPending] = useState<{ row: UserRow; newTier: Tier } | null>(null);
   const [working, setWorking] = useState(false);
-  const [tab, setTab] = useState<"users" | "feedback" | "visits" | "insikter" | "ai">(() => {
+  const [tab, setTab] = useState<"users" | "feedback" | "visits" | "insikter" | "ai" | "beta">(() => {
     if (typeof window === "undefined") return "users";
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab");
@@ -78,6 +78,7 @@ export default function AdminV2() {
     if (t === "visits") return "visits";
     if (t === "insikter") return "insikter";
     if (t === "ai") return "ai";
+    if (t === "beta") return "beta";
     return "users";
   });
   const adminUnread = useAdminUnreadMessages(tier === "admin");
