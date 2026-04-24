@@ -652,7 +652,7 @@ export default function EditorV4() {
                     <Target className="h-4 w-4" />
                     {hasWarn && (
                       <span
-                        className={`absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full ${overTarget ? "bg-[hsl(35_85%_45%)]" : "bg-accent-blue"}`}
+                        className={`absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full ${overTarget ? "bg-[hsl(35_85%_45%)]" : "bg-v2-violet"}`}
                         aria-hidden
                       />
                     )}
