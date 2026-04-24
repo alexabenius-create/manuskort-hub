@@ -321,7 +321,7 @@ function norm(s: string): string {
 
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
 async function handleScripted(
-  admin: ReturnType<typeof createClient>,
+  admin: ReturnType<typeof createClient<any>>,
   thread: ThreadRow,
   userMessage: string,
   threadId: string,
