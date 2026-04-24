@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.improve-sentence]
 verify_jwt = false
+
+[functions.debate-improve]
+verify_jwt = false
+
+[functions.debate-counter]
+verify_jwt = false
