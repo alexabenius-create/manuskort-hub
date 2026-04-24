@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_insights: {
+        Row: {
+          ai_brief: string | null
+          ai_proposed_actions: string | null
+          ai_summary: string | null
+          created_at: string
+          id: string
+          implementation_ref: string | null
+          implemented_at: string | null
+          my_notes: string
+          priority: string
+          raw_text: string
+          related_ids: string[]
+          source: string
+          source_label: string | null
+          status: string
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_brief?: string | null
+          ai_proposed_actions?: string | null
+          ai_summary?: string | null
+          created_at?: string
+          id?: string
+          implementation_ref?: string | null
+          implemented_at?: string | null
+          my_notes?: string
+          priority?: string
+          raw_text: string
+          related_ids?: string[]
+          source?: string
+          source_label?: string | null
+          status?: string
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_brief?: string | null
+          ai_proposed_actions?: string | null
+          ai_summary?: string | null
+          created_at?: string
+          id?: string
+          implementation_ref?: string | null
+          implemented_at?: string | null
+          my_notes?: string
+          priority?: string
+          raw_text?: string
+          related_ids?: string[]
+          source?: string
+          source_label?: string | null
+          status?: string
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       affiliate_codes: {
         Row: {
           code: string
