@@ -715,6 +715,13 @@ Deno.serve(async (req) => {
       ...(history || []).map((m) => ({ role: m.role, content: m.content })),
     ];
 
+    // Välj modell utifrån fas: tyngre modell när vi ska generera manus/genmäle.
+    const draftingPhases = new Set([
+      "drafting_speech", "intake_opponent_args", "generating_rebuttal",
+    ]);
+    const currentPhase = thread.bot_state?.phase || "intake_issue";
+    const model = draftingPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash";
+
     // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -723,7 +730,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages,
         tools: TOOLS,
       }),
