@@ -22,7 +22,7 @@ interface ThreadRow {
 interface TurnRow {
   id: string;
   position: number;
-  kind: "own_speech" | "opponent_input" | "own_reply";
+  kind: "own_speech" | "opponent_input" | "own_reply" | "opponent_speech" | "reply" | "rebuttal" | "rebuttal_waived";
   opponent_input_mode: "structured" | "freeform" | null;
   source_text: string;
   ai_output_text: string;
