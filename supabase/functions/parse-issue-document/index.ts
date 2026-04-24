@@ -5,7 +5,7 @@ import {
   ZipReader,
   TextWriter,
 } from "https://deno.land/x/zipjs@v2.7.45/index.js";
-import { getDocument } from "https://esm.sh/pdfjs-serverless@0.5.0";
+import { resolvePDFJS } from "https://esm.sh/pdfjs-serverless@0.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
