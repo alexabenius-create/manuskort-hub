@@ -790,7 +790,7 @@ export default function EditorV4() {
               </Tooltip>
 
               {/* Separator */}
-              <span className="hidden sm:block h-5 w-px bg-border/60 mx-1" aria-hidden />
+              <span className="hidden sm:block h-5 w-px bg-v2-line mx-1" aria-hidden />
 
               {/* Starta */}
               <Tooltip>
