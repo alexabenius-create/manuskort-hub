@@ -37,15 +37,19 @@ KRITISKT — SVARSSTIL:
 
 FLÖDE (driv framåt aggressivt):
 1. **intake_issue**: Fråga kort "Vad ska vi debattera idag?". Snabbsvar: ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` → gå till intake_brief.
-2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela? Du kan ladda upp en fil eller skriva kort." Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget (via systemmeddelande "BRIEF MOTTAGET" eller text från användaren) → ge en blixtsnabb analys på MAX 2 meningar (vad det handlar om + en spets) → \`set_brief\` → gå direkt till intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text och vidare.
+2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela?" Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget → MAX 2 meningar analys → \`set_brief\` → intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text.
 3. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
-4. **drafting_speech**: Fråga kort efter ståndpunkt eller huvudbudskap, max en mening. Sedan föreslå direkt ett utkast och be användaren kopiera till editorn. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"].
-5. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
-6. **intake_opponent_name** → \`set_opponent\` direkt.
-7. **intake_opponent_args** → be om motdebattörens argument i ett svar.
-8. → \`generate_rebuttal_cards\` direkt när du har argumenten.
+4. **intake_speech_length** (om mode=speech): Fråga "Hur långt ska anförandet vara?" Snabbsvar: ["1 minut", "2 minuter", "3 minuter", "5 minuter"]. Spara längden i bot_state via \`set_speech_length\` (sekunder). Gå till drafting_speech.
+5. **drafting_speech**: Fråga kort efter huvudbudskap, max en mening. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" → använd \`generate_speech_cards\` DIREKT med ~150 ord/minut (anpassa till sparad längd) → korten läggs in i manuset automatiskt. Bekräfta kort.
+6. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
+7. **intake_opponent_name** → \`set_opponent\` direkt.
+8. **intake_opponent_args** → be om motdebattörens argument i ett svar.
+9. → \`generate_rebuttal_cards\` direkt när du har argumenten.
 
-REGLER: Anförande → repliker → genmäle (1 per replik) eller avstå.
+REGLER:
+- Anförande → repliker → genmäle (1 per replik) eller avstå.
+- Anpassa ordmängd till längd: ~150 ord/minut är ungefärligt riktmärke.
+- När du genererar utkast: dela upp i 2-5 logiska kort (intro, huvudpoänger, avslutning).
 
 Kontext skickas varje runda — anpassa kort.`;
 
@@ -165,6 +169,48 @@ const TOOLS: Tool[] = [
   {
     type: "function",
     function: {
+      name: "set_speech_length",
+      description: "Spara önskad längd på anförandet (i sekunder) och gå till drafting_speech.",
+      parameters: {
+        type: "object",
+        properties: {
+          seconds: { type: "number", description: "Längd i sekunder, t.ex. 60, 120, 180, 300." },
+        },
+        required: ["seconds"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_speech_cards",
+      description: "Skapa ett komplett anförande och lägg in som nya kort i kopplat manus. Anpassa total ordlängd till sparad speech_length_seconds (~150 ord/minut). Dela upp i 2-5 logiska kort.",
+      parameters: {
+        type: "object",
+        properties: {
+          speech_text: { type: "string", description: "Hela anförandet i löpande text." },
+          cards: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string", description: "Kort titel på kortet, t.ex. 'Inledning'." },
+                body: { type: "string", description: "Texten som ska visas på kortet." },
+              },
+              required: ["title", "body"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["speech_text", "cards"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "advance_phase",
       description: "Flytta chattens fas framåt.",
       parameters: {
@@ -176,6 +222,7 @@ const TOOLS: Tool[] = [
               "intake_issue",
               "intake_brief",
               "intake_mode",
+              "intake_speech_length",
               "drafting_speech",
               "awaiting_perform",
               "post_perform_check",
@@ -296,6 +343,8 @@ Deno.serve(async (req) => {
     const briefSnippet = thread.issue_document_text
       ? thread.issue_document_text.slice(0, 4000)
       : "";
+    const speechLen = (thread.bot_state as Record<string, unknown>)?.speech_length_seconds;
+    const mode = (thread.bot_state as Record<string, unknown>)?.mode;
     const contextSummary = `KONTEXT:
 - Fas: ${thread.bot_state?.phase || "intake_issue"}
 - Sakområde: ${thread.topic_area || "(inte satt)"}
@@ -303,6 +352,8 @@ Deno.serve(async (req) => {
 - Underlag: ${thread.issue_document_text ? `JA (${thread.issue_document_filename || "text"}, ${thread.issue_document_text.length} tecken)` : "(inget)"}
 - Egen ståndpunkt: ${thread.own_position || "(inte angiven)"}
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
+- Läge: ${mode || "(inte valt)"}
+- Önskad längd på anförande: ${speechLen ? `${speechLen} sekunder (~${Math.round((speechLen as number) / 60 * 150)} ord)` : "(inte angiven)"}
 - Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
 
     const messages = [
@@ -369,12 +420,47 @@ Deno.serve(async (req) => {
           await admin.from("debate_threads").update(briefUpdates).eq("id", threadId);
           executedTools.push({ name, result: "ok" });
         } else if (name === "set_mode") {
-          const phase = args.kind === "reply" ? "intake_opponent_name" : "drafting_speech";
+          const phase = args.kind === "reply" ? "intake_opponent_name" : "intake_speech_length";
           await admin
             .from("debate_threads")
             .update({ bot_state: { ...thread.bot_state, phase, mode: args.kind } })
             .eq("id", threadId);
           executedTools.push({ name, result: phase });
+        } else if (name === "set_speech_length") {
+          const seconds = Number(args.seconds) || 120;
+          await admin
+            .from("debate_threads")
+            .update({
+              bot_state: { ...thread.bot_state, phase: "drafting_speech", speech_length_seconds: seconds },
+            })
+            .eq("id", threadId);
+          executedTools.push({ name, result: `${seconds}s` });
+        } else if (name === "generate_speech_cards") {
+          if (thread.manuscript_id) {
+            const { data: existingCards } = await admin
+              .from("cards")
+              .select("position")
+              .eq("manuscript_id", thread.manuscript_id)
+              .order("position", { ascending: false })
+              .limit(1);
+            let pos = ((existingCards?.[0]?.position as number) ?? -1) + 1;
+            const rows = (args.cards as Array<{ title: string; body: string }>).map((c) => ({
+              manuscript_id: thread.manuscript_id,
+              user_id: userId,
+              position: pos++,
+              role: "speaker",
+              title: c.title,
+              content_html: `<p>${c.body.replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+            }));
+            if (rows.length) await admin.from("cards").insert(rows);
+            executedTools.push({ name, result: `${rows.length} kort` });
+          } else {
+            executedTools.push({ name, result: "no_manuscript" });
+          }
+          await admin
+            .from("debate_threads")
+            .update({ bot_state: { ...thread.bot_state, phase: "awaiting_perform" } })
+            .eq("id", threadId);
         } else if (name === "set_opponent") {
           await admin
             .from("debate_threads")
