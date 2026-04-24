@@ -57,28 +57,34 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const originalSpeech: string = (body?.original_speech ?? "").toString().trim();
+    const ownPosition: string = (body?.own_position ?? "").toString().trim();
     const issue: string = (body?.issue ?? "").toString().trim();
+    const issueDocumentText: string = (body?.issue_document_text ?? "").toString().trim();
     const opponentArguments: string[] = Array.isArray(body?.opponent_arguments)
       ? body.opponent_arguments.map((s: unknown) => String(s ?? "").trim()).filter(Boolean)
       : [];
     const maxLengthPercent: number = Math.max(80, Math.min(150, Number(body?.maxLengthPercent) || 100));
 
-    if (!originalSpeech) return json({ error: "Originalanförande saknas" }, 400);
+    // Acceptera antingen originalSpeech (från parent-session) eller ownPosition (fristående replik)
+    const userStance = originalSpeech || ownPosition;
+    if (!userStance || userStance.length < 20) {
+      return json({ error: "Lägg in din egen ståndpunkt så AI förstår skiljelinjen mellan dig och motdebattören" }, 400);
+    }
     if (opponentArguments.length === 0) return json({ error: "Lägg till minst ett argument från motdebattören" }, 400);
 
     const opponentTotalLen = opponentArguments.reduce((n, s) => n + s.length, 0);
     const charCap = Math.max(400, Math.round(opponentTotalLen * (maxLengthPercent / 100)));
 
-    const systemPrompt = `Du är en svensk debattcoach. Användaren har hållit ett anförande i en debatt. En motdebattör har sedan fört fram argument mot anförandet.
-Din uppgift: skriv en skarp REPLIK som bemöter motdebattörens argument punktvis och försvarar användarens ursprungliga ståndpunkt. Använd fakta, logik och retoriskt skicklig svenska.
+    const systemPrompt = `Du är en svensk debattcoach. Användaren står i en debatt och har en tydlig ståndpunkt. En motdebattör har fört fram argument mot användarens position.
+Din uppgift: skriv en skarp REPLIK som bemöter motdebattörens argument punktvis och försvarar användarens ståndpunkt. Använd fakta, logik och retoriskt skicklig svenska.
 Hård längdregel: repliken får INTE överstiga ${charCap} tecken.
 Dela upp repliken i 1–6 logiska kort med titel + innehåll. Returnera ALLT via verktygsanropet 'rewrite_speech'.`;
 
     const userPrompt = `Ärende (kontext, valfritt):
 ${issue || "(ej angivet)"}
-
-Användarens ursprungliga anförande:
-${originalSpeech}
+${issueDocumentText ? `\nDOKUMENT-KONTEXT (ärendehandling, uppladdad av användaren):\n${issueDocumentText.slice(0, 30000)}\n` : ""}
+Användarens ${originalSpeech ? "ursprungliga anförande" : "ståndpunkt"}:
+${userStance}
 
 Motdebattörens argument:
 ${opponentArguments.map((a, i) => `${i + 1}. ${a}`).join("\n")}`;

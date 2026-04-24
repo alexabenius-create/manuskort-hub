@@ -9,8 +9,10 @@ import { useAiUsage } from "@/hooks/useAiUsage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SEO } from "@/components/SEO";
 import { toast } from "@/hooks/use-toast";
+import { IssueUpload } from "@/components/debate/IssueUpload";
 
 type Mode = "speech" | "reply";
 
@@ -43,7 +45,7 @@ const FREEDOM_PRESETS: { label: string; value: number; sub: string }[] = [
 
 export default function DebattBuddy() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useTier();
   const { hasAccess, loading: betaLoading } = useBetaAccess("debate_buddy");
@@ -53,13 +55,25 @@ export default function DebattBuddy() {
   const parentSessionId = searchParams.get("parent");
 
   const [issue, setIssue] = useState("");
+  const [issueDocumentText, setIssueDocumentText] = useState("");
+  const [issueFileName, setIssueFileName] = useState<string | null>(null);
   const [speech, setSpeech] = useState("");
+  const [ownPosition, setOwnPosition] = useState("");
   const [opponentArgs, setOpponentArgs] = useState<string[]>([""]);
   const [freedom, setFreedom] = useState(100);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<AiResult | null>(null);
   const [parent, setParent] = useState<ParentSession | null>(null);
   const [publishing, setPublishing] = useState(false);
+
+  const switchMode = (next: Mode) => {
+    if (next === mode) return;
+    setResult(null);
+    const params = new URLSearchParams(searchParams);
+    params.set("mode", next);
+    if (next === "speech") params.delete("parent");
+    setSearchParams(params, { replace: true });
+  };
 
   // Hämta parent-session vid reply-läge
   useEffect(() => {
@@ -95,8 +109,9 @@ export default function DebattBuddy() {
         return;
       }
     } else {
-      if (!parent) {
-        toast({ title: "Originalanförandet saknas", variant: "destructive" });
+      // Reply: antingen parent (från Editor) ELLER ownPosition (fristående)
+      if (!parent && ownPosition.trim().length < 20) {
+        toast({ title: "Skriv din ståndpunkt först (minst 20 tecken)", description: "AI behöver veta vad du står för.", variant: "destructive" });
         return;
       }
       const cleanArgs = opponentArgs.map((a) => a.trim()).filter(Boolean);
@@ -111,10 +126,12 @@ export default function DebattBuddy() {
       const fnName = mode === "speech" ? "debate-improve" : "debate-counter";
       const body =
         mode === "speech"
-          ? { speech, issue, maxLengthPercent: freedom }
+          ? { speech, issue, issue_document_text: issueDocumentText || undefined, maxLengthPercent: freedom }
           : {
-              original_speech: parent!.improved_text || parent!.original_text,
+              original_speech: parent ? (parent.improved_text || parent.original_text) : undefined,
+              own_position: !parent ? ownPosition : undefined,
               issue,
+              issue_document_text: issueDocumentText || undefined,
               opponent_arguments: opponentArgs.map((a) => a.trim()).filter(Boolean),
               maxLengthPercent: freedom,
             };
@@ -254,17 +271,13 @@ export default function DebattBuddy() {
       <BackHeader />
 
       <main className="max-w-3xl mx-auto px-6 py-10 pb-24">
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="font-display text-4xl font-semibold tracking-tight text-v2-ink">
-              {mode === "speech" ? "Debatt-buddy" : "Skriv replik"}
-            </h1>
+            <h1 className="font-display text-4xl font-semibold tracking-tight text-v2-ink">Debatt-buddy</h1>
             <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-v2-violet/10 text-v2-violet">BETA</span>
           </div>
           <p className="text-v2-muted text-[15px]">
-            {mode === "speech"
-              ? "Lägg in ditt anförande och ärendet. AI skärper argumenten och delar upp talet i kort."
-              : "AI hittar motargument mot motdebattörens punkter och skapar en skarp replik."}
+            Skärp ditt debattanförande med AI – eller lägg in motdebattörens argument vid replikskifte och få förslag på motargument.
           </p>
           {aiUsage && aiUsage.limit > 0 && (
             <div className="mt-4 inline-flex items-center gap-2 text-[13px] text-v2-muted">
@@ -274,24 +287,75 @@ export default function DebattBuddy() {
           )}
         </div>
 
-        {/* Parent context (reply) */}
+        {/* Mode toggle */}
+        <div className="mb-8">
+          <ToggleGroup
+            type="single"
+            value={mode}
+            onValueChange={(v) => v && switchMode(v as Mode)}
+            className="inline-flex p-1 rounded-full bg-white border border-v2-line"
+          >
+            <ToggleGroupItem
+              value="speech"
+              className="rounded-full px-5 py-2 text-[13px] data-[state=on]:bg-v2-violet/10 data-[state=on]:text-v2-violet data-[state=on]:font-semibold"
+            >
+              Debattanförande
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="reply"
+              className="rounded-full px-5 py-2 text-[13px] data-[state=on]:bg-v2-violet/10 data-[state=on]:text-v2-violet data-[state=on]:font-semibold"
+            >
+              Replikskifte
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        {/* Parent context (reply från Editor) */}
         {mode === "reply" && parent && (
           <div className="mb-6 p-4 rounded-2xl bg-white border border-v2-line">
-            <div className="text-[12px] uppercase tracking-wider text-v2-muted font-semibold mb-2">Originalanförande</div>
+            <div className="text-[12px] uppercase tracking-wider text-v2-muted font-semibold mb-2">Ditt ursprungliga anförande</div>
             <p className="text-[14px] text-v2-ink whitespace-pre-wrap line-clamp-6">{parent.improved_text || parent.original_text}</p>
           </div>
         )}
 
-        {/* Issue (kontext) */}
+        {/* Ärende: uppladdning + fritext */}
         <Section label="Ärende (valfritt)">
-          <Textarea
-            value={issue}
-            onChange={(e) => setIssue(e.target.value)}
-            placeholder="Beskriv det ärende som debatteras (t.ex. budgetförslag, motion, paragraf)…"
-            rows={3}
-            className="rounded-xl"
-          />
+          <div className="space-y-3">
+            <IssueUpload
+              loadedFileName={issueFileName}
+              onParsed={({ summary, fullText, fileName }) => {
+                setIssueDocumentText(fullText);
+                setIssueFileName(fileName);
+                if (!issue.trim()) setIssue(summary);
+              }}
+              onCleared={() => {
+                setIssueDocumentText("");
+                setIssueFileName(null);
+              }}
+            />
+            <Textarea
+              value={issue}
+              onChange={(e) => setIssue(e.target.value)}
+              placeholder="…eller beskriv ärendet i fritext (motion, budgetförslag, paragraf)."
+              rows={3}
+              className="rounded-xl"
+            />
+          </div>
         </Section>
+
+        {/* Egen ståndpunkt vid fristående replikskifte */}
+        {mode === "reply" && !parent && (
+          <Section label="Din ståndpunkt">
+            <Textarea
+              value={ownPosition}
+              onChange={(e) => setOwnPosition(e.target.value)}
+              placeholder="Beskriv kort vad du står för i den här frågan – så förstår AI skiljelinjen mellan dig och motdebattören."
+              rows={5}
+              className="rounded-xl"
+            />
+            <div className="mt-1 text-right text-[12px] text-v2-muted">{ownPosition.length} tecken</div>
+          </Section>
+        )}
 
         {mode === "speech" ? (
           <Section label="Ditt anförande">
