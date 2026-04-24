@@ -63,6 +63,7 @@ export function IssueUpload({ onParsed, onCleared, loadedFileName }: Props) {
           monthly_limit_reached: "Månadens AI-kvot är slut.",
           ai_credits_exhausted: "AI-tjänsten saknar kredit just nu.",
           ai_rate_limited: "För många AI-anrop just nu, vänta en stund.",
+          ai_timeout: "AI-tjänsten tog för lång tid. Försök med en mindre eller kortare fil.",
           beta_locked: "BETA-funktionen är inte upplåst för dig.",
           pro_required: "PRO krävs för att läsa upp ärenden.",
         };
