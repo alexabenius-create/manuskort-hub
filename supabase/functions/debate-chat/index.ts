@@ -169,6 +169,48 @@ const TOOLS: Tool[] = [
   {
     type: "function",
     function: {
+      name: "set_speech_length",
+      description: "Spara önskad längd på anförandet (i sekunder) och gå till drafting_speech.",
+      parameters: {
+        type: "object",
+        properties: {
+          seconds: { type: "number", description: "Längd i sekunder, t.ex. 60, 120, 180, 300." },
+        },
+        required: ["seconds"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_speech_cards",
+      description: "Skapa ett komplett anförande och lägg in som nya kort i kopplat manus. Anpassa total ordlängd till sparad speech_length_seconds (~150 ord/minut). Dela upp i 2-5 logiska kort.",
+      parameters: {
+        type: "object",
+        properties: {
+          speech_text: { type: "string", description: "Hela anförandet i löpande text." },
+          cards: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string", description: "Kort titel på kortet, t.ex. 'Inledning'." },
+                body: { type: "string", description: "Texten som ska visas på kortet." },
+              },
+              required: ["title", "body"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["speech_text", "cards"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "advance_phase",
       description: "Flytta chattens fas framåt.",
       parameters: {
@@ -180,6 +222,7 @@ const TOOLS: Tool[] = [
               "intake_issue",
               "intake_brief",
               "intake_mode",
+              "intake_speech_length",
               "drafting_speech",
               "awaiting_perform",
               "post_perform_check",
