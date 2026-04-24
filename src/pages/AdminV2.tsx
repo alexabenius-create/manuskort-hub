@@ -392,6 +392,10 @@ export default function AdminV2() {
               <AiUsagePanel />
             </div>
           </TabsContent>
+
+          <TabsContent value="beta">
+            <BetaAccessPanel />
+          </TabsContent>
         </Tabs>
       </main>
 
