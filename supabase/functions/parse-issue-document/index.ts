@@ -115,11 +115,18 @@ Returnera ALLT via verktygsanropet 'extract_issue':
           content: `Här är ärendet (extraherad text från ${mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 60000)}`,
         };
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // AbortController för att inte hänga edge-functionen mot 150s idle-timeout.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
+    let aiResponse: Response;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "system", content: systemPrompt }, userMessage],
         tools: [
           {
@@ -142,6 +149,14 @@ Returnera ALLT via verktygsanropet 'extract_issue':
         tool_choice: { type: "function", function: { name: "extract_issue" } },
       }),
     });
+    } catch (e) {
+      clearTimeout(timeoutId);
+      if (e instanceof Error && e.name === "AbortError") {
+        return json({ error: "ai_timeout", message: "AI-tjänsten tog för lång tid. Försök med en mindre/kortare fil." }, 504);
+      }
+      throw e;
+    }
+    clearTimeout(timeoutId);
 
     if (aiResponse.status === 429) return json({ error: "ai_rate_limited" }, 429);
     if (aiResponse.status === 402) return json({ error: "ai_credits_exhausted" }, 402);
