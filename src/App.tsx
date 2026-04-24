@@ -20,6 +20,7 @@ const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const Library = lazy(() => import("./pages/Library"));
 const LibraryV2 = lazy(() => import("./pages/LibraryV2"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
+const EditorV4 = lazy(() => import("./pages/EditorV4"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PrintView = lazy(() => import("./components/print/PrintView"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -85,6 +86,7 @@ const App = () => (
                   <Route path="/manus/:id/v1" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
                   <Route path="/manus/:id/v2" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
                   <Route path="/manus/:id/v3" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
+                  <Route path="/manus/:id/v4" element={<RequireAuth><EditorV4 /></RequireAuth>} />
                   <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                   <Route path="/manus/:id/utskrift" element={<RequireAuth><PrintView /></RequireAuth>} />
                   <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
