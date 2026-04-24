@@ -301,6 +301,7 @@ Deno.serve(async (req) => {
     let assistantText: string = assistantMsg?.content || "";
     const toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
+    let quickReplies: string[] = [];
 
     // Exekvera tool calls
     for (const tc of toolCalls) {
