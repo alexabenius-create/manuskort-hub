@@ -571,6 +571,16 @@ async function handleScripted(
     }
   }
 
+  // FALLBACK: alla intake-faser ska aldrig nå LLM — visa scripted prompt igen
+  const intakePhases = new Set([
+    "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
+    "intake_mode", "intake_speech_length", "drafting_speech",
+    "awaiting_perform", "post_perform_check", "idle",
+  ]);
+  if (intakePhases.has(phase)) {
+    const p = SCRIPTED_PROMPTS[phase];
+    if (p) return { text: p.text, quick_replies: p.quick_replies };
+  }
   return null;
 }
 
