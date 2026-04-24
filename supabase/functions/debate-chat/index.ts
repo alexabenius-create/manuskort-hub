@@ -16,6 +16,7 @@ interface ThreadRow {
   topic_area: string;
   issue_text: string;
   issue_document_text: string;
+  issue_document_filename: string | null;
   own_position: string;
   user_role: string;
   manuscript_id: string | null;
