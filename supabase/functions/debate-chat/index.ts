@@ -31,6 +31,7 @@ KRITISKT — SVARSSTIL:
 - Ställ ALDRIG flera frågor i samma svar.
 - Inga utläggningar, inga listor i frågorna.
 - Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga.
+- **Skriv ALDRIG snabbsvaren i själva textsvaret.** Inga JSON-objekt, inga \`quick_replies\`-block, inga punktlistor med alternativ, inga citerade förslag. Snabbsvaren skickas ENDAST via verktyget — användaren ser dem som knappar.
 - Producera resultat så snart du har minimum av info — vänta inte i onödan.
 - Max 1 emoji per svar. Ofta ingen.
 
@@ -219,6 +220,19 @@ function json(body: unknown, status = 200) {
   });
 }
 
+/** Ta bort tool-call-läckor (t.ex. `{ "quick_replies": [...] }` eller ```json-block) som modellen ibland skriver in i fritexten. */
+function stripToolJunk(text: string): string {
+  if (!text) return "";
+  let out = text;
+  // Ta bort ```json ... ``` och ``` ... ``` block
+  out = out.replace(/```(?:json)?\s*[\s\S]*?```/gi, "");
+  // Ta bort inline JSON-objekt som innehåller quick_replies eller andra verktygsnycklar
+  out = out.replace(/\{[^{}]*"(?:quick_replies|replies|issue_text|topic_area|summary|full_text|filename|kind|name|arguments_text|rebuttal_text|cards|next_phase)"[\s\S]*?\}/g, "");
+  // Städa upp dubbla mellanslag/radbrytningar
+  out = out.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -322,7 +336,7 @@ Deno.serve(async (req) => {
     const aiData = await aiResp.json();
     const choice = aiData.choices?.[0];
     const assistantMsg = choice?.message;
-    let assistantText: string = assistantMsg?.content || "";
+    let assistantText: string = stripToolJunk(assistantMsg?.content || "");
     const toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
     let quickReplies: string[] = [];
@@ -464,7 +478,7 @@ Deno.serve(async (req) => {
       });
       if (followup.ok) {
         const fd = await followup.json();
-        assistantText = fd.choices?.[0]?.message?.content || "";
+        assistantText = stripToolJunk(fd.choices?.[0]?.message?.content || "");
       }
     }
 
