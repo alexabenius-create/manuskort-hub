@@ -22,6 +22,7 @@ import { useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
 import { VisitsPanel } from "@/components/admin/VisitsPanel";
 import { InsightsPanel } from "@/components/admin/insights/InsightsPanel";
 import { AiUsagePanel } from "@/components/admin/AiUsagePanel";
+import { BetaAccessPanel } from "@/components/admin/BetaAccessPanel";
 
 interface UserRow {
   user_id: string;
