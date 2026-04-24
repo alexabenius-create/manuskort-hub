@@ -588,7 +588,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Ladda historik
+    // ============= SCRIPTED SHORT-CIRCUIT =============
+    const scripted = await handleScripted(admin, thread, userMessage, threadId);
+    if (scripted) {
+      await admin.from("debate_chat_messages").insert({
+        thread_id: threadId,
+        user_id: userId,
+        role: "assistant",
+        content: scripted.text,
+        metadata: { scripted: true, quick_replies: scripted.quick_replies },
+      });
+      return json({
+        assistant: scripted.text,
+        tools: [],
+        quick_replies: scripted.quick_replies,
+      });
+    }
+
+    // Ladda historik (för LLM-faser)
     const { data: history } = await admin
       .from("debate_chat_messages")
       .select("role, content")
