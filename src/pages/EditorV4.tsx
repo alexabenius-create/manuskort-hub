@@ -574,7 +574,15 @@ export default function EditorV4() {
     <PanelistsProvider manuscriptId={manuscript.id}>
       <SEO title={`${manuscript.title} – Editor`} />
 
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-v2-bg text-v2-ink flex flex-col relative overflow-x-hidden">
+        {/* Mesh-glow bakgrund */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[480px] overflow-hidden">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-[520px] w-[1100px] rounded-full opacity-50 blur-3xl"
+               style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.16), transparent 70%)" }} />
+          <div className="absolute -top-16 left-[12%] h-[360px] w-[360px] rounded-full opacity-40 blur-3xl"
+               style={{ background: "radial-gradient(closest-side, rgba(59,130,246,0.14), transparent 70%)" }} />
+          <div className="absolute -top-10 right-[10%] h-[320px] w-[320px] rounded-full opacity-35 blur-3xl"
+               style={{ background: "radial-gradient(closest-side, rgba(236,72,153,0.12), transparent 70%)" }} />
         {isSupportMode && supportStatus === "granted" && (
           <SupportEditorBanner
             ownerEmail={ownerEmail}
