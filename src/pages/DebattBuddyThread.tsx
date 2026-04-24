@@ -52,6 +52,7 @@ interface DebateTurn {
   parent_turn_id: string | null;
   speaker_label: string;
   round_number: number;
+  manuscript_id: string | null;
 }
 
 type DraftState =
