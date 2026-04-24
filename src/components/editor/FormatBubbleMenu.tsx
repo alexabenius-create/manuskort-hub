@@ -7,6 +7,7 @@ import { usePanelists } from "@/hooks/usePanelists";
 import { hexToDarkText } from "@/lib/panelistColors";
 import { splitCardBlock, mergeSelectionWithPrev, canMergeSelectionWithPrev } from "@/lib/cardBlockCommands";
 import type { TextSize } from "@/lib/cardLimits";
+import { AiImproveButton } from "./AiImproveButton";
 
 interface Props {
   editor: Editor | null;
@@ -182,6 +183,9 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
             </button>
           );
         })}
+
+        <div className="mx-1 h-5 w-px bg-border" />
+        <AiImproveButton editor={editor} />
 
         {panelists.length > 0 && (
           <>
