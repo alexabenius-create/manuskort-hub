@@ -923,6 +923,13 @@ Deno.serve(async (req) => {
             }));
             if (rows.length) await admin.from("cards").insert(rows);
           }
+          // Rensa argument-bufferten + sätt fas till idle
+          await admin
+            .from("debate_threads")
+            .update({
+              bot_state: { ...thread.bot_state, phase: "idle", opponent_args_buffer: [] },
+            })
+            .eq("id", threadId);
           executedTools.push({ name, result: `${args.cards.length} kort` });
         } else if (name === "advance_phase") {
           await admin
