@@ -30,6 +30,7 @@ import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
 import { seedExampleForUser, hasBeenSeeded, markAsSeeded } from "@/lib/seedExampleManuscript";
 import { useTourTrigger } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
+import { useAiUsage } from "@/hooks/useAiUsage";
 import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
@@ -41,6 +42,7 @@ type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 export default function LibraryV2() {
   const { user, signOut } = useAuth();
   const { tier } = useTier();
+  const { usage: aiUsage } = useAiUsage();
   const limits = LIMITS[tier];
   const navigate = useNavigate();
   const unreadMessages = useUnreadMessages();
@@ -501,6 +503,15 @@ export default function LibraryV2() {
           <p className="text-v2-muted text-[17px] sm:text-[18px] mt-4 max-w-xl">
             Skapa, redigera och håll flyt — från första hälsning till sista applåd.
           </p>
+          {(tier === "pro" || tier === "admin") && aiUsage && aiUsage.limit > 0 && (
+            <div className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-white/80 backdrop-blur px-5 py-2.5 border border-v2-line shadow-sm text-[14px] whitespace-nowrap">
+              <Sparkles className="h-4 w-4 text-v2-violet shrink-0" />
+              <span>
+                <span className="font-semibold text-v2-ink">{aiUsage.remaining}</span>
+                <span className="text-v2-muted"> / {aiUsage.limit} AI-förbättringar kvar denna månad</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Controls */}
