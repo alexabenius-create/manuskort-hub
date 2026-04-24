@@ -219,6 +219,19 @@ function json(body: unknown, status = 200) {
   });
 }
 
+/** Ta bort tool-call-läckor (t.ex. `{ "quick_replies": [...] }` eller ```json-block) som modellen ibland skriver in i fritexten. */
+function stripToolJunk(text: string): string {
+  if (!text) return "";
+  let out = text;
+  // Ta bort ```json ... ``` och ``` ... ``` block
+  out = out.replace(/```(?:json)?\s*[\s\S]*?```/gi, "");
+  // Ta bort inline JSON-objekt som innehåller quick_replies eller andra verktygsnycklar
+  out = out.replace(/\{[^{}]*"(?:quick_replies|replies|issue_text|topic_area|summary|full_text|filename|kind|name|arguments_text|rebuttal_text|cards|next_phase)"[\s\S]*?\}/g, "");
+  // Städa upp dubbla mellanslag/radbrytningar
+  out = out.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
