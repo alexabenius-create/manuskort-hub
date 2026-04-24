@@ -437,12 +437,13 @@ Deno.serve(async (req) => {
       user_id: userId,
       role: "assistant",
       content: assistantText,
-      metadata: { tools: executedTools },
+      metadata: { tools: executedTools, quick_replies: quickReplies },
     });
 
     return json({
       assistant: assistantText,
       tools: executedTools,
+      quick_replies: quickReplies,
     });
   } catch (e) {
     console.error("debate-chat error", e);
