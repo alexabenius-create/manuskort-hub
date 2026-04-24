@@ -502,7 +502,7 @@ export default function Presentation() {
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
       className="fixed inset-0 bg-[#0a0a0c] text-zinc-100 overflow-hidden flex flex-col"
-      style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
+      style={{ height: "100dvh", minHeight: isMobile ? "calc(100dvh + 1px)" : "100dvh" }}
       onTouchStart={useMobileV2 ? undefined : onTouchStart}
       onTouchEnd={useMobileV2 ? undefined : onTouchEnd}
     >
