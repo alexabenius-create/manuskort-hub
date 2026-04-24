@@ -558,7 +558,7 @@ Deno.serve(async (req) => {
           model: "google/gemini-3-flash-preview",
           messages: [
             ...messages,
-            { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Ge nu en kort, vänlig återkoppling till användaren och fråga nästa logiska sak.` },
+            { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Driv samtalet framåt enligt FLÖDET. Ställ nästa konkreta fråga som tar oss till nästa fas — fråga ALDRIG "Vad vill du göra härnäst?" eller liknande öppna meta-frågor. Använd alltid suggest_quick_replies.` },
           ],
         }),
       });
@@ -569,7 +569,7 @@ Deno.serve(async (req) => {
     }
 
     if (!assistantText) {
-      assistantText = "Tack! Vad vill du göra härnäst?";
+      assistantText = "Okej, då går vi vidare!";
     }
 
     // Spara assistant-svaret
