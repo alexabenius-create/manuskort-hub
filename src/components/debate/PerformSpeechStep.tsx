@@ -45,7 +45,7 @@ const turnLabel = (kind: string): string => {
   return "Anförande";
 };
 
-export function PerformSpeechStep({ turn, threadTitle, onContinue, onManuscriptCreated }: Props) {
+export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onManuscriptCreated }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
