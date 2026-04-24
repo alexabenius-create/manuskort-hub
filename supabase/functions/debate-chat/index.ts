@@ -832,6 +832,8 @@ Deno.serve(async (req) => {
             .eq("id", threadId);
           executedTools.push({ name, result: `${seconds}s` });
         } else if (name === "generate_speech_cards") {
+          const sectionId = crypto.randomUUID();
+          const sectionLabel = "Anförande";
           if (thread.manuscript_id) {
             const { data: existingCards } = await admin
               .from("cards")
@@ -847,6 +849,8 @@ Deno.serve(async (req) => {
               role: "speaker",
               title: c.title,
               content_html: `<p>${c.body.replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+              section_id: sectionId,
+              section_label: sectionLabel,
             }));
             if (rows.length) await admin.from("cards").insert(rows);
             executedTools.push({ name, result: `${rows.length} kort` });
@@ -855,7 +859,14 @@ Deno.serve(async (req) => {
           }
           await admin
             .from("debate_threads")
-            .update({ bot_state: { ...thread.bot_state, phase: "awaiting_perform" } })
+            .update({
+              bot_state: {
+                ...thread.bot_state,
+                phase: "awaiting_perform",
+                current_section_id: sectionId,
+                rebuttal_count: 0,
+              },
+            })
             .eq("id", threadId);
         } else if (name === "set_opponent") {
           await admin
@@ -906,6 +917,13 @@ Deno.serve(async (req) => {
             ai_card_split: args.cards,
           });
 
+          // Räkna upp replikskifte och skapa ny sektion
+          const prevCount = Number((thread.bot_state as Record<string, unknown>)?.rebuttal_count) || 0;
+          const newCount = prevCount + 1;
+          const oppName = thread.current_opponent_label || "motdebattör";
+          const sectionId = crypto.randomUUID();
+          const sectionLabel = `Replikskifte mot ${oppName} ${newCount}`;
+
           // Skapa kort i manus om kopplat
           if (thread.manuscript_id) {
             const { data: existingCards } = await admin
@@ -922,14 +940,22 @@ Deno.serve(async (req) => {
               role: "speaker",
               title: c.title,
               content_html: `<p>${c.body.replace(/\n/g, "</p><p>")}</p>`,
+              section_id: sectionId,
+              section_label: sectionLabel,
             }));
             if (rows.length) await admin.from("cards").insert(rows);
           }
-          // Rensa argument-bufferten + sätt fas till idle
+          // Rensa argument-bufferten + sätt fas till awaiting_perform och spara aktuell sektion
           await admin
             .from("debate_threads")
             .update({
-              bot_state: { ...thread.bot_state, phase: "idle", opponent_args_buffer: [] },
+              bot_state: {
+                ...thread.bot_state,
+                phase: "awaiting_perform",
+                opponent_args_buffer: [],
+                current_section_id: sectionId,
+                rebuttal_count: newCount,
+              },
             })
             .eq("id", threadId);
           executedTools.push({ name, result: `${args.cards.length} kort` });

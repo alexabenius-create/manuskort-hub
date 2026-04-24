@@ -47,7 +47,8 @@ export default function Presentation() {
   const debateBuddyThreadId = searchParams.get("debattbuddy");
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
-  const [cards, setCards] = useState<Card[]>([]);
+  const [allCards, setAllCards] = useState<Card[]>([]);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [panelists, setPanelists] = useState<Panelist[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -161,11 +162,37 @@ export default function Presentation() {
         return;
       }
       setManuscript(mRes.data as Manuscript);
-      setCards((cRes.data ?? []) as Card[]);
+      setAllCards((cRes.data ?? []) as Card[]);
       setPanelists((pRes.data ?? []) as Panelist[]);
       setLoading(false);
     })();
   }, [id, navigate]);
+
+  // Sektioner — distinkta section_id i den ordning de förekommer i manuset.
+  const sections = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; cardCount: number }>();
+    for (const c of allCards) {
+      const sid = (c.section_id as string | null) ?? null;
+      if (!sid) continue;
+      const label = (c.section_label as string | null) || "Sektion";
+      const existing = seen.get(sid);
+      if (existing) existing.cardCount += 1;
+      else seen.set(sid, { id: sid, label, cardCount: 1 });
+    }
+    return Array.from(seen.values());
+  }, [allCards]);
+
+  useEffect(() => {
+    if (activeSectionId === null && sections.length > 0) {
+      setActiveSectionId(sections[sections.length - 1].id);
+    }
+  }, [sections, activeSectionId]);
+
+  const cards = useMemo(() => {
+    if (sections.length === 0) return allCards;
+    if (!activeSectionId) return allCards;
+    return allCards.filter((c) => (c.section_id as string | null) === activeSectionId);
+  }, [allCards, sections.length, activeSectionId]);
 
   // Tidsmodul
   const targetSeconds = manuscript?.target_duration_seconds ?? 0;
@@ -392,7 +419,7 @@ export default function Presentation() {
   // Anteckningar — debounced spara till Supabase
   const notesSaveTimers = useRef<Map<string, number>>(new Map());
   const handleNotesChange = useCallback((cardId: string, notes: string) => {
-    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
+    setAllCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
     const timers = notesSaveTimers.current;
     const existing = timers.get(cardId);
     if (existing) window.clearTimeout(existing);
@@ -592,7 +619,6 @@ export default function Presentation() {
       )}
 
 
-
       <main className="flex-1 min-h-0 pt-9 md:pt-24 pb-9 md:pb-24 px-0 md:px-10 relative">
         <div
           className={`h-full w-full bg-black md:rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
@@ -686,8 +712,13 @@ export default function Presentation() {
       {menuOpen && (
         <PresentationStartMenu
           estimatedSpeedFactor={1.0}
+          sections={sections}
           onStartCountdown={(opts) => {
-            const placeholders = scanCardsForPlaceholders(cards);
+            if (opts.sectionId) setActiveSectionId(opts.sectionId);
+            const filtered = opts.sectionId
+              ? allCards.filter((c) => (c.section_id as string | null) === opts.sectionId)
+              : cards;
+            const placeholders = scanCardsForPlaceholders(filtered);
             if (placeholders.length > 0) {
               setPendingStart({ mode: "countdown", viewMode: opts.viewMode, focusStyle: opts.focusStyle, placeholders });
               return;
@@ -698,7 +729,11 @@ export default function Presentation() {
             setMenuOpen(false);
           }}
           onStartInstant={(opts) => {
-            const placeholders = scanCardsForPlaceholders(cards);
+            if (opts.sectionId) setActiveSectionId(opts.sectionId);
+            const filtered = opts.sectionId
+              ? allCards.filter((c) => (c.section_id as string | null) === opts.sectionId)
+              : cards;
+            const placeholders = scanCardsForPlaceholders(filtered);
             if (placeholders.length > 0) {
               setPendingStart({ mode: "instant", viewMode: opts.viewMode, focusStyle: opts.focusStyle, placeholders });
               return;

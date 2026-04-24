@@ -16,18 +16,31 @@ const MESSAGES = [
 export type ViewMode = "cards" | "scroll";
 export type FocusStyle = "line" | "sentence";
 
+export interface SectionOption {
+  id: string;
+  label: string;
+  cardCount: number;
+}
+
 interface Props {
-  onStartCountdown: (opts: { viewMode: ViewMode; focusStyle: FocusStyle }) => void;
-  onStartInstant: (opts: { viewMode: ViewMode; focusStyle: FocusStyle }) => void;
+  onStartCountdown: (opts: { viewMode: ViewMode; focusStyle: FocusStyle; sectionId: string | null }) => void;
+  onStartInstant: (opts: { viewMode: ViewMode; focusStyle: FocusStyle; sectionId: string | null }) => void;
   onExit: () => void;
   /** Estimerad max-fart som krävs (1.0 = normalt). Om > 3.0 visas varning. */
   estimatedSpeedFactor?: number;
+  /** Sektioner i manuset. Om ≥ 2, visas valet i menyn. */
+  sections?: SectionOption[];
 }
 
-export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit, estimatedSpeedFactor }: Props) {
+export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit, estimatedSpeedFactor, sections }: Props) {
   const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [focusStyle, setFocusStyle] = useState<FocusStyle>("line");
+  const hasSections = (sections?.length ?? 0) >= 2;
+  // Default: senaste sektionen (sista i listan)
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    hasSections ? sections![sections!.length - 1].id : null,
+  );
 
   const speedWarning = useMemo(() => {
     if (viewMode !== "scroll") return null;
@@ -39,10 +52,10 @@ export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        onStartCountdown({ viewMode, focusStyle });
+        onStartCountdown({ viewMode, focusStyle, sectionId: selectedSectionId });
       } else if (e.key === " ") {
         e.preventDefault();
-        onStartInstant({ viewMode, focusStyle });
+        onStartInstant({ viewMode, focusStyle, sectionId: selectedSectionId });
       } else if (e.key === "Escape") {
         e.preventDefault();
         onExit();
@@ -50,7 +63,7 @@ export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () => window.removeEventListener("keydown", onKey, { capture: true } as any);
-  }, [onStartCountdown, onStartInstant, onExit, viewMode, focusStyle]);
+  }, [onStartCountdown, onStartInstant, onExit, viewMode, focusStyle, selectedSectionId]);
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-12 bg-zinc-900/95 backdrop-blur-md animate-in fade-in duration-500 px-8 overflow-y-auto py-12">
@@ -119,16 +132,39 @@ export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit
         )}
       </div>
 
+      {/* Sektionsval (visas endast om manuset har ≥ 2 sektioner — t.ex. anförande + replikskifte) */}
+      {hasSections && sections && (
+        <div className="flex flex-col items-center gap-3 w-full max-w-2xl">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">Vad vill du presentera?</span>
+          <div className="flex flex-wrap justify-center gap-2">
+            {sections.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedSectionId(s.id)}
+                className={`px-5 py-3 rounded-xl text-[14px] font-medium transition-colors ${
+                  selectedSectionId === s.id
+                    ? "bg-zinc-700 text-zinc-100 ring-2 ring-white/20"
+                    : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {s.label}
+                <span className="ml-2 text-[11px] text-zinc-500">{s.cardCount} kort</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-6">
         <div className="flex flex-col md:flex-row items-stretch gap-4">
           <button
-            onClick={() => onStartCountdown({ viewMode, focusStyle })}
+            onClick={() => onStartCountdown({ viewMode, focusStyle, sectionId: selectedSectionId })}
             className="rounded-full bg-white text-black px-12 py-6 text-[22px] font-medium hover:bg-zinc-200 transition-colors shadow-2xl shadow-black/30 active:scale-[0.98]"
           >
             Starta med 3 sekunders nedräkning
           </button>
           <button
-            onClick={() => onStartInstant({ viewMode, focusStyle })}
+            onClick={() => onStartInstant({ viewMode, focusStyle, sectionId: selectedSectionId })}
             className="rounded-full bg-zinc-900 text-zinc-100 border border-zinc-700 px-12 py-6 text-[22px] font-medium hover:bg-zinc-800 transition-colors active:scale-[0.98]"
           >
             Starta direkt
