@@ -309,7 +309,7 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
     quick_replies: [],
   },
   intake_opponent_args: {
-    text: "Skriv in motdebattörens argument så formulerar jag ett genmäle.",
+    text: "Skriv in **ett argument i taget** från motdebattören — du kan skicka flera meddelanden i följd. När alla argument är inlagda trycker du på **Analysera nu**, så genererar jag ett genmäle som bemöter dem punktvis.",
     quick_replies: [],
   },
   idle: {
