@@ -57,7 +57,7 @@ export function DebateChatWidget({ threadId }: Props) {
         onMinimize={() => setMode("minimized")}
       />
       <DebateChatMessages messages={messages} sending={sending} />
-      <DebateChatInput onSend={sendMessage} disabled={sending} />
+      <DebateChatInput onSend={sendMessage} disabled={sending} quickReplies={quickReplies} />
     </div>
   );
 }
