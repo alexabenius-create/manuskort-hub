@@ -194,8 +194,9 @@ export function insertCardBlockAfter(
   if (!cardBlockType || !paragraphType) return false;
 
   if (dispatch) {
+    // Tiptap fyller i defaults automatiskt — skicka bara override för cardId
     const newCard = cardBlockType.create(
-      { ...cardBlockType.spec.attrs, cardId: null },
+      { cardId: null },
       paragraphType.create(),
     );
     const insertAt = pos + node.nodeSize;
@@ -283,8 +284,9 @@ export function insertCardBlockBefore(
   if (!cardBlockType || !paragraphType) return false;
 
   if (dispatch) {
+    // Tiptap fyller i defaults automatiskt — skicka bara override för cardId
     const newCard = cardBlockType.create(
-      { ...cardBlockType.spec.attrs, cardId: null },
+      { cardId: null },
       paragraphType.create(),
     );
     const tr = state.tr.insert(pos, newCard);
