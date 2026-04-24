@@ -478,7 +478,7 @@ Deno.serve(async (req) => {
       });
       if (followup.ok) {
         const fd = await followup.json();
-        assistantText = fd.choices?.[0]?.message?.content || "";
+        assistantText = stripToolJunk(fd.choices?.[0]?.message?.content || "");
       }
     }
 
