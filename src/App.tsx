@@ -21,6 +21,7 @@ const Editor = lazy(() => import("./pages/EditorV4"));
 const Settings = lazy(() => import("./pages/SettingsV2"));
 const Import = lazy(() => import("./pages/ImportV2"));
 const Pricing = lazy(() => import("./pages/PricingV2"));
+const DebattBuddy = lazy(() => import("./pages/DebattBuddy"));
 const Admin = lazy(() => import("./pages/AdminV2"));
 const Messages = lazy(() => import("./pages/MessagesV2"));
 const Moderator = lazy(() => import("./pages/usecase/ModeratorV2"));
