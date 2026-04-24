@@ -302,13 +302,24 @@ export default function DebattBuddyThread() {
   const activeReadParent =
     activeReadTurn?.parent_turn_id ? turnById.get(activeReadTurn.parent_turn_id) ?? null : null;
 
+  // En "pending perform"-turn = senaste egna anförande/replik/genmäle som inte
+  // ännu markerats som genomförd lokalt.
+  const lastTurn = turns[turns.length - 1] ?? null;
+  const performTurn =
+    lastTurn && isOwnSpeechKind(lastTurn.kind) && !performedTurnIds.has(lastTurn.id)
+      ? lastTurn
+      : null;
+
   // Determine which guided step to show
   const showRoleStep = !roleConfirmed && turns.length === 0;
   const showDraft = draft.kind !== "none";
+  const showPerform = !showRoleStep && !showDraft && Boolean(performTurn);
   const stepKey = showRoleStep
     ? "role"
     : showDraft
     ? `draft-${draft.kind}-${(draft as any).turnKind}-${nextPosition}`
+    : showPerform
+    ? `perform-${performTurn!.id}`
     : `phase-${phase.phase}-${turns.length}`;
 
   // Header summary line for collapsible header
