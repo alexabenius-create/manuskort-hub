@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, Copy, Trash2, Check, Loader2 } from "lucide-react";
+import { Sparkles, Copy, Trash2, Check, Loader2, RefreshCw } from "lucide-react";
 import {
   Insight, InsightStatus, InsightPriority,
   STATUS_LABEL, PRIORITY_LABEL, SOURCE_LABEL,
@@ -21,11 +21,25 @@ interface Props {
   onClose: () => void;
 }
 
+type AiMode = "summary" | "actions" | "brief";
+
+const NOTE_FIELD: Record<AiMode, "summary_notes" | "actions_notes" | "brief_notes"> = {
+  summary: "summary_notes",
+  actions: "actions_notes",
+  brief: "brief_notes",
+};
+
 export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
   const [notes, setNotes] = useState(insight.my_notes);
   const [savingNotes, setSavingNotes] = useState(false);
   const [aiBusy, setAiBusy] = useState<string | null>(null);
   const [implRef, setImplRef] = useState(insight.implementation_ref ?? "");
+
+  // Per-mode comments (admin overrides)
+  const [summaryNotes, setSummaryNotes] = useState(insight.summary_notes ?? "");
+  const [actionsNotes, setActionsNotes] = useState(insight.actions_notes ?? "");
+  const [briefNotes, setBriefNotes] = useState(insight.brief_notes ?? "");
+  const [savingMode, setSavingMode] = useState<AiMode | null>(null);
 
   const update = async (patch: Partial<Insight>) => {
     const { error } = await supabase.from("admin_insights").update(patch).eq("id", insight.id);
@@ -52,7 +66,17 @@ export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
     await update(patch);
   };
 
-  const callAi = async (mode: "summary" | "actions" | "brief") => {
+  const callAi = async (mode: AiMode) => {
+    // Persist any pending mode-notes before calling so the backend reads the latest
+    const pending: Partial<Insight> = {};
+    if (mode === "summary" && summaryNotes !== insight.summary_notes) pending.summary_notes = summaryNotes;
+    if (mode === "actions" && actionsNotes !== insight.actions_notes) pending.actions_notes = actionsNotes;
+    if (mode === "brief" && briefNotes !== insight.brief_notes) pending.brief_notes = briefNotes;
+    if (Object.keys(pending).length > 0) {
+      const ok = await update(pending);
+      if (!ok) return;
+    }
+
     setAiBusy(mode);
     try {
       const { data, error } = await supabase.functions.invoke("generate-insight-brief", {
@@ -67,6 +91,17 @@ export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
     } finally {
       setAiBusy(null);
     }
+  };
+
+  const saveModeNotes = async (mode: AiMode) => {
+    setSavingMode(mode);
+    const value =
+      mode === "summary" ? summaryNotes :
+      mode === "actions" ? actionsNotes :
+      briefNotes;
+    await update({ [NOTE_FIELD[mode]]: value } as Partial<Insight>);
+    setSavingMode(null);
+    toast({ title: "Kommentar sparad" });
   };
 
   const copyBrief = async () => {
@@ -85,6 +120,64 @@ export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
     toast({ title: "Raderad" });
     onChanged();
     onClose();
+  };
+
+  const renderModeBlock = (
+    mode: AiMode,
+    label: string,
+    aiText: string | null,
+    notesValue: string,
+    setNotesValue: (v: string) => void,
+    savedValue: string,
+    extraHeader?: React.ReactNode,
+  ) => {
+    if (!aiText) return null;
+    const dirty = notesValue !== savedValue;
+    return (
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</Label>
+          {extraHeader}
+        </div>
+        <div className={`p-3 rounded-lg bg-surface-2 text-[14px] whitespace-pre-wrap ${mode === "brief" ? "font-mono text-[13px]" : ""}`}>
+          {aiText}
+        </div>
+        <div className="mt-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Mina kommentarer · överordnar AI vid omgenerering
+            </Label>
+            <div className="flex gap-1.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => saveModeNotes(mode)}
+                disabled={savingMode === mode || !dirty}
+                className="h-7 rounded-full text-[12px]"
+              >
+                {savingMode === mode ? "Sparar…" : dirty ? "Spara" : "Sparat"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => callAi(mode)}
+                disabled={!!aiBusy}
+                className="h-7 rounded-full text-[12px] gap-1.5"
+              >
+                {aiBusy === mode ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Generera om
+              </Button>
+            </div>
+          </div>
+          <Textarea
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            rows={3}
+            placeholder="T.ex. 'Fokusera på mobil', 'Skriv kortare', 'Strunta i acceptanskriterier'…"
+          />
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -192,28 +285,18 @@ export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
           </Button>
         </div>
 
-        {insight.ai_summary && (
-          <div className="mt-4">
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">AI-sammanfattning</Label>
-            <div className="mt-1.5 p-3 rounded-lg bg-surface-2 text-[14px] whitespace-pre-wrap">{insight.ai_summary}</div>
-          </div>
-        )}
-        {insight.ai_proposed_actions && (
-          <div className="mt-4">
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Föreslagna åtgärder</Label>
-            <div className="mt-1.5 p-3 rounded-lg bg-surface-2 text-[14px] whitespace-pre-wrap">{insight.ai_proposed_actions}</div>
-          </div>
-        )}
-        {insight.ai_brief && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Lovable-brief</Label>
-              <Button size="sm" variant="ghost" onClick={copyBrief} className="h-7 rounded-full text-[12px] gap-1.5">
-                <Copy className="h-3 w-3" /> Kopiera
-              </Button>
-            </div>
-            <div className="p-3 rounded-lg bg-surface-2 text-[13px] whitespace-pre-wrap font-mono">{insight.ai_brief}</div>
-          </div>
+        {renderModeBlock("summary", "AI-sammanfattning", insight.ai_summary, summaryNotes, setSummaryNotes, insight.summary_notes ?? "")}
+        {renderModeBlock("actions", "Föreslagna åtgärder", insight.ai_proposed_actions, actionsNotes, setActionsNotes, insight.actions_notes ?? "")}
+        {renderModeBlock(
+          "brief",
+          "Lovable-brief",
+          insight.ai_brief,
+          briefNotes,
+          setBriefNotes,
+          insight.brief_notes ?? "",
+          <Button size="sm" variant="ghost" onClick={copyBrief} className="h-7 rounded-full text-[12px] gap-1.5">
+            <Copy className="h-3 w-3" /> Kopiera
+          </Button>,
         )}
       </div>
 
