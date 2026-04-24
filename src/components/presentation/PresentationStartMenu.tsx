@@ -16,18 +16,31 @@ const MESSAGES = [
 export type ViewMode = "cards" | "scroll";
 export type FocusStyle = "line" | "sentence";
 
+export interface SectionOption {
+  id: string;
+  label: string;
+  cardCount: number;
+}
+
 interface Props {
-  onStartCountdown: (opts: { viewMode: ViewMode; focusStyle: FocusStyle }) => void;
-  onStartInstant: (opts: { viewMode: ViewMode; focusStyle: FocusStyle }) => void;
+  onStartCountdown: (opts: { viewMode: ViewMode; focusStyle: FocusStyle; sectionId: string | null }) => void;
+  onStartInstant: (opts: { viewMode: ViewMode; focusStyle: FocusStyle; sectionId: string | null }) => void;
   onExit: () => void;
   /** Estimerad max-fart som krävs (1.0 = normalt). Om > 3.0 visas varning. */
   estimatedSpeedFactor?: number;
+  /** Sektioner i manuset. Om ≥ 2, visas valet i menyn. */
+  sections?: SectionOption[];
 }
 
-export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit, estimatedSpeedFactor }: Props) {
+export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit, estimatedSpeedFactor, sections }: Props) {
   const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [focusStyle, setFocusStyle] = useState<FocusStyle>("line");
+  const hasSections = (sections?.length ?? 0) >= 2;
+  // Default: senaste sektionen (sista i listan)
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    hasSections ? sections![sections!.length - 1].id : null,
+  );
 
   const speedWarning = useMemo(() => {
     if (viewMode !== "scroll") return null;
