@@ -44,6 +44,7 @@ export default function LibraryV2() {
   const { user, signOut } = useAuth();
   const { tier } = useTier();
   const { usage: aiUsage } = useAiUsage();
+  const { hasAccess: hasDebateBuddy } = useBetaAccess("debate_buddy");
   const limits = LIMITS[tier];
   const navigate = useNavigate();
   const unreadMessages = useUnreadMessages();
