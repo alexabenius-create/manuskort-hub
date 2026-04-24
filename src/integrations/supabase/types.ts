@@ -244,6 +244,8 @@ export type Database = {
           notes: string
           position: number
           role: Database["public"]["Enums"]["card_role"]
+          section_id: string | null
+          section_label: string
           start_time: string
           target_seconds: number | null
           target_seconds_is_manual: boolean
@@ -265,6 +267,8 @@ export type Database = {
           notes?: string
           position?: number
           role?: Database["public"]["Enums"]["card_role"]
+          section_id?: string | null
+          section_label?: string
           start_time?: string
           target_seconds?: number | null
           target_seconds_is_manual?: boolean
@@ -286,6 +290,8 @@ export type Database = {
           notes?: string
           position?: number
           role?: Database["public"]["Enums"]["card_role"]
+          section_id?: string | null
+          section_label?: string
           start_time?: string
           target_seconds?: number | null
           target_seconds_is_manual?: boolean
