@@ -864,8 +864,8 @@ export default function EditorV4() {
           </div>
         </header>
 
-        <main className="flex-1 w-full">
-          <div className="max-w-[900px] mx-auto py-8 px-4">
+        <main className="flex-1 w-full relative">
+          <div className="max-w-[900px] mx-auto py-10 px-4">
             <TiptapDocEditor
               value={docHtml}
               onChange={handleDocChange}
