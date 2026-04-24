@@ -122,6 +122,7 @@ const App = () => (
                   <Route path="/installningar-v2" element={<RequireAuth><SettingsV2 /></RequireAuth>} />
                   <Route path="/meddelanden" element={<RequireAuth><Messages /></RequireAuth>} />
                   <Route path="/meddelanden-v2" element={<RequireAuth><MessagesV2 /></RequireAuth>} />
+                  <Route path="/debatt-buddy" element={<RequireAuth><DebattBuddy /></RequireAuth>} />
                   <Route path="/checkout/return" element={<CheckoutReturn />} />
                   <Route path="/index" element={<Navigate to="/bibliotek" replace />} />
                   <Route path="*" element={<NotFound />} />
