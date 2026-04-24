@@ -25,22 +25,25 @@ const iconFor = (id: PhaseAction["id"]) => {
   }
 };
 
-const phaseLabel = (state: PhaseState): string => {
+const phaseHeading = (state: PhaseState): { eyebrow: string; title: string } => {
   switch (state.phase) {
     case "speaker_awaiting_speech":
-      return "Steg 2 — Skriv ditt anförande";
+      return { eyebrow: "Steg 2", title: "Skriv ditt anförande" };
     case "replier_awaiting_opponent_speech":
-      return "Steg 2 — Lägg in motdebattörens anförande";
+      return { eyebrow: "Steg 2", title: "Lägg in motdebattörens anförande" };
     case "opponent_speech_open":
-      return "Din tur — skriv replik";
+      return { eyebrow: "Din tur", title: "Skriv din replik" };
     case "replies_open":
-      return `Runda ${state.activeRound} — repliker väntas`;
+      return { eyebrow: `Runda ${state.activeRound}`, title: "Repliker väntas" };
     case "awaiting_rebuttal":
-      return `Replik från ${state.pendingReplyLabel} — välj nästa steg`;
+      return {
+        eyebrow: `Replik från ${state.pendingReplyLabel}`,
+        title: "Välj nästa steg",
+      };
     case "round_complete":
-      return `Runda ${state.activeRound} avslutad`;
+      return { eyebrow: `Runda ${state.activeRound} klar`, title: "Vad gör du nu?" };
     default:
-      return "Nästa steg";
+      return { eyebrow: "", title: "Nästa steg" };
   }
 };
 
@@ -50,36 +53,53 @@ export function PhaseCard({ state, onAction }: Props) {
 
   if (!primary) return null;
 
+  const { eyebrow, title } = phaseHeading(state);
+
   return (
-    <div className="rounded-2xl border border-v2-violet/30 bg-gradient-to-br from-v2-violet/5 to-white p-6 space-y-4">
-      <div className="space-y-1">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-violet">
-          {phaseLabel(state)}
-        </div>
-        {primary.hint && <p className="text-[14px] text-v2-ink">{primary.hint}</p>}
+    <div className="rounded-3xl border border-v2-violet/30 bg-gradient-to-br from-v2-violet/5 via-white to-white p-8 sm:p-10 space-y-6 shadow-sm">
+      <div className="text-center space-y-2.5">
+        {eyebrow && (
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-v2-violet">
+            {eyebrow}
+          </div>
+        )}
+        <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-v2-ink">
+          {title}
+        </h2>
+        {primary.hint && (
+          <p className="text-[14px] text-v2-muted max-w-md mx-auto leading-relaxed">
+            {primary.hint}
+          </p>
+        )}
       </div>
 
-      <Button
-        onClick={() => onAction(primary)}
-        className="w-full sm:w-auto rounded-full h-11 px-6 text-[14px] font-semibold"
-        size="lg"
-      >
-        {iconFor(primary.id)}
-        {primary.label}
-      </Button>
+      <div className="flex justify-center pt-2">
+        <Button
+          onClick={() => onAction(primary)}
+          className="rounded-full h-12 px-8 text-[15px] font-semibold"
+          size="lg"
+        >
+          {iconFor(primary.id)}
+          {primary.label}
+        </Button>
+      </div>
 
       {secondaries.length > 0 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-2 pt-3 border-t border-v2-line/60 text-[12px]">
-          <span className="text-v2-muted">Eller:</span>
-          {secondaries.map((a) => (
-            <button
-              key={a.id + (a.parentTurnId ?? "")}
-              onClick={() => onAction(a)}
-              className="text-v2-muted hover:text-v2-ink underline-offset-2 hover:underline"
-            >
-              {a.label}
-            </button>
-          ))}
+        <div className="pt-5 border-t border-v2-line/60 space-y-2.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-muted text-center">
+            Eller
+          </div>
+          <div className="flex flex-col sm:flex-row sm:justify-center sm:flex-wrap gap-2">
+            {secondaries.map((a) => (
+              <button
+                key={a.id + (a.parentTurnId ?? "")}
+                onClick={() => onAction(a)}
+                className="text-[13px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface px-3 py-1.5 rounded-full transition-colors"
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
