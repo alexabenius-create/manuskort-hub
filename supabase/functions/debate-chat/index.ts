@@ -692,7 +692,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
     if (threadErr || !threadData) return json({ error: "Thread not found" }, 404);
-    const thread = threadData as ThreadRow;
+    let thread = threadData as ThreadRow;
 
     // Spara användarmeddelandet om det finns
     if (userMessage.trim()) {
@@ -720,6 +720,16 @@ Deno.serve(async (req) => {
         quick_replies: scripted.quick_replies,
       });
     }
+
+    // handleScripted kan uppdatera fasen och sedan släppa vidare till LLM.
+    // Läs om tråden så currentPhase inte fastnar i den gamla fasen.
+    const { data: latestThreadData } = await admin
+      .from("debate_threads")
+      .select("*")
+      .eq("id", threadId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (latestThreadData) thread = latestThreadData as ThreadRow;
 
     // Ladda historik (för LLM-faser)
     const { data: history } = await admin
@@ -762,15 +772,25 @@ Deno.serve(async (req) => {
     const currentPhase = thread.bot_state?.phase || "intake_issue";
     const model = heavyPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash-lite";
 
-    // Tving fram rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
+    // Tvinga rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
     let toolChoice: unknown = "auto";
+    let toolsForRequest: Tool[] = TOOLS;
     if (currentPhase === "generating_rebuttal") {
       toolChoice = { type: "function", function: { name: "generate_rebuttal_cards" } };
+      toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_rebuttal_cards");
+      messages.push({
+        role: "system",
+        content: "Du MÅSTE anropa verktyget generate_rebuttal_cards nu. Returnera inte genmälet som vanlig text.",
+      });
     } else if (currentPhase === "drafting_speech") {
-      // drafting_speech tvingar bara om användaren bett om utkast (annars vill vi ha vanligt svar).
       const lastUser = userMessage.toLowerCase();
       if (lastUser.includes("skriv utkast") || lastUser.includes("utkast åt mig")) {
         toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
+        toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_speech_cards");
+        messages.push({
+          role: "system",
+          content: "Du MÅSTE anropa verktyget generate_speech_cards nu. Returnera inte anförandet som vanlig text.",
+        });
       }
     }
 
@@ -784,7 +804,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model,
         messages,
-        tools: TOOLS,
+        tools: toolsForRequest,
         tool_choice: toolChoice,
       }),
     });
