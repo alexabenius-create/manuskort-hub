@@ -395,6 +395,9 @@ Deno.serve(async (req) => {
             .update({ bot_state: { ...thread.bot_state, phase: args.next_phase } })
             .eq("id", threadId);
           executedTools.push({ name, result: args.next_phase });
+        } else if (name === "suggest_quick_replies") {
+          quickReplies = Array.isArray(args.replies) ? args.replies.slice(0, 4) : [];
+          executedTools.push({ name, result: `${quickReplies.length}` });
         }
       } catch (e) {
         console.error("tool error", name, e);
