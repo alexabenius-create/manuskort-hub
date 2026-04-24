@@ -747,41 +747,27 @@ function CardDemo() {
           key={index}
           className="absolute inset-0 bg-white rounded-2xl border border-v2-line shadow-[0_20px_50px_-20px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] overflow-hidden flex flex-col v2-card-enter"
         >
-          <div className="p-6 sm:p-7 flex flex-col flex-1">
-            {/* Top row — chip */}
+          <div className="p-7 sm:p-8 flex flex-col flex-1">
+            {/* Top row — pill-badges (kort-räknare + roll), inspirerat av presentationsläget */}
             <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-br from-v2-violet/10 to-v2-blue/10 border border-v2-violet/20 text-v2-violet text-[11px] font-semibold tracking-wider">
-                  KORT {index + 1}/{DEMO_CARDS.length}
-                </span>
-                <span
-                  className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded text-v2-ink/85"
-                  style={{ background: card.speakerColor }}
-                >
-                  {card.speaker}
-                </span>
-              </div>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-slate-600 text-[10px] font-mono uppercase tracking-[0.12em]">
+                Kort {String(index + 1).padStart(2, "0")} / {String(DEMO_CARDS.length).padStart(2, "0")}
+              </span>
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] text-v2-ink/85 border"
+                style={{
+                  background: card.speakerColor,
+                  borderColor: "rgba(15,23,42,0.08)",
+                }}
+              >
+                {card.speaker}
+              </span>
             </div>
 
-            {/* Rubrik */}
-            <h3 className="font-display text-[20px] sm:text-[22px] font-semibold tracking-tight text-v2-ink leading-tight mb-3">
-              {card.title}
-            </h3>
-
-            {/* Bullets */}
-            <ul className="space-y-2 flex-1">
-              {card.bullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-[14px] text-v2-ink/80 leading-relaxed">
-                  <span className="mt-2 inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-br from-v2-violet to-v2-blue shrink-0" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Cue tag */}
-            <div className="mt-4 flex items-center justify-between gap-3">
+            {/* Cue-pill — centrerad, inspirerad av presentationslägets cue-knappar */}
+            <div className="flex justify-center mb-4">
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wider ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wider ${
                   card.cue.label === "PAUS"
                     ? "bg-rose-50 text-rose-600 border border-rose-200/70"
                     : card.cue.label === "BILD"
@@ -789,20 +775,54 @@ function CardDemo() {
                     : "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
                 }`}
               >
-                <card.cue.icon className="h-3 w-3" />
+                <card.cue.icon className="h-3.5 w-3.5" />
                 {card.cue.label}
-              </span>
-              <span className="text-[11px] font-mono text-v2-muted tabular-nums">
-                {fmtMin(totalElapsedSec)} av {fmtMin(TOTAL_SECONDS)}
               </span>
             </div>
 
-            {/* Total progressbar — hela presentationen */}
-            <div className="mt-3 h-1 w-full rounded-full bg-v2-line/70 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink"
-                style={{ width: `${totalProgressPct}%`, transition: paused ? "none" : "width 120ms linear" }}
-              />
+            {/* Rubrik — starkare hierarki */}
+            <h3 className="font-display text-[24px] sm:text-[26px] font-semibold tracking-tight text-v2-ink leading-[1.15] mb-4">
+              {card.title}
+            </h3>
+
+            {/* Bullets — minimalistiska prickar */}
+            <ul className="space-y-2.5 flex-1">
+              {card.bullets.map((b, i) => (
+                <li key={i} className="flex items-start gap-3 text-[14.5px] text-v2-ink/80 leading-[1.55]">
+                  <span className="mt-[9px] inline-block h-1 w-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Hairline divider + footer */}
+            <div className="mt-5 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-v2-muted/80">
+                  Presentation
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-mono text-v2-muted tabular-nums">
+                    {fmtMin(totalElapsedSec)} av {fmtMin(TOTAL_SECONDS)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPaused((p) => !p); }}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-slate-200 bg-white text-[10px] font-mono uppercase tracking-[0.12em] text-slate-600 hover:text-v2-violet hover:border-v2-violet/40 transition-colors"
+                    aria-label={paused ? "Återuppta" : "Pausa"}
+                  >
+                    {paused ? "Spela" : "Paus"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Total progressbar — hela presentationen */}
+              <div className="h-1 w-full rounded-full bg-v2-line/70 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink"
+                  style={{ width: `${totalProgressPct}%`, transition: paused ? "none" : "width 120ms linear" }}
+                />
+              </div>
             </div>
           </div>
         </article>
