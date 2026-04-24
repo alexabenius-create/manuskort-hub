@@ -37,6 +37,8 @@ export function InsightsPanel() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [dupBusy, setDupBusy] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [listCollapsed, setListCollapsed] = useState(false);
 
   const load = async () => {
     setLoading(true);
