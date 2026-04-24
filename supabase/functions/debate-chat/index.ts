@@ -34,6 +34,7 @@ KRITISKT — SVARSSTIL:
 - **Skriv ALDRIG snabbsvaren i själva textsvaret.** Inga JSON-objekt, inga \`quick_replies\`-block, inga punktlistor med alternativ, inga citerade förslag. Snabbsvaren skickas ENDAST via verktyget — användaren ser dem som knappar.
 - Producera resultat så snart du har minimum av info — vänta inte i onödan.
 - Max 1 emoji per svar. Ofta ingen.
+- **Ställ ALDRIG öppna meta-frågor** som "Vad vill du göra härnäst?", "Vad vill du jobba med?" eller "Hur kan jag hjälpa dig?". Driv alltid samtalet framåt med en konkret nästa-steg-fråga enligt FLÖDET.
 
 FLÖDE (driv framåt aggressivt):
 1. **intake_issue**: Fråga kort "Vad ska vi debattera idag?". Snabbsvar: ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` → gå till intake_brief.
@@ -558,7 +559,7 @@ Deno.serve(async (req) => {
           model: "google/gemini-3-flash-preview",
           messages: [
             ...messages,
-            { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Ge nu en kort, vänlig återkoppling till användaren och fråga nästa logiska sak.` },
+            { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Driv samtalet framåt enligt FLÖDET. Ställ nästa konkreta fråga som tar oss till nästa fas — fråga ALDRIG "Vad vill du göra härnäst?" eller liknande öppna meta-frågor. Använd alltid suggest_quick_replies.` },
           ],
         }),
       });
@@ -569,7 +570,7 @@ Deno.serve(async (req) => {
     }
 
     if (!assistantText) {
-      assistantText = "Tack! Vad vill du göra härnäst?";
+      assistantText = "Okej, då går vi vidare!";
     }
 
     // Spara assistant-svaret
