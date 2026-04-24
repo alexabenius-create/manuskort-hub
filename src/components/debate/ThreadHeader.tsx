@@ -22,10 +22,10 @@ interface DebateThread {
 interface Props {
   thread: DebateThread;
   onChanged: (patch: Partial<DebateThread>) => void;
-  showRoleSelector?: boolean;
+  onEditRole?: () => void;
 }
 
-export function ThreadHeader({ thread, onChanged, showRoleSelector }: Props) {
+export function ThreadHeader({ thread, onChanged, onEditRole }: Props) {
   const [title, setTitle] = useState(thread.title);
   const [topicArea, setTopicArea] = useState(thread.topic_area);
   const [issueText, setIssueText] = useState(thread.issue_text);
