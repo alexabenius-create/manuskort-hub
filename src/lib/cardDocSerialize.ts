@@ -161,7 +161,7 @@ function serializeFragmentChildren(
 
 export interface SyncPlan {
   updates: { id: string; patch: Partial<CardRow> }[];
-  inserts: { tempCardId: string | null; row: Omit<CardRow, "id" | "created_at" | "updated_at" | "user_id" | "manuscript_id"> & { manuscript_id: string; user_id: string } }[];
+  inserts: { tempCardId: string | null; row: Omit<CardRow, "id" | "created_at" | "updated_at" | "user_id" | "manuscript_id" | "section_id" | "section_label"> & { manuscript_id: string; user_id: string } }[];
   deletes: string[];
   unchanged: string[];
 }
