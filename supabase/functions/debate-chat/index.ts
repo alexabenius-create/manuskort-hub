@@ -434,6 +434,21 @@ async function handleScripted(
         .eq("id", threadId);
       return { text: "Skriv en kort beskrivning av ärendet (några meningar räcker).", quick_replies: [] };
     }
+    // Fritext direkt → spara som beskrivning och gå vidare
+    const briefFreetext = userMessage.trim().slice(0, 4000);
+    if (briefFreetext.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          issue_document_text: briefFreetext,
+          bot_state: { ...thread.bot_state, phase: "intake_mode" },
+        })
+        .eq("id", threadId);
+      return {
+        text: "Tack, jag har det! " + SCRIPTED_PROMPTS.intake_mode.text,
+        quick_replies: SCRIPTED_PROMPTS.intake_mode.quick_replies,
+      };
+    }
   }
 
   // intake_mode
@@ -556,6 +571,16 @@ async function handleScripted(
     }
   }
 
+  // FALLBACK: alla intake-faser ska aldrig nå LLM — visa scripted prompt igen
+  const intakePhases = new Set([
+    "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
+    "intake_mode", "intake_speech_length", "drafting_speech",
+    "awaiting_perform", "post_perform_check", "idle",
+  ]);
+  if (intakePhases.has(phase)) {
+    const p = SCRIPTED_PROMPTS[phase];
+    if (p) return { text: p.text, quick_replies: p.quick_replies };
+  }
   return null;
 }
 
@@ -695,7 +720,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages,
         tools: TOOLS,
       }),
@@ -880,7 +905,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
             ...messages,
             { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Driv samtalet framåt enligt FLÖDET. Ställ nästa konkreta fråga som tar oss till nästa fas — fråga ALDRIG "Vad vill du göra härnäst?" eller liknande öppna meta-frågor. Använd alltid suggest_quick_replies.` },
