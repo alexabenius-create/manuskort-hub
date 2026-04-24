@@ -5,6 +5,7 @@ import {
   ZipReader,
   TextWriter,
 } from "https://deno.land/x/zipjs@v2.7.45/index.js";
+import { getDocument } from "https://esm.sh/pdfjs-serverless@0.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,7 +83,17 @@ Deno.serve(async (req) => {
 
     if (mime === MIME_PDF) {
       const buf = new Uint8Array(await file.arrayBuffer());
-      pdfBase64 = base64Encode(buf);
+      // Försök först extrahera text lokalt (snabbt + billigt). Faller tillbaka till vision-läge om tom.
+      try {
+        extractedText = await extractPdfText(buf);
+      } catch (e) {
+        console.warn("pdf.js text extraction failed, falling back to vision", e);
+      }
+      if (!extractedText || extractedText.length < 50) {
+        // Troligen scannad PDF — skicka som bild till modellen för OCR.
+        pdfBase64 = base64Encode(buf);
+        extractedText = "";
+      }
     } else if (mime === MIME_DOCX) {
       const buf = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer: buf });
@@ -112,7 +123,7 @@ Returnera ALLT via verktygsanropet 'extract_issue':
         }
       : {
           role: "user",
-          content: `Här är ärendet (extraherad text från ${mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 60000)}`,
+          content: `Här är ärendet (extraherad text från ${mime === MIME_PDF ? "PDF" : mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 120000)}`,
         };
 
     // AbortController för att inte hänga edge-functionen mot 150s idle-timeout.
@@ -126,7 +137,7 @@ Returnera ALLT via verktygsanropet 'extract_issue':
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: pdfBase64 ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
         messages: [{ role: "system", content: systemPrompt }, userMessage],
         tools: [
           {
@@ -219,6 +230,29 @@ async function extractPptxText(file: File): Promise<string> {
   }
   await reader.close();
   return out.join("\n\n").trim();
+}
+
+async function extractPdfText(bytes: Uint8Array): Promise<string> {
+  // pdf.js i Deno – inaktivera worker, font/cmap-fetching m.m.
+  const loadingTask = getDocument({
+    data: bytes,
+    disableFontFace: true,
+    useSystemFonts: false,
+    isEvalSupported: false,
+    useWorkerFetch: false,
+  });
+  const pdf = await loadingTask.promise;
+  const parts: string[] = [];
+  const maxPages = Math.min(pdf.numPages, 200);
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const strs = (content.items as Array<{ str?: string }>).map((it) => it.str ?? "");
+    parts.push(strs.join(" "));
+    page.cleanup();
+  }
+  await pdf.destroy();
+  return parts.join("\n\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function base64Encode(bytes: Uint8Array): string {
