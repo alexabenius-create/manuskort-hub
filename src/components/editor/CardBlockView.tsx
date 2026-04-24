@@ -24,6 +24,7 @@ import {
   insertCardBlockBefore,
   moveCardBlock,
   moveCardBlockBySteps,
+  splitCardBlock,
 } from "@/lib/cardBlockCommands";
 import { ChevronUp, ChevronDown, X, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { CardBlockErrorBoundary } from "./CardBlockErrorBoundary";
@@ -261,6 +262,34 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
             onDuplicate={() => runWithPos(duplicateCardBlock)}
             onDelete={() => runWithPos(deleteCardBlock)}
             onTogglePanic={handleTogglePanic}
+            onSplitAtCaret={() => {
+              // Sätt caret inuti detta kort om den inte redan står här,
+              // och splitta sedan vid den positionen.
+              const pos = getPos();
+              if (typeof pos !== "number") return;
+              const { state, view } = editor;
+              const sel = state.selection;
+              const inThisCard =
+                sel.from > pos && sel.to < pos + node.nodeSize;
+              if (!inThisCard) {
+                // Fokusera kortet — sätt caret i mitten av första paragrafen.
+                view.focus();
+                const tr = state.tr;
+                try {
+                  const target = pos + 2; // efter cardBlock+paragraph öppning
+                  tr.setSelection(
+                    (await import("prosemirror-state")).TextSelection.near(
+                      tr.doc.resolve(Math.min(target, tr.doc.content.size)),
+                    ),
+                  );
+                  view.dispatch(tr);
+                } catch {
+                  /* ignore */
+                }
+              }
+              splitCardBlock(editor.state, editor.view.dispatch);
+              editor.view.focus();
+            }}
           />
         </div>
       </header>

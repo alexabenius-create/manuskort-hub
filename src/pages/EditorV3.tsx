@@ -34,7 +34,6 @@ import {
   Target,
   Settings2,
   Printer,
-  Plus,
   Play,
   Search,
 } from "lucide-react";
@@ -427,23 +426,8 @@ export default function EditorV3() {
     }
   }, [cards, manuscript, user]);
 
-  /** Lägg till nytt tomt kort sist i dokumentet. */
-  const addCard = useCallback(() => {
-    const ed = editorRef.current;
-    if (!ed) return;
-    const { state } = ed;
-    const cardBlockType = state.schema.nodes.cardBlock;
-    const paragraphType = state.schema.nodes.paragraph;
-    if (!cardBlockType || !paragraphType) return;
-    const newCard = cardBlockType.create({ cardId: null }, paragraphType.create());
-    const insertAt = state.doc.content.size;
-    const tr = state.tr.insert(insertAt, newCard);
-    // Caret in i nya kortet
-    const caretPos = insertAt + 2;
-    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(caretPos, tr.doc.content.size))));
-    ed.view.dispatch(tr.scrollIntoView());
-    ed.view.focus();
-  }, []);
+  // (Tidigare global "Nytt kort"-knapp togs bort — användaren skapar kort
+  // via permanenta +-pillar mellan/runt korten i CardBlockView.)
 
   // Total estimerad längd (för måltids-prick)
   const totalSeconds = useMemo(() => {
@@ -757,15 +741,6 @@ export default function EditorV3() {
 
               {/* Separator */}
               <span className="hidden sm:block h-5 w-px bg-border/60 mx-1" aria-hidden />
-
-              {/* Nytt kort */}
-              <Button
-                onClick={addCard}
-                className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5 flex-shrink-0"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Nytt kort</span>
-              </Button>
 
               {/* Starta */}
               <Tooltip>
