@@ -110,7 +110,27 @@ Deno.serve(async (req) => {
       (turnsRaw ?? []) as any[];
 
     const nextPosition = turns.length === 0 ? 0 : (turns[turns.length - 1].position + 1);
-    const charCap = Math.max(400, Math.round(newSourceText.length * (maxLengthPercent / 100)));
+
+    // Längdregel:
+    // - Anförande (own_speech): längd styrs av användarens utkast × maxLengthPercent.
+    // - Replik/genmäle (own_reply, rebuttal): hård regel = 30 sekunder uppläsningstid
+    //   med användarens wpm + 10 ord/min. ~6 tecken per ord (svenska, inkl. mellanslag).
+    let charCap: number;
+    let targetSeconds: number | null = null;
+    if (turnKind === "own_reply" || turnKind === "rebuttal") {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("wpm")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const baseWpm = Math.max(80, Math.min(260, Number(profile?.wpm) || 140));
+      const effectiveWpm = baseWpm + 10;
+      targetSeconds = 30;
+      const words = Math.round((effectiveWpm / 60) * targetSeconds);
+      charCap = Math.max(200, words * 6);
+    } else {
+      charCap = Math.max(400, Math.round(newSourceText.length * (maxLengthPercent / 100)));
+    }
 
     // Bygg systemprompt
     const t = thread as ThreadRow;
