@@ -20,6 +20,7 @@ const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const Library = lazy(() => import("./pages/Library"));
 const LibraryV2 = lazy(() => import("./pages/LibraryV2"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
+const EditorV4 = lazy(() => import("./pages/EditorV4"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PrintView = lazy(() => import("./components/print/PrintView"));
 const Settings = lazy(() => import("./pages/Settings"));
