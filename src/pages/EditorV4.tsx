@@ -502,8 +502,8 @@ export default function EditorV4() {
 
   if (loading || !manuscript) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="font-mono text-xs text-faint uppercase tracking-widest">Laddar v3…</p>
+      <div className="min-h-screen flex items-center justify-center bg-v2-bg">
+        <p className="font-display text-[14px] text-v2-muted tracking-tight">Laddar editor…</p>
       </div>
     );
   }
