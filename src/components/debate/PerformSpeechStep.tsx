@@ -85,6 +85,10 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
 
     // Om manus redan kopplats — bara navigera.
     if (turn.manuscript_id) {
+      console.log("[debattbuddy] openInEditor: turn already linked", {
+        turnId: turn.id,
+        manuscriptId: turn.manuscript_id,
+      });
       navigate(`/manus/${turn.manuscript_id}`);
       return;
     }
@@ -98,19 +102,43 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const sectionLabel = buildSectionLabel();
 
+      console.log("[debattbuddy] openInEditor: start", {
+        turnId: turn.id,
+        turnKind: turn.kind,
+        rebuttalNumber,
+        existingManuscriptId,
+        willReuseManuscript: Boolean(existingManuscriptId),
+        sectionId,
+        sectionLabel,
+        cardCount: cards.length,
+        allTurnsManuscriptIds: allTurns.map((t) => ({
+          id: t.id,
+          kind: t.kind,
+          manuscript_id: t.manuscript_id,
+        })),
+      });
+
       // Återanvänd befintligt manus om det finns — annars skapa nytt.
       let manuscriptId = existingManuscriptId;
       let basePosition = 0;
+      let createdNew = false;
 
       if (manuscriptId) {
-        const { data: maxRow } = await supabase
+        const { data: maxRow, error: posErr } = await supabase
           .from("cards")
           .select("position")
           .eq("manuscript_id", manuscriptId)
           .order("position", { ascending: false })
           .limit(1)
           .maybeSingle();
+        if (posErr) {
+          console.warn("[debattbuddy] kunde inte hämta sista position", posErr);
+        }
         basePosition = (maxRow?.position ?? -1) + 1;
+        console.log("[debattbuddy] reusing manuscript", {
+          manuscriptId,
+          basePosition,
+        });
       } else {
         const manuscriptTitle = threadTitle || "Debatt";
         const { data: manus, error: mErr } = await supabase
@@ -119,6 +147,7 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
           .select()
           .single();
         if (mErr || !manus) {
+          console.error("[debattbuddy] kunde inte skapa manus", mErr);
           toast({
             title: "Kunde inte skapa manus",
             description: mErr?.message,
@@ -127,6 +156,8 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
           return;
         }
         manuscriptId = manus.id;
+        createdNew = true;
+        console.log("[debattbuddy] created new manuscript", { manuscriptId });
       }
 
       const cardRows = cards.map((c, i) => ({
@@ -139,8 +170,15 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
         section_id: sectionId,
         section_label: sectionLabel,
       }));
+      console.log("[debattbuddy] inserting cards", {
+        manuscriptId,
+        sectionId,
+        sectionLabel,
+        positions: cardRows.map((r) => r.position),
+      });
       const { error: cErr } = await supabase.from("cards").insert(cardRows);
       if (cErr) {
+        console.error("[debattbuddy] kunde inte spara kort", cErr);
         toast({
           title: "Kunde inte spara kort",
           description: cErr.message,
@@ -150,10 +188,18 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
       }
 
       // Koppla manuset till debatturen.
-      await supabase
+      const { error: linkErr } = await supabase
         .from("debate_turns")
         .update({ manuscript_id: manuscriptId })
         .eq("id", turn.id);
+      if (linkErr) {
+        console.warn("[debattbuddy] kunde inte koppla turn → manus", linkErr);
+      }
+
+      toast({
+        title: createdNew ? "Nytt manus skapat" : "Lade till i befintligt manus",
+        description: `manus: ${manuscriptId?.slice(0, 8)}… · sektion: ${sectionLabel} · ${cards.length} kort (pos ${basePosition}–${basePosition + cards.length - 1})`,
+      });
 
       onManuscriptCreated(manuscriptId!);
       navigate(`/manus/${manuscriptId}`);
