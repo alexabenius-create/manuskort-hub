@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -43,6 +43,8 @@ const SIZE_OFFSET_KEY = (id: string) => `presentation-size-offset:${id}`;
 export default function Presentation() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const debateBuddyThreadId = searchParams.get("debattbuddy");
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -190,8 +192,14 @@ export default function Presentation() {
     if (id) {
       try { sessionStorage.removeItem(SIZE_OFFSET_KEY(id)); } catch { /* ignore */ }
     }
-    navigate(`/manus/${id}`);
-  }, [id, navigate, timer]);
+    const params = new URLSearchParams();
+    if (debateBuddyThreadId) {
+      params.set("debattbuddy", debateBuddyThreadId);
+      params.set("from", "presentation");
+    }
+    const suffix = params.toString() ? `?${params.toString()}` : "";
+    navigate(`/manus/${id}${suffix}`);
+  }, [id, navigate, timer, debateBuddyThreadId]);
 
   // Hastighetskontroll i scroll-läge — delas mellan tangenter och knappar
   const handleSpeedUp = useCallback(() => {
