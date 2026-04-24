@@ -316,6 +316,7 @@ export type Database = {
           topic_area: string
           updated_at: string
           user_id: string
+          user_role: string
         }
         Insert: {
           archived_at?: string | null
@@ -329,6 +330,7 @@ export type Database = {
           topic_area?: string
           updated_at?: string
           user_id: string
+          user_role?: string
         }
         Update: {
           archived_at?: string | null
@@ -342,6 +344,7 @@ export type Database = {
           topic_area?: string
           updated_at?: string
           user_id?: string
+          user_role?: string
         }
         Relationships: []
       }
@@ -356,8 +359,11 @@ export type Database = {
           manuscript_id: string | null
           max_length_percent: number
           opponent_input_mode: string | null
+          parent_turn_id: string | null
           position: number
+          round_number: number
           source_text: string
+          speaker_label: string
           thread_id: string
           updated_at: string
           user_id: string
@@ -372,8 +378,11 @@ export type Database = {
           manuscript_id?: string | null
           max_length_percent?: number
           opponent_input_mode?: string | null
+          parent_turn_id?: string | null
           position: number
+          round_number?: number
           source_text?: string
+          speaker_label?: string
           thread_id: string
           updated_at?: string
           user_id: string
@@ -388,8 +397,11 @@ export type Database = {
           manuscript_id?: string | null
           max_length_percent?: number
           opponent_input_mode?: string | null
+          parent_turn_id?: string | null
           position?: number
+          round_number?: number
           source_text?: string
+          speaker_label?: string
           thread_id?: string
           updated_at?: string
           user_id?: string
