@@ -434,6 +434,32 @@ async function handleScripted(
         .eq("id", threadId);
       return { text: "Skriv en kort beskrivning av ärendet (några meningar räcker).", quick_replies: [] };
     }
+    // Fritext direkt → spara som beskrivning och gå vidare
+    const briefFreetext = userMessage.trim().slice(0, 4000);
+    if (briefFreetext.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          issue_document_text: briefFreetext,
+          bot_state: { ...thread.bot_state, phase: "intake_mode" },
+        })
+        .eq("id", threadId);
+      return {
+        text: "Tack, jag har det! " + SCRIPTED_PROMPTS.intake_mode.text,
+        quick_replies: SCRIPTED_PROMPTS.intake_mode.quick_replies,
+      };
+    }
+  }
+
+  // intake_mode — fritext fallback (om användaren skriver något oväntat)
+  if (phase === "intake_mode") {
+    // Återvisa knapparna istället för att gå till LLM
+    return { text: SCRIPTED_PROMPTS.intake_mode.text, quick_replies: SCRIPTED_PROMPTS.intake_mode.quick_replies };
+  }
+
+  // intake_speech_length — fritext fallback
+  if (phase === "intake_speech_length") {
+    return { text: SCRIPTED_PROMPTS.intake_speech_length.text, quick_replies: SCRIPTED_PROMPTS.intake_speech_length.quick_replies };
   }
 
   // intake_mode
