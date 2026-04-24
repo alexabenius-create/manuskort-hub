@@ -651,7 +651,7 @@ function fmtMin(seconds: number) {
   return `${m} min`;
 }
 
-const CARD_DURATION_MS = 18000;
+const CARD_DURATION_MS = 6000;
 
 function CardDemo() {
   const [index, setIndex] = useState(0);
@@ -747,16 +747,8 @@ function CardDemo() {
           key={index}
           className="absolute inset-0 bg-white rounded-2xl border border-v2-line shadow-[0_20px_50px_-20px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] overflow-hidden flex flex-col v2-card-enter"
         >
-          {/* Rörlig kort-timebar — fylls under de 4 sek kortet visas */}
-          <div className="h-1 w-full bg-v2-line/60 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink"
-              style={{ width: `${cardProgressPct}%`, transition: paused ? "none" : "width 80ms linear" }}
-            />
-          </div>
-
           <div className="p-6 sm:p-7 flex flex-col flex-1">
-            {/* Top row — chip + tid */}
+            {/* Top row — chip */}
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-br from-v2-violet/10 to-v2-blue/10 border border-v2-violet/20 text-v2-violet text-[11px] font-semibold tracking-wider">
@@ -768,12 +760,6 @@ function CardDemo() {
                 >
                   {card.speaker}
                 </span>
-              </div>
-              <div className="flex items-center gap-1.5 font-mono text-[12px] text-v2-muted tabular-nums">
-                <Timer className="h-3.5 w-3.5" />
-                {Math.floor(cardElapsedSec / 60)}:{String(cardElapsedSec % 60).padStart(2, "0")}
-                <span className="text-v2-muted/50">/</span>
-                {Math.floor(card.cardSeconds / 60)}:{String(card.cardSeconds % 60).padStart(2, "0")}
               </div>
             </div>
 
