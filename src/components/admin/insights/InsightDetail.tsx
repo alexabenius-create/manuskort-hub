@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, Copy, Trash2, Check, Loader2, RefreshCw } from "lucide-react";
+import { Sparkles, Copy, Trash2, Check, Loader2, RefreshCw, X } from "lucide-react";
 import {
   Insight, InsightStatus, InsightPriority,
   STATUS_LABEL, PRIORITY_LABEL, SOURCE_LABEL,
