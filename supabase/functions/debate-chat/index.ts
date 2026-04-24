@@ -328,9 +328,26 @@ Deno.serve(async (req) => {
       const args = JSON.parse(tc.function?.arguments || "{}");
       try {
         if (name === "set_issue") {
-          const updates: Record<string, string> = { issue_text: args.issue_text };
+          const updates: Record<string, unknown> = {
+            issue_text: args.issue_text,
+            bot_state: { ...thread.bot_state, phase: "intake_brief" },
+          };
           if (args.topic_area) updates.topic_area = args.topic_area;
           await admin.from("debate_threads").update(updates).eq("id", threadId);
+          executedTools.push({ name, result: "ok" });
+        } else if (name === "set_brief") {
+          const briefUpdates: Record<string, unknown> = {
+            bot_state: { ...thread.bot_state, phase: "intake_mode" },
+          };
+          if (typeof args.full_text === "string" && args.full_text.trim()) {
+            briefUpdates.issue_document_text = args.full_text;
+          } else if (typeof args.summary === "string" && args.summary.trim()) {
+            briefUpdates.issue_document_text = args.summary;
+          }
+          if (typeof args.filename === "string" && args.filename.trim()) {
+            briefUpdates.issue_document_filename = args.filename;
+          }
+          await admin.from("debate_threads").update(briefUpdates).eq("id", threadId);
           executedTools.push({ name, result: "ok" });
         } else if (name === "set_mode") {
           const phase = args.kind === "reply" ? "intake_opponent_name" : "drafting_speech";
