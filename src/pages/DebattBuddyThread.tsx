@@ -110,8 +110,26 @@ export default function DebattBuddyThread() {
   const [roleConfirmed, setRoleConfirmed] = useState(false);
   const [headerOpen, setHeaderOpen] = useState(false);
   const [activeReadTurnId, setActiveReadTurnId] = useState<string | null>(null);
+  const [performedTurnIds, setPerformedTurnIds] = useState<Set<string>>(new Set());
 
-  const fetchAll = useCallback(async () => {
+  // Ladda "performed"-set när tråd-id ändras
+  useEffect(() => {
+    if (!threadId) return;
+    setPerformedTurnIds(loadPerformedSet(threadId));
+  }, [threadId]);
+
+  const markPerformed = useCallback(
+    (turnId: string) => {
+      if (!threadId) return;
+      setPerformedTurnIds((prev) => {
+        const next = new Set(prev);
+        next.add(turnId);
+        savePerformedSet(threadId, next);
+        return next;
+      });
+    },
+    [threadId],
+  );
     if (!threadId) return;
     const [threadRes, turnsRes] = await Promise.all([
       supabase
