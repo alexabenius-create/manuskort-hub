@@ -728,6 +728,10 @@ Deno.serve(async (req) => {
       : "";
     const speechLen = (thread.bot_state as Record<string, unknown>)?.speech_length_seconds;
     const mode = (thread.bot_state as Record<string, unknown>)?.mode;
+    const oppArgsBuf = (thread.bot_state as Record<string, unknown>)?.opponent_args_buffer as string[] | undefined;
+    const oppArgsBlock = Array.isArray(oppArgsBuf) && oppArgsBuf.length > 0
+      ? `\n\nMOTDEBATTÖRENS ARGUMENT (${oppArgsBuf.length} st):\n${oppArgsBuf.map((a, i) => `${i + 1}. ${a}`).join("\n")}`
+      : "";
     const contextSummary = `KONTEXT:
 - Fas: ${thread.bot_state?.phase || "intake_issue"}
 - Sakområde: ${thread.topic_area || "(inte satt)"}
@@ -737,7 +741,7 @@ Deno.serve(async (req) => {
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
 - Läge: ${mode || "(inte valt)"}
 - Önskad längd på anförande: ${speechLen ? `${speechLen} sekunder (~${Math.round((speechLen as number) / 60 * 130)} ord)` : "(inte angiven)"}
-- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
+- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}${oppArgsBlock}`;
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
