@@ -21,6 +21,7 @@ import { FeedbackAdminPanel } from "@/components/feedback/FeedbackAdminPanel";
 import { useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
 import { VisitsPanel } from "@/components/admin/VisitsPanel";
 import { InsightsPanel } from "@/components/admin/insights/InsightsPanel";
+import { AiUsagePanel } from "@/components/admin/AiUsagePanel";
 
 interface UserRow {
   user_id: string;
@@ -68,13 +69,14 @@ export default function AdminV2() {
   const [q, setQ] = useState("");
   const [pending, setPending] = useState<{ row: UserRow; newTier: Tier } | null>(null);
   const [working, setWorking] = useState(false);
-  const [tab, setTab] = useState<"users" | "feedback" | "visits" | "insikter">(() => {
+  const [tab, setTab] = useState<"users" | "feedback" | "visits" | "insikter" | "ai">(() => {
     if (typeof window === "undefined") return "users";
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab");
     if (t === "feedback") return "feedback";
     if (t === "visits") return "visits";
     if (t === "insikter") return "insikter";
+    if (t === "ai") return "ai";
     return "users";
   });
   const adminUnread = useAdminUnreadMessages(tier === "admin");
@@ -183,7 +185,7 @@ export default function AdminV2() {
         <Tabs
           value={tab}
           onValueChange={(v) => {
-            setTab(v as "users" | "feedback" | "visits" | "insikter");
+            setTab(v as "users" | "feedback" | "visits" | "insikter" | "ai");
             const url = new URL(window.location.href);
             if (v === "users") url.searchParams.delete("tab");
             else url.searchParams.set("tab", v);
@@ -226,6 +228,14 @@ export default function AdminV2() {
             >
               <Lightbulb className="h-3.5 w-3.5" />
               Insikter
+            </TabsTrigger>
+            <TabsTrigger
+              value="ai"
+              className="rounded-full px-5 text-[14px] text-v2-muted data-[state=active]:text-white gap-2"
+              style={tab === "ai" ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              AI
             </TabsTrigger>
           </TabsList>
 
