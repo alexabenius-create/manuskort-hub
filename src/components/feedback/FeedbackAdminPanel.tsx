@@ -8,8 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, Send, Inbox, MessageSquare, X, Lock } from "lucide-react";
+import { Search, Send, Inbox, MessageSquare, X, Lock, Lightbulb } from "lucide-react";
 import { AdminShareRequestPanel } from "@/components/feedback/AdminShareRequestPanel";
+import { NewInsightDialog, type NewInsightPrefill } from "@/components/admin/insights/NewInsightDialog";
 
 interface Thread {
   id: string;
@@ -52,6 +53,33 @@ export function FeedbackAdminPanel() {
   const [sending, setSending] = useState(false);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
+  const [insightPrefill, setInsightPrefill] = useState<NewInsightPrefill | null>(null);
+  const [insightDialogOpen, setInsightDialogOpen] = useState(false);
+  const [insightThemes, setInsightThemes] = useState<string[]>([]);
+
+  const openInsightFromText = (text: string, thread: Thread) => {
+    setInsightPrefill({
+      raw_text: text,
+      source: "dm",
+      source_label: thread.email ?? "användare",
+      linked_user_id: thread.user_id,
+      linked_thread_id: thread.id,
+    });
+    setInsightDialogOpen(true);
+  };
+
+  // Hämta tema-lista när dialogen öppnas
+  useEffect(() => {
+    if (!insightDialogOpen) return;
+    supabase
+      .from("admin_insights")
+      .select("theme")
+      .not("theme", "is", null)
+      .then(({ data }) => {
+        const unique = Array.from(new Set((data ?? []).map((r) => r.theme as string).filter(Boolean)));
+        setInsightThemes(unique);
+      });
+  }, [insightDialogOpen]);
 
   const loadThreads = async () => {
     setLoading(true);
