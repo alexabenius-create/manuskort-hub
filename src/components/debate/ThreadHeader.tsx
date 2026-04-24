@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopicAreaPicker } from "./TopicAreaPicker";
 import { IssueUpload } from "./IssueUpload";
+import { RoleSelector } from "./RoleSelector";
 import { cn } from "@/lib/utils";
 
 interface DebateThread {
@@ -16,14 +17,16 @@ interface DebateThread {
   issue_document_text: string;
   issue_document_filename: string | null;
   own_position: string;
+  user_role: "speaker" | "replier";
 }
 
 interface Props {
   thread: DebateThread;
   onChanged: (patch: Partial<DebateThread>) => void;
+  showRoleSelector?: boolean;
 }
 
-export function ThreadHeader({ thread, onChanged }: Props) {
+export function ThreadHeader({ thread, onChanged, showRoleSelector }: Props) {
   const [title, setTitle] = useState(thread.title);
   const [topicArea, setTopicArea] = useState(thread.topic_area);
   const [issueText, setIssueText] = useState(thread.issue_text);
