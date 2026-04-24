@@ -64,6 +64,22 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
     return [{ title: label, content_html: textToHtml(text) }];
   };
 
+  // Hitta första manus i tråden (om någon tidigare turn har skapat ett).
+  const existingManuscriptId =
+    allTurns.find((t) => t.id !== turn.id && t.manuscript_id)?.manuscript_id ?? null;
+
+  // Räkna hur många replikskiften som redan finns för numrering.
+  const rebuttalIndex = allTurns
+    .filter((t) => t.kind === "rebuttal" || t.kind === "own_reply")
+    .findIndex((t) => t.id === turn.id);
+  const rebuttalNumber = rebuttalIndex >= 0 ? rebuttalIndex + 1 : 1;
+
+  const buildSectionLabel = (): string => {
+    if (turn.kind === "own_speech") return "Anförande";
+    const opponent = turn.speaker_label?.trim() || "motdebattör";
+    return `Replikskifte mot ${opponent} ${rebuttalNumber}`;
+  };
+
   const openInEditor = async () => {
     if (!user || creating) return;
 
@@ -76,28 +92,52 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
     setCreating(true);
     try {
       const cards = buildContentHtmlList();
-      const manuscriptTitle = `${label}: ${threadTitle || "Debatt"}`;
-      const { data: manus, error: mErr } = await supabase
-        .from("manuscripts")
-        .insert({ user_id: user.id, title: manuscriptTitle, mode: "speaker" })
-        .select()
-        .single();
-      if (mErr || !manus) {
-        toast({
-          title: "Kunde inte skapa manus",
-          description: mErr?.message,
-          variant: "destructive",
-        });
-        return;
+      const sectionId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const sectionLabel = buildSectionLabel();
+
+      // Återanvänd befintligt manus om det finns — annars skapa nytt.
+      let manuscriptId = existingManuscriptId;
+      let basePosition = 0;
+
+      if (manuscriptId) {
+        const { data: maxRow } = await supabase
+          .from("cards")
+          .select("position")
+          .eq("manuscript_id", manuscriptId)
+          .order("position", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        basePosition = (maxRow?.position ?? -1) + 1;
+      } else {
+        const manuscriptTitle = threadTitle || "Debatt";
+        const { data: manus, error: mErr } = await supabase
+          .from("manuscripts")
+          .insert({ user_id: user.id, title: manuscriptTitle, mode: "speaker" })
+          .select()
+          .single();
+        if (mErr || !manus) {
+          toast({
+            title: "Kunde inte skapa manus",
+            description: mErr?.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        manuscriptId = manus.id;
       }
 
       const cardRows = cards.map((c, i) => ({
-        manuscript_id: manus.id,
+        manuscript_id: manuscriptId!,
         user_id: user.id,
-        position: i,
+        position: basePosition + i,
         role: "speaker" as const,
         title: c.title,
         content_html: c.content_html,
+        section_id: sectionId,
+        section_label: sectionLabel,
       }));
       const { error: cErr } = await supabase.from("cards").insert(cardRows);
       if (cErr) {
@@ -112,11 +152,11 @@ export function PerformSpeechStep({ turn, threadTitle, allTurns, onContinue, onM
       // Koppla manuset till debatturen.
       await supabase
         .from("debate_turns")
-        .update({ manuscript_id: manus.id })
+        .update({ manuscript_id: manuscriptId })
         .eq("id", turn.id);
 
-      onManuscriptCreated(manus.id);
-      navigate(`/manus/${manus.id}`);
+      onManuscriptCreated(manuscriptId!);
+      navigate(`/manus/${manuscriptId}`);
     } finally {
       setCreating(false);
     }
