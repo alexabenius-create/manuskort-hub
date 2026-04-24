@@ -86,6 +86,7 @@ const App = () => (
                   <Route path="/manus/:id/v1" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
                   <Route path="/manus/:id/v2" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
                   <Route path="/manus/:id/v3" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
+                  <Route path="/manus/:id/v4" element={<RequireAuth><EditorV4 /></RequireAuth>} />
                   <Route path="/manus/:id/presentera" element={<RequireAuth><Presentation /></RequireAuth>} />
                   <Route path="/manus/:id/utskrift" element={<RequireAuth><PrintView /></RequireAuth>} />
                   <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
