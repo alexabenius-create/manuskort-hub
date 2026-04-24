@@ -276,6 +276,9 @@ ${newSourceText}`;
         ai_card_split: parsed.card_split,
         ai_rationale: parsed.rationale ?? "",
         max_length_percent: maxLengthPercent,
+        parent_turn_id: parentTurnId,
+        round_number: roundNumber,
+        speaker_label: "X",
       })
       .select()
       .single();
