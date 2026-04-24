@@ -45,7 +45,7 @@ const FREEDOM_PRESETS: { label: string; value: number; sub: string }[] = [
 
 export default function DebattBuddy() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useTier();
   const { hasAccess, loading: betaLoading } = useBetaAccess("debate_buddy");
@@ -55,13 +55,25 @@ export default function DebattBuddy() {
   const parentSessionId = searchParams.get("parent");
 
   const [issue, setIssue] = useState("");
+  const [issueDocumentText, setIssueDocumentText] = useState("");
+  const [issueFileName, setIssueFileName] = useState<string | null>(null);
   const [speech, setSpeech] = useState("");
+  const [ownPosition, setOwnPosition] = useState("");
   const [opponentArgs, setOpponentArgs] = useState<string[]>([""]);
   const [freedom, setFreedom] = useState(100);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<AiResult | null>(null);
   const [parent, setParent] = useState<ParentSession | null>(null);
   const [publishing, setPublishing] = useState(false);
+
+  const switchMode = (next: Mode) => {
+    if (next === mode) return;
+    setResult(null);
+    const params = new URLSearchParams(searchParams);
+    params.set("mode", next);
+    if (next === "speech") params.delete("parent");
+    setSearchParams(params, { replace: true });
+  };
 
   // Hämta parent-session vid reply-läge
   useEffect(() => {
