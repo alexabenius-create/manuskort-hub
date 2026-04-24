@@ -18,6 +18,7 @@ import {
   type OwnTurnKind,
 } from "@/components/debate/TurnCardOwn";
 import { PhaseCard } from "@/components/debate/PhaseCard";
+import { RoleSelectorDialog } from "@/components/debate/RoleSelectorDialog";
 import {
   computePhase,
   nextReplierLabel,
