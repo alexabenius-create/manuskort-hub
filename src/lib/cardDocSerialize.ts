@@ -167,7 +167,7 @@ function serializeFragmentChildren(
 
 export interface SyncPlan {
   updates: { id: string; patch: Partial<CardRow> }[];
-  inserts: { tempCardId: string | null; row: Omit<CardRow, "id" | "created_at" | "updated_at" | "user_id" | "manuscript_id" | "section_id" | "section_label"> & { manuscript_id: string; user_id: string } }[];
+  inserts: { tempCardId: string | null; row: Omit<CardRow, "id" | "created_at" | "updated_at" | "user_id" | "manuscript_id"> & { manuscript_id: string; user_id: string } }[];
   deletes: string[];
   unchanged: string[];
 }
@@ -199,6 +199,8 @@ export function planCardSyncFromDoc(
       if (row.start_time !== c.startTime) patch.start_time = c.startTime;
       if (row.end_time !== c.endTime) patch.end_time = c.endTime;
       if (row.title !== c.title) patch.title = c.title;
+      if ((row.section_id ?? null) !== c.sectionId) patch.section_id = c.sectionId;
+      if ((row.section_label ?? "") !== c.sectionLabel) patch.section_label = c.sectionLabel;
       const cuesJson = serializeCues(c.cues);
       if (JSON.stringify(row.cues) !== JSON.stringify(cuesJson)) patch.cues = cuesJson as Json;
       if (Object.keys(patch).length > 0) {
@@ -226,6 +228,8 @@ export function planCardSyncFromDoc(
           target_seconds: c.targetSeconds,
           target_seconds_is_manual: c.targetSecondsIsManual,
           cues: serializeCues(c.cues) as Json,
+          section_id: c.sectionId,
+          section_label: c.sectionLabel,
         },
       });
     }
