@@ -70,16 +70,29 @@ export function ThreadHeader({ thread, onChanged, onEditRole }: Props) {
         maxLength={120}
       />
 
-      {/* Roll-väljare (visas bara innan första turen) */}
-      {showRoleSelector && (
-        <RoleSelector
-          value={thread.user_role}
-          onChange={(role) => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            persist({ user_role: role });
-          }}
-        />
-      )}
+      {/* Roll-chip (klickbar — öppnar dialog) */}
+      <button
+        type="button"
+        onClick={onEditRole}
+        className="w-full flex items-center justify-between gap-3 rounded-2xl border border-v2-violet/30 bg-white px-5 py-4 text-left hover:border-v2-violet hover:bg-v2-violet/5 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          {thread.user_role === "replier" ? (
+            <MessageSquareReply className="h-4 w-4 text-v2-violet shrink-0" />
+          ) : (
+            <Mic className="h-4 w-4 text-v2-violet shrink-0" />
+          )}
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-violet">
+              Steg 1 — Din roll
+            </div>
+            <div className="text-[14px] font-semibold text-v2-ink">
+              {thread.user_role === "replier" ? "Jag är replikant" : "Jag håller anförandet"}
+            </div>
+          </div>
+        </div>
+        <Pencil className="h-4 w-4 text-v2-muted shrink-0" />
+      </button>
 
       {/* Sakområde */}
       <div className="rounded-2xl bg-white border border-v2-line p-5">
