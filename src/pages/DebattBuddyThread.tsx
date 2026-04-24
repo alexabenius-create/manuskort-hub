@@ -470,6 +470,20 @@ export default function DebattBuddyThread() {
               onCancel={() => setDraft({ kind: "none" })}
             />
           </GuidedStep>
+        ) : showPerform && performTurn ? (
+          <GuidedStep stepKey={stepKey}>
+            <PerformSpeechStep
+              turn={performTurn}
+              threadTitle={thread.title}
+              onContinue={() => markPerformed(performTurn.id)}
+              onManuscriptCreated={(manuscriptId) => {
+                // Uppdatera lokal state direkt så knappen byts till "Öppna manuskort"/"Starta presentation"
+                setTurns((prev) =>
+                  prev.map((t) => (t.id === performTurn.id ? { ...t, manuscript_id: manuscriptId } : t)),
+                );
+              }}
+            />
+          </GuidedStep>
         ) : (
           <GuidedStep stepKey={stepKey}>
             <PhaseCard state={phase} onAction={handleAction} />
