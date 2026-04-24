@@ -376,6 +376,12 @@ export default function AdminV2() {
               <InsightsPanel />
             </div>
           </TabsContent>
+
+          <TabsContent value="ai">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-v2-line shadow-sm p-4 sm:p-6">
+              <AiUsagePanel />
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
