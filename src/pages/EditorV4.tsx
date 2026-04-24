@@ -671,7 +671,7 @@ export default function EditorV4() {
                       <button
                         type="button"
                         aria-label="Vy-inställningar"
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface transition-colors data-[state=open]:bg-surface-2 data-[state=open]:text-foreground flex-shrink-0"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface transition-colors data-[state=open]:bg-v2-surface data-[state=open]:text-v2-violet flex-shrink-0"
                       >
                         <Settings2 className="h-4 w-4" />
                       </button>
