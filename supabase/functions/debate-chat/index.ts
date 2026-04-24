@@ -40,7 +40,7 @@ FLÖDE (driv framåt aggressivt):
 2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela?" Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget → tacka kort (max 1 mening, t.ex. "Tack, jag har läst underlaget!"). Skriv ALDRIG ut sammanfattning, analys eller poänger från underlaget — det är internt. → \`set_brief\` → intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text.
 3. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
 4. **intake_speech_length** (om mode=speech): Fråga "Hur långt ska anförandet vara?" Snabbsvar: ["1 minut", "2 minuter", "3 minuter", "5 minuter"]. Spara längden i bot_state via \`set_speech_length\` (sekunder). Gå till drafting_speech.
-5. **drafting_speech**: Fråga kort efter huvudbudskap, max en mening. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" → använd \`generate_speech_cards\` DIREKT med ~150 ord/minut (anpassa till sparad längd) → korten läggs in i manuset automatiskt. Bekräfta kort.
+5. **drafting_speech**: Fråga kort efter huvudbudskap, max en mening. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" → använd \`generate_speech_cards\` DIREKT med ~130 ord/minut (anpassa till sparad längd) → korten läggs in i manuset automatiskt. Bekräfta kort.
 6. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
 7. **intake_opponent_name** → \`set_opponent\` direkt.
 8. **intake_opponent_args** → be om motdebattörens argument i ett svar.
@@ -48,7 +48,7 @@ FLÖDE (driv framåt aggressivt):
 
 REGLER:
 - Anförande → repliker → genmäle (1 per replik) eller avstå.
-- Anpassa ordmängd till längd: ~150 ord/minut är ungefärligt riktmärke.
+- Anpassa ordmängd till längd: ~130 ord/minut är ungefärligt riktmärke.
 - När du genererar utkast: dela upp i 2-5 logiska kort (intro, huvudpoänger, avslutning).
 
 Kontext skickas varje runda — anpassa kort.`;
@@ -185,7 +185,7 @@ const TOOLS: Tool[] = [
     type: "function",
     function: {
       name: "generate_speech_cards",
-      description: "Skapa ett komplett anförande och lägg in som nya kort i kopplat manus. Anpassa total ordlängd till sparad speech_length_seconds (~150 ord/minut). Dela upp i 2-5 logiska kort.",
+      description: "Skapa ett komplett anförande och lägg in som nya kort i kopplat manus. Anpassa total ordlängd till sparad speech_length_seconds (~130 ord/minut). Dela upp i 2-5 logiska kort.",
       parameters: {
         type: "object",
         properties: {
@@ -353,7 +353,7 @@ Deno.serve(async (req) => {
 - Egen ståndpunkt: ${thread.own_position || "(inte angiven)"}
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
 - Läge: ${mode || "(inte valt)"}
-- Önskad längd på anförande: ${speechLen ? `${speechLen} sekunder (~${Math.round((speechLen as number) / 60 * 150)} ord)` : "(inte angiven)"}
+- Önskad längd på anförande: ${speechLen ? `${speechLen} sekunder (~${Math.round((speechLen as number) / 60 * 130)} ord)` : "(inte angiven)"}
 - Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
 
     const messages = [
