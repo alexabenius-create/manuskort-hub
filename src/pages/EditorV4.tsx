@@ -583,6 +583,8 @@ export default function EditorV4() {
                style={{ background: "radial-gradient(closest-side, rgba(59,130,246,0.14), transparent 70%)" }} />
           <div className="absolute -top-10 right-[10%] h-[320px] w-[320px] rounded-full opacity-35 blur-3xl"
                style={{ background: "radial-gradient(closest-side, rgba(236,72,153,0.12), transparent 70%)" }} />
+        </div>
+
         {isSupportMode && supportStatus === "granted" && (
           <SupportEditorBanner
             ownerEmail={ownerEmail}
