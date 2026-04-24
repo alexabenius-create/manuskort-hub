@@ -250,8 +250,21 @@ export default function DebattBuddyThread() {
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-6 pb-32">
         <ThreadHeader
           thread={thread}
-          showRoleSelector={turns.length === 0}
+          onEditRole={() => setRoleDialogOpen(true)}
           onChanged={(patch) => setThread({ ...thread, ...patch })}
+        />
+
+        <RoleSelectorDialog
+          open={roleDialogOpen}
+          onOpenChange={setRoleDialogOpen}
+          value={thread.user_role}
+          onChange={async (role) => {
+            const { error } = await supabase
+              .from("debate_threads")
+              .update({ user_role: role })
+              .eq("id", thread.id);
+            if (!error) setThread({ ...thread, user_role: role });
+          }}
         />
 
         {turns.length > 0 && (
