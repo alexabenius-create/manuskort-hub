@@ -606,10 +606,19 @@ export default function EditorV4() {
               <input
                 value={manuscript.title}
                 onChange={(e) => updateMeta({ title: e.target.value })}
-                className="font-display text-[16px] sm:text-[17px] font-semibold tracking-tight bg-transparent border-0 outline-none min-w-0 flex-1 md:flex-none md:min-w-[80px] md:max-w-[260px] truncate"
+                className="font-display text-[16px] sm:text-[17px] font-semibold tracking-tight text-v2-ink bg-transparent border-0 outline-none min-w-0 flex-1 md:flex-none md:min-w-[80px] md:max-w-[260px] truncate focus:bg-v2-surface focus:rounded-md focus:px-1.5 transition-all"
               />
-              <span className="text-[12px] text-muted-foreground hidden md:inline whitespace-nowrap">
-                · {manuscript.mode === "moderator" ? "moderator" : "talare"}
+              <span
+                className="hidden md:inline-flex items-center text-[10.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap"
+                style={{
+                  color: manuscript.mode === "moderator" ? "#6366f1" : "#3b82f6",
+                  background: manuscript.mode === "moderator"
+                    ? "linear-gradient(135deg, rgba(99,102,241,0.10), rgba(59,130,246,0.10))"
+                    : "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(14,165,233,0.10))",
+                  border: `1px solid ${manuscript.mode === "moderator" ? "rgba(99,102,241,0.22)" : "rgba(59,130,246,0.22)"}`,
+                }}
+              >
+                {manuscript.mode === "moderator" ? "Moderator" : "Talare"}
               </span>
 
               {/* Mobil: kortantal + sparat-status inline. */}
