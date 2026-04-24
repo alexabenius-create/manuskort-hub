@@ -751,12 +751,12 @@ Deno.serve(async (req) => {
       ...(history || []).map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    // Välj modell utifrån fas: tyngre modell när vi ska generera manus/genmäle.
-    const draftingPhases = new Set([
-      "drafting_speech", "intake_opponent_args", "generating_rebuttal",
-    ]);
+    // Välj modell utifrån fas:
+    // - Tung (gpt-5) endast vid faktisk manus-/genmäles-generering.
+    // - Snabb (gemini-2.5-flash-lite) vid replik-skiften och korta konversationella svar.
+    const heavyPhases = new Set(["drafting_speech", "generating_rebuttal"]);
     const currentPhase = thread.bot_state?.phase || "intake_issue";
-    const model = draftingPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash";
+    const model = heavyPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash-lite";
 
     // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
