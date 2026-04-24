@@ -343,6 +343,8 @@ Deno.serve(async (req) => {
     const briefSnippet = thread.issue_document_text
       ? thread.issue_document_text.slice(0, 4000)
       : "";
+    const speechLen = (thread.bot_state as Record<string, unknown>)?.speech_length_seconds;
+    const mode = (thread.bot_state as Record<string, unknown>)?.mode;
     const contextSummary = `KONTEXT:
 - Fas: ${thread.bot_state?.phase || "intake_issue"}
 - Sakområde: ${thread.topic_area || "(inte satt)"}
@@ -350,6 +352,8 @@ Deno.serve(async (req) => {
 - Underlag: ${thread.issue_document_text ? `JA (${thread.issue_document_filename || "text"}, ${thread.issue_document_text.length} tecken)` : "(inget)"}
 - Egen ståndpunkt: ${thread.own_position || "(inte angiven)"}
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
+- Läge: ${mode || "(inte valt)"}
+- Önskad längd på anförande: ${speechLen ? `${speechLen} sekunder (~${Math.round((speechLen as number) / 60 * 150)} ord)` : "(inte angiven)"}
 - Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
 
     const messages = [
