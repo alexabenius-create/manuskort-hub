@@ -563,6 +563,36 @@ async function handleScripted(
     }
   }
 
+  // intake_opponent_args — användaren matar in argument, ev. flera meddelanden
+  if (phase === "intake_opponent_args") {
+    if (msg === "analysera nu" || msg.includes("analysera")) {
+      // Fall through till LLM som genererar genmäle med alla buffrade argument
+      return null;
+    }
+    if (msg === "fler argument" || msg.includes("fler argument")) {
+      return {
+        text: "Skriv nästa argument så lägger jag till det.",
+        quick_replies: [],
+      };
+    }
+    const arg = userMessage.trim().slice(0, 2000);
+    if (arg.length >= 2) {
+      const existing = (thread.bot_state as Record<string, unknown>)?.opponent_args_buffer as string[] | undefined;
+      const buffer = Array.isArray(existing) ? [...existing, arg] : [arg];
+      await admin
+        .from("debate_threads")
+        .update({
+          bot_state: { ...thread.bot_state, phase: "intake_opponent_args", opponent_args_buffer: buffer },
+        })
+        .eq("id", threadId);
+      const opp = thread.current_opponent_label || "motdebattören";
+      return {
+        text: `Noterat (${buffer.length} argument från ${opp} hittills). Fler eller ska jag analysera nu?`,
+        quick_replies: ["Fler argument", "Analysera nu"],
+      };
+    }
+  }
+
   // idle
   if (phase === "idle") {
     if (msg === "ny debatt" || msg.includes("ny debatt")) {
