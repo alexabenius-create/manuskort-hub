@@ -557,7 +557,7 @@ async function handleScripted(
         })
         .eq("id", threadId);
       return {
-        text: `Tack! Skriv in ${name}s argument så formulerar jag ett genmäle åt dig.`,
+        text: `Tack! Skriv in **ett argument i taget** från ${name} — du kan skicka flera meddelanden i följd. När du har lagt in alla argument trycker du på **Analysera nu**, så genererar jag ett förslag till genmäle som bemöter dem punktvis.`,
         quick_replies: [],
       };
     }
