@@ -301,7 +301,7 @@ export function InsightsPanel() {
                               {i.raw_text}
                             </p>
                             <p className="text-[11px] text-muted-foreground mt-1.5">
-                              {SOURCE_LABEL[i.source]}{i.source_label ? ` · ${i.source_label}` : ""}
+                              {SOURCE_LABEL[i.source]}
                               {" · "}{STATUS_LABEL[i.status]}
                               {i.linked_user_id && (() => {
                                 const u = userMap.get(i.linked_user_id);
