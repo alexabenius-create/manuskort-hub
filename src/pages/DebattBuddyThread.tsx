@@ -85,11 +85,22 @@ export default function DebattBuddyThread() {
 
   const nextPosition = turns.length;
   const lastTurn = turns[turns.length - 1];
+  const hasOwnSpeech = turns.some((t) => t.kind === "own_speech");
   // Föreslå standard-nästa beroende på vad som hänt
   const suggestedNext: "own" | "opponent" =
     !lastTurn || lastTurn.kind === "opponent_input" ? "own" : "opponent";
-  const suggestedOwnKind: "own_speech" | "own_reply" =
-    turns.some((t) => t.kind === "own_speech") ? "own_reply" : "own_speech";
+  const suggestedOwnKind: "own_speech" | "own_reply" = hasOwnSpeech ? "own_reply" : "own_speech";
+
+  // Texter för det föreslagna nästa steget
+  const primaryLabel = suggestedNext === "own"
+    ? (suggestedOwnKind === "own_speech" ? "Skriv mitt anförande" : "Skriv mitt genmäle")
+    : "Lägg in vad Y sa";
+  const primaryHint = suggestedNext === "own"
+    ? (suggestedOwnKind === "own_speech"
+        ? "Börja debatten med ditt huvudanförande — AI skärper texten."
+        : "Y har just lagt fram sina argument. Skriv ditt utkast så bemöter AI dem punktvis.")
+    : "Du har precis hållit din tur. Skriv ner Y:s argument innan du svarar.";
+  const primaryAction: DraftMode = suggestedNext === "own" ? suggestedOwnKind : "opponent";
 
   return (
     <div className="min-h-screen bg-v2-surface">
