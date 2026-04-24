@@ -66,24 +66,38 @@ export function usePresentationTimer({
   countdownSeconds = 3,
   enabled = true,
 }: Options) {
-  // Återställ från sessionStorage om finns
-  const initial = loadState(manuscriptId);
+  // Återställ från sessionStorage om finns. Vid första render där enabled=false
+  // (typiskt när Presentation.tsx monteras med startMode=null) ignorerar vi
+  // initial helt — annars riskerar vi att hoppa över countdown vid nästa start.
+  // Persisterad state ska bara återupplivas om hooken aktiveras direkt vid mount
+  // (t.ex. efter reload mitt under en pågående presentation).
+  const initialRef = useRef<PersistedState | null>(enabled ? loadState(manuscriptId) : null);
+  const initial = initialRef.current;
 
   const [now, setNow] = useState<number>(Date.now());
   // Initiera countdown till 0 om timern inte är aktiv än — sätts korrekt när enabled blir true.
   const [countdown, setCountdown] = useState<number>(
-    initial ? 0 : enabled ? countdownSeconds : 0
+    initial ? 0 : enabled && countdownSeconds > 0 ? countdownSeconds : 0
   );
 
-  // När timern aktiveras: synka countdown med faktiskt countdownSeconds.
-  const hasInitializedRef = useRef(!!initial || enabled);
+  // När timern aktiveras (enabled false → true): starta countdown om sådan ska köras.
+  // Tidigare användes en hasInitializedRef som kunde hänga kvar i fel state mellan
+  // start-försök; nu kollar vi en explicit "har vi redan startat denna session"-flagga.
+  const hasStartedRef = useRef(!!initial || (enabled && countdownSeconds === 0));
   useEffect(() => {
-    if (hasInitializedRef.current) return;
     if (!enabled) return;
-    hasInitializedRef.current = true;
-    if (!initial) setCountdown(countdownSeconds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled]);
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+    if (countdownSeconds > 0) {
+      setCountdown(countdownSeconds);
+    } else {
+      // Starta direkt utan countdown — nollställ tidsreferenser.
+      startedAtRef.current = Date.now();
+      accumulatedPauseRef.current = 0;
+      pausedAtRef.current = null;
+      setCountdown(0);
+    }
+  }, [enabled, countdownSeconds]);
   const [direction, setDirection] = useState<ElapsedDirection>(initial?.direction ?? "down");
 
   // Drift-fri tidshantering med wall-clock + ackumulerad paustid
