@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button";
 interface Props {
   onSend: (text: string) => void;
   disabled?: boolean;
+  quickReplies?: string[];
 }
 
-export function DebateChatInput({ onSend, disabled }: Props) {
+export function DebateChatInput({ onSend, disabled, quickReplies = [] }: Props) {
   const [text, setText] = useState("");
 
-  const submit = () => {
-    const trimmed = text.trim();
-    if (!trimmed || disabled) return;
-    onSend(trimmed);
+  const submit = (override?: string) => {
+    const value = (override ?? text).trim();
+    if (!value || disabled) return;
+    onSend(value);
     setText("");
   };
 
@@ -26,8 +27,23 @@ export function DebateChatInput({ onSend, disabled }: Props) {
   };
 
   return (
-    <div className="border-t border-v2-line p-3 bg-white rounded-b-2xl">
-      <div className="flex items-end gap-2">
+    <div className="border-t border-v2-line bg-white rounded-b-2xl">
+      {quickReplies.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+          {quickReplies.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => submit(q)}
+              disabled={disabled}
+              className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-v2-violet/40 bg-v2-violet/5 text-v2-violet hover:bg-v2-violet/10 transition disabled:opacity-50"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex items-end gap-2 p-3">
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -38,7 +54,7 @@ export function DebateChatInput({ onSend, disabled }: Props) {
           className="min-h-[40px] max-h-32 resize-none text-[14px]"
         />
         <Button
-          onClick={submit}
+          onClick={() => submit()}
           disabled={disabled || !text.trim()}
           size="icon"
           className="h-10 w-10 shrink-0 rounded-full"
