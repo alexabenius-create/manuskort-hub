@@ -31,6 +31,8 @@ export interface CardBlockAttrs {
   wpm: number;
   showNotes: boolean;
   showTimes: boolean;
+  sectionId: string | null;
+  sectionLabel: string;
 }
 
 declare module "@tiptap/core" {
@@ -100,6 +102,18 @@ export const CardBlock = Node.create({
       wpm: { default: 140 },
       showNotes: { default: true },
       showTimes: { default: false },
+      sectionId: {
+        default: null as string | null,
+        parseHTML: (el) => el.getAttribute("data-section-id") || null,
+        renderHTML: (attrs) =>
+          attrs.sectionId ? { "data-section-id": attrs.sectionId } : {},
+      },
+      sectionLabel: {
+        default: "",
+        parseHTML: (el) => el.getAttribute("data-section-label") || "",
+        renderHTML: (attrs) =>
+          attrs.sectionLabel ? { "data-section-label": attrs.sectionLabel } : {},
+      },
     };
   },
 
