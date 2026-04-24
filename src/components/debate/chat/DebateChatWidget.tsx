@@ -13,10 +13,12 @@ type Mode = "compact" | "expanded" | "minimized";
 
 export function DebateChatWidget({ threadId }: Props) {
   const [mode, setMode] = useState<Mode>("compact");
-  const { messages, sending, sendMessage, threadState } = useDebateChat(threadId);
+  const { messages, sending, uploading, sendMessage, uploadBrief, threadState } = useDebateChat(threadId);
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const quickReplies = ((lastAssistant?.metadata as { quick_replies?: string[] } | undefined)?.quick_replies) || [];
+  const phase = threadState?.bot_state?.phase;
+  const showUpload = !phase || phase === "intake_brief" || phase === "intake_issue";
 
   if (mode === "minimized") {
     return <DebateChatBubble onClick={() => setMode("compact")} />;
@@ -33,12 +35,19 @@ export function DebateChatWidget({ threadId }: Props) {
             style={{ width: "min(900px, 92vw)", height: "min(720px, 85vh)" }}>
             <DebateChatHeader
               expanded={true}
-              phase={threadState?.bot_state?.phase}
+              phase={phase}
               onToggleExpand={() => setMode("compact")}
               onMinimize={() => setMode("minimized")}
             />
             <DebateChatMessages messages={messages} sending={sending} />
-            <DebateChatInput onSend={sendMessage} disabled={sending} quickReplies={quickReplies} />
+            <DebateChatInput
+              onSend={sendMessage}
+              onUploadFile={uploadBrief}
+              disabled={sending}
+              uploading={uploading}
+              showUpload={showUpload}
+              quickReplies={quickReplies}
+            />
           </div>
         </div>
       </>
@@ -52,12 +61,19 @@ export function DebateChatWidget({ threadId }: Props) {
     >
       <DebateChatHeader
         expanded={false}
-        phase={threadState?.bot_state?.phase}
+        phase={phase}
         onToggleExpand={() => setMode("expanded")}
         onMinimize={() => setMode("minimized")}
       />
       <DebateChatMessages messages={messages} sending={sending} />
-      <DebateChatInput onSend={sendMessage} disabled={sending} quickReplies={quickReplies} />
+      <DebateChatInput
+        onSend={sendMessage}
+        onUploadFile={uploadBrief}
+        disabled={sending}
+        uploading={uploading}
+        showUpload={showUpload}
+        quickReplies={quickReplies}
+      />
     </div>
   );
 }
