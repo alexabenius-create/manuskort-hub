@@ -34,6 +34,8 @@ export interface CardDocNode {
   cueRed: string;
   cueAmber: string;
   cueTeal: string;
+  sectionId: string | null;
+  sectionLabel: string;
 }
 
 /**
@@ -89,6 +91,8 @@ export function rowsToCardAttrs(
     wpm: manuscriptCtx.wpm,
     showNotes: manuscriptCtx.showNotes,
     showTimes: manuscriptCtx.showTimes,
+    sectionId: r.section_id ?? null,
+    sectionLabel: r.section_label ?? "",
   }));
 }
 
