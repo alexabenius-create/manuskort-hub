@@ -79,6 +79,8 @@ export default function DebattBuddyThread() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<DraftState>({ kind: "none" });
   const [waiving, setWaiving] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [roleAutoOpened, setRoleAutoOpened] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!threadId) return;
