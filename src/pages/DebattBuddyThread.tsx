@@ -475,6 +475,7 @@ export default function DebattBuddyThread() {
             <PerformSpeechStep
               turn={performTurn}
               threadTitle={thread.title}
+              allTurns={turns}
               onContinue={() => markPerformed(performTurn.id)}
               onManuscriptCreated={(manuscriptId) => {
                 // Uppdatera lokal state direkt så knappen byts till "Öppna manuskort"/"Starta presentation"
