@@ -92,15 +92,21 @@ export default function Presentation() {
     const prevBody = document.body.style.backgroundColor;
     const prevHtml = document.documentElement.style.backgroundColor;
     const prevBodyMinH = document.body.style.minHeight;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.backgroundColor = "#0a0a0c";
     document.documentElement.style.backgroundColor = "#0a0a0c";
-    document.body.style.minHeight = "calc(100dvh + 1px)";
+    document.body.style.minHeight = isMobile ? "calc(100dvh + 1px)" : "100dvh";
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       document.body.style.backgroundColor = prevBody;
       document.documentElement.style.backgroundColor = prevHtml;
       document.body.style.minHeight = prevBodyMinH;
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
     };
-  }, []);
+  }, [isMobile]);
 
   // Rensa ev. kvarbliven timer-state vid mount så vi alltid börjar med
   // nedräkning. Persistens ska bara skydda mot reload mitt i en pågående
@@ -496,7 +502,7 @@ export default function Presentation() {
     <SEO title="Presentera – Manuskort" noindex nofollow />
     <div
       className="fixed inset-0 bg-[#0a0a0c] text-zinc-100 overflow-hidden flex flex-col"
-      style={{ height: "100dvh", minHeight: "calc(100dvh + 1px)" }}
+      style={{ height: "100dvh", minHeight: isMobile ? "calc(100dvh + 1px)" : "100dvh" }}
       onTouchStart={useMobileV2 ? undefined : onTouchStart}
       onTouchEnd={useMobileV2 ? undefined : onTouchEnd}
     >
