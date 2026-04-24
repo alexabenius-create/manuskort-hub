@@ -832,6 +832,8 @@ Deno.serve(async (req) => {
             .eq("id", threadId);
           executedTools.push({ name, result: `${seconds}s` });
         } else if (name === "generate_speech_cards") {
+          const sectionId = crypto.randomUUID();
+          const sectionLabel = "Anförande";
           if (thread.manuscript_id) {
             const { data: existingCards } = await admin
               .from("cards")
@@ -847,6 +849,8 @@ Deno.serve(async (req) => {
               role: "speaker",
               title: c.title,
               content_html: `<p>${c.body.replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+              section_id: sectionId,
+              section_label: sectionLabel,
             }));
             if (rows.length) await admin.from("cards").insert(rows);
             executedTools.push({ name, result: `${rows.length} kort` });
@@ -855,7 +859,14 @@ Deno.serve(async (req) => {
           }
           await admin
             .from("debate_threads")
-            .update({ bot_state: { ...thread.bot_state, phase: "awaiting_perform" } })
+            .update({
+              bot_state: {
+                ...thread.bot_state,
+                phase: "awaiting_perform",
+                current_section_id: sectionId,
+                rebuttal_count: 0,
+              },
+            })
             .eq("id", threadId);
         } else if (name === "set_opponent") {
           await admin
