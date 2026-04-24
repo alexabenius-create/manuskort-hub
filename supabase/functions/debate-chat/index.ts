@@ -261,6 +261,261 @@ const TOOLS: Tool[] = [
   },
 ];
 
+// ============= SCRIPTED PHASE HANDLER =============
+// Hårdkodade frågor och snabbsvar för intake-faser. LLM används bara för fritext-tolkning + utkast/genmäle.
+
+interface ScriptedReply {
+  text: string;
+  quick_replies: string[];
+  state_updates?: Record<string, unknown>;
+  bot_state_patch?: Record<string, unknown>;
+  next_phase?: string;
+}
+
+const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }> = {
+  intake_issue: {
+    text: "Hej! Roligt att vi ska förbereda en debatt tillsammans. Vad ska vi debattera idag?",
+    quick_replies: ["Skola", "Vård", "Klimat", "Skriv själv"],
+  },
+  intake_brief: {
+    text: "Bra! Har du något underlag att dela med mig?",
+    quick_replies: ["Ladda upp fil", "Skriv kort", "Hoppa över"],
+  },
+  intake_mode: {
+    text: "Ska du hålla ett anförande eller bemöta någon annan?",
+    quick_replies: ["Hålla anförande", "Bemöta någon"],
+  },
+  intake_speech_length: {
+    text: "Hur långt ska anförandet vara?",
+    quick_replies: ["1 minut", "2 minuter", "3 minuter", "5 minuter"],
+  },
+  drafting_speech: {
+    text: "Vill du att jag skriver ett utkast åt dig, eller skriver du själv?",
+    quick_replies: ["Skriv utkast åt mig", "Jag skriver själv"],
+  },
+  awaiting_perform: {
+    text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
+    quick_replies: ["Klar — vad händer nu?"],
+  },
+  post_perform_check: {
+    text: "Fick du några repliker som du behöver bemöta?",
+    quick_replies: ["Ja", "Nej, klart"],
+  },
+  intake_opponent_name: {
+    text: "Vad heter motdebattören?",
+    quick_replies: [],
+  },
+  intake_opponent_args: {
+    text: "Skriv in motdebattörens argument så formulerar jag ett genmäle.",
+    quick_replies: [],
+  },
+  idle: {
+    text: "Bra jobbat! Hör av dig om du behöver mer hjälp.",
+    quick_replies: ["Ny debatt"],
+  },
+};
+
+function norm(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+/** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
+async function handleScripted(
+  admin: ReturnType<typeof createClient<any>>,
+  thread: ThreadRow,
+  userMessage: string,
+  threadId: string,
+): Promise<ScriptedReply | null> {
+  const phase = thread.bot_state?.phase || "intake_issue";
+  const msg = norm(userMessage);
+
+  // Tom första-prompt → visa scripted intro för aktuell fas
+  if (!userMessage.trim()) {
+    const p = SCRIPTED_PROMPTS[phase];
+    if (p) return { text: p.text, quick_replies: p.quick_replies };
+    return null;
+  }
+
+  // intake_issue
+  if (phase === "intake_issue") {
+    const topics: Record<string, string> = { skola: "Skola", vård: "Vård", vard: "Vård", klimat: "Klimat" };
+    if (topics[msg]) {
+      const topic = topics[msg];
+      await admin
+        .from("debate_threads")
+        .update({
+          topic_area: topic,
+          issue_text: topic,
+          bot_state: { ...thread.bot_state, phase: "intake_brief" },
+        })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_brief.text, quick_replies: SCRIPTED_PROMPTS.intake_brief.quick_replies };
+    }
+    if (msg === "skriv själv" || msg === "skriv sjalv") {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_issue_freetext" } })
+        .eq("id", threadId);
+      return { text: "Okej — beskriv ärendet kort i en mening eller två.", quick_replies: [] };
+    }
+  }
+
+  // intake_brief
+  if (phase === "intake_brief") {
+    if (msg === "ladda upp fil") {
+      return {
+        text: "Klicka på gemet 📎 nedan för att ladda upp ärendet (PDF, Word eller PowerPoint).",
+        quick_replies: ["Hoppa över istället"],
+      };
+    }
+    if (msg === "hoppa över" || msg === "hoppa over" || msg === "hoppa över istället") {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_mode" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_mode.text, quick_replies: SCRIPTED_PROMPTS.intake_mode.quick_replies };
+    }
+    if (msg === "skriv kort") {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_brief_freetext" } })
+        .eq("id", threadId);
+      return { text: "Skriv en kort beskrivning av ärendet (några meningar räcker).", quick_replies: [] };
+    }
+  }
+
+  // intake_mode
+  if (phase === "intake_mode") {
+    if (msg === "hålla anförande" || msg === "halla anforande" || msg.includes("anförande") || msg.includes("anforande")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_speech_length", mode: "speech" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_speech_length.text, quick_replies: SCRIPTED_PROMPTS.intake_speech_length.quick_replies };
+    }
+    if (msg === "bemöta någon" || msg === "bemota nagon" || msg.includes("bemöta") || msg.includes("bemota") || msg === "replik") {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_opponent_name", mode: "reply" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_opponent_name.text, quick_replies: [] };
+    }
+  }
+
+  // intake_speech_length
+  if (phase === "intake_speech_length") {
+    const minMatch = msg.match(/(\d+)\s*min/);
+    if (minMatch) {
+      const minutes = parseInt(minMatch[1], 10);
+      const seconds = Math.max(30, Math.min(600, minutes * 60));
+      await admin
+        .from("debate_threads")
+        .update({
+          bot_state: { ...thread.bot_state, phase: "drafting_speech", speech_length_seconds: seconds },
+        })
+        .eq("id", threadId);
+      return {
+        text: `Perfekt — ${minutes} minut${minutes === 1 ? "" : "er"} (~${Math.round((seconds / 60) * 130)} ord). Vill du att jag skriver utkast åt dig, eller skriver du själv?`,
+        quick_replies: SCRIPTED_PROMPTS.drafting_speech.quick_replies,
+      };
+    }
+  }
+
+  // drafting_speech
+  if (phase === "drafting_speech") {
+    if (msg === "jag skriver själv" || msg === "jag skriver sjalv" || msg.includes("skriver själv") || msg.includes("skriver sjalv")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "awaiting_perform" } })
+        .eq("id", threadId);
+      return {
+        text: "Bra! Skriv ditt anförande i editorn till vänster. När du presenterat det är jag här igen.",
+        quick_replies: ["Klar — fick replik", "Klar — ingen replik"],
+      };
+    }
+    // "Skriv utkast åt mig" → fall through till LLM (genererar kort)
+  }
+
+  // awaiting_perform
+  if (phase === "awaiting_perform") {
+    if (msg.includes("fick replik") || msg.includes("ja")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_opponent_name" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_opponent_name.text, quick_replies: [] };
+    }
+    if (msg.includes("ingen replik") || msg.includes("nej") || msg === "klart") {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "idle" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.idle.text, quick_replies: SCRIPTED_PROMPTS.idle.quick_replies };
+    }
+    if (msg.includes("vad händer") || msg.includes("vad hander")) {
+      return { text: SCRIPTED_PROMPTS.post_perform_check.text, quick_replies: SCRIPTED_PROMPTS.post_perform_check.quick_replies };
+    }
+  }
+
+  // post_perform_check
+  if (phase === "post_perform_check") {
+    if (msg === "ja") {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_opponent_name" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_opponent_name.text, quick_replies: [] };
+    }
+    if (msg.includes("nej") || msg === "klart" || msg.includes("nej, klart")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "idle" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.idle.text, quick_replies: SCRIPTED_PROMPTS.idle.quick_replies };
+    }
+  }
+
+  // intake_opponent_name — fritextnamn, en mening
+  if (phase === "intake_opponent_name") {
+    const name = userMessage.trim().slice(0, 80);
+    if (name.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          current_opponent_label: name,
+          bot_state: { ...thread.bot_state, phase: "intake_opponent_args" },
+        })
+        .eq("id", threadId);
+      return {
+        text: `Tack! Skriv in ${name}s argument så formulerar jag ett genmäle åt dig.`,
+        quick_replies: [],
+      };
+    }
+  }
+
+  // idle
+  if (phase === "idle") {
+    if (msg === "ny debatt" || msg.includes("ny debatt")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { phase: "intake_issue" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_issue.text, quick_replies: SCRIPTED_PROMPTS.intake_issue.quick_replies };
+    }
+  }
+
+  return null;
+}
+
+/** Klipp svar efter andra meningen för att hålla det kort. */
+function trimToTwoSentences(text: string): string {
+  if (!text) return text;
+  const m = text.match(/^([\s\S]*?[.!?])\s+([\s\S]*?[.!?])(\s|$)/);
+  if (m) return (m[1] + " " + m[2]).trim();
+  const single = text.match(/^[\s\S]*?[.!?]/);
+  return (single?.[0] || text).trim();
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -333,7 +588,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Ladda historik
+    // ============= SCRIPTED SHORT-CIRCUIT =============
+    const scripted = await handleScripted(admin, thread, userMessage, threadId);
+    if (scripted) {
+      await admin.from("debate_chat_messages").insert({
+        thread_id: threadId,
+        user_id: userId,
+        role: "assistant",
+        content: scripted.text,
+        metadata: { scripted: true, quick_replies: scripted.quick_replies },
+      });
+      return json({
+        assistant: scripted.text,
+        tools: [],
+        quick_replies: scripted.quick_replies,
+      });
+    }
+
+    // Ladda historik (för LLM-faser)
     const { data: history } = await admin
       .from("debate_chat_messages")
       .select("role, content")
@@ -388,7 +660,7 @@ Deno.serve(async (req) => {
     const aiData = await aiResp.json();
     const choice = aiData.choices?.[0];
     const assistantMsg = choice?.message;
-    let assistantText: string = stripToolJunk(assistantMsg?.content || "");
+    let assistantText: string = trimToTwoSentences(stripToolJunk(assistantMsg?.content || ""));
     const toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
     let quickReplies: string[] = [];
@@ -565,7 +837,7 @@ Deno.serve(async (req) => {
       });
       if (followup.ok) {
         const fd = await followup.json();
-        assistantText = stripToolJunk(fd.choices?.[0]?.message?.content || "");
+        assistantText = trimToTwoSentences(stripToolJunk(fd.choices?.[0]?.message?.content || ""));
       }
     }
 
