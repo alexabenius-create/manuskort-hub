@@ -167,24 +167,28 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
 
   return (
     <div className="relative flex w-full h-full min-h-0 gap-4 px-2 md:px-12 py-1 md:py-2">
-      {/* Persistenta signaler — absolut positionerade i överkant av kortet, centrerat grupperade */}
+      {/* Persistenta signaler — absolut positionerade i överkant. När anteckningspanelen är öppen
+          krymps höger marginal så att gruppen centreras över manustexten istället för att kollidera. */}
       {hasAnyCue && (
-        <div className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10">
+        <div
+          className="absolute top-4 left-6 md:left-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10 transition-[right] duration-200"
+          style={{ right: showNotes && !isMobile ? 408 : undefined }}
+        >
           {energyCues.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-center gap-4 rounded-full px-6 py-3 text-[26px] font-medium text-[hsl(var(--cue-yellow))] bg-[hsl(var(--cue-yellow)/0.15)] border border-[hsl(var(--cue-yellow)/0.4)]"
+              className="inline-flex items-center gap-3 rounded-full px-5 py-2.5 text-[21px] font-medium text-[hsl(var(--cue-yellow))] bg-[hsl(var(--cue-yellow)/0.15)] border border-[hsl(var(--cue-yellow)/0.4)]"
             >
-              <Zap className="h-7 w-7 flex-shrink-0" />
+              <Zap className="h-6 w-6 flex-shrink-0" />
               <span>{c.text}</span>
             </div>
           ))}
           {actionCues.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-center gap-4 rounded-full px-6 py-3 text-[26px] font-medium text-[hsl(var(--accent-blue))] bg-[hsl(var(--accent-blue)/0.15)] border border-[hsl(var(--accent-blue)/0.3)]"
+              className="inline-flex items-center gap-3 rounded-full px-5 py-2.5 text-[21px] font-medium text-[hsl(var(--accent-blue))] bg-[hsl(var(--accent-blue)/0.15)] border border-[hsl(var(--accent-blue)/0.3)]"
             >
-              <Play className="h-7 w-7 flex-shrink-0" />
+              <Play className="h-6 w-6 flex-shrink-0" />
               <span>{c.text}</span>
             </div>
           ))}
@@ -193,11 +197,11 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
             return (
               <div
                 key={c.id}
-                className="inline-flex items-center gap-4 rounded-full px-6 py-3 text-[26px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
+                className="inline-flex items-center gap-3 rounded-full px-5 py-2.5 text-[21px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
               >
-                <Users className="h-7 w-7 flex-shrink-0" />
+                <Users className="h-6 w-6 flex-shrink-0" />
                 {p?.name && (
-                  <span className="font-mono text-[20px] uppercase tracking-wider opacity-80">{p.name}</span>
+                  <span className="font-mono text-[16px] uppercase tracking-wider opacity-80">{p.name}</span>
                 )}
                 <span className="text-zinc-100">{c.text}</span>
               </div>
@@ -205,6 +209,8 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           })}
         </div>
       )}
+
+      {/* Fyller default `right` värdet (matchar left-12) när anteckningar är dolda — tidigare hade vi right-12 i klassen. */}
 
       {/* Manustexten — huvudyta */}
       <div
