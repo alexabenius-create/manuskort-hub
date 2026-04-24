@@ -145,24 +145,30 @@ export default function Editor() {
     enabled: !!meta && !!id,
   });
 
-  useEffect(() => {
+  const reloadCards = useCallback(async () => {
     if (!id) return;
-    (async () => {
-      setLoading(true);
-      const [mRes, cRes] = await Promise.all([
-        supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
-        supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
-      ]);
-      if (mRes.error || !mRes.data) {
-        toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
-        navigate("/bibliotek");
-        return;
-      }
-      setManuscript(mRes.data);
-      setCards(cRes.data ?? []);
-      setLoading(false);
-    })();
+    setLoading(true);
+    const [mRes, cRes] = await Promise.all([
+      supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
+      supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
+    ]);
+    if (mRes.error || !mRes.data) {
+      toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
+      navigate("/bibliotek");
+      return;
+    }
+    setManuscript(mRes.data);
+    setCards(cRes.data ?? []);
+    setLoading(false);
   }, [id, navigate]);
+
+  useEffect(() => { void reloadCards(); }, [reloadCards]);
+
+  useEffect(() => {
+    const handler = () => { void reloadCards(); };
+    window.addEventListener("debate-cards-generated", handler);
+    return () => window.removeEventListener("debate-cards-generated", handler);
+  }, [reloadCards]);
 
   // Tidigare hård utskriftsspärr borttagen — PrintDialog auto-skalar varje
   // kort så att det får plats på sin sida. Säkerställ att ev. äldre flagga
