@@ -1,25 +1,48 @@
 import { useState } from "react";
-import { Plus, Trash2, Loader2, MessageSquareReply } from "lucide-react";
+import { Plus, Trash2, Loader2, MessageSquareReply, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+export type OpponentTurnKind = "opponent_input" | "opponent_speech" | "reply";
+
 interface Props {
   threadId: string;
   position: number;
+  kind: OpponentTurnKind;
+  defaultSpeakerLabel?: string;
+  parentTurnId?: string | null;
+  roundNumber?: number;
   onAdded: () => void;
   onCancel: () => void;
 }
 
 type InputMode = "structured" | "freeform";
 
-export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }: Props) {
-  const [mode, setMode] = useState<InputMode>("structured");
+const headingFor = (kind: OpponentTurnKind, label: string): string => {
+  if (kind === "opponent_speech") return `${label || "Y"}:s anförande`;
+  if (kind === "reply") return `Replik från ${label || "motdebattör"}`;
+  return "Y säger";
+};
+
+export function TurnCardOpponentDraft({
+  threadId,
+  position,
+  kind,
+  defaultSpeakerLabel = "",
+  parentTurnId,
+  roundNumber,
+  onAdded,
+  onCancel,
+}: Props) {
+  const [mode, setMode] = useState<InputMode>(kind === "opponent_speech" ? "freeform" : "structured");
   const [args, setArgs] = useState<string[]>([""]);
   const [freeText, setFreeText] = useState("");
+  const [speakerLabel, setSpeakerLabel] = useState(defaultSpeakerLabel || (kind === "opponent_speech" ? "Y" : ""));
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -42,6 +65,10 @@ export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }:
           mode,
           arguments: mode === "structured" ? cleanArgs : undefined,
           text: mode === "freeform" ? freeText : undefined,
+          kind,
+          parent_turn_id: parentTurnId ?? null,
+          speaker_label: speakerLabel,
+          round_number: roundNumber ?? 1,
         },
       });
       if (error) {
@@ -55,6 +82,8 @@ export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }:
     }
   };
 
+  const Icon = kind === "opponent_speech" ? Mic : MessageSquareReply;
+
   return (
     <div className="rounded-2xl bg-white border border-v2-line p-5 space-y-4">
       <div className="flex items-center gap-3">
@@ -62,10 +91,25 @@ export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }:
           {position + 1}
         </div>
         <div className="flex items-center gap-2">
-          <MessageSquareReply className="h-4 w-4 text-rose-500" />
-          <h3 className="text-[15px] font-semibold text-v2-ink">Y säger</h3>
+          <Icon className="h-4 w-4 text-rose-500" />
+          <h3 className="text-[15px] font-semibold text-v2-ink">{headingFor(kind, speakerLabel)}</h3>
         </div>
       </div>
+
+      {kind === "reply" && (
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold uppercase tracking-wider text-v2-muted">
+            Replikant
+          </label>
+          <Input
+            value={speakerLabel}
+            onChange={(e) => setSpeakerLabel(e.target.value)}
+            placeholder="t.ex. Replikant A eller Anders Andersson"
+            className="rounded-xl"
+            maxLength={40}
+          />
+        </div>
+      )}
 
       <ToggleGroup
         type="single"
@@ -89,7 +133,7 @@ export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }:
       <p className="text-[11px] text-v2-muted -mt-2">
         {mode === "structured"
           ? "Rekommenderas — AI bemöter varje argument punktvis."
-          : "Snabbare, men AI kan missa nyanser om Y:s argumentation är komplex."}
+          : "Snabbare, men AI kan missa nyanser om argumentationen är komplex."}
       </p>
 
       {mode === "structured" ? (
@@ -134,7 +178,7 @@ export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }:
         <Textarea
           value={freeText}
           onChange={(e) => setFreeText(e.target.value)}
-          placeholder="Skriv ner vad Y sa…"
+          placeholder={kind === "opponent_speech" ? "Skriv ner motdebattörens anförande…" : "Skriv ner vad de sa…"}
           rows={6}
           className="rounded-xl"
         />
@@ -146,7 +190,7 @@ export function TurnCardOpponentDraft({ threadId, position, onAdded, onCancel }:
         </Button>
         <Button type="button" onClick={submit} disabled={saving} className="rounded-full">
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Spara Y:s inlägg
+          Spara
         </Button>
       </div>
     </div>
@@ -157,11 +201,22 @@ export function TurnCardOpponentDisplay({
   position,
   sourceText,
   mode,
+  kind,
+  speakerLabel,
 }: {
   position: number;
   sourceText: string;
   mode: "structured" | "freeform" | null;
+  kind?: OpponentTurnKind;
+  speakerLabel?: string;
 }) {
+  const Icon = kind === "opponent_speech" ? Mic : MessageSquareReply;
+  const heading =
+    kind === "opponent_speech"
+      ? `${speakerLabel || "Y"} höll anförande`
+      : kind === "reply"
+      ? `${speakerLabel || "Replikant"} sa`
+      : "Y sa";
   return (
     <div className="rounded-2xl bg-rose-50/40 border border-rose-100 p-5">
       <div className="flex items-center gap-3 mb-3">
@@ -172,8 +227,8 @@ export function TurnCardOpponentDisplay({
           {position + 1}
         </div>
         <div className="flex items-center gap-2">
-          <MessageSquareReply className="h-4 w-4 text-rose-500" />
-          <h3 className="text-[14px] font-semibold text-v2-ink">Y sa</h3>
+          <Icon className="h-4 w-4 text-rose-500" />
+          <h3 className="text-[14px] font-semibold text-v2-ink">{heading}</h3>
           {mode === "freeform" && (
             <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-100 text-rose-600 font-semibold">
               Fritext
