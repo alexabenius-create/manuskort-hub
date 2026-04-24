@@ -31,6 +31,7 @@ KRITISKT — SVARSSTIL:
 - Ställ ALDRIG flera frågor i samma svar.
 - Inga utläggningar, inga listor i frågorna.
 - Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga.
+- **Skriv ALDRIG snabbsvaren i själva textsvaret.** Inga JSON-objekt, inga \`quick_replies\`-block, inga punktlistor med alternativ, inga citerade förslag. Snabbsvaren skickas ENDAST via verktyget — användaren ser dem som knappar.
 - Producera resultat så snart du har minimum av info — vänta inte i onödan.
 - Max 1 emoji per svar. Ofta ingen.
 
