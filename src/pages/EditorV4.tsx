@@ -186,30 +186,39 @@ export default function EditorV4() {
   const targetDurationSeconds = manuscript?.target_duration_seconds ?? null;
 
   // Ladda manus + kort
-  useEffect(() => {
+  const loadManuscript = useCallback(async () => {
     if (!id) return;
-    (async () => {
-      setLoading(true);
-      initializedRef.current = false;
-      hydratedRef.current = false;
-      const [mRes, cRes] = await Promise.all([
-        supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
-        supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
-      ]);
-      if (mRes.error || !mRes.data) {
-        toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
-        navigate("/bibliotek");
-        return;
-      }
-      setManuscript(mRes.data);
-      const rows = cRes.data ?? [];
-      setCards(rows);
-      pendingExternalHydrateRef.current = true;
-      setDocHtml(cardsToDocHtml(rows));
-      setCardCount(Math.max(1, rows.length));
-      setLoading(false);
-    })();
+    setLoading(true);
+    initializedRef.current = false;
+    hydratedRef.current = false;
+    const [mRes, cRes] = await Promise.all([
+      supabase.from("manuscripts").select("*").eq("id", id).maybeSingle(),
+      supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
+    ]);
+    if (mRes.error || !mRes.data) {
+      toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
+      navigate("/bibliotek");
+      return;
+    }
+    setManuscript(mRes.data);
+    const rows = cRes.data ?? [];
+    setCards(rows);
+    pendingExternalHydrateRef.current = true;
+    setDocHtml(cardsToDocHtml(rows));
+    setCardCount(Math.max(1, rows.length));
+    setLoading(false);
   }, [id, navigate]);
+
+  useEffect(() => {
+    void loadManuscript();
+  }, [loadManuscript]);
+
+  // Lyssna på chat-genererade kort och refetcha
+  useEffect(() => {
+    const handler = () => { void loadManuscript(); };
+    window.addEventListener("debate-cards-generated", handler);
+    return () => window.removeEventListener("debate-cards-generated", handler);
+  }, [loadManuscript]);
 
   /** Uppdatera manus-meta (text_size, show_notes, show_times, time_format, target). */
   const updateMeta = useCallback(
