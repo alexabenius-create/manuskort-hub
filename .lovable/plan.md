@@ -1,38 +1,29 @@
-## Ny status "Åtgärdas ej" för insikter
+## Redesign: CardDemo i `src/pages/LandingV2.tsx` (rader 750–807)
 
-### 1. Migration
-Uppdatera `validate_admin_insight()` så `status` accepterar `'wont_fix'`:
-```sql
-CREATE OR REPLACE FUNCTION public.validate_admin_insight()
-RETURNS trigger LANGUAGE plpgsql SET search_path TO 'public' AS $$
-BEGIN
-  IF NEW.source NOT IN ('email','call','dm','own','meeting','other') THEN
-    RAISE EXCEPTION 'Invalid source: %', NEW.source;
-  END IF;
-  IF NEW.priority NOT IN ('low','medium','high') THEN
-    RAISE EXCEPTION 'Invalid priority: %', NEW.priority;
-  END IF;
-  IF NEW.status NOT IN ('new','processing','ready','implemented','wont_fix','archived') THEN
-    RAISE EXCEPTION 'Invalid status: %', NEW.status;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-```
+**Bevarad:** vit bakgrund, kort-stack, mesh-glow, navigeringspilar, paginerings-prickar, timer-logik (rAF), pausa-på-hover.
 
-### 2. `src/components/admin/insights/types.ts`
-- Lägg till `"wont_fix"` i `InsightStatus`-unionen.
-- `STATUS_LABEL.wont_fix = "Åtgärdas ej"`.
+### Ändringar i kortets innehåll
 
-### 3. `src/components/admin/insights/InsightsPanel.tsx`
-- Lägg till `{ key: "wont_fix", label: STATUS_LABEL.wont_fix }` i `STATUS_FILTERS`.
-- I `filtered`: när `filter === "all"`, exkludera insikter med `status === "wont_fix"`.
-- I `statusCounts`: räkna `all` som antal insikter där `status !== "wont_fix"`; räkna `wont_fix` separat.
+1. **Top row — pill-badges (`rounded-full`)**
+   - Vänster: `Kort 01 / 05` — `bg-slate-100 border-slate-200/80`, `font-mono uppercase tracking-[0.12em]`.
+   - Höger: roll/talare (`MODERATOR`, `TALARE`) — pastellfärg från `card.speakerColor` med tunn mörk border, samma mono-typografi.
 
-### 4. `src/components/admin/insights/InsightDetail.tsx`
-Inga ändringar krävs — status-väljaren itererar redan över `STATUS_LABEL`-nycklarna, så `wont_fix` blir automatiskt valbart när det läggs till där.
+2. **Cue-pill — centrerad rad**
+   - Flyttas från footern till en centrerad rad direkt under top-badges.
+   - Behåller färgkodning: PAUS=rose, BILD=amber, övriga=emerald.
+   - `rounded-full`, något större padding (`px-3.5 py-1.5`), ikon `h-3.5 w-3.5`.
 
-### Resultat
-- Ny statusflik "Åtgärdas ej" syns i sidofiltret med egen räknare.
-- Insikter med denna status visas inte under "Alla" — bara när man aktivt väljer fliken.
-- Befintliga insikter påverkas inte.
+3. **Rubrik** — växer till `text-[24px] sm:text-[26px]`, `leading-[1.15]`, `font-display`.
+
+4. **Bullets** — minimalistiska mörka prickar (`bg-slate-400`, `h-1 w-1`), `text-[14.5px]` med `leading-[1.55]`.
+
+5. **Hairline divider + footer**
+   - `border-t border-slate-100` separerar innehåll från footer.
+   - Footer-rad: vänster `PRESENTATION`-label (font-mono, mycket dämpad), höger en grupp med `{tid} av {total}` + ny **PAUS/SPELA-knapp** (rounded-full, font-mono uppercase) som togglar `paused`.
+   - Total progressbar oförändrad direkt under.
+
+6. **Padding** ökas från `p-6 sm:p-7` → `p-7 sm:p-8`.
+
+### Inget kommentarsfält tillkommer — befintligt kort har inget heller.
+
+Säg till så implementerar jag.
