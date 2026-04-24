@@ -170,6 +170,26 @@ const TOOLS: Tool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "suggest_quick_replies",
+      description: "Föreslå 2-4 korta svarsalternativ (max 4 ord vardera) som klickbara knappar för användaren. Använd ALLTID när du ställer en fråga.",
+      parameters: {
+        type: "object",
+        properties: {
+          replies: {
+            type: "array",
+            items: { type: "string" },
+            minItems: 2,
+            maxItems: 4,
+          },
+        },
+        required: ["replies"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function json(body: unknown, status = 200) {
