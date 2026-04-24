@@ -59,7 +59,12 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
     role: "moderator" | "speaker";
     targetSeconds: number | null;
     targetSecondsIsManual: boolean;
+    sectionId: string | null;
+    sectionLabel: string;
   };
+
+  const { id: manuscriptId } = useParams<{ id: string }>();
+  const collapsedSections = useCollapsedSections(manuscriptId ?? "");
 
   const text = useMemo(
     () => node.textBetween(0, node.content.size, " ", " "),
@@ -86,6 +91,32 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
   })();
   const myEnd = myPos != null ? myPos + node.nodeSize : null;
   const isBeingDragged = draggingPos != null && draggingPos === myPos;
+
+  // Sektion: är detta första kortet i sektionen? Räkna även kort i sektionen.
+  const sectionInfo = useMemo<{ isFirstInSection: boolean; cardCount: number } | null>(() => {
+    if (!a.sectionId) return null;
+    let isFirstInSection = true;
+    let cardCount = 0;
+    let sawSelf = false;
+    editor.state.doc.forEach((n, offset) => {
+      if (n.type.name !== "cardBlock") return;
+      const sid = (n.attrs as { sectionId: string | null }).sectionId;
+      if (sid !== a.sectionId) return;
+      cardCount += 1;
+      if (offset === myPos) {
+        sawSelf = true;
+      } else if (!sawSelf) {
+        isFirstInSection = false;
+      }
+    });
+    return { isFirstInSection, cardCount };
+  }, [editor.state.doc, a.sectionId, myPos]);
+
+  const isCollapsed =
+    !!a.sectionId && collapsedSections.has(a.sectionId);
+  // Dölj alla utom första kortet i en kollapsad sektion
+  const hideForCollapse =
+    isCollapsed && sectionInfo != null && !sectionInfo.isFirstInSection;
 
   // Räkna kedja av manuella måltider från första kortet fram till detta kort.
   // Returnerar { start, end } i sekunder om kedjan är obruten OCH detta kort
