@@ -47,7 +47,8 @@ export default function Presentation() {
   const debateBuddyThreadId = searchParams.get("debattbuddy");
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
-  const [cards, setCards] = useState<Card[]>([]);
+  const [allCards, setAllCards] = useState<Card[]>([]);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [panelists, setPanelists] = useState<Panelist[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
