@@ -144,7 +144,7 @@ Använd endast texten i dokumentutdraget nedan.`;
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          model: visionMode ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
+          model: visionMode ? "google/gemini-3-flash-preview" : "google/gemini-2.5-flash-lite",
           messages: [{ role: "system", content: systemPrompt }, userMessage],
           tools: [
             {
