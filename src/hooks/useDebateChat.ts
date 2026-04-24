@@ -60,7 +60,14 @@ export function useDebateChat(threadId: string | null) {
         (payload) => {
           const m = payload.new as ChatMessage;
           setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
-          if (m.role === "assistant") void loadThread();
+          if (m.role === "assistant") {
+            void loadThread();
+            // Notify editor to refetch cards if generation tools ran
+            const tools = (m.metadata as { tools?: Array<{ name: string }> } | undefined)?.tools || [];
+            if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards")) {
+              window.dispatchEvent(new CustomEvent("debate-cards-generated", { detail: { threadId } }));
+            }
+          }
         },
       )
       .subscribe();
