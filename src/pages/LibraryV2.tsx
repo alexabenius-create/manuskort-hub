@@ -42,6 +42,7 @@ type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 export default function LibraryV2() {
   const { user, signOut } = useAuth();
   const { tier } = useTier();
+  const { usage: aiUsage } = useAiUsage();
   const limits = LIMITS[tier];
   const navigate = useNavigate();
   const unreadMessages = useUnreadMessages();
