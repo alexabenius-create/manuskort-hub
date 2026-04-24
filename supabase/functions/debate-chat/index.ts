@@ -358,6 +358,59 @@ async function handleScripted(
         .eq("id", threadId);
       return { text: "Okej — beskriv ärendet kort i en mening eller två.", quick_replies: [] };
     }
+    // Fritext direkt i intake_issue — spara som ärende och gå vidare
+    const freetext = userMessage.trim().slice(0, 300);
+    if (freetext.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          issue_text: freetext,
+          bot_state: { ...thread.bot_state, phase: "intake_brief" },
+        })
+        .eq("id", threadId);
+      return {
+        text: `Tack — vi förbereder en debatt om "${freetext}". Har du något underlag att dela med mig?`,
+        quick_replies: SCRIPTED_PROMPTS.intake_brief.quick_replies,
+      };
+    }
+  }
+
+  // intake_issue_freetext — fritext-svar efter "Skriv själv"
+  if (phase === "intake_issue_freetext") {
+    const freetext = userMessage.trim().slice(0, 300);
+    if (freetext.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          issue_text: freetext,
+          bot_state: { ...thread.bot_state, phase: "intake_brief" },
+        })
+        .eq("id", threadId);
+      return {
+        text: `Tack! Har du något underlag att dela med mig om "${freetext.slice(0, 60)}${freetext.length > 60 ? "…" : ""}"?`,
+        quick_replies: SCRIPTED_PROMPTS.intake_brief.quick_replies,
+      };
+    }
+  }
+
+  // intake_brief_freetext — fritext-beskrivning av underlag
+  if (phase === "intake_brief_freetext") {
+    const freetext = userMessage.trim().slice(0, 4000);
+    if (freetext.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          issue_document_text: freetext,
+          bot_state: { ...thread.bot_state, phase: "intake_mode" },
+        })
+        .eq("id", threadId);
+      return {
+        text: "Tack, jag har läst beskrivningen! " + SCRIPTED_PROMPTS.intake_mode.text,
+        quick_replies: SCRIPTED_PROMPTS.intake_mode.quick_replies,
+      };
+    }
+  }
+
   }
 
   // intake_brief
