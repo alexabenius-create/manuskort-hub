@@ -74,6 +74,28 @@ type DraftState =
     };
 
 const roleConfirmedKey = (threadId: string) => `debattbuddy:role-confirmed:${threadId}`;
+const performedKey = (threadId: string) => `debattbuddy:performed:${threadId}`;
+
+const loadPerformedSet = (threadId: string): Set<string> => {
+  try {
+    const raw = localStorage.getItem(performedKey(threadId));
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+};
+
+const savePerformedSet = (threadId: string, set: Set<string>) => {
+  try {
+    localStorage.setItem(performedKey(threadId), JSON.stringify(Array.from(set)));
+  } catch {
+    /* noop */
+  }
+};
+
+const isOwnSpeechKind = (k: string): boolean =>
+  k === "own_speech" || k === "own_reply" || k === "rebuttal";
 
 export default function DebattBuddyThread() {
   const { threadId } = useParams<{ threadId: string }>();
