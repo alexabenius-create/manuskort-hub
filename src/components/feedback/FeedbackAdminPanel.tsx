@@ -376,7 +376,7 @@ export function FeedbackAdminPanel() {
                 {messages.map((m) => {
                   const fromAdmin = m.sender_role === "admin";
                   return (
-                    <div key={m.id} className={`flex ${fromAdmin ? "justify-end" : "justify-start"}`}>
+                    <div key={m.id} className={`group flex items-end gap-1.5 ${fromAdmin ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-[14px] whitespace-pre-wrap ${
                           fromAdmin
@@ -394,6 +394,17 @@ export function FeedbackAdminPanel() {
                           {formatDate(m.created_at)}
                         </div>
                       </div>
+                      {!fromAdmin && activeThread.user_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openInsightFromText(m.body, activeThread)}
+                          className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-accent-blue opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          title="Skapa insikt från detta meddelande"
+                        >
+                          <Lightbulb className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   );
                 })}
@@ -428,6 +439,17 @@ export function FeedbackAdminPanel() {
           )}
         </section>
       </div>
+
+      <NewInsightDialog
+        open={insightDialogOpen}
+        onOpenChange={setInsightDialogOpen}
+        onCreated={() => {
+          toast({ title: "Insikt sparad", description: "Hittas under fliken Insikter." });
+          setInsightPrefill(null);
+        }}
+        themes={insightThemes}
+        prefill={insightPrefill}
+      />
     </div>
   );
 }
