@@ -153,19 +153,18 @@ export default function DebattBuddy() {
     setPublishing(true);
     try {
       // 1. Skapa debate_session
-      const sessionPayload = {
-        user_id: user.id,
-        kind: mode,
-        parent_session_id: mode === "reply" ? parent?.id ?? null : null,
-        issue_text: issue,
-        original_text: mode === "speech" ? speech : opponentArgs.join("\n\n"),
-        improved_text: result.improved_text,
-        card_split: result.card_split as unknown as object,
-        max_length_percent: freedom,
-      };
       const { data: session, error: sessErr } = await supabase
         .from("debate_sessions")
-        .insert(sessionPayload)
+        .insert({
+          user_id: user.id,
+          kind: mode,
+          parent_session_id: mode === "reply" ? parent?.id ?? null : null,
+          issue_text: issue,
+          original_text: mode === "speech" ? speech : opponentArgs.join("\n\n"),
+          improved_text: result.improved_text,
+          card_split: result.card_split as unknown as never,
+          max_length_percent: freedom,
+        })
         .select()
         .single();
       if (sessErr || !session) throw new Error(sessErr?.message || "Kunde inte spara session");
