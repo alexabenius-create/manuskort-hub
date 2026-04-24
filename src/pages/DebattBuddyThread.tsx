@@ -1,23 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import { toast } from "@/hooks/use-toast";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ThreadHeader } from "@/components/debate/ThreadHeader";
-import {
-  TurnCardOpponentDraft,
-  TurnCardOpponentDisplay,
-  type OpponentTurnKind,
-} from "@/components/debate/TurnCardOpponent";
-import {
-  TurnCardOwnDraft,
-  TurnCardOwnDisplay,
-  TurnCardWaivedDisplay,
-  type OwnTurnKind,
-} from "@/components/debate/TurnCardOwn";
+import { TurnCardOpponentDraft, type OpponentTurnKind } from "@/components/debate/TurnCardOpponent";
+import { TurnCardOwnDraft, type OwnTurnKind } from "@/components/debate/TurnCardOwn";
 import { PhaseCard } from "@/components/debate/PhaseCard";
+import { GuidedStep } from "@/components/debate/GuidedStep";
+import { CollapsedTurnStrip } from "@/components/debate/CollapsedTurnStrip";
+import { TurnReadOnlySheet } from "@/components/debate/TurnReadOnlySheet";
+import { RoleSelectorStep } from "@/components/debate/RoleSelectorStep";
 import { RoleSelectorDialog } from "@/components/debate/RoleSelectorDialog";
 import {
   computePhase,
@@ -27,6 +27,7 @@ import {
   type UserRole,
   type TurnKind,
 } from "@/lib/debatePhase";
+import { cn } from "@/lib/utils";
 
 interface DebateThread {
   id: string;
@@ -70,6 +71,8 @@ type DraftState =
       roundNumber: number;
     };
 
+const roleConfirmedKey = (threadId: string) => `debattbuddy:role-confirmed:${threadId}`;
+
 export default function DebattBuddyThread() {
   const { threadId } = useParams<{ threadId: string }>();
   const navigate = useNavigate();
@@ -80,7 +83,9 @@ export default function DebattBuddyThread() {
   const [draft, setDraft] = useState<DraftState>({ kind: "none" });
   const [waiving, setWaiving] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [roleAutoOpened, setRoleAutoOpened] = useState(false);
+  const [roleConfirmed, setRoleConfirmed] = useState(false);
+  const [headerOpen, setHeaderOpen] = useState(false);
+  const [activeReadTurnId, setActiveReadTurnId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     if (!threadId) return;
@@ -112,13 +117,20 @@ export default function DebattBuddyThread() {
     if (user) fetchAll();
   }, [user, fetchAll]);
 
-  // Auto-öppna roll-dialog en gång när tråden är tom (rollen kan väljas om/ändras när som helst)
+  // En gång rollen bekräftats (eller om tråden redan har turer) — kom ihåg det.
   useEffect(() => {
-    if (!loading && thread && turns.length === 0 && !roleAutoOpened) {
-      setRoleDialogOpen(true);
-      setRoleAutoOpened(true);
+    if (!threadId) return;
+    const stored = localStorage.getItem(roleConfirmedKey(threadId));
+    if (stored === "1") setRoleConfirmed(true);
+  }, [threadId]);
+
+  useEffect(() => {
+    // Om tråden redan har turer så är rollen "implicit bekräftad".
+    if (turns.length > 0 && !roleConfirmed) {
+      setRoleConfirmed(true);
+      if (threadId) localStorage.setItem(roleConfirmedKey(threadId), "1");
     }
-  }, [loading, thread, turns.length, roleAutoOpened]);
+  }, [turns.length, roleConfirmed, threadId]);
 
   const phaseTurns: PhaseTurn[] = useMemo(
     () =>
@@ -241,126 +253,173 @@ export default function DebattBuddyThread() {
     );
   }
 
-  // Render turns. Look up parent labels for rebuttals.
   const turnById = new Map(turns.map((t) => [t.id, t]));
+  const activeReadTurn = activeReadTurnId ? turnById.get(activeReadTurnId) ?? null : null;
+  const activeReadParent =
+    activeReadTurn?.parent_turn_id ? turnById.get(activeReadTurn.parent_turn_id) ?? null : null;
+
+  // Determine which guided step to show
+  const showRoleStep = !roleConfirmed && turns.length === 0;
+  const showDraft = draft.kind !== "none";
+  const stepKey = showRoleStep
+    ? "role"
+    : showDraft
+    ? `draft-${draft.kind}-${(draft as any).turnKind}-${nextPosition}`
+    : `phase-${phase.phase}-${turns.length}`;
+
+  // Header summary line for collapsible header
+  const summaryParts: string[] = [];
+  if (thread.user_role === "replier") summaryParts.push("Replikant");
+  else summaryParts.push("Talare");
+  if (thread.topic_area) summaryParts.push(thread.topic_area);
+  if (thread.issue_document_filename) summaryParts.push(`📎 ${thread.issue_document_filename}`);
 
   return (
-    <div className="min-h-screen bg-v2-surface">
-      <SEO title={`${thread.title} | Debatt-buddy`} description="Trådbaserad debattsession med AI." canonical={`/debatt-buddy/${thread.id}`} />
+    <div className="min-h-screen bg-v2-surface flex flex-col">
+      <SEO
+        title={`${thread.title} | Debatt-buddy`}
+        description="Trådbaserad debattsession med AI."
+        canonical={`/debatt-buddy/${thread.id}`}
+      />
+
       <header className="sticky top-0 z-30 border-b border-v2-line bg-white/85 backdrop-blur-xl">
-        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center">
-          <Link to="/debatt-buddy" className="inline-flex items-center gap-2 text-[14px] text-v2-muted hover:text-v2-ink">
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between gap-3">
+          <Link
+            to="/debatt-buddy"
+            className="inline-flex items-center gap-2 text-[14px] text-v2-muted hover:text-v2-ink"
+          >
             <ArrowLeft className="h-4 w-4" /> Mina debatter
           </Link>
+          <div className="text-[13px] font-semibold text-v2-ink truncate max-w-[60%]">
+            {thread.title || "Ny debatt"}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-8 space-y-6 pb-32">
-        <ThreadHeader
-          thread={thread}
-          onEditRole={() => setRoleDialogOpen(true)}
-          onChanged={(patch) => setThread({ ...thread, ...patch })}
-        />
+      {/* Chip-rad med historik (sticky strax under headern) */}
+      <CollapsedTurnStrip
+        turns={turns}
+        activeTurnId={activeReadTurnId}
+        onSelect={(id) => setActiveReadTurnId(id)}
+      />
 
-        <RoleSelectorDialog
-          open={roleDialogOpen}
-          onOpenChange={setRoleDialogOpen}
-          value={thread.user_role}
-          onChange={async (role) => {
-            const { error } = await supabase
-              .from("debate_threads")
-              .update({ user_role: role })
-              .eq("id", thread.id);
-            if (!error) setThread({ ...thread, user_role: role });
-          }}
-        />
-
-        {turns.length > 0 && (
-          <div className="space-y-3">
-            {turns.map((turn) => {
-              if (turn.kind === "opponent_input" || turn.kind === "opponent_speech" || turn.kind === "reply") {
-                return (
-                  <TurnCardOpponentDisplay
-                    key={turn.id}
-                    position={turn.position}
-                    sourceText={turn.source_text}
-                    mode={turn.opponent_input_mode}
-                    kind={turn.kind as OpponentTurnKind}
-                    speakerLabel={turn.speaker_label}
-                  />
-                );
-              }
-              if (turn.kind === "rebuttal_waived") {
-                const parent = turn.parent_turn_id ? turnById.get(turn.parent_turn_id) : null;
-                return (
-                  <TurnCardWaivedDisplay
-                    key={turn.id}
-                    position={turn.position}
-                    contextLabel={
-                      parent
-                        ? `Du valde att avstå genmäle på ${parent.speaker_label || "repliken"}.`
-                        : "Du valde att avstå genmäle."
-                    }
-                  />
-                );
-              }
-              // own_speech | own_reply | rebuttal
-              const parent = turn.parent_turn_id ? turnById.get(turn.parent_turn_id) : null;
-              const ctx =
-                turn.kind === "rebuttal" && parent
-                  ? `Genmäle till ${parent.speaker_label || "replik"}`
-                  : turn.kind === "own_reply"
-                  ? "Min replik"
-                  : undefined;
-              return (
-                <TurnCardOwnDisplay
-                  key={turn.id}
-                  position={turn.position}
-                  turnKind={turn.kind as OwnTurnKind}
-                  sourceText={turn.source_text}
-                  aiOutputText={turn.ai_output_text}
-                  cardSplit={turn.ai_card_split || []}
-                  rationale={turn.ai_rationale}
-                  contextLabel={ctx}
+      {/* Komprimerat trådhuvud (collapsible) — innehåller titel, roll, sakområde, ärende, ståndpunkt */}
+      <div className="border-b border-v2-line bg-white/60">
+        <div className="max-w-3xl mx-auto px-6">
+          <Collapsible open={headerOpen} onOpenChange={setHeaderOpen}>
+            <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 py-3 text-left group">
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-muted">
+                  Debattens uppgifter
+                </div>
+                <div className="text-[12.5px] text-v2-ink/80 truncate">
+                  {summaryParts.join(" · ")}
+                </div>
+              </div>
+              <span className="text-[12px] text-v2-muted group-hover:text-v2-ink shrink-0 inline-flex items-center gap-1">
+                {headerOpen ? "Dölj" : "Visa & redigera"}
+                <ChevronDown
+                  className={cn("h-4 w-4 transition-transform", headerOpen && "rotate-180")}
                 />
-              );
-            })}
-          </div>
-        )}
+              </span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="pb-6 pt-2">
+                <ThreadHeader
+                  thread={thread}
+                  onEditRole={() => setRoleDialogOpen(true)}
+                  onChanged={(patch) => setThread({ ...thread, ...patch })}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </div>
 
-        {draft.kind === "opponent" && (
-          <TurnCardOpponentDraft
-            threadId={thread.id}
-            position={nextPosition}
-            kind={draft.turnKind}
-            defaultSpeakerLabel={draft.defaultSpeakerLabel}
-            parentTurnId={draft.parentTurnId}
-            roundNumber={draft.roundNumber}
-            onAdded={() => {
-              setDraft({ kind: "none" });
-              fetchAll();
-            }}
-            onCancel={() => setDraft({ kind: "none" })}
-          />
-        )}
+      <RoleSelectorDialog
+        open={roleDialogOpen}
+        onOpenChange={setRoleDialogOpen}
+        value={thread.user_role}
+        onChange={async (role) => {
+          const { error } = await supabase
+            .from("debate_threads")
+            .update({ user_role: role })
+            .eq("id", thread.id);
+          if (!error) setThread({ ...thread, user_role: role });
+        }}
+      />
 
-        {draft.kind === "own" && (
-          <TurnCardOwnDraft
-            threadId={thread.id}
-            position={nextPosition}
-            turnKind={draft.turnKind}
-            parentTurnId={draft.parentTurnId}
-            roundNumber={draft.roundNumber}
-            contextLabel={draft.contextLabel}
-            onGenerated={() => {
-              setDraft({ kind: "none" });
-              fetchAll();
-            }}
-            onCancel={() => setDraft({ kind: "none" })}
-          />
-        )}
+      <TurnReadOnlySheet
+        open={Boolean(activeReadTurnId)}
+        onOpenChange={(o) => !o && setActiveReadTurnId(null)}
+        turn={activeReadTurn}
+        parentTurn={activeReadParent}
+      />
 
-        {draft.kind === "none" && <PhaseCard state={phase} onAction={handleAction} />}
+      <main className="flex-1 flex items-center justify-center px-6 py-10 sm:py-16">
+        {showRoleStep ? (
+          <GuidedStep
+            stepKey={stepKey}
+            eyebrow="Steg 1 av 2"
+            title="Vilken roll har du i debatten?"
+            description="Välj din roll så vägleder verktyget dig genom rätt steg i rätt ordning."
+          >
+            <RoleSelectorStep
+              value={thread.user_role}
+              onPick={async (role) => {
+                if (role !== thread.user_role) {
+                  const { error } = await supabase
+                    .from("debate_threads")
+                    .update({ user_role: role })
+                    .eq("id", thread.id);
+                  if (error) {
+                    toast({ title: "Kunde inte spara", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  setThread({ ...thread, user_role: role });
+                }
+                if (threadId) localStorage.setItem(roleConfirmedKey(threadId), "1");
+                setRoleConfirmed(true);
+              }}
+            />
+          </GuidedStep>
+        ) : draft.kind === "opponent" ? (
+          <GuidedStep stepKey={stepKey}>
+            <TurnCardOpponentDraft
+              threadId={thread.id}
+              position={nextPosition}
+              kind={draft.turnKind}
+              defaultSpeakerLabel={draft.defaultSpeakerLabel}
+              parentTurnId={draft.parentTurnId}
+              roundNumber={draft.roundNumber}
+              onAdded={() => {
+                setDraft({ kind: "none" });
+                fetchAll();
+              }}
+              onCancel={() => setDraft({ kind: "none" })}
+            />
+          </GuidedStep>
+        ) : draft.kind === "own" ? (
+          <GuidedStep stepKey={stepKey}>
+            <TurnCardOwnDraft
+              threadId={thread.id}
+              position={nextPosition}
+              turnKind={draft.turnKind}
+              parentTurnId={draft.parentTurnId}
+              roundNumber={draft.roundNumber}
+              contextLabel={draft.contextLabel}
+              onGenerated={() => {
+                setDraft({ kind: "none" });
+                fetchAll();
+              }}
+              onCancel={() => setDraft({ kind: "none" })}
+            />
+          </GuidedStep>
+        ) : (
+          <GuidedStep stepKey={stepKey}>
+            <PhaseCard state={phase} onAction={handleAction} />
+          </GuidedStep>
+        )}
       </main>
     </div>
   );
