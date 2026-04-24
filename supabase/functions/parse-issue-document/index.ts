@@ -16,6 +16,7 @@ const corsHeaders = {
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const MONTHLY_LIMIT_PRO = 200;
 const FEATURE = "debate_buddy";
+const SUMMARY_INPUT_LIMIT = 70_000;
 
 const MIME_PDF = "application/pdf";
 const MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -83,14 +84,12 @@ Deno.serve(async (req) => {
 
     if (mime === MIME_PDF) {
       const buf = new Uint8Array(await file.arrayBuffer());
-      // Försök först extrahera text lokalt (snabbt + billigt). Faller tillbaka till vision-läge om tom.
       try {
         extractedText = await extractPdfText(buf);
       } catch (e) {
         console.warn("pdf.js text extraction failed, falling back to vision", e);
       }
       if (!extractedText || extractedText.length < 50) {
-        // Troligen scannad PDF — skicka som bild till modellen för OCR.
         pdfBase64 = base64Encode(buf);
         extractedText = "";
       }
@@ -104,13 +103,21 @@ Deno.serve(async (req) => {
       if (!extractedText) return json({ error: "Kunde inte läsa text ur PPTX-filen" }, 400);
     }
 
-    // Bygg AI-anrop
-    const systemPrompt = `Du är en svensk politisk-/debattanalytiker. Användaren har laddat upp ett ärende (handling, motion, budget, paragraf el.likn.).
+    const localFullText = extractedText ? cleanExtractedText(extractedText) : "";
+    const visionMode = Boolean(pdfBase64);
+
+    const systemPrompt = visionMode
+      ? `Du är en svensk politisk-/debattanalytiker. Användaren har laddat upp ett ärende som PDF.
 Returnera ALLT via verktygsanropet 'extract_issue':
 - summary: en koncis sammanfattning på max 1500 tecken som beskriver ärendet, vad som föreslås, vem som föreslår och vilka konsekvenser/positioner som finns. Skriv på svenska.
-- full_text: en rensad fulltext av dokumentet (utan sidhuvuden/sidfötter/sidnummer), bevara struktur och rubriker så att en debattör kan referera till exakta delar.`;
+- full_text: en rensad fulltext av dokumentet (utan sidhuvuden/sidfötter/sidnummer), bevara struktur och rubriker så att en debattör kan referera till exakta delar.`
+      : `Du är en svensk politisk-/debattanalytiker.
+Returnera ALLT via verktygsanropet 'summarize_issue':
+- summary: en koncis sammanfattning på max 1500 tecken som beskriver ärendet, vad som föreslås, vem som föreslår och vilka konsekvenser/positioner som finns. Skriv på svenska.
+Använd endast texten i dokumentutdraget nedan.`;
 
-    const userMessage: Record<string, unknown> = pdfBase64
+    const summarySourceText = visionMode ? "" : buildSummaryInput(localFullText, SUMMARY_INPUT_LIMIT);
+    const userMessage: Record<string, unknown> = visionMode
       ? {
           role: "user",
           content: [
@@ -123,43 +130,56 @@ Returnera ALLT via verktygsanropet 'extract_issue':
         }
       : {
           role: "user",
-          content: `Här är ärendet (extraherad text från ${mime === MIME_PDF ? "PDF" : mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 120000)}`,
+          content: `Här är ärendet (extraherad text från ${mime === MIME_PDF ? "PDF" : mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${summarySourceText}`,
         };
 
-    // AbortController för att inte hänga edge-functionen mot 150s idle-timeout.
+    const toolName = visionMode ? "extract_issue" : "summarize_issue";
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120_000);
 
     let aiResponse: Response;
     try {
       aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: pdfBase64 ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
-        messages: [{ role: "system", content: systemPrompt }, userMessage],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_issue",
-              description: "Returnera sammanfattning + fulltext av ett ärende.",
-              parameters: {
-                type: "object",
-                properties: {
-                  summary: { type: "string" },
-                  full_text: { type: "string" },
-                },
-                required: ["summary", "full_text"],
-                additionalProperties: false,
-              },
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: visionMode ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
+          messages: [{ role: "system", content: systemPrompt }, userMessage],
+          tools: [
+            {
+              type: "function",
+              function: visionMode
+                ? {
+                    name: "extract_issue",
+                    description: "Returnera sammanfattning + fulltext av ett ärende.",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        summary: { type: "string" },
+                        full_text: { type: "string" },
+                      },
+                      required: ["summary", "full_text"],
+                      additionalProperties: false,
+                    },
+                  }
+                : {
+                    name: "summarize_issue",
+                    description: "Returnera en sammanfattning av ett ärende.",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        summary: { type: "string" },
+                      },
+                      required: ["summary"],
+                      additionalProperties: false,
+                    },
+                  },
             },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "extract_issue" } },
-      }),
-    });
+          ],
+          tool_choice: { type: "function", function: { name: toolName } },
+        }),
+      });
     } catch (e) {
       clearTimeout(timeoutId);
       if (e instanceof Error && e.name === "AbortError") {
@@ -179,13 +199,21 @@ Returnera ALLT via verktygsanropet 'extract_issue':
 
     const aiData = await aiResponse.json();
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
-    let parsed: { summary?: string; full_text?: string } = {};
+
+    let summary = "";
+    let fullText = localFullText;
+
     try {
-      parsed = JSON.parse(toolCall?.function?.arguments ?? "{}");
+      const parsed = JSON.parse(toolCall?.function?.arguments ?? "{}");
+      summary = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
+      if (visionMode) {
+        fullText = typeof parsed.full_text === "string" ? cleanExtractedText(parsed.full_text) : "";
+      }
     } catch (e) {
       console.error("Parse error", e);
     }
-    if (!parsed.summary || !parsed.full_text) {
+
+    if (!summary || !fullText) {
       return json({ error: "Kunde inte tolka dokumentet" }, 500);
     }
 
@@ -195,9 +223,9 @@ Returnera ALLT via verktygsanropet 'extract_issue':
     );
 
     return json({
-      summary: parsed.summary,
-      full_text: parsed.full_text,
-      char_count: parsed.full_text.length,
+      summary,
+      full_text: fullText,
+      char_count: fullText.length,
       usage: { used: used + 1, limit: tier === "admin" ? null : MONTHLY_LIMIT_PRO },
     });
   } catch (e) {
@@ -253,6 +281,28 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   }
   await pdf.destroy();
   return parts.join("\n\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function cleanExtractedText(text: string): string {
+  return text
+    .replace(/\r/g, "")
+    .replace(/[\t\f\v]+/g, " ")
+    .replace(/ +\n/g, "\n")
+    .replace(/\n +/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ ]{2,}/g, " ")
+    .trim();
+}
+
+function buildSummaryInput(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+
+  const headChars = Math.floor(maxChars * 0.65);
+  const tailChars = Math.floor(maxChars * 0.3);
+  const head = text.slice(0, headChars).trim();
+  const tail = text.slice(-tailChars).trim();
+
+  return `${head}\n\n[... mitten av dokumentet utelämnad för snabbare sammanfattning ...]\n\n${tail}`;
 }
 
 function base64Encode(bytes: Uint8Array): string {
