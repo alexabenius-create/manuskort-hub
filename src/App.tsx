@@ -26,17 +26,26 @@ const PrintView = lazy(() => import("./components/print/PrintView"));
 const Settings = lazy(() => import("./pages/Settings"));
 const SettingsV2 = lazy(() => import("./pages/SettingsV2"));
 const Import = lazy(() => import("./pages/Import"));
+const ImportV2 = lazy(() => import("./pages/ImportV2"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const PricingV2 = lazy(() => import("./pages/PricingV2"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminV2 = lazy(() => import("./pages/AdminV2"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessagesV2 = lazy(() => import("./pages/MessagesV2"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
 const Moderator = lazy(() => import("./pages/usecase/Moderator"));
+const ModeratorV2 = lazy(() => import("./pages/usecase/ModeratorV2"));
 const Talare = lazy(() => import("./pages/usecase/Talare"));
+const TalareV2 = lazy(() => import("./pages/usecase/TalareV2"));
 const Panelsamtal = lazy(() => import("./pages/usecase/Panelsamtal"));
+const PanelsamtalV2 = lazy(() => import("./pages/usecase/PanelsamtalV2"));
 const Forelasning = lazy(() => import("./pages/usecase/Forelasning"));
+const ForelasningV2 = lazy(() => import("./pages/usecase/ForelasningV2"));
 const AffiliateLanding = lazy(() => import("./pages/AffiliateLanding"));
+const AffiliateLandingV2 = lazy(() => import("./pages/AffiliateLandingV2"));
+const AuthV2 = lazy(() => import("./pages/AuthV2"));
+const ResetPasswordV2 = lazy(() => import("./pages/ResetPasswordV2"));
 
 const queryClient = new QueryClient();
 
@@ -73,13 +82,21 @@ const App = () => (
                   <Route path="/" element={<Landing />} />
                   <Route path="/v2" element={<LandingV2 />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth-v2" element={<AuthV2 />} />
                   <Route path="/aterstall-losenord" element={<ResetPassword />} />
+                  <Route path="/aterstall-losenord-v2" element={<ResetPasswordV2 />} />
                   <Route path="/priser" element={<Pricing />} />
+                  <Route path="/priser-v2" element={<PricingV2 />} />
                   <Route path="/moderator" element={<Moderator />} />
+                  <Route path="/moderator-v2" element={<ModeratorV2 />} />
                   <Route path="/talare" element={<Talare />} />
+                  <Route path="/talare-v2" element={<TalareV2 />} />
                   <Route path="/panelsamtal" element={<Panelsamtal />} />
+                  <Route path="/panelsamtal-v2" element={<PanelsamtalV2 />} />
                   <Route path="/forelasning" element={<Forelasning />} />
+                  <Route path="/forelasning-v2" element={<ForelasningV2 />} />
                   <Route path="/affiliate/:code" element={<AffiliateLanding />} />
+                  <Route path="/affiliate-v2/:code" element={<AffiliateLandingV2 />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
                   <Route path="/bibliotek-v2" element={<RequireAuth><LibraryV2 /></RequireAuth>} />
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
