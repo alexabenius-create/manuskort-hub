@@ -795,13 +795,15 @@ export default function EditorV4() {
               {/* Starta */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
+                  <button
+                    type="button"
                     onClick={() => startPresentation()}
-                    className="h-9 rounded-full px-3 sm:px-4 bg-accent-blue hover:bg-accent-blue/90 text-white text-[13px] font-medium gap-1.5 flex-shrink-0"
+                    className="v2-btn-primary flex-shrink-0"
+                    style={{ height: 36, padding: "0 16px", fontSize: 13 }}
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
                     <span className="hidden sm:inline">Starta</span>
-                  </Button>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>{`Starta presentationsläge (${shortcutLabel})`}</TooltipContent>
               </Tooltip>
