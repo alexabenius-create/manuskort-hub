@@ -53,21 +53,31 @@ export function InsightDetail({ insight, related, themes, onChanged, onClose }: 
     setImplRef(insight.implementation_ref ?? "");
   }, [insight.id]);
 
-  // Hämta info om kopplad användare
+  // Hämta info om kopplad användare via admin_list_users (RLS hindrar direkt access till profiles)
   useEffect(() => {
     if (!insight.linked_user_id) {
       setLinkedUser(null);
       return;
     }
-    supabase
-      .from("profiles")
-      .select("user_id, email, display_name")
-      .eq("user_id", insight.linked_user_id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setLinkedUser(data as UserOption);
-      });
-  }, [insight.linked_user_id]);
+    // Om vi redan har laddat användarlistan, hitta där
+    const fromList = users.find((u) => u.user_id === insight.linked_user_id);
+    if (fromList) {
+      setLinkedUser(fromList);
+      return;
+    }
+    // Annars hämta listan en gång
+    supabase.rpc("admin_list_users").then(({ data }) => {
+      if (!data) return;
+      const list = (data as Array<{ user_id: string; email: string | null; display_name: string | null }>).map((u) => ({
+        user_id: u.user_id,
+        email: u.email,
+        display_name: u.display_name,
+      }));
+      setUsers(list);
+      const found = list.find((u) => u.user_id === insight.linked_user_id);
+      if (found) setLinkedUser(found);
+    });
+  }, [insight.linked_user_id, users]);
 
   const update = async (patch: Partial<Insight>) => {
     const { error } = await supabase.from("admin_insights").update(patch).eq("id", insight.id);
