@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Tag, FileText, Target } from "lucide-react";
+import { FileText, Target, Mic, MessageSquareReply, Pencil } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopicAreaPicker } from "./TopicAreaPicker";
 import { IssueUpload } from "./IssueUpload";
-import { RoleSelector } from "./RoleSelector";
 import { cn } from "@/lib/utils";
 
 interface DebateThread {
