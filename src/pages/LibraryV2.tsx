@@ -12,7 +12,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X, Inbox, FileText } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X, Inbox, FileText, MessagesSquare } from "lucide-react";
+import { useBetaAccess } from "@/hooks/useBetaAccess";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { UnreadBadge } from "@/components/feedback/UnreadBadge";
 import { useUnreadMessages, useAdminUnreadMessages } from "@/hooks/useUnreadMessages";
