@@ -18,6 +18,7 @@ const LandingV2 = lazy(() => import("./pages/LandingV2"));
 
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
 const Library = lazy(() => import("./pages/Library"));
+const LibraryV2 = lazy(() => import("./pages/LibraryV2"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
 const Presentation = lazy(() => import("./pages/Presentation"));
 const PrintView = lazy(() => import("./components/print/PrintView"));
