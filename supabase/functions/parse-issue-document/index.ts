@@ -141,7 +141,7 @@ Returnera ALLT via verktygsanropet 'extract_issue':
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: pdfBase64 ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
         messages: [{ role: "system", content: systemPrompt }, userMessage],
         tools: [
           {
