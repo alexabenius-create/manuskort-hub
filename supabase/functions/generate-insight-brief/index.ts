@@ -104,15 +104,24 @@ Deno.serve(async (req) => {
 
       const baseContext = `RÅTEXT (synpunkt från användare):\n${insight.raw_text}\n\nKÄLLA: ${insight.source}${insight.source_label ? ` — ${insight.source_label}` : ""}\nTEMA: ${insight.theme ?? "okänt"}\nPRIORITET: ${insight.priority}\n\nMINA ANTECKNINGAR:\n${insight.my_notes || "(inga)"}${relatedText}`;
 
+      const modeNotes =
+        mode === "summary" ? insight.summary_notes :
+        mode === "actions" ? insight.actions_notes :
+        insight.brief_notes;
+
+      const overrideBlock = modeNotes && modeNotes.trim()
+        ? `\n\n=== ÖVERORDNADE INSTRUKTIONER FRÅN ADMIN (HÖGSTA PRIORITET) ===\nDessa anteckningar är viktigare än all annan kontext. Följ dem strikt och låt dem styra tonen, fokus, och slutsatser i ditt svar:\n${modeNotes.trim()}\n=== SLUT PÅ ÖVERORDNADE INSTRUKTIONER ===`
+        : "";
+
       if (mode === "summary") {
-        systemPrompt = "Du är en produktanalytiker. Sammanfatta synpunkten i 2–3 meningar på svenska. Var konkret. Ingen pålägg.";
-        userPrompt = baseContext;
+        systemPrompt = "Du är en produktanalytiker. Sammanfatta synpunkten i 2–3 meningar på svenska. Var konkret. Ingen pålägg. Om admin lämnat överordnade instruktioner ska de väga tyngre än all annan kontext.";
+        userPrompt = baseContext + overrideBlock;
       } else if (mode === "actions") {
-        systemPrompt = "Du är en produktdesigner. Föreslå 3–5 konkreta, genomförbara åtgärder för att lösa problemet. Skriv som markdown-lista på svenska.";
-        userPrompt = baseContext;
+        systemPrompt = "Du är en produktdesigner. Föreslå 3–5 konkreta, genomförbara åtgärder för att lösa problemet. Skriv som markdown-lista på svenska. Om admin lämnat överordnade instruktioner ska de väga tyngre än all annan kontext.";
+        userPrompt = baseContext + overrideBlock;
       } else {
         // brief
-        systemPrompt = `Du är en teknisk produkthandledare. Skriv en strukturerad "Lovable-brief" på svenska som kan klistras in i en AI-kodassistent för att direkt åtgärda problemet.
+        systemPrompt = `Du är en teknisk produkthandledare. Skriv en strukturerad "Lovable-brief" på svenska som kan klistras in i en AI-kodassistent för att direkt åtgärda problemet. Om admin lämnat överordnade instruktioner ska de väga tyngre än all annan kontext.
 
 Använd EXAKT detta format (markdown):
 
@@ -135,7 +144,7 @@ Använd EXAKT detta format (markdown):
 **Acceptanskriterier:**
 - [ ] ...
 - [ ] ...`;
-        userPrompt = baseContext;
+        userPrompt = baseContext + overrideBlock;
       }
     }
 

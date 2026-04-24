@@ -14,6 +14,9 @@ export interface Insight {
   ai_summary: string | null;
   ai_proposed_actions: string | null;
   ai_brief: string | null;
+  summary_notes: string;
+  actions_notes: string;
+  brief_notes: string;
   my_notes: string;
   related_ids: string[];
   implemented_at: string | null;

@@ -16,9 +16,11 @@ export type Database = {
     Tables: {
       admin_insights: {
         Row: {
+          actions_notes: string
           ai_brief: string | null
           ai_proposed_actions: string | null
           ai_summary: string | null
+          brief_notes: string
           created_at: string
           id: string
           implementation_ref: string | null
@@ -30,14 +32,17 @@ export type Database = {
           source: string
           source_label: string | null
           status: string
+          summary_notes: string
           theme: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          actions_notes?: string
           ai_brief?: string | null
           ai_proposed_actions?: string | null
           ai_summary?: string | null
+          brief_notes?: string
           created_at?: string
           id?: string
           implementation_ref?: string | null
@@ -49,14 +54,17 @@ export type Database = {
           source?: string
           source_label?: string | null
           status?: string
+          summary_notes?: string
           theme?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          actions_notes?: string
           ai_brief?: string | null
           ai_proposed_actions?: string | null
           ai_summary?: string | null
+          brief_notes?: string
           created_at?: string
           id?: string
           implementation_ref?: string | null
@@ -68,6 +76,7 @@ export type Database = {
           source?: string
           source_label?: string | null
           status?: string
+          summary_notes?: string
           theme?: string | null
           updated_at?: string
           user_id?: string
