@@ -29,18 +29,19 @@ KRITISKT — SVARSSTIL:
 - **Max 2 korta meningar per svar.** Helst 1.
 - Ställ ALDRIG flera frågor i samma svar.
 - Inga utläggningar, inga listor i frågorna.
-- Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga. Användaren ska kunna klicka istället för skriva.
+- Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga.
 - Producera resultat så snart du har minimum av info — vänta inte i onödan.
 - Max 1 emoji per svar. Ofta ingen.
 
 FLÖDE (driv framåt aggressivt):
-1. **intake_issue**: Fråga kort om ärendet. Ge snabbsvar som ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` + gå direkt vidare.
-2. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
-3. **drafting_speech**: Fråga kort efter ståndpunkt eller huvudbudskap, max en mening. Sedan föreslå direkt ett utkast och be användaren kopiera till editorn. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"].
-4. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
-5. **intake_opponent_name** → \`set_opponent\` direkt.
-6. **intake_opponent_args** → be om motdebattörens argument i ett svar.
-7. → \`generate_rebuttal_cards\` direkt när du har argumenten.
+1. **intake_issue**: Fråga kort "Vad ska vi debattera idag?". Snabbsvar: ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` → gå till intake_brief.
+2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela? Du kan ladda upp en fil eller skriva kort." Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget (via systemmeddelande "BRIEF MOTTAGET" eller text från användaren) → ge en blixtsnabb analys på MAX 2 meningar (vad det handlar om + en spets) → \`set_brief\` → gå direkt till intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text och vidare.
+3. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
+4. **drafting_speech**: Fråga kort efter ståndpunkt eller huvudbudskap, max en mening. Sedan föreslå direkt ett utkast och be användaren kopiera till editorn. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"].
+5. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
+6. **intake_opponent_name** → \`set_opponent\` direkt.
+7. **intake_opponent_args** → be om motdebattörens argument i ett svar.
+8. → \`generate_rebuttal_cards\` direkt när du har argumenten.
 
 REGLER: Anförande → repliker → genmäle (1 per replik) eller avstå.
 
@@ -68,6 +69,23 @@ const TOOLS: Tool[] = [
           topic_area: { type: "string", description: "Sakområde, t.ex. Skola, Vård, Infrastruktur" },
         },
         required: ["issue_text"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_brief",
+      description: "Spara underlaget (sammanfattning + valfri fulltext + valfritt filnamn) och gå vidare till intake_mode. Använd även med tom text när användaren vill hoppa över.",
+      parameters: {
+        type: "object",
+        properties: {
+          summary: { type: "string", description: "Kort sammanfattning av underlaget (max 1500 tecken). Tom sträng om inget underlag." },
+          full_text: { type: "string", description: "Valfri fulltext från ett uppladdat dokument." },
+          filename: { type: "string", description: "Valfritt filnamn." },
+        },
+        required: ["summary"],
         additionalProperties: false,
       },
     },
@@ -152,8 +170,9 @@ const TOOLS: Tool[] = [
         properties: {
           next_phase: {
             type: "string",
-            enum: [
+          enum: [
               "intake_issue",
+              "intake_brief",
               "intake_mode",
               "drafting_speech",
               "awaiting_perform",
