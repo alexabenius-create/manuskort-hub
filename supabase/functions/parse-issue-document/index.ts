@@ -236,6 +236,29 @@ async function extractPptxText(file: File): Promise<string> {
   return out.join("\n\n").trim();
 }
 
+async function extractPdfText(bytes: Uint8Array): Promise<string> {
+  // pdf.js i Deno – inaktivera worker, font/cmap-fetching m.m.
+  const loadingTask = getDocument({
+    data: bytes,
+    disableFontFace: true,
+    useSystemFonts: false,
+    isEvalSupported: false,
+    useWorkerFetch: false,
+  });
+  const pdf = await loadingTask.promise;
+  const parts: string[] = [];
+  const maxPages = Math.min(pdf.numPages, 200);
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const strs = (content.items as Array<{ str?: string }>).map((it) => it.str ?? "");
+    parts.push(strs.join(" "));
+    page.cleanup();
+  }
+  await pdf.destroy();
+  return parts.join("\n\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function base64Encode(bytes: Uint8Array): string {
   let binary = "";
   const chunk = 0x8000;
