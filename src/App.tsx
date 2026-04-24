@@ -108,8 +108,8 @@ const App = () => (
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
                   <Route path="/importera-v2" element={<RequireAuth><ImportV2 /></RequireAuth>} />
-                  <Route path="/manus/:id" element={<RequireAuth><EditorV3 /></RequireAuth>} />
-                  {/* Legacy editor-routes — redirect:ar till v3. Tas bort i samma migration som filerna raderas. */}
+                  <Route path="/manus/:id" element={<RequireAuth><Editor /></RequireAuth>} />
+                  {/* Legacy editor-routes — redirect:ar till default-editorn (V4). */}
                   <Route path="/manus/:id/v1" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
                   <Route path="/manus/:id/v2" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
                   <Route path="/manus/:id/v3" element={<RequireAuth><LegacyEditorRedirect /></RequireAuth>} />
