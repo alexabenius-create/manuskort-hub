@@ -1,114 +1,41 @@
+## Akut fix: 3-sekunders nedräkning innan presentation startar
 
+### Problem
+När man väljer "Starta med 3 sekunders nedräkning" hoppar den över nedräkningen och går direkt in i presentationen.
 
-## Insiktslogg — verktyg för att samla, bearbeta och agera på feedback
+### Rotorsak
+I `src/hooks/usePresentationTimer.ts` (rad 70–86) initieras hooken redan vid mount av `Presentation.tsx`, INNAN användaren tryckt på startknappen. Då är `enabled = false` (eftersom `startMode === null`), så:
 
-En ny flik i Admin (`/admin?tab=insikter`) där du själv loggar synpunkter du får (mejl, samtal, DM, kafferast), bearbetar dem över tid, och när du är redo — kopierar in en färdig "åtgärdsbrief" i Lovable-chatten som jag kan implementera direkt.
+- `countdown` initieras till `0` (rad 74–76).
+- `hasInitializedRef.current` sätts till `!!initial || enabled`. När varken finns blir det `false`.
+- När `enabled` sedan blir `true` (efter klick), körs effekten på rad 80–86 som ska sätta `setCountdown(countdownSeconds)`. **MEN** `countdownSeconds` finns inte i dependency-arrayen, och viktigare: om hooken redan tidigare renderats med `enabled=true` (t.ex. när man byter `startMode` mellan "instant" och "countdown") så är `hasInitializedRef.current` redan `true` och effekten returnerar tidigt.
 
-### Koncept
+Dessutom: när användaren först klickar "Starta direkt" (countdown 0) och sedan ångrar/startar om med nedräkning, körs `Options.countdownSeconds` med nytt värde men hooken plockar inte upp det.
 
-Tänk personlig produktdagbok snarare än kundsupport. Korta anteckningar in, struktur växer fram, AI hjälper till att gruppera och formulera. Du äger flödet.
+Det djupare problemet: `countdownSeconds` styrs av `startMode === "instant" ? 0 : 3` i `Presentation.tsx` rad 162. Vid första render är `startMode = null`, så hooken får `countdownSeconds = 3` och `enabled = false`. När användaren klickar "Starta med nedräkning" sätts `startMode = "countdown"` → `enabled = true` → effekten på rad 80–86 ska köra. Men `hasInitializedRef.current` initierades till `!!initial || enabled` = `false || false` = `false` ✓, så effekten borde köra... 
 
-### Vyn
+Den verkliga issuen: `loadState()` returnerar en gammal persisterad state om den finns och är < 5 min gammal. Då sätts `initial` ≠ null, `countdown` blir `0` och `hasInitializedRef = true` direkt. Tidigare presentation lämnar kvar state i sessionStorage → nästa start hoppar över countdown.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ Insikter                              [+ Ny insikt]  [⚙]    │
-├──────────────┬──────────────────────────────────────────────┤
-│ FILTER       │  ● Hög  Editor                  3 dgr sedan  │
-│ ─ Alla (24)  │  "Det är svårt att förstå när autosparen…"   │
-│ ─ Ny (7)     │  Källa: Mejl från Karin · 2 relaterade       │
-│ ─ Bearbetas  │  [Bearbeta] [Klar för bygge] [Arkivera]      │
-│ ─ Bygg-kö(3) │ ─────────────────────────────────────────── │
-│ ─ Klart (11) │  ● Med  Presentation           1 vecka sedan │
-│              │  "Cues för små på iPad"                       │
-│ TEMA         │  Källa: Samtal · ingen relation                │
-│ ─ Editor (9) │  [Bearbeta] [Klar för bygge] [Arkivera]      │
-│ ─ Present(6) │                                               │
-│ ─ Onboard(4) │                                               │
-└──────────────┴──────────────────────────────────────────────┘
-```
+`exit()` anropar visserligen `timer.clearPersisted()` (rad 173), men om användaren refresh:ar, navigerar bort på annat sätt, eller om föregående sessions persist är < 5 min, så hoppas countdown över.
 
-Klick på en insikt öppnar en detaljpanel:
+### Åtgärd
 
-```text
-┌─ "Det är svårt att förstå när autosparen sker" ────────────┐
-│ Status: Bearbetas    Prioritet: Hög    Tema: Editor        │
-│ Källa: Mejl · Karin (kund) · 2026-04-20                     │
-│                                                              │
-│ RÅTEXT                                                       │
-│ "Jag blir osäker på om mina ändringar verkligen sparas…"    │
-│                                                              │
-│ MINA ANTECKNINGAR                                            │
-│ [Fritext — allt jag tänker, beslutar, testar]                │
-│                                                              │
-│ RELATERADE INSIKTER (2)                                     │
-│ • "SaveIndicator syns inte" — Anna, mars                     │
-│ • "Tappade text efter refresh" — Per, april                  │
-│                                                              │
-│ ─── AI-VERKTYG ──────────────────────────────────           │
-│ [✨ Sammanfatta]  [✨ Föreslå åtgärder]                       │
-│ [✨ Skriv Lovable-brief]  ← den viktiga                      │
-└──────────────────────────────────────────────────────────────┘
-```
+Filändring i `src/hooks/usePresentationTimer.ts`:
 
-### Den smarta delen — "Skriv Lovable-brief"
+1. **Ignorera persisterad state under countdown-fasen.** Persisterad state ska bara återställa pågående timer, inte hoppa över countdown. Lös genom att alltid starta countdown-fasen när hooken aktiveras färskt — om persisterad state finns OCH den representerar en redan startad timer (countdown var 0), använd den; annars börja om från `countdownSeconds`.
 
-När du klickar **Skriv Lovable-brief** genererar AI (Lovable AI Gateway, `gemini-3-flash-preview`) en strukturerad brief utifrån råtext + dina anteckningar + relaterade insikter. Format:
+2. **Fixa init-logiken** så countdown alltid sätts korrekt när `enabled` växlar `false → true`, oavsett tidigare init-state. Använd en separat ref för att tracka "har vi sett enabled=true tidigare" och rensa ut `hasInitializedRef`-mönstret.
 
-```text
-## Feedback att åtgärda: SaveIndicator otydlig
+3. **Lägg till `countdownSeconds` i dependency-listan** för init-effekten så att byten "instant ↔ countdown" från startmenyn fungerar.
 
-**Problem (från användare):**
-Karin, Anna och Per upplever osäkerhet kring autospar…
+4. **Säkerhetsåtgärd:** Rensa persisterad state i `Presentation.tsx` vid mount av komponenten (innan timer-hooken kallas) så vi alltid börjar färskt när användaren går in i presentationsläget. Persistens ska bara skydda mot oavsiktlig reload mitt under en pågående presentation, inte mellan presentationsstarter.
 
-**Min analys:**
-SaveIndicator syns för kort. Behöver tydligare "Sparat ✓"-tillstånd.
+### Filer som ändras
+- `src/hooks/usePresentationTimer.ts` — fix av init-logik för countdown
+- `src/pages/Presentation.tsx` — rensa stale persisted state vid mount
 
-**Föreslagna ändringar:**
-1. Förläng visningstid 1.5s → 4s
-2. Lägg till tidsstämpel "Sparat 14:32"
-3. Färgkoda: blå=sparar, grön=sparat, röd=fel
-
-**Berörda filer (gissning):**
-- src/components/SaveIndicator.tsx
-- src/hooks/useAutosave.ts
-
-**Acceptanskriterier:**
-- [ ] Indikator visas i minst 4s efter spar
-- [ ] Tidsstämpel visas vid hover
-```
-
-En **[Kopiera till urklipp]**-knapp. Du klistrar in i Lovable-chatten → jag har allt jag behöver.
-
-### Statusflöde
-
-`Ny → Bearbetas → Klar för bygge → Implementerad → Arkiverad`
-
-När du markerar **Implementerad** loggas datum + valfri commit-referens (manuellt fält). Bygger upp historik över tid.
-
-### Snabb-input
-
-Ett **+** öppnar en liten dialog: råtext, källa (mejl/samtal/dm/eget), tema, prioritet. 15 sekunder att logga något du hörde. Inget mer krävs.
-
-### Bonus: AI-grupperare
-
-Knapp **"Hitta dubbletter"** kör en AI-pass över alla öppna insikter och föreslår sammanslagningar (t.ex. tre olika råtexter som handlar om samma sak). Du godkänner manuellt.
-
----
-
-### Tekniskt (för dig som vill veta)
-
-**Databas:** En tabell `admin_insights` (id, raw_text, source, source_label, theme, priority, status, ai_summary, ai_brief, my_notes, related_ids[], implemented_at, implementation_ref, created_at, updated_at, user_id). RLS: enbart admin via `has_role(auth.uid(), 'admin')`. Ingen koppling till `feedback_threads` — det här är ditt privata verktyg, separat från användar-meddelanden.
-
-**Edge function:** `generate-insight-brief` som tar insight-id, läser rad + relaterade, anropar Lovable AI Gateway och returnerar markdown-brief. Lagras på raden för återanvändning.
-
-**Komponenter:** Ny flik i `Admin.tsx` (`InsightsPanel`), `InsightCard`, `InsightDetail`, `NewInsightDialog`. Lazy-laddad.
-
-**Steg:**
-1. Migration: `admin_insights`-tabell + RLS + uppdaterad-trigger
-2. Edge function `generate-insight-brief`
-3. `InsightsPanel` med lista, filter, detaljpanel
-4. `NewInsightDialog` för snabb-input
-5. AI-knappar (sammanfatta, föreslå, brief, dubbletter)
-6. Ny flik i Admin + URL-param `?tab=insikter`
-
+### Verifiering
+- Klicka "Starta med 3 sekunders nedräkning" → 3, 2, 1 visas → presentation startar
+- Klicka "Starta direkt" → ingen nedräkning, presentation startar omedelbart
+- Avsluta och starta om i samma session → nedräkning fungerar igen
+- Refresh mitt i pågående presentation → timer återupptas (nuvarande beteende bevaras)

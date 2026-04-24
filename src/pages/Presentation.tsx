@@ -102,6 +102,15 @@ export default function Presentation() {
     };
   }, []);
 
+  // Rensa ev. kvarbliven timer-state vid mount så vi alltid börjar med
+  // nedräkning. Persistens ska bara skydda mot reload mitt i en pågående
+  // presentation (då hooken aktiveras direkt vid mount via enabled=true),
+  // inte mellan olika start-försök.
+  useEffect(() => {
+    if (!id) return;
+    try { sessionStorage.removeItem(`presentation-timer:${id}`); } catch { /* ignore */ }
+  }, [id]);
+
   // Återställ sizeOffset från sessionStorage
   useEffect(() => {
     if (!id) return;
