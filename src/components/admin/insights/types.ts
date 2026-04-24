@@ -21,6 +21,9 @@ export interface Insight {
   related_ids: string[];
   implemented_at: string | null;
   implementation_ref: string | null;
+  linked_user_id: string | null;
+  linked_thread_id: string | null;
+  feedback_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
