@@ -568,10 +568,13 @@ export default function LandingV2() {
 
 /* ---------- Interaktiv kortdemo ---------- */
 
+type CueTone = "yellow" | "blue";
+type DemoCue = { label: string; tone: CueTone };
+
 type DemoCard = {
   title: string;
   bullets: string[];
-  cue: { label: "PAUS" | "BILD" | "MUSIK"; icon: typeof Pause };
+  cues: DemoCue[];
   speaker: string;
   speakerColor: string;
   cardSeconds: number;
@@ -585,7 +588,7 @@ const DEMO_CARDS: DemoCard[] = [
       "Hälsa publiken välkommen, presentera dig kort",
       "Etablera varför ämnet spelar roll just nu",
     ],
-    cue: { label: "PAUS", icon: Pause },
+    cues: [{ label: "Hög energi", tone: "yellow" }],
     speaker: "Moderator",
     speakerColor: "#A9C8F0",
     cardSeconds: 180,
@@ -598,7 +601,7 @@ const DEMO_CARDS: DemoCard[] = [
       "Var ser du den största sprickan idag?",
       "Lämna utrymme för konkret exempel",
     ],
-    cue: { label: "BILD", icon: ImageIcon },
+    cues: [{ label: "Släpp in panelen", tone: "blue" }],
     speaker: "Anna L.",
     speakerColor: "#F6D976",
     cardSeconds: 240,
@@ -610,7 +613,7 @@ const DEMO_CARDS: DemoCard[] = [
       "Erik — bilden från ett annat håll",
       "Bjud in till motsatt perspektiv",
     ],
-    cue: { label: "PAUS", icon: Pause },
+    cues: [{ label: "Ställ följdfrågor", tone: "blue" }],
     speaker: "Erik P.",
     speakerColor: "#A8D8B9",
     cardSeconds: 200,
@@ -623,7 +626,10 @@ const DEMO_CARDS: DemoCard[] = [
       "Ha två backup-frågor redo om det blir tyst",
       "Håll energin uppe",
     ],
-    cue: { label: "MUSIK", icon: Music },
+    cues: [
+      { label: "Publikfrågor", tone: "blue" },
+      { label: "Nyfiken energi", tone: "yellow" },
+    ],
     speaker: "Moderator",
     speakerColor: "#A9C8F0",
     cardSeconds: 360,
@@ -636,7 +642,7 @@ const DEMO_CARDS: DemoCard[] = [
       "Tacka panelen och publiken",
       "Tipsa om nästa programpunkt",
     ],
-    cue: { label: "BILD", icon: ImageIcon },
+    cues: [{ label: "Byt sida på scen", tone: "blue" }],
     speaker: "Moderator",
     speakerColor: "#A9C8F0",
     cardSeconds: 140,
