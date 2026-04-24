@@ -80,6 +80,13 @@ export function usePresentationTimer({
     initial ? 0 : enabled && countdownSeconds > 0 ? countdownSeconds : 0
   );
 
+  const [direction, setDirection] = useState<ElapsedDirection>(initial?.direction ?? "down");
+
+  // Drift-fri tidshantering med wall-clock + ackumulerad paustid
+  const startedAtRef = useRef<number>(initial?.startedAtMs ?? Date.now());
+  const accumulatedPauseRef = useRef<number>(initial?.accumulatedPauseMs ?? 0);
+  const pausedAtRef = useRef<number | null>(initial?.pausedAtMs ?? null);
+
   // När timern aktiveras (enabled false → true): starta countdown om sådan ska köras.
   // Tidigare användes en hasInitializedRef som kunde hänga kvar i fel state mellan
   // start-försök; nu kollar vi en explicit "har vi redan startat denna session"-flagga.
@@ -98,12 +105,6 @@ export function usePresentationTimer({
       setCountdown(0);
     }
   }, [enabled, countdownSeconds]);
-  const [direction, setDirection] = useState<ElapsedDirection>(initial?.direction ?? "down");
-
-  // Drift-fri tidshantering med wall-clock + ackumulerad paustid
-  const startedAtRef = useRef<number>(initial?.startedAtMs ?? Date.now());
-  const accumulatedPauseRef = useRef<number>(initial?.accumulatedPauseMs ?? 0);
-  const pausedAtRef = useRef<number | null>(initial?.pausedAtMs ?? null);
 
   const persist = useCallback(() => {
     saveState(manuscriptId, {
