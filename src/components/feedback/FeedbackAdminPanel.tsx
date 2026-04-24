@@ -37,6 +37,8 @@ const SOURCE_LABEL: Record<string, string> = {
   landing: "Startsida",
   library: "Bibliotek",
   editor: "Redigeringsläge",
+  insight: "Produktåterkoppling",
+  admin: "Meddelande från teamet",
 };
 
 function formatDate(s: string) {

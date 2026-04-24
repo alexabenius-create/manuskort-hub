@@ -68,8 +68,9 @@ export function SendFeedbackDialog({ open, onOpenChange, insight, onSent }: Prop
           .from("feedback_threads")
           .insert({
             user_id: insight.linked_user_id,
+            email: null,
             subject: subject.trim() || DEFAULT_SUBJECT,
-            source: "admin-followup",
+            source: "insight",
             status: "open",
           })
           .select("id")
