@@ -768,14 +768,9 @@ function CardDemo() {
                 {card.cue.label}
               </span>
 
-              <span
-                className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] text-v2-ink/85 border"
-                style={{
-                  background: card.speakerColor,
-                  borderColor: "rgba(15,23,42,0.08)",
-                }}
-              >
-                {card.speaker}
+              {/* Spacer för att hålla cue centrerad i flex-raden */}
+              <span className="invisible inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em]">
+                Kort 00 / 00
               </span>
             </div>
 
