@@ -19,6 +19,7 @@ interface Turn {
 interface Props {
   turn: Turn;
   threadTitle: string;
+  allTurns: Turn[];
   onContinue: () => void; // användaren markerar "klart" — gå till nästa fas
   onManuscriptCreated: (manuscriptId: string) => void;
 }
