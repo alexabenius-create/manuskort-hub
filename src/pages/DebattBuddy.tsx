@@ -9,8 +9,10 @@ import { useAiUsage } from "@/hooks/useAiUsage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SEO } from "@/components/SEO";
 import { toast } from "@/hooks/use-toast";
+import { IssueUpload } from "@/components/debate/IssueUpload";
 
 type Mode = "speech" | "reply";
 
