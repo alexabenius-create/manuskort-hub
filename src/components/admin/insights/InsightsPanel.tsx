@@ -330,6 +330,7 @@ export function InsightsPanel() {
                     key={selected.id}
                     insight={selected}
                     related={related}
+                    themes={themes.map(([t]) => t)}
                     onChanged={load}
                     onClose={() => setSelectedId(null)}
                   />
@@ -340,7 +341,12 @@ export function InsightsPanel() {
         );
       })()}
 
-      <NewInsightDialog open={newOpen} onOpenChange={setNewOpen} onCreated={load} />
+      <NewInsightDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        onCreated={load}
+        themes={themes.map(([t]) => t)}
+      />
     </>
   );
 }

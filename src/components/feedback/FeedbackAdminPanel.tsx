@@ -8,8 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, Send, Inbox, MessageSquare, X, Lock } from "lucide-react";
+import { Search, Send, Inbox, MessageSquare, X, Lock, Lightbulb } from "lucide-react";
 import { AdminShareRequestPanel } from "@/components/feedback/AdminShareRequestPanel";
+import { NewInsightDialog, type NewInsightPrefill } from "@/components/admin/insights/NewInsightDialog";
 
 interface Thread {
   id: string;
@@ -52,6 +53,33 @@ export function FeedbackAdminPanel() {
   const [sending, setSending] = useState(false);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
+  const [insightPrefill, setInsightPrefill] = useState<NewInsightPrefill | null>(null);
+  const [insightDialogOpen, setInsightDialogOpen] = useState(false);
+  const [insightThemes, setInsightThemes] = useState<string[]>([]);
+
+  const openInsightFromText = (text: string, thread: Thread) => {
+    setInsightPrefill({
+      raw_text: text,
+      source: "dm",
+      source_label: thread.email ?? "användare",
+      linked_user_id: thread.user_id,
+      linked_thread_id: thread.id,
+    });
+    setInsightDialogOpen(true);
+  };
+
+  // Hämta tema-lista när dialogen öppnas
+  useEffect(() => {
+    if (!insightDialogOpen) return;
+    supabase
+      .from("admin_insights")
+      .select("theme")
+      .not("theme", "is", null)
+      .then(({ data }) => {
+        const unique = Array.from(new Set((data ?? []).map((r) => r.theme as string).filter(Boolean)));
+        setInsightThemes(unique);
+      });
+  }, [insightDialogOpen]);
 
   const loadThreads = async () => {
     setLoading(true);
@@ -300,25 +328,46 @@ export function FeedbackAdminPanel() {
                       {activeThread.email ?? "(ingen e-post)"} · {SOURCE_LABEL[activeThread.source] ?? activeThread.source} · {formatDate(activeThread.created_at)}
                     </p>
                   </div>
-                  {activeThread.status === "open" ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={closeThread}
-                      className="rounded-full text-[12px] h-7 text-muted-foreground"
-                    >
-                      <X className="h-3 w-3" /> Stäng
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={reopenThread}
-                      className="rounded-full text-[12px] h-7 text-muted-foreground"
-                    >
-                      <Lock className="h-3 w-3" /> Öppna igen
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {activeThread.user_id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          openInsightFromText(
+                            `${activeThread.subject}\n\n${messages
+                              .filter((m) => m.sender_role === "user")
+                              .map((m) => m.body)
+                              .join("\n\n---\n\n")}`,
+                            activeThread,
+                          )
+                        }
+                        className="rounded-full text-[12px] h-7 text-muted-foreground hover:text-accent-blue"
+                        title="Skapa insikt från hela tråden"
+                      >
+                        <Lightbulb className="h-3 w-3" /> Skapa insikt
+                      </Button>
+                    )}
+                    {activeThread.status === "open" ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={closeThread}
+                        className="rounded-full text-[12px] h-7 text-muted-foreground"
+                      >
+                        <X className="h-3 w-3" /> Stäng
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={reopenThread}
+                        className="rounded-full text-[12px] h-7 text-muted-foreground"
+                      >
+                        <Lock className="h-3 w-3" /> Öppna igen
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <AdminShareRequestPanel threadId={activeThread.id} threadUserId={activeThread.user_id} />
               </header>
@@ -327,7 +376,7 @@ export function FeedbackAdminPanel() {
                 {messages.map((m) => {
                   const fromAdmin = m.sender_role === "admin";
                   return (
-                    <div key={m.id} className={`flex ${fromAdmin ? "justify-end" : "justify-start"}`}>
+                    <div key={m.id} className={`group flex items-end gap-1.5 ${fromAdmin ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-[14px] whitespace-pre-wrap ${
                           fromAdmin
@@ -345,6 +394,17 @@ export function FeedbackAdminPanel() {
                           {formatDate(m.created_at)}
                         </div>
                       </div>
+                      {!fromAdmin && activeThread.user_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openInsightFromText(m.body, activeThread)}
+                          className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:text-accent-blue opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          title="Skapa insikt från detta meddelande"
+                        >
+                          <Lightbulb className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   );
                 })}
@@ -379,6 +439,17 @@ export function FeedbackAdminPanel() {
           )}
         </section>
       </div>
+
+      <NewInsightDialog
+        open={insightDialogOpen}
+        onOpenChange={setInsightDialogOpen}
+        onCreated={() => {
+          toast({ title: "Insikt sparad", description: "Hittas under fliken Insikter." });
+          setInsightPrefill(null);
+        }}
+        themes={insightThemes}
+        prefill={insightPrefill}
+      />
     </div>
   );
 }
