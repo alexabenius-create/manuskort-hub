@@ -327,6 +327,7 @@ export function InsightsPanel() {
                     </Button>
                   </div>
                   <InsightDetail
+                    key={selected.id}
                     insight={selected}
                     related={related}
                     onChanged={load}
