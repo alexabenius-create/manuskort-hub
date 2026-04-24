@@ -19,6 +19,7 @@ import { CollapsedTurnStrip } from "@/components/debate/CollapsedTurnStrip";
 import { TurnReadOnlySheet } from "@/components/debate/TurnReadOnlySheet";
 import { RoleSelectorStep } from "@/components/debate/RoleSelectorStep";
 import { RoleSelectorDialog } from "@/components/debate/RoleSelectorDialog";
+import { PerformSpeechStep } from "@/components/debate/PerformSpeechStep";
 import {
   computePhase,
   nextReplierLabel,
@@ -52,6 +53,7 @@ interface DebateTurn {
   parent_turn_id: string | null;
   speaker_label: string;
   round_number: number;
+  manuscript_id: string | null;
 }
 
 type DraftState =
@@ -72,6 +74,28 @@ type DraftState =
     };
 
 const roleConfirmedKey = (threadId: string) => `debattbuddy:role-confirmed:${threadId}`;
+const performedKey = (threadId: string) => `debattbuddy:performed:${threadId}`;
+
+const loadPerformedSet = (threadId: string): Set<string> => {
+  try {
+    const raw = localStorage.getItem(performedKey(threadId));
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+};
+
+const savePerformedSet = (threadId: string, set: Set<string>) => {
+  try {
+    localStorage.setItem(performedKey(threadId), JSON.stringify(Array.from(set)));
+  } catch {
+    /* noop */
+  }
+};
+
+const isOwnSpeechKind = (k: string): boolean =>
+  k === "own_speech" || k === "own_reply" || k === "rebuttal";
 
 export default function DebattBuddyThread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -86,6 +110,26 @@ export default function DebattBuddyThread() {
   const [roleConfirmed, setRoleConfirmed] = useState(false);
   const [headerOpen, setHeaderOpen] = useState(false);
   const [activeReadTurnId, setActiveReadTurnId] = useState<string | null>(null);
+  const [performedTurnIds, setPerformedTurnIds] = useState<Set<string>>(new Set());
+
+  // Ladda "performed"-set när tråd-id ändras
+  useEffect(() => {
+    if (!threadId) return;
+    setPerformedTurnIds(loadPerformedSet(threadId));
+  }, [threadId]);
+
+  const markPerformed = useCallback(
+    (turnId: string) => {
+      if (!threadId) return;
+      setPerformedTurnIds((prev) => {
+        const next = new Set(prev);
+        next.add(turnId);
+        savePerformedSet(threadId, next);
+        return next;
+      });
+    },
+    [threadId],
+  );
 
   const fetchAll = useCallback(async () => {
     if (!threadId) return;
@@ -97,7 +141,7 @@ export default function DebattBuddyThread() {
         .maybeSingle(),
       supabase
         .from("debate_turns")
-        .select("id, position, kind, opponent_input_mode, source_text, ai_output_text, ai_card_split, ai_rationale, parent_turn_id, speaker_label, round_number")
+        .select("id, position, kind, opponent_input_mode, source_text, ai_output_text, ai_card_split, ai_rationale, parent_turn_id, speaker_label, round_number, manuscript_id")
         .eq("thread_id", threadId)
         .order("position", { ascending: true }),
     ]);
@@ -258,13 +302,24 @@ export default function DebattBuddyThread() {
   const activeReadParent =
     activeReadTurn?.parent_turn_id ? turnById.get(activeReadTurn.parent_turn_id) ?? null : null;
 
+  // En "pending perform"-turn = senaste egna anförande/replik/genmäle som inte
+  // ännu markerats som genomförd lokalt.
+  const lastTurn = turns[turns.length - 1] ?? null;
+  const performTurn =
+    lastTurn && isOwnSpeechKind(lastTurn.kind) && !performedTurnIds.has(lastTurn.id)
+      ? lastTurn
+      : null;
+
   // Determine which guided step to show
   const showRoleStep = !roleConfirmed && turns.length === 0;
   const showDraft = draft.kind !== "none";
+  const showPerform = !showRoleStep && !showDraft && Boolean(performTurn);
   const stepKey = showRoleStep
     ? "role"
     : showDraft
     ? `draft-${draft.kind}-${(draft as any).turnKind}-${nextPosition}`
+    : showPerform
+    ? `perform-${performTurn!.id}`
     : `phase-${phase.phase}-${turns.length}`;
 
   // Header summary line for collapsible header
@@ -413,6 +468,20 @@ export default function DebattBuddyThread() {
                 fetchAll();
               }}
               onCancel={() => setDraft({ kind: "none" })}
+            />
+          </GuidedStep>
+        ) : showPerform && performTurn ? (
+          <GuidedStep stepKey={stepKey}>
+            <PerformSpeechStep
+              turn={performTurn}
+              threadTitle={thread.title}
+              onContinue={() => markPerformed(performTurn.id)}
+              onManuscriptCreated={(manuscriptId) => {
+                // Uppdatera lokal state direkt så knappen byts till "Öppna manuskort"/"Starta presentation"
+                setTurns((prev) =>
+                  prev.map((t) => (t.id === performTurn.id ? { ...t, manuscript_id: manuscriptId } : t)),
+                );
+              }}
             />
           </GuidedStep>
         ) : (
