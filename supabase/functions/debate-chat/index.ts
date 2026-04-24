@@ -772,15 +772,25 @@ Deno.serve(async (req) => {
     const currentPhase = thread.bot_state?.phase || "intake_issue";
     const model = heavyPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash-lite";
 
-    // Tving fram rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
+    // Tvinga rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
     let toolChoice: unknown = "auto";
+    let toolsForRequest: Tool[] = TOOLS;
     if (currentPhase === "generating_rebuttal") {
       toolChoice = { type: "function", function: { name: "generate_rebuttal_cards" } };
+      toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_rebuttal_cards");
+      messages.push({
+        role: "system",
+        content: "Du MÅSTE anropa verktyget generate_rebuttal_cards nu. Returnera inte genmälet som vanlig text.",
+      });
     } else if (currentPhase === "drafting_speech") {
-      // drafting_speech tvingar bara om användaren bett om utkast (annars vill vi ha vanligt svar).
       const lastUser = userMessage.toLowerCase();
       if (lastUser.includes("skriv utkast") || lastUser.includes("utkast åt mig")) {
         toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
+        toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_speech_cards");
+        messages.push({
+          role: "system",
+          content: "Du MÅSTE anropa verktyget generate_speech_cards nu. Returnera inte anförandet som vanlig text.",
+        });
       }
     }
 
@@ -794,7 +804,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model,
         messages,
-        tools: TOOLS,
+        tools: toolsForRequest,
         tool_choice: toolChoice,
       }),
     });
