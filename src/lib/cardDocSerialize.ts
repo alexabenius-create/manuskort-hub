@@ -143,6 +143,8 @@ export function docToCardNodes(
       cueRed: "",
       cueAmber: "",
       cueTeal: "",
+      sectionId: typeof a.sectionId === "string" ? a.sectionId : null,
+      sectionLabel: typeof a.sectionLabel === "string" ? a.sectionLabel : "",
     });
   });
   return out;
