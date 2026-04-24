@@ -12,6 +12,7 @@ import { CardCuePopover } from "./CardCuePopover";
 import { CardNotesEditor } from "./CardNotesEditor";
 import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
+import { TextSelection } from "prosemirror-state";
 import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
 import { CardChainTimeChip } from "./CardChainTimeChip";
@@ -24,6 +25,7 @@ import {
   insertCardBlockBefore,
   moveCardBlock,
   moveCardBlockBySteps,
+  splitCardBlock,
 } from "@/lib/cardBlockCommands";
 import { ChevronUp, ChevronDown, X, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { CardBlockErrorBoundary } from "./CardBlockErrorBoundary";
@@ -261,6 +263,31 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
             onDuplicate={() => runWithPos(duplicateCardBlock)}
             onDelete={() => runWithPos(deleteCardBlock)}
             onTogglePanic={handleTogglePanic}
+            onSplitAtCaret={() => {
+              // Sätt caret inuti detta kort om den inte redan står här,
+              // och splitta sedan vid den positionen.
+              const pos = getPos();
+              if (typeof pos !== "number") return;
+              const { state, view } = editor;
+              const sel = state.selection;
+              const inThisCard = sel.from > pos && sel.to < pos + node.nodeSize;
+              if (!inThisCard) {
+                view.focus();
+                try {
+                  const target = pos + 2;
+                  const tr = state.tr.setSelection(
+                    TextSelection.near(
+                      state.tr.doc.resolve(Math.min(target, state.doc.content.size)),
+                    ),
+                  );
+                  view.dispatch(tr);
+                } catch {
+                  /* ignore */
+                }
+              }
+              splitCardBlock(editor.state, editor.view.dispatch);
+              editor.view.focus();
+            }}
           />
         </div>
       </header>

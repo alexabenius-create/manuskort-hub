@@ -1,5 +1,5 @@
 /**
- * CardMoreMenu — DropdownMenu för kort-operationer (duplicera, ta bort, panik).
+ * CardMoreMenu — DropdownMenu för kort-operationer (duplicera, dela, ta bort, panik).
  */
 import {
   DropdownMenu,
@@ -7,8 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy, Trash2, AlertOctagon, Check } from "lucide-react";
+import { MoreHorizontal, Copy, Trash2, AlertOctagon, Check, Scissors } from "lucide-react";
 
 interface Props {
   isPanic: boolean;
@@ -16,9 +17,20 @@ interface Props {
   onDuplicate: () => void;
   onDelete: () => void;
   onTogglePanic: () => void;
+  onSplitAtCaret?: () => void;
 }
 
-export function CardMoreMenu({ isPanic, canDelete, onDuplicate, onDelete, onTogglePanic }: Props) {
+export function CardMoreMenu({
+  isPanic,
+  canDelete,
+  onDuplicate,
+  onDelete,
+  onTogglePanic,
+  onSplitAtCaret,
+}: Props) {
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  const splitShortcut = isMac ? "⌘↵" : "Ctrl+↵";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -31,7 +43,14 @@ export function CardMoreMenu({ isPanic, canDelete, onDuplicate, onDelete, onTogg
           <MoreHorizontal className="h-5 w-5 md:h-4 md:w-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent align="end" className="w-60">
+        {onSplitAtCaret && (
+          <DropdownMenuItem onSelect={onSplitAtCaret} className="gap-2">
+            <Scissors className="h-4 w-4" />
+            <span className="flex-1">Dela kort vid markör</span>
+            <DropdownMenuShortcut>{splitShortcut}</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={onDuplicate} className="gap-2">
           <Copy className="h-4 w-4" />
           Duplicera
