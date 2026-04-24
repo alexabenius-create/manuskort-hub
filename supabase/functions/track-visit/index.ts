@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
       const delivery = await deliverTelegramNotification({
         lovableApiKey: LOVABLE_API_KEY,
         telegramApiKey: TELEGRAM_API_KEY,
-        configuredChatId: TELEGRAM_CHAT_ID ?? null,
+        configuredChatId: TELEGRAM_CHAT_ID,
         text,
       });
 

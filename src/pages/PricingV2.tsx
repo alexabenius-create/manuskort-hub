@@ -44,7 +44,7 @@ const proFeatures: Feature[] = [
   { label: "Obegränsade kort per manus", included: true },
   { label: "Obegränsade paneldeltagare", included: true },
   { label: ".docx-import", included: true },
-  { label: "AI-förbättring av meningar (200 förbättringar/månad)", included: true },
+  { label: "AI-förbättring av meningar (200 meningar/månad)", included: true },
   { label: "Presentationsläge med cue-färger", included: true },
   { label: "Alla framtida features", included: true },
   { label: "Prioriterad support", included: true },

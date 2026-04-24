@@ -504,12 +504,11 @@ export default function LibraryV2() {
             Skapa, redigera och håll flyt — från första hälsning till sista applåd.
           </p>
           {(tier === "pro" || tier === "admin") && aiUsage && aiUsage.limit > 0 && (
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur border border-v2-line pl-3 pr-3.5 py-1.5 text-[13px] text-v2-muted shadow-sm">
-              <Sparkles className="h-3.5 w-3.5 text-v2-violet" />
+            <div className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-white/80 backdrop-blur px-5 py-2.5 border border-v2-line shadow-sm text-[14px] whitespace-nowrap">
+              <Sparkles className="h-4 w-4 text-v2-violet shrink-0" />
               <span>
                 <span className="font-semibold text-v2-ink">{aiUsage.remaining}</span>
-                <span className="text-v2-muted"> / {aiUsage.limit}</span>
-                <span className="text-v2-muted"> AI-förbättringar kvar denna månad</span>
+                <span className="text-v2-muted"> / {aiUsage.limit} AI-förbättringar kvar denna månad</span>
               </span>
             </div>
           )}
