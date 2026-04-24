@@ -233,7 +233,7 @@ async function extractPptxText(file: File): Promise<string> {
 }
 
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
-  // pdf.js i Deno – inaktivera worker, font/cmap-fetching m.m.
+  const { getDocument } = await resolvePDFJS();
   const loadingTask = getDocument({
     data: bytes,
     disableFontFace: true,
