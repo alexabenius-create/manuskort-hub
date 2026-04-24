@@ -6,6 +6,7 @@
  */
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { removeCue, type Cue } from "@/lib/cues";
 import { CardCuePopover } from "./CardCuePopover";
@@ -17,7 +18,9 @@ import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
 import { CardChainTimeChip } from "./CardChainTimeChip";
 import { CardDragHandle, CardDropZone } from "./CardDragHandle";
+import { CardSectionBanner } from "./CardSectionBanner";
 import { setDraggingCardPos, useDraggingCardPos } from "@/lib/cardDragStore";
+import { useCollapsedSections } from "@/lib/sectionCollapseStore";
 import {
   duplicateCardBlock,
   deleteCardBlock,
