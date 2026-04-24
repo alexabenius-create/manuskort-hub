@@ -575,7 +575,8 @@ export default function EditorV4() {
         }
       }
     }
-    navigate(`/manus/${manuscript.id}/presentera`);
+    const suffix = debateBuddyThreadId ? `?debattbuddy=${debateBuddyThreadId}` : "";
+    navigate(`/manus/${manuscript.id}/presentera${suffix}`);
   };
   startPresentationRef.current = () => startPresentation();
 
