@@ -102,11 +102,12 @@ export default function LandingV2() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-10 h-16 flex items-center justify-between">
-          <Link to="/v2" className="flex items-center gap-2 group">
-            <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-v2-violet to-v2-blue shadow-[0_4px_12px_-2px_rgba(99,102,241,0.4)] transition-transform group-hover:scale-105">
-              <span className="absolute inset-[2px] rounded-[6px] bg-white/10" />
-              <span className="relative font-display text-white text-[13px] font-bold">M</span>
-            </span>
+          <Link to="/v2" className="flex items-center gap-2.5 group">
+            <img
+              src={manuskortLogo}
+              alt="Manuskort"
+              className="h-8 w-auto transition-transform group-hover:scale-105"
+            />
             <span className="font-display text-[18px] font-semibold tracking-tight">Manuskort</span>
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2">
