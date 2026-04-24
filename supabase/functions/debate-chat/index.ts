@@ -16,6 +16,7 @@ interface ThreadRow {
   topic_area: string;
   issue_text: string;
   issue_document_text: string;
+  issue_document_filename: string | null;
   own_position: string;
   user_role: string;
   manuscript_id: string | null;
@@ -29,18 +30,19 @@ KRITISKT — SVARSSTIL:
 - **Max 2 korta meningar per svar.** Helst 1.
 - Ställ ALDRIG flera frågor i samma svar.
 - Inga utläggningar, inga listor i frågorna.
-- Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga. Användaren ska kunna klicka istället för skriva.
+- Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga.
 - Producera resultat så snart du har minimum av info — vänta inte i onödan.
 - Max 1 emoji per svar. Ofta ingen.
 
 FLÖDE (driv framåt aggressivt):
-1. **intake_issue**: Fråga kort om ärendet. Ge snabbsvar som ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` + gå direkt vidare.
-2. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
-3. **drafting_speech**: Fråga kort efter ståndpunkt eller huvudbudskap, max en mening. Sedan föreslå direkt ett utkast och be användaren kopiera till editorn. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"].
-4. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
-5. **intake_opponent_name** → \`set_opponent\` direkt.
-6. **intake_opponent_args** → be om motdebattörens argument i ett svar.
-7. → \`generate_rebuttal_cards\` direkt när du har argumenten.
+1. **intake_issue**: Fråga kort "Vad ska vi debattera idag?". Snabbsvar: ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` → gå till intake_brief.
+2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela? Du kan ladda upp en fil eller skriva kort." Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget (via systemmeddelande "BRIEF MOTTAGET" eller text från användaren) → ge en blixtsnabb analys på MAX 2 meningar (vad det handlar om + en spets) → \`set_brief\` → gå direkt till intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text och vidare.
+3. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
+4. **drafting_speech**: Fråga kort efter ståndpunkt eller huvudbudskap, max en mening. Sedan föreslå direkt ett utkast och be användaren kopiera till editorn. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"].
+5. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
+6. **intake_opponent_name** → \`set_opponent\` direkt.
+7. **intake_opponent_args** → be om motdebattörens argument i ett svar.
+8. → \`generate_rebuttal_cards\` direkt när du har argumenten.
 
 REGLER: Anförande → repliker → genmäle (1 per replik) eller avstå.
 
@@ -68,6 +70,23 @@ const TOOLS: Tool[] = [
           topic_area: { type: "string", description: "Sakområde, t.ex. Skola, Vård, Infrastruktur" },
         },
         required: ["issue_text"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_brief",
+      description: "Spara underlaget (sammanfattning + valfri fulltext + valfritt filnamn) och gå vidare till intake_mode. Använd även med tom text när användaren vill hoppa över.",
+      parameters: {
+        type: "object",
+        properties: {
+          summary: { type: "string", description: "Kort sammanfattning av underlaget (max 1500 tecken). Tom sträng om inget underlag." },
+          full_text: { type: "string", description: "Valfri fulltext från ett uppladdat dokument." },
+          filename: { type: "string", description: "Valfritt filnamn." },
+        },
+        required: ["summary"],
         additionalProperties: false,
       },
     },
@@ -152,8 +171,9 @@ const TOOLS: Tool[] = [
         properties: {
           next_phase: {
             type: "string",
-            enum: [
+          enum: [
               "intake_issue",
+              "intake_brief",
               "intake_mode",
               "drafting_speech",
               "awaiting_perform",
@@ -259,13 +279,17 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: true })
       .limit(MAX_HISTORY);
 
+    const briefSnippet = thread.issue_document_text
+      ? thread.issue_document_text.slice(0, 4000)
+      : "";
     const contextSummary = `KONTEXT:
 - Fas: ${thread.bot_state?.phase || "intake_issue"}
 - Sakområde: ${thread.topic_area || "(inte satt)"}
 - Ärende: ${thread.issue_text || "(inte beskrivet)"}
+- Underlag: ${thread.issue_document_text ? `JA (${thread.issue_document_filename || "text"}, ${thread.issue_document_text.length} tecken)` : "(inget)"}
 - Egen ståndpunkt: ${thread.own_position || "(inte angiven)"}
 - Aktuell motdebattör: ${thread.current_opponent_label || "(ingen)"}
-- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}`;
+- Manus kopplat: ${thread.manuscript_id ? "ja" : "nej"}${briefSnippet ? `\n\nUNDERLAGETS INNEHÅLL (utdrag):\n${briefSnippet}` : ""}`;
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -309,9 +333,26 @@ Deno.serve(async (req) => {
       const args = JSON.parse(tc.function?.arguments || "{}");
       try {
         if (name === "set_issue") {
-          const updates: Record<string, string> = { issue_text: args.issue_text };
+          const updates: Record<string, unknown> = {
+            issue_text: args.issue_text,
+            bot_state: { ...thread.bot_state, phase: "intake_brief" },
+          };
           if (args.topic_area) updates.topic_area = args.topic_area;
           await admin.from("debate_threads").update(updates).eq("id", threadId);
+          executedTools.push({ name, result: "ok" });
+        } else if (name === "set_brief") {
+          const briefUpdates: Record<string, unknown> = {
+            bot_state: { ...thread.bot_state, phase: "intake_mode" },
+          };
+          if (typeof args.full_text === "string" && args.full_text.trim()) {
+            briefUpdates.issue_document_text = args.full_text;
+          } else if (typeof args.summary === "string" && args.summary.trim()) {
+            briefUpdates.issue_document_text = args.summary;
+          }
+          if (typeof args.filename === "string" && args.filename.trim()) {
+            briefUpdates.issue_document_filename = args.filename;
+          }
+          await admin.from("debate_threads").update(briefUpdates).eq("id", threadId);
           executedTools.push({ name, result: "ok" });
         } else if (name === "set_mode") {
           const phase = args.kind === "reply" ? "intake_opponent_name" : "drafting_speech";
