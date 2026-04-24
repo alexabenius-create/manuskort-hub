@@ -71,6 +71,17 @@ export function ThreadHeader({ thread, onChanged, showRoleSelector }: Props) {
         maxLength={120}
       />
 
+      {/* Roll-väljare (visas bara innan första turen) */}
+      {showRoleSelector && (
+        <RoleSelector
+          value={thread.user_role}
+          onChange={(role) => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            persist({ user_role: role });
+          }}
+        />
+      )}
+
       {/* Sakområde */}
       <div className="rounded-2xl bg-white border border-v2-line p-5">
         <TopicAreaPicker
