@@ -28,6 +28,7 @@ import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { supabase } from "@/integrations/supabase/client";
+import manuskortLogo from "@/assets/manuskort-logo.png";
 
 /**
  * Landing v2 — Linear-inspirerat designspråk.
