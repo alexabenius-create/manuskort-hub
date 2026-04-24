@@ -132,16 +132,39 @@ export function PresentationStartMenu({ onStartCountdown, onStartInstant, onExit
         )}
       </div>
 
+      {/* Sektionsval (visas endast om manuset har ≥ 2 sektioner — t.ex. anförande + replikskifte) */}
+      {hasSections && sections && (
+        <div className="flex flex-col items-center gap-3 w-full max-w-2xl">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">Vad vill du presentera?</span>
+          <div className="flex flex-wrap justify-center gap-2">
+            {sections.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedSectionId(s.id)}
+                className={`px-5 py-3 rounded-xl text-[14px] font-medium transition-colors ${
+                  selectedSectionId === s.id
+                    ? "bg-zinc-700 text-zinc-100 ring-2 ring-white/20"
+                    : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {s.label}
+                <span className="ml-2 text-[11px] text-zinc-500">{s.cardCount} kort</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-6">
         <div className="flex flex-col md:flex-row items-stretch gap-4">
           <button
-            onClick={() => onStartCountdown({ viewMode, focusStyle })}
+            onClick={() => onStartCountdown({ viewMode, focusStyle, sectionId: selectedSectionId })}
             className="rounded-full bg-white text-black px-12 py-6 text-[22px] font-medium hover:bg-zinc-200 transition-colors shadow-2xl shadow-black/30 active:scale-[0.98]"
           >
             Starta med 3 sekunders nedräkning
           </button>
           <button
-            onClick={() => onStartInstant({ viewMode, focusStyle })}
+            onClick={() => onStartInstant({ viewMode, focusStyle, sectionId: selectedSectionId })}
             className="rounded-full bg-zinc-900 text-zinc-100 border border-zinc-700 px-12 py-6 text-[22px] font-medium hover:bg-zinc-800 transition-colors active:scale-[0.98]"
           >
             Starta direkt
