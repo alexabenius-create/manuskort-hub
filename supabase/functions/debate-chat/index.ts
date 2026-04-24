@@ -566,7 +566,11 @@ async function handleScripted(
   // intake_opponent_args — användaren matar in argument, ev. flera meddelanden
   if (phase === "intake_opponent_args") {
     if (msg === "analysera nu" || msg.includes("analysera")) {
-      // Fall through till LLM som genererar genmäle med alla buffrade argument
+      // Byt fas till generating_rebuttal så LLM-anropet använder tung modell + tvingat tool
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "generating_rebuttal" } })
+        .eq("id", threadId);
       return null;
     }
     if (msg === "fler argument" || msg.includes("fler argument")) {
