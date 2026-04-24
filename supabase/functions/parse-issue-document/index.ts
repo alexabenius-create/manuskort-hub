@@ -5,11 +5,7 @@ import {
   ZipReader,
   TextWriter,
 } from "https://deno.land/x/zipjs@v2.7.45/index.js";
-import { getDocument, GlobalWorkerOptions } from "https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs";
-
-// pdf.js i Deno: ingen worker behövs
-// @ts-ignore
-GlobalWorkerOptions.workerSrc = "";
+import { getDocument } from "https://esm.sh/pdfjs-serverless@0.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
