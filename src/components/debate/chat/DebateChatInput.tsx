@@ -1,16 +1,27 @@
-import { useState, KeyboardEvent } from "react";
-import { Send } from "lucide-react";
+import { useRef, useState, KeyboardEvent } from "react";
+import { Send, Paperclip, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 interface Props {
   onSend: (text: string) => void;
+  onUploadFile?: (file: File) => Promise<void> | void;
   disabled?: boolean;
+  uploading?: boolean;
+  showUpload?: boolean;
   quickReplies?: string[];
 }
 
-export function DebateChatInput({ onSend, disabled, quickReplies = [] }: Props) {
+export function DebateChatInput({
+  onSend,
+  onUploadFile,
+  disabled,
+  uploading,
+  showUpload,
+  quickReplies = [],
+}: Props) {
   const [text, setText] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const submit = (override?: string) => {
     const value = (override ?? text).trim();
@@ -24,6 +35,13 @@ export function DebateChatInput({ onSend, disabled, quickReplies = [] }: Props) 
       e.preventDefault();
       submit();
     }
+  };
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f || !onUploadFile) return;
+    await onUploadFile(f);
   };
 
   return (
@@ -44,18 +62,41 @@ export function DebateChatInput({ onSend, disabled, quickReplies = [] }: Props) 
         </div>
       )}
       <div className="flex items-end gap-2 p-3">
+        {showUpload && onUploadFile && (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+              className="hidden"
+              onChange={onFileChange}
+            />
+            <Button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={disabled || uploading}
+              size="icon"
+              variant="ghost"
+              className="h-10 w-10 shrink-0 rounded-full text-v2-violet hover:bg-v2-violet/10"
+              aria-label="Ladda upp underlag"
+              title="Ladda upp PDF, DOCX eller PPTX"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+            </Button>
+          </>
+        )}
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Skriv ett meddelande…"
-          disabled={disabled}
+          placeholder={uploading ? "Läser dokument…" : "Skriv ett meddelande…"}
+          disabled={disabled || uploading}
           rows={1}
           className="min-h-[40px] max-h-32 resize-none text-[14px]"
         />
         <Button
           onClick={() => submit()}
-          disabled={disabled || !text.trim()}
+          disabled={disabled || uploading || !text.trim()}
           size="icon"
           className="h-10 w-10 shrink-0 rounded-full"
           aria-label="Skicka"
