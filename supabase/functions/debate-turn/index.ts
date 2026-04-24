@@ -193,8 +193,12 @@ UPPGIFT: ${taskInstruction}
 
 REGLER:
 - Skriv på svenska, retoriskt skickligt och faktabaserat.
-- Hård längdregel: texten får INTE överstiga ${charCap} tecken.
-- Dela upp svaret i 1–6 logiska kort (titel + innehåll) som passar för uppläsning.
+- Hård längdregel: texten får INTE överstiga ${charCap} tecken.${
+      targetSeconds
+        ? `\n- Detta är en ${turnKind === "rebuttal" ? "genmäle" : "replik"}: målet är ca ${targetSeconds} sekunders uppläsningstid (snabbt, vasst tempo). Skriv kompakt — undvik utvikningar.`
+        : ""
+    }
+- Dela upp svaret i ${targetSeconds ? "1–2" : "1–6"} logiska kort (titel + innehåll) som passar för uppläsning.
 - Behåll konsekvent X:s ståndpunkt — backa aldrig från den.
 - Returnera ALLT via verktygsanropet 'produce_turn'.`;
 
