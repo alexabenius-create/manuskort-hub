@@ -6,6 +6,7 @@
  */
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { removeCue, type Cue } from "@/lib/cues";
 import { CardCuePopover } from "./CardCuePopover";
@@ -17,7 +18,9 @@ import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
 import { CardChainTimeChip } from "./CardChainTimeChip";
 import { CardDragHandle, CardDropZone } from "./CardDragHandle";
+import { CardSectionBanner } from "./CardSectionBanner";
 import { setDraggingCardPos, useDraggingCardPos } from "@/lib/cardDragStore";
+import { useCollapsedSections } from "@/lib/sectionCollapseStore";
 import {
   duplicateCardBlock,
   deleteCardBlock,
@@ -56,7 +59,12 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
     role: "moderator" | "speaker";
     targetSeconds: number | null;
     targetSecondsIsManual: boolean;
+    sectionId: string | null;
+    sectionLabel: string;
   };
+
+  const { id: manuscriptId } = useParams<{ id: string }>();
+  const collapsedSections = useCollapsedSections(manuscriptId ?? "");
 
   const text = useMemo(
     () => node.textBetween(0, node.content.size, " ", " "),
@@ -83,6 +91,32 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
   })();
   const myEnd = myPos != null ? myPos + node.nodeSize : null;
   const isBeingDragged = draggingPos != null && draggingPos === myPos;
+
+  // Sektion: är detta första kortet i sektionen? Räkna även kort i sektionen.
+  const sectionInfo = useMemo<{ isFirstInSection: boolean; cardCount: number } | null>(() => {
+    if (!a.sectionId) return null;
+    let isFirstInSection = true;
+    let cardCount = 0;
+    let sawSelf = false;
+    editor.state.doc.forEach((n, offset) => {
+      if (n.type.name !== "cardBlock") return;
+      const sid = (n.attrs as { sectionId: string | null }).sectionId;
+      if (sid !== a.sectionId) return;
+      cardCount += 1;
+      if (offset === myPos) {
+        sawSelf = true;
+      } else if (!sawSelf) {
+        isFirstInSection = false;
+      }
+    });
+    return { isFirstInSection, cardCount };
+  }, [editor.state.doc, a.sectionId, myPos]);
+
+  const isCollapsed =
+    !!a.sectionId && collapsedSections.has(a.sectionId);
+  // Dölj alla utom första kortet i en kollapsad sektion
+  const hideForCollapse =
+    isCollapsed && sectionInfo != null && !sectionInfo.isFirstInSection;
 
   // Räkna kedja av manuella måltider från första kortet fram till detta kort.
   // Returnerar { start, end } i sekunder om kedjan är obruten OCH detta kort
@@ -154,15 +188,34 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
   const showFooter = true; // visa alltid footer (för "+ lägg till"-CTA:er)
   const showInsertPills = !isDragActive;
 
+  const showSectionBanner =
+    sectionInfo?.isFirstInSection && !!a.sectionId && !!a.sectionLabel;
+  const isFirstInCollapsedSection =
+    isCollapsed && sectionInfo?.isFirstInSection === true;
+
   return (
     <NodeViewWrapper
       as="article"
       data-card-block="true"
+      data-section-id={a.sectionId ?? undefined}
+      data-section-collapsed-first={isFirstInCollapsedSection ? "true" : undefined}
       draggable={false}
-      className={`card-block relative rounded-2xl border bg-surface shadow-subtle mb-4 transition-all ${
-        a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"
+      style={hideForCollapse ? { display: "none" } : undefined}
+      className={`card-block relative rounded-2xl mb-4 transition-all ${
+        isFirstInCollapsedSection
+          ? "border-0 bg-transparent shadow-none p-0"
+          : `border bg-surface shadow-subtle ${a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"}`
       } ${isBeingDragged ? "opacity-40" : ""}`}
     >
+      {showSectionBanner && manuscriptId && a.sectionId && (
+        <CardSectionBanner
+          manuscriptId={manuscriptId}
+          sectionId={a.sectionId}
+          label={a.sectionLabel}
+          cardCount={sectionInfo?.cardCount ?? 1}
+          collapsed={isCollapsed}
+        />
+      )}
       {/* Drop-zon ovanför kortet */}
       {canDrag && myPos != null && (
         <div className="absolute -top-2 inset-x-0">

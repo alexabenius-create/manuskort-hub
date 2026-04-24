@@ -621,3 +621,8 @@
   .presentation-prose .pause-mark { animation: none; }
 }
 
+
+/* Kollapsad sektion: dölj kortets innehåll, behåll bara bannern på första kortet */
+.card-block[data-section-collapsed-first="true"] > *:not([data-section-banner]) {
+  display: none !important;
+}
