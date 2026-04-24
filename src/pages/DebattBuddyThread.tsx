@@ -112,6 +112,14 @@ export default function DebattBuddyThread() {
     if (user) fetchAll();
   }, [user, fetchAll]);
 
+  // Auto-öppna roll-dialog en gång när tråden är tom (rollen kan väljas om/ändras när som helst)
+  useEffect(() => {
+    if (!loading && thread && turns.length === 0 && !roleAutoOpened) {
+      setRoleDialogOpen(true);
+      setRoleAutoOpened(true);
+    }
+  }, [loading, thread, turns.length, roleAutoOpened]);
+
   const phaseTurns: PhaseTurn[] = useMemo(
     () =>
       turns.map((t) => ({
