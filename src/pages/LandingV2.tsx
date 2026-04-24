@@ -45,6 +45,26 @@ export default function LandingV2() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Scroll-reveal: lägg `is-visible` på element när de syns
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const targets = document.querySelectorAll(".v2-reveal-onscroll, .v2-stagger-parent");
+    if (!targets.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+    );
+    targets.forEach((t) => io.observe(t));
+    return () => io.disconnect();
+  }, []);
+
   // Anonym besökstracking — fire & forget. Filtrerar bort ägare, automation och preview-miljöer.
   useEffect(() => {
     try {

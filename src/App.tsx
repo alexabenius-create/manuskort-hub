@@ -14,6 +14,8 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
+const LandingV2 = lazy(() => import("./pages/LandingV2"));
+
 // Lazy-load tunga / sällan besökta sidor → mindre initial bundle
 const Library = lazy(() => import("./pages/Library"));
 const EditorV3 = lazy(() => import("./pages/EditorV3"));
