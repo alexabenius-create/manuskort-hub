@@ -605,9 +605,11 @@ async function handleScripted(
   }
 
   // FALLBACK: alla intake-faser ska aldrig nå LLM — visa scripted prompt igen
+  // OBS: drafting_speech är medvetet UTESLUTEN här eftersom "Skriv utkast åt mig"
+  // måste falla igenom till LLM som kör generate_speech_cards.
   const intakePhases = new Set([
     "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
-    "intake_mode", "intake_speech_length", "drafting_speech",
+    "intake_mode", "intake_speech_length",
     "awaiting_perform", "post_perform_check", "idle",
   ]);
   if (intakePhases.has(phase)) {
