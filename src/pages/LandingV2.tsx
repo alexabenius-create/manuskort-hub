@@ -748,26 +748,15 @@ function CardDemo() {
           className="absolute inset-0 bg-white rounded-2xl border border-v2-line shadow-[0_20px_50px_-20px_rgba(15,23,42,0.25),0_4px_12px_-4px_rgba(15,23,42,0.08)] overflow-hidden flex flex-col v2-card-enter"
         >
           <div className="p-7 sm:p-8 flex flex-col flex-1">
-            {/* Top row — pill-badges (kort-räknare + roll), inspirerat av presentationsläget */}
-            <div className="flex items-center justify-between gap-3 mb-4">
+            {/* Top row — pill-badges (kort-räknare + cue centrerad + roll) */}
+            <div className="relative flex items-center justify-between gap-3 mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-slate-600 text-[10px] font-mono uppercase tracking-[0.12em]">
                 Kort {String(index + 1).padStart(2, "0")} / {String(DEMO_CARDS.length).padStart(2, "0")}
               </span>
-              <span
-                className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] text-v2-ink/85 border"
-                style={{
-                  background: card.speakerColor,
-                  borderColor: "rgba(15,23,42,0.08)",
-                }}
-              >
-                {card.speaker}
-              </span>
-            </div>
 
-            {/* Cue-pill — centrerad, inspirerad av presentationslägets cue-knappar */}
-            <div className="flex justify-center mb-4">
+              {/* Cue-pill — absolut centrerad i samma rad */}
               <span
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wider ${
+                className={`absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wider ${
                   card.cue.label === "PAUS"
                     ? "bg-rose-50 text-rose-600 border border-rose-200/70"
                     : card.cue.label === "BILD"
@@ -777,6 +766,16 @@ function CardDemo() {
               >
                 <card.cue.icon className="h-3.5 w-3.5" />
                 {card.cue.label}
+              </span>
+
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] text-v2-ink/85 border"
+                style={{
+                  background: card.speakerColor,
+                  borderColor: "rgba(15,23,42,0.08)",
+                }}
+              >
+                {card.speaker}
               </span>
             </div>
 
