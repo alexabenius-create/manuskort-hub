@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Plus, Mic, MessageSquareReply } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, MessageSquareReply } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -85,11 +85,22 @@ export default function DebattBuddyThread() {
 
   const nextPosition = turns.length;
   const lastTurn = turns[turns.length - 1];
+  const hasOwnSpeech = turns.some((t) => t.kind === "own_speech");
   // Föreslå standard-nästa beroende på vad som hänt
   const suggestedNext: "own" | "opponent" =
     !lastTurn || lastTurn.kind === "opponent_input" ? "own" : "opponent";
-  const suggestedOwnKind: "own_speech" | "own_reply" =
-    turns.some((t) => t.kind === "own_speech") ? "own_reply" : "own_speech";
+  const suggestedOwnKind: "own_speech" | "own_reply" = hasOwnSpeech ? "own_reply" : "own_speech";
+
+  // Texter för det föreslagna nästa steget
+  const primaryLabel = suggestedNext === "own"
+    ? (suggestedOwnKind === "own_speech" ? "Skriv mitt anförande" : "Skriv mitt genmäle")
+    : "Lägg in vad Y sa";
+  const primaryHint = suggestedNext === "own"
+    ? (suggestedOwnKind === "own_speech"
+        ? "Börja debatten med ditt huvudanförande — AI skärper texten."
+        : "Y har just lagt fram sina argument. Skriv ditt utkast så bemöter AI dem punktvis.")
+    : "Du har precis hållit din tur. Skriv ner Y:s argument innan du svarar.";
+  const primaryAction: DraftMode = suggestedNext === "own" ? suggestedOwnKind : "opponent";
 
   return (
     <div className="min-h-screen bg-v2-surface">
@@ -156,33 +167,51 @@ export default function DebattBuddyThread() {
         )}
 
         {draftMode === "none" && (
-          <div className="rounded-2xl border border-dashed border-v2-line bg-white/50 p-5 text-center space-y-3">
-            <p className="text-[13px] text-v2-muted">Lägg till nästa tur i debatten</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button
-                variant={suggestedNext === "own" ? "default" : "outline"}
-                onClick={() => setDraftMode(suggestedOwnKind)}
-                className="rounded-full"
-              >
-                <Mic className="h-4 w-4 mr-2" />
-                {suggestedOwnKind === "own_speech" ? "Mitt anförande" : "Mitt genmäle"}
-              </Button>
-              <Button
-                variant={suggestedNext === "opponent" ? "default" : "outline"}
-                onClick={() => setDraftMode("opponent")}
-                className="rounded-full"
-              >
+          <div className="rounded-2xl border border-v2-violet/30 bg-gradient-to-br from-v2-violet/5 to-white p-6 space-y-4">
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-violet">
+                Nästa steg
+              </div>
+              <p className="text-[14px] text-v2-ink">{primaryHint}</p>
+            </div>
+            <Button
+              onClick={() => setDraftMode(primaryAction)}
+              className="w-full sm:w-auto rounded-full h-11 px-6 text-[14px] font-semibold"
+              size="lg"
+            >
+              {primaryAction === "opponent" ? (
                 <MessageSquareReply className="h-4 w-4 mr-2" />
-                Y säger något
-              </Button>
-              {suggestedOwnKind === "own_reply" && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setDraftMode("own_speech")}
-                  className="rounded-full text-v2-muted"
+              ) : (
+                <Mic className="h-4 w-4 mr-2" />
+              )}
+              {primaryLabel}
+            </Button>
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-v2-line/60 text-[12px]">
+              <span className="text-v2-muted">Eller:</span>
+              {primaryAction !== "opponent" && (
+                <button
+                  onClick={() => setDraftMode("opponent")}
+                  className="text-v2-muted hover:text-v2-ink underline-offset-2 hover:underline"
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Nytt anförande
-                </Button>
+                  Lägg in vad Y sa
+                </button>
+              )}
+              {primaryAction !== "own_speech" && (
+                <button
+                  onClick={() => setDraftMode("own_speech")}
+                  className="text-v2-muted hover:text-v2-ink underline-offset-2 hover:underline"
+                >
+                  Starta nytt anförande
+                </button>
+              )}
+              {primaryAction !== "own_reply" && hasOwnSpeech && (
+                <button
+                  onClick={() => setDraftMode("own_reply")}
+                  className="text-v2-muted hover:text-v2-ink underline-offset-2 hover:underline"
+                >
+                  Skriv genmäle
+                </button>
               )}
             </div>
           </div>

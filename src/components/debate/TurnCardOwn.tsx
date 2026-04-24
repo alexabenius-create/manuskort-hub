@@ -30,6 +30,7 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
   const [text, setText] = useState("");
   const [freedom, setFreedom] = useState(100);
   const [running, setRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   const isReply = turnKind === "own_reply";
 
@@ -40,6 +41,9 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
       return;
     }
     setRunning(true);
+    setElapsed(0);
+    const startedAt = Date.now();
+    const tick = window.setInterval(() => setElapsed(Math.round((Date.now() - startedAt) / 1000)), 250);
     try {
       const { data, error } = await supabase.functions.invoke("debate-turn", {
         body: {
@@ -64,6 +68,7 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
       }
       onGenerated();
     } finally {
+      window.clearInterval(tick);
       setRunning(false);
     }
   };
@@ -118,15 +123,27 @@ export function TurnCardOwnDraft({ threadId, position, turnKind, onGenerated, on
         </div>
       </div>
 
+      {running && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-v2-violet/5 border border-v2-violet/20">
+          <Loader2 className="h-4 w-4 animate-spin text-v2-violet shrink-0" />
+          <div className="flex-1 text-[12.5px] text-v2-ink">
+            <div className="font-semibold">AI skriver ditt {isReply ? "genmäle" : "anförande"}…</div>
+            <div className="text-v2-muted text-[11.5px]">
+              Tar oftast 5–15 sekunder. {elapsed > 0 && <>Förflutet: {elapsed}s</>}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-end gap-2 pt-2">
         {onCancel && (
-          <Button type="button" variant="ghost" onClick={onCancel} className="rounded-full">
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={running} className="rounded-full">
             Avbryt
           </Button>
         )}
         <Button type="button" onClick={generate} disabled={running} className="rounded-full">
           {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {isReply ? "Generera genmäle" : "Förbättra med AI"}
+          {running ? "Genererar…" : isReply ? "Generera genmäle" : "Förbättra med AI"}
         </Button>
       </div>
     </div>
