@@ -19,6 +19,7 @@ import { CollapsedTurnStrip } from "@/components/debate/CollapsedTurnStrip";
 import { TurnReadOnlySheet } from "@/components/debate/TurnReadOnlySheet";
 import { RoleSelectorStep } from "@/components/debate/RoleSelectorStep";
 import { RoleSelectorDialog } from "@/components/debate/RoleSelectorDialog";
+import { PerformSpeechStep } from "@/components/debate/PerformSpeechStep";
 import {
   computePhase,
   nextReplierLabel,
