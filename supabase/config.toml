@@ -21,10 +21,10 @@ verify_jwt = false
 [functions.improve-sentence]
 verify_jwt = false
 
-[functions.debate-improve]
+[functions.debate-turn]
 verify_jwt = false
 
-[functions.debate-counter]
+[functions.add-opponent-turn]
 verify_jwt = false
 
 [functions.parse-issue-document]

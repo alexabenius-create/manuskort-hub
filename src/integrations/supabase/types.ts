@@ -303,50 +303,106 @@ export type Database = {
           },
         ]
       }
-      debate_sessions: {
+      debate_threads: {
         Row: {
-          card_split: Json
+          archived_at: string | null
           created_at: string
           id: string
-          improved_text: string
+          issue_document_filename: string | null
+          issue_document_text: string
           issue_text: string
-          kind: string
-          manuscript_id: string | null
-          max_length_percent: number
-          original_text: string
-          parent_session_id: string | null
+          own_position: string
+          title: string
+          topic_area: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          card_split?: Json
+          archived_at?: string | null
           created_at?: string
           id?: string
-          improved_text?: string
+          issue_document_filename?: string | null
+          issue_document_text?: string
           issue_text?: string
-          kind?: string
-          manuscript_id?: string | null
-          max_length_percent?: number
-          original_text?: string
-          parent_session_id?: string | null
+          own_position?: string
+          title?: string
+          topic_area?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          card_split?: Json
+          archived_at?: string | null
           created_at?: string
           id?: string
-          improved_text?: string
+          issue_document_filename?: string | null
+          issue_document_text?: string
           issue_text?: string
-          kind?: string
-          manuscript_id?: string | null
-          max_length_percent?: number
-          original_text?: string
-          parent_session_id?: string | null
+          own_position?: string
+          title?: string
+          topic_area?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      debate_turns: {
+        Row: {
+          ai_card_split: Json
+          ai_output_text: string
+          ai_rationale: string
+          created_at: string
+          id: string
+          kind: string
+          manuscript_id: string | null
+          max_length_percent: number
+          opponent_input_mode: string | null
+          position: number
+          source_text: string
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_card_split?: Json
+          ai_output_text?: string
+          ai_rationale?: string
+          created_at?: string
+          id?: string
+          kind: string
+          manuscript_id?: string | null
+          max_length_percent?: number
+          opponent_input_mode?: string | null
+          position: number
+          source_text?: string
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_card_split?: Json
+          ai_output_text?: string
+          ai_rationale?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          manuscript_id?: string | null
+          max_length_percent?: number
+          opponent_input_mode?: string | null
+          position?: number
+          source_text?: string
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debate_turns_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "debate_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feedback_messages: {
         Row: {
@@ -478,7 +534,6 @@ export type Database = {
       manuscripts: {
         Row: {
           created_at: string
-          debate_session_id: string | null
           id: string
           mode: Database["public"]["Enums"]["manuscript_mode"]
           show_notes: boolean
@@ -495,7 +550,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          debate_session_id?: string | null
           id?: string
           mode?: Database["public"]["Enums"]["manuscript_mode"]
           show_notes?: boolean
@@ -512,7 +566,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          debate_session_id?: string | null
           id?: string
           mode?: Database["public"]["Enums"]["manuscript_mode"]
           show_notes?: boolean
