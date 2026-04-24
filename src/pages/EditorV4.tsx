@@ -68,15 +68,50 @@ function ViewSection({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-v2-muted">
           {label}
         </span>
-        {hint && <span className="text-[10px] text-muted-foreground/70">{hint}</span>}
+        {hint && <span className="text-[10px] text-v2-muted/70">{hint}</span>}
       </div>
       {children}
     </div>
   );
 }
+
+/** v4-segmenterad kontroll — vit pill med v2-violett aktiv-state */
+function V4Seg({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="inline-flex w-full p-1 gap-1 rounded-full bg-v2-surface border border-v2-line">
+      {children}
+    </div>
+  );
+}
+function V4SegBtn({
+  active,
+  onClick,
+  title,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`flex-1 inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+        active ? "text-white shadow-sm" : "text-v2-muted hover:text-v2-ink"
+      }`}
+      style={active ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
+    >
+      {children}
+    </button>
+  );
+}
+
 
 /**
  * EditorV3 — NodeView-arkitektur. Toolbaren speglar v1: Måltid, storlek, vy,
