@@ -845,10 +845,22 @@ Deno.serve(async (req) => {
     const aiData = await aiResp.json();
     const choice = aiData.choices?.[0];
     const assistantMsg = choice?.message;
-    let assistantText: string = trimToTwoSentences(stripToolJunk(assistantMsg?.content || ""));
+    const rawAssistantText = stripToolJunk(assistantMsg?.content || "");
+    let assistantText: string = trimToTwoSentences(rawAssistantText);
     let toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
     let quickReplies: string[] = [];
+
+    if (currentPhase === "generating_rebuttal" && toolCalls.length === 0 && rawAssistantText.trim()) {
+      const cards = splitIntoCards(rawAssistantText);
+      toolCalls = [{
+        function: {
+          name: "generate_rebuttal_cards",
+          arguments: JSON.stringify({ rebuttal_text: rawAssistantText, cards }),
+        },
+      }];
+      assistantText = "Jag har lagt in genmälet som nya manuskort.";
+    }
 
     // Exekvera tool calls
     for (const tc of toolCalls) {
