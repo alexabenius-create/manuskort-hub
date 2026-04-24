@@ -503,6 +503,16 @@ export default function LibraryV2() {
           <p className="text-v2-muted text-[17px] sm:text-[18px] mt-4 max-w-xl">
             Skapa, redigera och håll flyt — från första hälsning till sista applåd.
           </p>
+          {(tier === "pro" || tier === "admin") && aiUsage && aiUsage.limit > 0 && (
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur border border-v2-line pl-3 pr-3.5 py-1.5 text-[13px] text-v2-muted shadow-sm">
+              <Sparkles className="h-3.5 w-3.5 text-v2-violet" />
+              <span>
+                <span className="font-semibold text-v2-ink">{aiUsage.remaining}</span>
+                <span className="text-v2-muted"> / {aiUsage.limit}</span>
+                <span className="text-v2-muted"> AI-förbättringar kvar denna månad</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Controls */}
