@@ -188,15 +188,29 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
   const showFooter = true; // visa alltid footer (för "+ lägg till"-CTA:er)
   const showInsertPills = !isDragActive;
 
+  const showSectionBanner =
+    sectionInfo?.isFirstInSection && !!a.sectionId && !!a.sectionLabel;
+
   return (
     <NodeViewWrapper
       as="article"
       data-card-block="true"
+      data-section-id={a.sectionId ?? undefined}
       draggable={false}
+      style={hideForCollapse ? { display: "none" } : undefined}
       className={`card-block relative rounded-2xl border bg-surface shadow-subtle mb-4 transition-all ${
         a.isPanic ? "ring-1 ring-[hsl(35_85%_50%)]/40 border-[hsl(35_85%_50%)]/30" : "border-border/40"
       } ${isBeingDragged ? "opacity-40" : ""}`}
     >
+      {showSectionBanner && manuscriptId && a.sectionId && (
+        <CardSectionBanner
+          manuscriptId={manuscriptId}
+          sectionId={a.sectionId}
+          label={a.sectionLabel}
+          cardCount={sectionInfo?.cardCount ?? 1}
+          collapsed={isCollapsed}
+        />
+      )}
       {/* Drop-zon ovanför kortet */}
       {canDrag && myPos != null && (
         <div className="absolute -top-2 inset-x-0">
