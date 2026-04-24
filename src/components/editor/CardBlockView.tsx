@@ -12,6 +12,7 @@ import { CardCuePopover } from "./CardCuePopover";
 import { CardNotesEditor } from "./CardNotesEditor";
 import { CardMoreMenu } from "./CardMoreMenu";
 import { CardInsertButton } from "./CardInsertButton";
+import { TextSelection } from "prosemirror-state";
 import { CardRolePopover } from "./CardRolePopover";
 import { CardTargetTimePopover } from "./CardTargetTimePopover";
 import { CardChainTimeChip } from "./CardChainTimeChip";
@@ -269,17 +270,14 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
               if (typeof pos !== "number") return;
               const { state, view } = editor;
               const sel = state.selection;
-              const inThisCard =
-                sel.from > pos && sel.to < pos + node.nodeSize;
+              const inThisCard = sel.from > pos && sel.to < pos + node.nodeSize;
               if (!inThisCard) {
-                // Fokusera kortet — sätt caret i mitten av första paragrafen.
                 view.focus();
-                const tr = state.tr;
                 try {
-                  const target = pos + 2; // efter cardBlock+paragraph öppning
-                  tr.setSelection(
-                    (await import("prosemirror-state")).TextSelection.near(
-                      tr.doc.resolve(Math.min(target, tr.doc.content.size)),
+                  const target = pos + 2;
+                  const tr = state.tr.setSelection(
+                    TextSelection.near(
+                      state.tr.doc.resolve(Math.min(target, state.doc.content.size)),
                     ),
                   );
                   view.dispatch(tr);
