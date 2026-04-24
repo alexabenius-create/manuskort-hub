@@ -171,8 +171,8 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           krymps höger marginal så att gruppen centreras över manustexten istället för att kollidera. */}
       {hasAnyCue && (
         <div
-          className="absolute top-4 left-6 md:left-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10 transition-[right] duration-200"
-          style={{ right: showNotes && !isMobile ? 408 : undefined }}
+          className="absolute top-4 left-6 right-6 md:left-12 md:right-12 flex justify-center items-center gap-3 flex-wrap pointer-events-none z-10 transition-[right] duration-200"
+          style={showNotes && !isMobile ? { right: 408 } : undefined}
         >
           {energyCues.map((c) => (
             <div
