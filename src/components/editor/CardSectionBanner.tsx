@@ -22,7 +22,7 @@ export function CardSectionBanner({
 }: Props) {
   const Chevron = collapsed ? ChevronRight : ChevronDown;
   return (
-    <div contentEditable={false} className="mb-2 -mt-1">
+    <div data-section-banner="true" contentEditable={false} className="mb-2 -mt-1">
       <button
         type="button"
         onClick={() => toggleSection(manuscriptId, sectionId)}
