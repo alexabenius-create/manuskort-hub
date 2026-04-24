@@ -22,9 +22,12 @@ export type Database = {
           ai_summary: string | null
           brief_notes: string
           created_at: string
+          feedback_sent_at: string | null
           id: string
           implementation_ref: string | null
           implemented_at: string | null
+          linked_thread_id: string | null
+          linked_user_id: string | null
           my_notes: string
           priority: string
           raw_text: string
@@ -44,9 +47,12 @@ export type Database = {
           ai_summary?: string | null
           brief_notes?: string
           created_at?: string
+          feedback_sent_at?: string | null
           id?: string
           implementation_ref?: string | null
           implemented_at?: string | null
+          linked_thread_id?: string | null
+          linked_user_id?: string | null
           my_notes?: string
           priority?: string
           raw_text: string
@@ -66,9 +72,12 @@ export type Database = {
           ai_summary?: string | null
           brief_notes?: string
           created_at?: string
+          feedback_sent_at?: string | null
           id?: string
           implementation_ref?: string | null
           implemented_at?: string | null
+          linked_thread_id?: string | null
+          linked_user_id?: string | null
           my_notes?: string
           priority?: string
           raw_text?: string
