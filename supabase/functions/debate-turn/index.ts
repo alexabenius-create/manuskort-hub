@@ -110,7 +110,27 @@ Deno.serve(async (req) => {
       (turnsRaw ?? []) as any[];
 
     const nextPosition = turns.length === 0 ? 0 : (turns[turns.length - 1].position + 1);
-    const charCap = Math.max(400, Math.round(newSourceText.length * (maxLengthPercent / 100)));
+
+    // Längdregel:
+    // - Anförande (own_speech): längd styrs av användarens utkast × maxLengthPercent.
+    // - Replik/genmäle (own_reply, rebuttal): hård regel = 30 sekunder uppläsningstid
+    //   med användarens wpm + 10 ord/min. ~6 tecken per ord (svenska, inkl. mellanslag).
+    let charCap: number;
+    let targetSeconds: number | null = null;
+    if (turnKind === "own_reply" || turnKind === "rebuttal") {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("wpm")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const baseWpm = Math.max(80, Math.min(260, Number(profile?.wpm) || 140));
+      const effectiveWpm = baseWpm + 10;
+      targetSeconds = 30;
+      const words = Math.round((effectiveWpm / 60) * targetSeconds);
+      charCap = Math.max(200, words * 6);
+    } else {
+      charCap = Math.max(400, Math.round(newSourceText.length * (maxLengthPercent / 100)));
+    }
 
     // Bygg systemprompt
     const t = thread as ThreadRow;
@@ -173,8 +193,12 @@ UPPGIFT: ${taskInstruction}
 
 REGLER:
 - Skriv på svenska, retoriskt skickligt och faktabaserat.
-- Hård längdregel: texten får INTE överstiga ${charCap} tecken.
-- Dela upp svaret i 1–6 logiska kort (titel + innehåll) som passar för uppläsning.
+- Hård längdregel: texten får INTE överstiga ${charCap} tecken.${
+      targetSeconds
+        ? `\n- Detta är en ${turnKind === "rebuttal" ? "genmäle" : "replik"}: målet är ca ${targetSeconds} sekunders uppläsningstid (snabbt, vasst tempo). Skriv kompakt — undvik utvikningar.`
+        : ""
+    }
+- Dela upp svaret i ${targetSeconds ? "1–2" : "1–6"} logiska kort (titel + innehåll) som passar för uppläsning.
 - Behåll konsekvent X:s ståndpunkt — backa aldrig från den.
 - Returnera ALLT via verktygsanropet 'produce_turn'.`;
 
