@@ -692,7 +692,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
     if (threadErr || !threadData) return json({ error: "Thread not found" }, 404);
-    const thread = threadData as ThreadRow;
+    let thread = threadData as ThreadRow;
 
     // Spara användarmeddelandet om det finns
     if (userMessage.trim()) {
@@ -720,6 +720,16 @@ Deno.serve(async (req) => {
         quick_replies: scripted.quick_replies,
       });
     }
+
+    // handleScripted kan uppdatera fasen och sedan släppa vidare till LLM.
+    // Läs om tråden så currentPhase inte fastnar i den gamla fasen.
+    const { data: latestThreadData } = await admin
+      .from("debate_threads")
+      .select("*")
+      .eq("id", threadId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (latestThreadData) thread = latestThreadData as ThreadRow;
 
     // Ladda historik (för LLM-faser)
     const { data: history } = await admin
