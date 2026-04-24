@@ -77,6 +77,7 @@ const App = () => (
                   <Route path="/forelasning" element={<Forelasning />} />
                   <Route path="/affiliate/:code" element={<AffiliateLanding />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
+                  <Route path="/bibliotek-v2" element={<RequireAuth><LibraryV2 /></RequireAuth>} />
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/importera" element={<RequireAuth><Import /></RequireAuth>} />
                   <Route path="/manus/:id" element={<RequireAuth><EditorV3 /></RequireAuth>} />
