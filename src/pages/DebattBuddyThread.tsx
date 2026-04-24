@@ -98,7 +98,7 @@ export default function DebattBuddyThread() {
         .maybeSingle(),
       supabase
         .from("debate_turns")
-        .select("id, position, kind, opponent_input_mode, source_text, ai_output_text, ai_card_split, ai_rationale, parent_turn_id, speaker_label, round_number")
+        .select("id, position, kind, opponent_input_mode, source_text, ai_output_text, ai_card_split, ai_rationale, parent_turn_id, speaker_label, round_number, manuscript_id")
         .eq("thread_id", threadId)
         .order("position", { ascending: true }),
     ]);
