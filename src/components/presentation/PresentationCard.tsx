@@ -173,18 +173,18 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           {energyCues.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-yellow))] bg-[hsl(var(--cue-yellow)/0.15)] border border-[hsl(var(--cue-yellow)/0.4)]"
+              className="inline-flex items-center gap-4 rounded-full px-6 py-3 text-[26px] font-medium text-[hsl(var(--cue-yellow))] bg-[hsl(var(--cue-yellow)/0.15)] border border-[hsl(var(--cue-yellow)/0.4)]"
             >
-              <Zap className="h-3.5 w-3.5 flex-shrink-0" />
+              <Zap className="h-7 w-7 flex-shrink-0" />
               <span>{c.text}</span>
             </div>
           ))}
           {actionCues.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--accent-blue))] bg-[hsl(var(--accent-blue)/0.15)] border border-[hsl(var(--accent-blue)/0.3)]"
+              className="inline-flex items-center gap-4 rounded-full px-6 py-3 text-[26px] font-medium text-[hsl(var(--accent-blue))] bg-[hsl(var(--accent-blue)/0.15)] border border-[hsl(var(--accent-blue)/0.3)]"
             >
-              <Play className="h-3.5 w-3.5 flex-shrink-0" />
+              <Play className="h-7 w-7 flex-shrink-0" />
               <span>{c.text}</span>
             </div>
           ))}
@@ -193,11 +193,11 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
             return (
               <div
                 key={c.id}
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
+                className="inline-flex items-center gap-4 rounded-full px-6 py-3 text-[26px] font-medium text-[hsl(var(--cue-red))] bg-[hsl(var(--cue-red)/0.15)] border border-[hsl(var(--cue-red)/0.3)]"
               >
-                <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                <Users className="h-7 w-7 flex-shrink-0" />
                 {p?.name && (
-                  <span className="font-mono text-[10px] uppercase tracking-wider opacity-80">{p.name}</span>
+                  <span className="font-mono text-[20px] uppercase tracking-wider opacity-80">{p.name}</span>
                 )}
                 <span className="text-zinc-100">{c.text}</span>
               </div>
