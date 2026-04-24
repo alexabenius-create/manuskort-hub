@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, Copy, Trash2, Check, Loader2, RefreshCw } from "lucide-react";
+import { Sparkles, Copy, Trash2, Check, Loader2, RefreshCw, X } from "lucide-react";
 import {
   Insight, InsightStatus, InsightPriority,
   STATUS_LABEL, PRIORITY_LABEL, SOURCE_LABEL,
@@ -122,6 +122,20 @@ export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
     onClose();
   };
 
+  const discardAi = async (mode: AiMode) => {
+    if (!confirm(
+      mode === "summary" ? "Slänga AI-sammanfattningen permanent?" :
+      mode === "actions" ? "Slänga AI:s åtgärdsförslag permanent?" :
+      "Slänga Lovable-briefen permanent?"
+    )) return;
+    const field =
+      mode === "summary" ? { ai_summary: null } :
+      mode === "actions" ? { ai_proposed_actions: null } :
+      { ai_brief: null };
+    await update(field as Partial<Insight>);
+    toast({ title: "Slängd" });
+  };
+
   const renderModeBlock = (
     mode: AiMode,
     label: string,
@@ -137,7 +151,18 @@ export function InsightDetail({ insight, related, onChanged, onClose }: Props) {
       <div className="mt-4">
         <div className="flex items-center justify-between mb-1.5">
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</Label>
-          {extraHeader}
+          <div className="flex items-center gap-1">
+            {extraHeader}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => discardAi(mode)}
+              className="h-7 rounded-full text-[12px] gap-1.5 text-muted-foreground hover:text-destructive"
+              title="Släng och radera permanent"
+            >
+              <X className="h-3.5 w-3.5" /> Släng
+            </Button>
+          </div>
         </div>
         <div className={`p-3 rounded-lg bg-surface-2 text-[14px] whitespace-pre-wrap ${mode === "brief" ? "font-mono text-[13px]" : ""}`}>
           {aiText}
