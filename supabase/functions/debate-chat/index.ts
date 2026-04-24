@@ -23,30 +23,28 @@ interface ThreadRow {
   current_opponent_label: string;
 }
 
-const SYSTEM_PROMPT = `Du är **Debatt-buddy** — en varm, sympatisk svensk debattcoach. Du är peppande, konkret och kortfattad. Du hjälper användaren förbereda anföranden, repliker och genmälen för politiska debatter (kommun, region, riksdag).
+const SYSTEM_PROMPT = `Du är **Debatt-buddy** — varm, peppig svensk debattcoach. Hjälper användaren förbereda anföranden och genmälen.
 
-VIKTIGT:
-- Skriv på svenska.
-- Var personlig, vänlig och uppmuntrande — som en kollega, inte en byråkrat.
-- Ställ EN fråga åt gången. Vänta på svar innan du går vidare.
-- Korta svar är bra. Inga långa utläggningar.
-- Använd verktygen (tools) för att uppdatera ärendet, läge, motdebattör och generera genmälen.
+KRITISKT — SVARSSTIL:
+- **Max 2 korta meningar per svar.** Helst 1.
+- Ställ ALDRIG flera frågor i samma svar.
+- Inga utläggningar, inga listor i frågorna.
+- Använd ALLTID verktyget \`suggest_quick_replies\` med 2-4 korta svarsalternativ (max 4 ord vardera) när du ställer en fråga. Användaren ska kunna klicka istället för skriva.
+- Producera resultat så snart du har minimum av info — vänta inte i onödan.
+- Max 1 emoji per svar. Ofta ingen.
 
-DEBATTREGLER:
-- Ett **anförande** kan följas av **repliker** från andra debattörer.
-- På varje **replik** har anförandets talare rätt till **genmäle** (eller välja att avstå).
-- Om flera repliker — ett genmäle per replik.
+FLÖDE (driv framåt aggressivt):
+1. **intake_issue**: Fråga kort om ärendet. Ge snabbsvar som ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` + gå direkt vidare.
+2. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
+3. **drafting_speech**: Fråga kort efter ståndpunkt eller huvudbudskap, max en mening. Sedan föreslå direkt ett utkast och be användaren kopiera till editorn. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"].
+4. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
+5. **intake_opponent_name** → \`set_opponent\` direkt.
+6. **intake_opponent_args** → be om motdebattörens argument i ett svar.
+7. → \`generate_rebuttal_cards\` direkt när du har argumenten.
 
-FLÖDE (vägled användaren stegvis):
-1. **intake_issue**: Hälsa varmt och fråga om ärendet. "Hej! Roligt att vi ska förbereda debatt tillsammans 🤝 Vad handlar ärendet om?" När användaren beskriver ärendet → använd verktyget set_issue.
-2. **intake_mode**: Fråga om användaren ska hålla anförande eller bemöta någon annans anförande. Använd set_mode.
-3. **drafting_speech**: Hjälp formulera anförandet. När det är klart, säg åt användaren att kopiera in det i manuskortet bredvid (editorn) och presentera.
-4. **post_perform_check**: Efter framförandet — fråga om användaren fick repliker. Om ja → intake_opponent_name → intake_opponent_args → generate_rebuttal.
-5. Generera genmäle med generate_rebuttal_cards när du har motdebattörens argument.
+REGLER: Anförande → repliker → genmäle (1 per replik) eller avstå.
 
-TON: glad, peppig, professionell. Använd gärna en emoji då och då (max 1 per svar). Var inte styltig.
-
-Nuvarande fas och kontext skickas i varje runda — anpassa svaret efter den.`;
+Kontext skickas varje runda — anpassa kort.`;
 
 interface Tool {
   type: "function";
@@ -172,6 +170,26 @@ const TOOLS: Tool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "suggest_quick_replies",
+      description: "Föreslå 2-4 korta svarsalternativ (max 4 ord vardera) som klickbara knappar för användaren. Använd ALLTID när du ställer en fråga.",
+      parameters: {
+        type: "object",
+        properties: {
+          replies: {
+            type: "array",
+            items: { type: "string" },
+            minItems: 2,
+            maxItems: 4,
+          },
+        },
+        required: ["replies"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function json(body: unknown, status = 200) {
@@ -283,6 +301,7 @@ Deno.serve(async (req) => {
     let assistantText: string = assistantMsg?.content || "";
     const toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
+    let quickReplies: string[] = [];
 
     // Exekvera tool calls
     for (const tc of toolCalls) {
@@ -376,6 +395,9 @@ Deno.serve(async (req) => {
             .update({ bot_state: { ...thread.bot_state, phase: args.next_phase } })
             .eq("id", threadId);
           executedTools.push({ name, result: args.next_phase });
+        } else if (name === "suggest_quick_replies") {
+          quickReplies = Array.isArray(args.replies) ? args.replies.slice(0, 4) : [];
+          executedTools.push({ name, result: `${quickReplies.length}` });
         }
       } catch (e) {
         console.error("tool error", name, e);
@@ -415,12 +437,13 @@ Deno.serve(async (req) => {
       user_id: userId,
       role: "assistant",
       content: assistantText,
-      metadata: { tools: executedTools },
+      metadata: { tools: executedTools, quick_replies: quickReplies },
     });
 
     return json({
       assistant: assistantText,
       tools: executedTools,
+      quick_replies: quickReplies,
     });
   } catch (e) {
     console.error("debate-chat error", e);

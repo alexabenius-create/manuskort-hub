@@ -15,6 +15,9 @@ export function DebateChatWidget({ threadId }: Props) {
   const [mode, setMode] = useState<Mode>("compact");
   const { messages, sending, sendMessage, threadState } = useDebateChat(threadId);
 
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+  const quickReplies = ((lastAssistant?.metadata as { quick_replies?: string[] } | undefined)?.quick_replies) || [];
+
   if (mode === "minimized") {
     return <DebateChatBubble onClick={() => setMode("compact")} />;
   }
@@ -35,7 +38,7 @@ export function DebateChatWidget({ threadId }: Props) {
               onMinimize={() => setMode("minimized")}
             />
             <DebateChatMessages messages={messages} sending={sending} />
-            <DebateChatInput onSend={sendMessage} disabled={sending} />
+            <DebateChatInput onSend={sendMessage} disabled={sending} quickReplies={quickReplies} />
           </div>
         </div>
       </>
@@ -54,7 +57,7 @@ export function DebateChatWidget({ threadId }: Props) {
         onMinimize={() => setMode("minimized")}
       />
       <DebateChatMessages messages={messages} sending={sending} />
-      <DebateChatInput onSend={sendMessage} disabled={sending} />
+      <DebateChatInput onSend={sendMessage} disabled={sending} quickReplies={quickReplies} />
     </div>
   );
 }
