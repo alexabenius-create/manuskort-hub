@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Mic, Loader2, Sparkles, MessageSquare } from "lucide-react";
+import { Mic, Loader2, Sparkles, MessageSquare, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
