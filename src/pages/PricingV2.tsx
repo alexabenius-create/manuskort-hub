@@ -34,6 +34,7 @@ const freeFeatures: Feature[] = [
   { label: "Max 5 paneldeltagare per manus", included: true },
   { label: "Presentationsläge med cue-färger", included: true },
   { label: ".docx-import", included: false },
+  { label: "AI-förbättring av meningar", included: false },
   { label: "Obegränsade manus, kort och deltagare", included: false },
   { label: "Prioriterad support", included: false },
 ];
@@ -43,10 +44,12 @@ const proFeatures: Feature[] = [
   { label: "Obegränsade kort per manus", included: true },
   { label: "Obegränsade paneldeltagare", included: true },
   { label: ".docx-import", included: true },
+  { label: "AI-förbättring av meningar (200/mån)", included: true },
   { label: "Presentationsläge med cue-färger", included: true },
   { label: "Alla framtida features", included: true },
   { label: "Prioriterad support", included: true },
 ];
+
 
 function FeatureRow({ feature }: { feature: Feature }) {
   return (
