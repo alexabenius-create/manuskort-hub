@@ -115,11 +115,18 @@ Returnera ALLT via verktygsanropet 'extract_issue':
           content: `Här är ärendet (extraherad text från ${mime === MIME_DOCX ? "DOCX" : "PPTX"}):\n\n${extractedText.slice(0, 60000)}`,
         };
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // AbortController för att inte hänga edge-functionen mot 150s idle-timeout.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
+    let aiResponse: Response;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "system", content: systemPrompt }, userMessage],
         tools: [
           {
