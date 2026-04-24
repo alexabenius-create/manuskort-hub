@@ -102,11 +102,12 @@ Deno.serve(async (req) => {
 
     const { data: turnsRaw, error: turnsErr } = await admin
       .from("debate_turns")
-      .select("id, position, kind, opponent_input_mode, source_text, ai_output_text")
+      .select("id, position, kind, opponent_input_mode, source_text, ai_output_text, parent_turn_id, speaker_label, round_number")
       .eq("thread_id", threadId)
       .order("position", { ascending: true });
     if (turnsErr) return json({ error: "Kunde inte hämta turer" }, 500);
-    const turns: TurnRow[] = (turnsRaw ?? []) as TurnRow[];
+    const turns: (TurnRow & { parent_turn_id: string | null; speaker_label: string; round_number: number })[] =
+      (turnsRaw ?? []) as any[];
 
     const nextPosition = turns.length === 0 ? 0 : (turns[turns.length - 1].position + 1);
     const charCap = Math.max(400, Math.round(newSourceText.length * (maxLengthPercent / 100)));
@@ -114,30 +115,52 @@ Deno.serve(async (req) => {
     // Bygg systemprompt
     const t = thread as ThreadRow;
     const documentExcerpt = (t.issue_document_text || "").slice(0, ISSUE_DOCUMENT_LIMIT);
-    const turnHistoryParts: string[] = [];
-    for (const turn of turns) {
-      const speaker = turn.kind === "opponent_input" ? "Y (motdebattör)" : "X (du)";
-      const label =
-        turn.kind === "own_speech"
-          ? "anförande"
-          : turn.kind === "own_reply"
-          ? "genmäle"
-          : "replik";
-      const text = turn.ai_output_text || turn.source_text;
-      if (text) {
-        turnHistoryParts.push(`Tur ${turn.position + 1} – ${speaker} (${label}):\n${text}`);
+
+    // För rebuttal: bygg fokuserad kontext (anförandet + den specifika repliken)
+    let turnHistory = "";
+    if (turnKind === "rebuttal" && parentTurnId) {
+      const parentReply = turns.find((x) => x.id === parentTurnId);
+      const parentSpeech = parentReply?.parent_turn_id
+        ? turns.find((x) => x.id === parentReply.parent_turn_id)
+        : turns.filter((x) => (x.round_number || 1) === (parentReply?.round_number || 1) && (x.kind === "own_speech" || x.kind === "opponent_speech"))[0];
+      const parts: string[] = [];
+      if (parentSpeech) {
+        parts.push(`X:s anförande:\n${parentSpeech.ai_output_text || parentSpeech.source_text}`);
       }
+      if (parentReply) {
+        const label = parentReply.speaker_label || "Replikant";
+        parts.push(`Replik från ${label}:\n${parentReply.source_text}`);
+      }
+      turnHistory = parts.join("\n\n") || "(ingen kontext)";
+    } else {
+      const turnHistoryParts: string[] = [];
+      for (const turn of turns) {
+        const isOwn = turn.kind === "own_speech" || turn.kind === "own_reply" || turn.kind === "rebuttal";
+        const speaker = isOwn ? "X (du)" : `${turn.speaker_label || "Y"} (motdebattör)`;
+        const label =
+          turn.kind === "own_speech" || turn.kind === "opponent_speech"
+            ? "anförande"
+            : turn.kind === "rebuttal"
+            ? "genmäle"
+            : turn.kind === "rebuttal_waived"
+            ? "(avstod genmäle)"
+            : "replik";
+        const text = turn.ai_output_text || turn.source_text;
+        if (text || turn.kind === "rebuttal_waived") {
+          turnHistoryParts.push(`Tur ${turn.position + 1} – ${speaker} (${label}):\n${text || "—"}`);
+        }
+      }
+      turnHistory = turnHistoryParts.length > 0 ? turnHistoryParts.join("\n\n") : "(inga tidigare turer i denna tråd)";
     }
-    const turnHistory = turnHistoryParts.length > 0
-      ? turnHistoryParts.join("\n\n")
-      : "(inga tidigare turer i denna tråd)";
 
     const taskInstruction = turnKind === "own_speech"
       ? `Producera en SKARPARE version av användarens anförande. Behåll ståndpunkten och röst, men gör argumentationen tydligare och mer slagkraftig.`
-      : `Producera ett GENMÄLE från användaren (X). Bemöt motdebattörens (Y) senaste argument punktvis och försvara användarens ståndpunkt. Bygg vidare på allt som sagts tidigare i debatten.`;
+      : turnKind === "rebuttal"
+      ? `Producera ett GENMÄLE från användaren (X) på den specifika replik som visas. Bemöt repliken punktvis och försvara X:s ståndpunkt. Var koncis och slagkraftig.`
+      : `Producera ett SVAR/REPLIK från användaren (X). Bemöt motdebattörens senaste argument punktvis och försvara användarens ståndpunkt.`;
 
-    const systemPrompt = `Du är en svensk debattcoach som hjälper användaren (X) i en pågående debatt mot motdebattören (Y).
-Du har tillgång till hela debatten så här långt och ska producera nästa tur från X.
+    const systemPrompt = `Du är en svensk debattcoach som hjälper användaren (X) i en pågående debatt mot motdebattörer.
+Du har tillgång till relevant debatt-kontext och ska producera nästa tur från X.
 
 ÄRENDE: ${t.issue_text || "(ej angivet)"}
 
@@ -155,10 +178,10 @@ REGLER:
 - Behåll konsekvent X:s ståndpunkt — backa aldrig från den.
 - Returnera ALLT via verktygsanropet 'produce_turn'.`;
 
-    const userPrompt = `${documentExcerpt ? `DOKUMENT-KONTEXT (ärendehandling):\n${documentExcerpt}\n\n` : ""}DEBATTEN SÅ HÄR LÅNGT:
+    const userPrompt = `${documentExcerpt ? `DOKUMENT-KONTEXT (ärendehandling):\n${documentExcerpt}\n\n` : ""}KONTEXT:
 ${turnHistory}
 
-X:S NYA UTKAST/INMATNING FÖR NÄSTA TUR (${turnKind === "own_speech" ? "anförande" : "genmäle"}):
+X:S NYA UTKAST/INMATNING (${turnKind === "own_speech" ? "anförande" : turnKind === "rebuttal" ? "genmäle" : "replik"}):
 ${newSourceText}`;
 
     const controller = new AbortController();
