@@ -638,6 +638,22 @@ export default function EditorV4() {
 
             {/* Rad 2 (mobil, centrerad) / höger (desktop): actions */}
             <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-start md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
+              {manuscript.mode === "debate" && manuscript.debate_session_id && (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/debatt-buddy?mode=reply&parent=${manuscript.debate_session_id}`)}
+                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[12.5px] font-semibold text-white whitespace-nowrap flex-shrink-0"
+                      style={{ backgroundImage: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Skriv replik
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Skapa AI-replik mot motdebattören</TooltipContent>
+                </Tooltip>
+              )}
               {/* Måltid */}
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
