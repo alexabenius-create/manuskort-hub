@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const speech: string = (body?.speech ?? "").toString().trim();
     const issue: string = (body?.issue ?? "").toString().trim();
+    const issueDocumentText: string = (body?.issue_document_text ?? "").toString().trim();
     const maxLengthPercent: number = Math.max(80, Math.min(150, Number(body?.maxLengthPercent) || 100));
     if (!speech || speech.length < 20) return json({ error: "Anförandet är för kort" }, 400);
     if (speech.length > 8000) return json({ error: "Anförandet är för långt (max 8000 tecken)" }, 400);
@@ -76,7 +77,7 @@ Returnera ALLT via verktygsanropet 'rewrite_speech'.`;
 
     const userPrompt = `Ärende (kontext, valfritt):
 ${issue || "(ej angivet)"}
-
+${issueDocumentText ? `\nDOKUMENT-KONTEXT (ärendehandling, uppladdad av användaren):\n${issueDocumentText.slice(0, 30000)}\n` : ""}
 Användarens anförande:
 ${speech}`;
 
