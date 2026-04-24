@@ -162,7 +162,7 @@ export default function Presentation() {
         return;
       }
       setManuscript(mRes.data as Manuscript);
-      setCards((cRes.data ?? []) as Card[]);
+      setAllCards((cRes.data ?? []) as Card[]);
       setPanelists((pRes.data ?? []) as Panelist[]);
       setLoading(false);
     })();
@@ -393,7 +393,7 @@ export default function Presentation() {
   // Anteckningar — debounced spara till Supabase
   const notesSaveTimers = useRef<Map<string, number>>(new Map());
   const handleNotesChange = useCallback((cardId: string, notes: string) => {
-    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
+    setAllCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
     const timers = notesSaveTimers.current;
     const existing = timers.get(cardId);
     if (existing) window.clearTimeout(existing);
