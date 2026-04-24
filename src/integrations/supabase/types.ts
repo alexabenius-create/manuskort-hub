@@ -205,6 +205,30 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_features: {
+        Row: {
+          feature: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          feature: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          feature?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           content_html: string
@@ -278,6 +302,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      debate_sessions: {
+        Row: {
+          card_split: Json
+          created_at: string
+          id: string
+          improved_text: string
+          issue_text: string
+          kind: string
+          manuscript_id: string | null
+          max_length_percent: number
+          original_text: string
+          parent_session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_split?: Json
+          created_at?: string
+          id?: string
+          improved_text?: string
+          issue_text?: string
+          kind?: string
+          manuscript_id?: string | null
+          max_length_percent?: number
+          original_text?: string
+          parent_session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_split?: Json
+          created_at?: string
+          id?: string
+          improved_text?: string
+          issue_text?: string
+          kind?: string
+          manuscript_id?: string | null
+          max_length_percent?: number
+          original_text?: string
+          parent_session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       feedback_messages: {
         Row: {
@@ -409,6 +478,7 @@ export type Database = {
       manuscripts: {
         Row: {
           created_at: string
+          debate_session_id: string | null
           id: string
           mode: Database["public"]["Enums"]["manuscript_mode"]
           show_notes: boolean
@@ -425,6 +495,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          debate_session_id?: string | null
           id?: string
           mode?: Database["public"]["Enums"]["manuscript_mode"]
           show_notes?: boolean
@@ -441,6 +512,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          debate_session_id?: string | null
           id?: string
           mode?: Database["public"]["Enums"]["manuscript_mode"]
           show_notes?: boolean
@@ -728,6 +800,10 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
+      has_beta_access: {
+        Args: { _feature: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -750,7 +826,7 @@ export type Database = {
       app_role: "free" | "pro" | "admin"
       card_role: "moderator" | "speaker"
       editor_version: "v1" | "v3"
-      manuscript_mode: "moderator" | "speaker"
+      manuscript_mode: "moderator" | "speaker" | "debate"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -881,7 +957,7 @@ export const Constants = {
       app_role: ["free", "pro", "admin"],
       card_role: ["moderator", "speaker"],
       editor_version: ["v1", "v3"],
-      manuscript_mode: ["moderator", "speaker"],
+      manuscript_mode: ["moderator", "speaker", "debate"],
     },
   },
 } as const
