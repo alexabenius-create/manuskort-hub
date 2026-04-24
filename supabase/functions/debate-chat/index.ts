@@ -420,12 +420,47 @@ Deno.serve(async (req) => {
           await admin.from("debate_threads").update(briefUpdates).eq("id", threadId);
           executedTools.push({ name, result: "ok" });
         } else if (name === "set_mode") {
-          const phase = args.kind === "reply" ? "intake_opponent_name" : "drafting_speech";
+          const phase = args.kind === "reply" ? "intake_opponent_name" : "intake_speech_length";
           await admin
             .from("debate_threads")
             .update({ bot_state: { ...thread.bot_state, phase, mode: args.kind } })
             .eq("id", threadId);
           executedTools.push({ name, result: phase });
+        } else if (name === "set_speech_length") {
+          const seconds = Number(args.seconds) || 120;
+          await admin
+            .from("debate_threads")
+            .update({
+              bot_state: { ...thread.bot_state, phase: "drafting_speech", speech_length_seconds: seconds },
+            })
+            .eq("id", threadId);
+          executedTools.push({ name, result: `${seconds}s` });
+        } else if (name === "generate_speech_cards") {
+          if (thread.manuscript_id) {
+            const { data: existingCards } = await admin
+              .from("cards")
+              .select("position")
+              .eq("manuscript_id", thread.manuscript_id)
+              .order("position", { ascending: false })
+              .limit(1);
+            let pos = ((existingCards?.[0]?.position as number) ?? -1) + 1;
+            const rows = (args.cards as Array<{ title: string; body: string }>).map((c) => ({
+              manuscript_id: thread.manuscript_id,
+              user_id: userId,
+              position: pos++,
+              role: "speaker",
+              title: c.title,
+              content_html: `<p>${c.body.replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+            }));
+            if (rows.length) await admin.from("cards").insert(rows);
+            executedTools.push({ name, result: `${rows.length} kort` });
+          } else {
+            executedTools.push({ name, result: "no_manuscript" });
+          }
+          await admin
+            .from("debate_threads")
+            .update({ bot_state: { ...thread.bot_state, phase: "awaiting_perform" } })
+            .eq("id", threadId);
         } else if (name === "set_opponent") {
           await admin
             .from("debate_threads")
