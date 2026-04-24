@@ -30,6 +30,8 @@ import { EXAMPLE_TAG } from "@/lib/exampleManuscript";
 import { seedExampleForUser, hasBeenSeeded, markAsSeeded } from "@/lib/seedExampleManuscript";
 import { useTourTrigger } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
+import { useAiUsage } from "@/hooks/useAiUsage";
+import { Sparkles as SparklesIcon } from "lucide-react";
 import { LIMITS, TIER_LABEL } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
