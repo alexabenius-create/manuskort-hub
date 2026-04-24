@@ -87,7 +87,17 @@ Deno.serve(async (req) => {
 
     if (mime === MIME_PDF) {
       const buf = new Uint8Array(await file.arrayBuffer());
-      pdfBase64 = base64Encode(buf);
+      // Försök först extrahera text lokalt (snabbt + billigt). Faller tillbaka till vision-läge om tom.
+      try {
+        extractedText = await extractPdfText(buf);
+      } catch (e) {
+        console.warn("pdf.js text extraction failed, falling back to vision", e);
+      }
+      if (!extractedText || extractedText.length < 50) {
+        // Troligen scannad PDF — skicka som bild till modellen för OCR.
+        pdfBase64 = base64Encode(buf);
+        extractedText = "";
+      }
     } else if (mime === MIME_DOCX) {
       const buf = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer: buf });
