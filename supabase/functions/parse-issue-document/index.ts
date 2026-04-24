@@ -5,7 +5,7 @@ import {
   ZipReader,
   TextWriter,
 } from "https://deno.land/x/zipjs@v2.7.45/index.js";
-import { getDocument } from "https://esm.sh/pdfjs-serverless@0.5.0";
+import { resolvePDFJS } from "https://esm.sh/pdfjs-serverless@0.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -233,7 +233,7 @@ async function extractPptxText(file: File): Promise<string> {
 }
 
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
-  // pdf.js i Deno – inaktivera worker, font/cmap-fetching m.m.
+  const { getDocument } = await resolvePDFJS();
   const loadingTask = getDocument({
     data: bytes,
     disableFontFace: true,
