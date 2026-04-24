@@ -55,17 +55,57 @@ export function TurnCardOwnDraft({
   onGenerated,
   onCancel,
 }: Props) {
+  const { user } = useAuth();
   const [text, setText] = useState("");
   const [freedom, setFreedom] = useState(100);
   const [running, setRunning] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [aiOpen, setAiOpen] = useState(false);
 
-  const generate = async () => {
-    if (running) return;
+  const validate = (): boolean => {
     if (text.trim().length < 20) {
       toast({ title: "Skriv minst 20 tecken först", variant: "destructive" });
+      return false;
+    }
+    return true;
+  };
+
+  const saveOnly = async () => {
+    if (running || saving) return;
+    if (!validate()) return;
+    if (!user) {
+      toast({ title: "Inte inloggad", variant: "destructive" });
       return;
     }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("debate_turns").insert({
+        thread_id: threadId,
+        user_id: user.id,
+        position,
+        kind: turnKind,
+        source_text: text,
+        ai_output_text: text, // visas som "ditt anförande" i display-vyn
+        ai_card_split: [],
+        ai_rationale: "",
+        parent_turn_id: parentTurnId ?? null,
+        round_number: roundNumber ?? 1,
+        speaker_label: "X",
+      });
+      if (error) {
+        toast({ title: "Kunde inte spara", description: error.message, variant: "destructive" });
+        return;
+      }
+      onGenerated();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const generate = async () => {
+    if (running || saving) return;
+    if (!validate()) return;
     setRunning(true);
     setElapsed(0);
     const startedAt = Date.now();
@@ -103,6 +143,15 @@ export function TurnCardOwnDraft({
 
   const heading = titleFor(turnKind, contextLabel);
   const verb = turnKind === "own_speech" ? "anförande" : turnKind === "rebuttal" ? "genmäle" : "replik";
+  const saveLabel =
+    turnKind === "own_speech"
+      ? "Spara mitt anförande"
+      : turnKind === "rebuttal"
+      ? "Spara mitt genmäle"
+      : "Spara min replik";
+  const aiCtaLabel =
+    turnKind === "own_speech" ? "Förbättra med AI" : `Generera ${verb} med AI`;
+  const busy = running || saving;
 
   return (
     <div className="rounded-2xl bg-white border border-v2-violet/30 p-5 space-y-4">
@@ -125,50 +174,102 @@ export function TurnCardOwnDraft({
       />
       <div className="text-right text-[11px] text-v2-muted">{text.length} tecken</div>
 
-      <div className="space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-muted">
-          AI:s frihet med längden
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {FREEDOM_PRESETS.map((p) => (
-            <button
-              key={p.value}
+      {/* AI som valfritt hjälpmedel — utfällbart, inte primärt */}
+      <div className="rounded-xl border border-v2-line bg-v2-surface/40">
+        <button
+          type="button"
+          onClick={() => setAiOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+        >
+          <span className="inline-flex items-center gap-2 text-[13px] text-v2-ink">
+            <Sparkles className="h-3.5 w-3.5 text-v2-violet" />
+            <span className="font-medium">Vill du att AI förbättrar texten?</span>
+            <span className="text-v2-muted">Valfritt</span>
+          </span>
+          <ChevronDown
+            className={cn("h-4 w-4 text-v2-muted transition-transform", aiOpen && "rotate-180")}
+          />
+        </button>
+
+        {aiOpen && (
+          <div className="px-4 pb-4 pt-1 space-y-3 border-t border-v2-line/60">
+            <div className="space-y-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-v2-muted">
+                AI:s frihet med längden
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {FREEDOM_PRESETS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setFreedom(p.value)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[12px] border transition-all",
+                      freedom === p.value
+                        ? "border-v2-violet bg-v2-violet/10 text-v2-violet font-semibold"
+                        : "border-v2-line bg-white text-v2-muted hover:border-v2-violet/40",
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {running && (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-v2-violet/5 border border-v2-violet/20">
+                <Loader2 className="h-4 w-4 animate-spin text-v2-violet shrink-0" />
+                <div className="flex-1 text-[12.5px] text-v2-ink">
+                  <div className="font-semibold">AI skriver ditt {verb}…</div>
+                  <div className="text-v2-muted text-[11.5px]">
+                    Tar oftast 5–15 sekunder. {elapsed > 0 && <>Förflutet: {elapsed}s</>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <Button
               type="button"
-              onClick={() => setFreedom(p.value)}
-              className={cn(
-                "px-3 py-1 rounded-full text-[12px] border transition-all",
-                freedom === p.value
-                  ? "border-v2-violet bg-v2-violet/10 text-v2-violet font-semibold"
-                  : "border-v2-line bg-white text-v2-muted hover:border-v2-violet/40",
-              )}
+              variant="outline"
+              onClick={generate}
+              disabled={busy}
+              className="rounded-full w-full sm:w-auto"
             >
-              {p.label}
-            </button>
-          ))}
-        </div>
+              {running ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              {running ? "Genererar…" : aiCtaLabel}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {running && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-v2-violet/5 border border-v2-violet/20">
-          <Loader2 className="h-4 w-4 animate-spin text-v2-violet shrink-0" />
-          <div className="flex-1 text-[12.5px] text-v2-ink">
-            <div className="font-semibold">AI skriver ditt {verb}…</div>
-            <div className="text-v2-muted text-[11.5px]">
-              Tar oftast 5–15 sekunder. {elapsed > 0 && <>Förflutet: {elapsed}s</>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
         {onCancel && (
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={running} className="rounded-full">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-full"
+          >
             Avbryt
           </Button>
         )}
-        <Button type="button" onClick={generate} disabled={running} className="rounded-full">
-          {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {running ? "Genererar…" : turnKind === "own_speech" ? "Förbättra med AI" : `Generera ${verb}`}
+        <Button
+          type="button"
+          onClick={saveOnly}
+          disabled={busy}
+          className="rounded-full h-11 px-6 text-[14px] font-semibold"
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Check className="h-4 w-4 mr-2" />
+          )}
+          {saving ? "Sparar…" : saveLabel}
         </Button>
       </div>
     </div>
