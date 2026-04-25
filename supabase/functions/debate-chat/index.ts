@@ -1085,19 +1085,42 @@ Deno.serve(async (req) => {
       assistantText = "Okej, då går vi vidare!";
     }
 
+    // Plocka ut nytt-manus-id från generate_rebuttal_cards för navigering
+    const rebuttalTool = executedTools.find((t) => t.name === "generate_rebuttal_cards");
+    const newManuscriptMatch = rebuttalTool?.result?.match(/nytt manus ([0-9a-f]+)/i);
+    // Hämta hela id:t från bot_state om vi har en match
+    let navigateToManuscript: string | null = null;
+    if (rebuttalTool && rebuttalTool.result.startsWith(`${(args_unused_marker_for_lint = 0, "")}`) === false) {
+      const { data: t2 } = await admin
+        .from("debate_threads")
+        .select("bot_state")
+        .eq("id", threadId)
+        .maybeSingle();
+      const bs = (t2?.bot_state as Record<string, unknown>) || {};
+      if (typeof bs.last_rebuttal_manuscript_id === "string") {
+        navigateToManuscript = bs.last_rebuttal_manuscript_id;
+      }
+    }
+    void newManuscriptMatch;
+
     // Spara assistant-svaret
     await admin.from("debate_chat_messages").insert({
       thread_id: threadId,
       user_id: userId,
       role: "assistant",
       content: assistantText,
-      metadata: { tools: executedTools, quick_replies: quickReplies },
+      metadata: {
+        tools: executedTools,
+        quick_replies: quickReplies,
+        ...(navigateToManuscript ? { navigate_to_manuscript: navigateToManuscript } : {}),
+      },
     });
 
     return json({
       assistant: assistantText,
       tools: executedTools,
       quick_replies: quickReplies,
+      navigate_to_manuscript: navigateToManuscript,
     });
   } catch (e) {
     console.error("debate-chat error", e);
