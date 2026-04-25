@@ -1087,10 +1087,8 @@ Deno.serve(async (req) => {
 
     // Plocka ut nytt-manus-id från generate_rebuttal_cards för navigering
     const rebuttalTool = executedTools.find((t) => t.name === "generate_rebuttal_cards");
-    const newManuscriptMatch = rebuttalTool?.result?.match(/nytt manus ([0-9a-f]+)/i);
-    // Hämta hela id:t från bot_state om vi har en match
     let navigateToManuscript: string | null = null;
-    if (rebuttalTool && rebuttalTool.result.startsWith(`${(args_unused_marker_for_lint = 0, "")}`) === false) {
+    if (rebuttalTool) {
       const { data: t2 } = await admin
         .from("debate_threads")
         .select("bot_state")
@@ -1101,7 +1099,6 @@ Deno.serve(async (req) => {
         navigateToManuscript = bs.last_rebuttal_manuscript_id;
       }
     }
-    void newManuscriptMatch;
 
     // Spara assistant-svaret
     await admin.from("debate_chat_messages").insert({
