@@ -149,7 +149,7 @@ const TOOLS: Tool[] = [
     type: "function",
     function: {
       name: "generate_rebuttal_cards",
-      description: "Skapa ett genmäle och lägg till det som nya kort i kopplat manus.",
+      description: "Skapa ett genmäle/replik på ca 30 sekunder talad tid (~65 ord totalt, ~130 ord/minut). Håll det kort, vasst och fokuserat på 1-2 huvudpoänger. Dela upp i 1-2 korta kort.",
       parameters: {
         type: "object",
         properties: {
@@ -979,6 +979,14 @@ Deno.serve(async (req) => {
           const sectionId = crypto.randomUUID();
           const sectionLabel = "Anförande";
           if (thread.manuscript_id) {
+            // Sätt manusets måltid = önskad längd för anförandet
+            const speechLenSec = Number((thread.bot_state as Record<string, unknown>)?.speech_length_seconds);
+            if (Number.isFinite(speechLenSec) && speechLenSec > 0) {
+              await admin
+                .from("manuscripts")
+                .update({ target_duration_seconds: Math.round(speechLenSec) })
+                .eq("id", thread.manuscript_id);
+            }
             const { data: existingCards } = await admin
               .from("cards")
               .select("position")
@@ -1049,7 +1057,7 @@ Deno.serve(async (req) => {
           const newManusTitle = `${thread.title || "Debatt"} – mot ${oppName}${newCount > 1 ? ` (${newCount})` : ""}`;
           const { data: newManus, error: newManusErr } = await admin
             .from("manuscripts")
-            .insert({ user_id: userId, title: newManusTitle, mode: "speaker" })
+            .insert({ user_id: userId, title: newManusTitle, mode: "speaker", target_duration_seconds: 30 })
             .select("id")
             .single();
 
