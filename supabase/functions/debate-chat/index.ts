@@ -862,8 +862,12 @@ Deno.serve(async (req) => {
         content: "Du MÅSTE anropa verktyget generate_rebuttal_cards nu. Returnera inte genmälet som vanlig text.",
       });
     } else if (currentPhase === "drafting_speech") {
-      const lastUser = userMessage.toLowerCase();
-      if (lastUser.includes("skriv utkast") || lastUser.includes("utkast åt mig")) {
+      const lastUser = userMessage.toLowerCase().trim();
+      const isAffirmative = /^(ja|jadå|jada|absolut|kör|kor|gör det|gor det|okej|ok)\b/.test(lastUser)
+        || lastUser.includes("skriv utkast")
+        || lastUser.includes("utkast åt mig")
+        || lastUser.includes("utkast at mig");
+      if (isAffirmative) {
         toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
         toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_speech_cards");
         messages.push({
