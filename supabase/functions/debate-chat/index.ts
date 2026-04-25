@@ -813,7 +813,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const threadId = String(body.thread_id || "");
-    const userMessage = String(body.user_message || "");
+    let userMessage = String(body.user_message || "");
+    const isRetry = Boolean(body.retry);
     if (!threadId) return json({ error: "thread_id required" }, 400);
 
     const { data: threadData, error: threadErr } = await admin
@@ -825,8 +826,32 @@ Deno.serve(async (req) => {
     if (threadErr || !threadData) return json({ error: "Thread not found" }, 404);
     let thread = threadData as ThreadRow;
 
-    // Spara användarmeddelandet om det finns
-    if (userMessage.trim()) {
+    // Retry-flöde: ta bort senaste error-assistant + återanvänd senaste user-msg.
+    if (isRetry) {
+      const { data: lastErr } = await admin
+        .from("debate_chat_messages")
+        .select("id, metadata")
+        .eq("thread_id", threadId)
+        .eq("role", "assistant")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastErr && (lastErr.metadata as { error_kind?: string } | null)?.error_kind) {
+        await admin.from("debate_chat_messages").delete().eq("id", lastErr.id);
+      }
+      const { data: lastUser } = await admin
+        .from("debate_chat_messages")
+        .select("content")
+        .eq("thread_id", threadId)
+        .eq("role", "user")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      userMessage = String(lastUser?.content || "");
+    }
+
+    // Spara användarmeddelandet om det finns (men inte vid retry — då återanvänds raden).
+    if (!isRetry && userMessage.trim()) {
       await admin.from("debate_chat_messages").insert({
         thread_id: threadId,
         user_id: userId,
