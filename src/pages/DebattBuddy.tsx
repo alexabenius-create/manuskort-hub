@@ -184,7 +184,7 @@ export default function DebattBuddy() {
                 </span>
               </div>
               <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-tight text-v2-ink leading-[1.05]">
-                Debatt-<span className="bg-gradient-to-r from-v2-violet via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">buddy</span>
+                Debatt-<span className="bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-600 bg-clip-text text-transparent">buddy</span>
               </h1>
               <p className="text-v2-muted text-[15px] mt-2 max-w-md">
                 Din AI-coach för anföranden, repliker och genmälen — alltid redo i sidan.
@@ -193,7 +193,7 @@ export default function DebattBuddy() {
             <Button
               onClick={createThread}
               disabled={creating}
-              className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5"
+              className="rounded-full bg-amber-400 hover:bg-amber-500 text-v2-ink shadow-lg shadow-amber-400/40 hover:shadow-xl hover:shadow-amber-400/50 transition-all hover:-translate-y-0.5 border-0"
             >
               {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
               Ny debatt
