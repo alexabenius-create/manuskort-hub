@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logEvent } from "../_shared/analytics.ts";
+import { callLLM, userFacingMessage } from "../_shared/llmCall.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -812,7 +813,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const threadId = String(body.thread_id || "");
-    const userMessage = String(body.user_message || "");
+    let userMessage = String(body.user_message || "");
+    const isRetry = Boolean(body.retry);
     if (!threadId) return json({ error: "thread_id required" }, 400);
 
     const { data: threadData, error: threadErr } = await admin
@@ -824,8 +826,32 @@ Deno.serve(async (req) => {
     if (threadErr || !threadData) return json({ error: "Thread not found" }, 404);
     let thread = threadData as ThreadRow;
 
-    // Spara användarmeddelandet om det finns
-    if (userMessage.trim()) {
+    // Retry-flöde: ta bort senaste error-assistant + återanvänd senaste user-msg.
+    if (isRetry) {
+      const { data: lastErr } = await admin
+        .from("debate_chat_messages")
+        .select("id, metadata")
+        .eq("thread_id", threadId)
+        .eq("role", "assistant")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastErr && (lastErr.metadata as { error_kind?: string } | null)?.error_kind) {
+        await admin.from("debate_chat_messages").delete().eq("id", lastErr.id);
+      }
+      const { data: lastUser } = await admin
+        .from("debate_chat_messages")
+        .select("content")
+        .eq("thread_id", threadId)
+        .eq("role", "user")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      userMessage = String(lastUser?.content || "");
+    }
+
+    // Spara användarmeddelandet om det finns (men inte vid retry — då återanvänds raden).
+    if (!isRetry && userMessage.trim()) {
       await admin.from("debate_chat_messages").insert({
         thread_id: threadId,
         user_id: userId,
@@ -931,61 +957,77 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
-    const llmStartedAt = performance.now();
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    // Anropa Lovable AI Gateway via callLLM-helper (retry + timeout + felklassning).
+    const llmResult = await callLLM(
+      {
         model,
         messages,
         tools: toolsForRequest,
         tool_choice: toolChoice,
-      }),
-    });
-    const llmDurationMs = Math.round(performance.now() - llmStartedAt);
+      },
+      LOVABLE_API_KEY,
+    );
 
-    if (aiResp.status === 429) {
+    if (!llmResult.ok) {
+      const { error_kind, duration_ms, attempts, message } = llmResult;
+      console.error("[debate-chat] LLM error", error_kind, message);
+
+      // Logga generation_failed + ev. specifikt event
       void logEvent(admin, {
         user_id: thread.user_id,
         event_name: "generation_failed",
-        event_props: { error_kind: "rate_limited", attempts: 1, duration_ms: llmDurationMs, model },
+        event_props: { error_kind, attempts, duration_ms, model },
         thread_id: thread.id,
       });
-      return json({ error: "Rate limited, försök igen om en stund." }, 429);
-    }
-    if (aiResp.status === 402) {
-      void logEvent(admin, {
-        user_id: thread.user_id,
-        event_name: "generation_failed",
-        event_props: { error_kind: "no_credits", attempts: 1, duration_ms: llmDurationMs, model },
-        thread_id: thread.id,
+      if (error_kind === "rate_limit") {
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "llm_rate_limited",
+          event_props: { attempts, duration_ms, model },
+          thread_id: thread.id,
+        });
+      } else if (error_kind === "timeout") {
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "llm_timeout",
+          event_props: { duration_ms, model },
+          thread_id: thread.id,
+        });
+      } else if (error_kind === "auth") {
+        console.error("[debate-chat] CRITICAL: auth fail mot Lovable AI Gateway");
+        return json({ error: "Internt fel — försök igen senare." }, 500);
+      } else if (error_kind === "bad_request") {
+        console.error("[debate-chat] bad_request payload:", message.slice(0, 500));
+        return json({ error: "Internt fel — försök igen senare." }, 500);
+      }
+
+      // Visa elegant felmeddelande som assistant-bubbla, returnera 200.
+      const friendlyText = userFacingMessage(error_kind);
+      await admin.from("debate_chat_messages").insert({
+        thread_id: threadId,
+        user_id: userId,
+        role: "assistant",
+        content: friendlyText,
+        metadata: { error_kind, retryable: true, attempts, duration_ms },
       });
-      return json({ error: "AI-krediter slut. Kontakta admin." }, 402);
-    }
-    if (!aiResp.ok) {
-      const txt = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, txt);
-      void logEvent(admin, {
-        user_id: thread.user_id,
-        event_name: "generation_failed",
-        event_props: { error_kind: "gateway_error", attempts: 1, duration_ms: llmDurationMs, model },
-        thread_id: thread.id,
+      return json({
+        assistant: friendlyText,
+        error_kind,
+        retryable: true,
+        tools: [],
+        quick_replies: [],
       });
-      return json({ error: "AI-fel" }, 500);
     }
 
+    const llmDurationMs = llmResult.duration_ms;
     void logEvent(admin, {
       user_id: thread.user_id,
       event_name: "generation_completed",
-      event_props: { model, duration_ms: llmDurationMs, attempts: 1 },
+      event_props: { model, duration_ms: llmDurationMs, attempts: llmResult.attempts },
       thread_id: thread.id,
     });
 
-    const aiData = await aiResp.json();
+    const aiData = llmResult.data;
     const choice = aiData.choices?.[0];
     const assistantMsg = choice?.message;
     const rawAssistantText = stripToolJunk(assistantMsg?.content || "");
@@ -1215,23 +1257,35 @@ Deno.serve(async (req) => {
     // (men hoppa över för rebuttal — vi har redan en bra scripted text och vill inte timeouta)
     const didRebuttal = executedTools.some((t) => t.name === "generate_rebuttal_cards");
     if (!assistantText && toolCalls.length > 0 && !didRebuttal) {
-      const followup = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const followupResult = await callLLM(
+        {
           model: "google/gemini-2.5-flash-lite",
           messages: [
             ...messages,
             { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Driv samtalet framåt enligt FLÖDET. Ställ nästa konkreta fråga som tar oss till nästa fas — fråga ALDRIG "Vad vill du göra härnäst?" eller liknande öppna meta-frågor. Använd alltid suggest_quick_replies.` },
           ],
-        }),
-      });
-      if (followup.ok) {
-        const fd = await followup.json();
-        assistantText = trimToTwoSentences(stripToolJunk(fd.choices?.[0]?.message?.content || ""));
+        },
+        LOVABLE_API_KEY,
+      );
+      if (followupResult.ok && followupResult.data) {
+        assistantText = trimToTwoSentences(
+          stripToolJunk(followupResult.data.choices?.[0]?.message?.content || ""),
+        );
+      } else if (!followupResult.ok) {
+        // Followup är icke-kritisk — logga men fall tillbaka på default-text nedan.
+        console.warn("[debate-chat] followup LLM failed:", followupResult.error_kind);
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "generation_failed",
+          event_props: {
+            error_kind: followupResult.error_kind,
+            attempts: followupResult.attempts,
+            duration_ms: followupResult.duration_ms,
+            model: "google/gemini-2.5-flash-lite",
+            phase: "followup",
+          },
+          thread_id: thread.id,
+        });
       }
     }
 

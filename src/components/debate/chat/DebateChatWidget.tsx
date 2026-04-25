@@ -13,7 +13,7 @@ type Mode = "compact" | "expanded" | "minimized";
 
 export function DebateChatWidget({ threadId }: Props) {
   const [mode, setMode] = useState<Mode>("compact");
-  const { messages, sending, uploading, sendMessage, uploadBrief, threadState } = useDebateChat(threadId);
+  const { messages, sending, uploading, sendMessage, retryLastAssistant, uploadBrief, threadState } = useDebateChat(threadId);
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const quickReplies = ((lastAssistant?.metadata as { quick_replies?: string[] } | undefined)?.quick_replies) || [];
@@ -39,7 +39,7 @@ export function DebateChatWidget({ threadId }: Props) {
               onToggleExpand={() => setMode("compact")}
               onMinimize={() => setMode("minimized")}
             />
-            <DebateChatMessages messages={messages} sending={sending} />
+            <DebateChatMessages messages={messages} sending={sending} onRetry={retryLastAssistant} />
             <DebateChatInput
               onSend={sendMessage}
               onUploadFile={uploadBrief}
@@ -65,7 +65,7 @@ export function DebateChatWidget({ threadId }: Props) {
         onToggleExpand={() => setMode("expanded")}
         onMinimize={() => setMode("minimized")}
       />
-      <DebateChatMessages messages={messages} sending={sending} />
+      <DebateChatMessages messages={messages} sending={sending} onRetry={retryLastAssistant} />
       <DebateChatInput
         onSend={sendMessage}
         onUploadFile={uploadBrief}

@@ -124,6 +124,34 @@ export function useDebateChat(threadId: string | null) {
     [threadId, sending],
   );
 
+  const retryLastAssistant = useCallback(async () => {
+    if (!threadId || sending) return;
+    setSending(true);
+    pendingSendStartRef.current = performance.now();
+    try {
+      // Ta bort senaste error-meddelande lokalt direkt så UI känns snabbt.
+      setMessages((prev) => {
+        const lastIdx = [...prev].reverse().findIndex(
+          (m) => m.role === "assistant" && (m.metadata as { error_kind?: string } | undefined)?.error_kind,
+        );
+        if (lastIdx === -1) return prev;
+        const realIdx = prev.length - 1 - lastIdx;
+        return prev.filter((_, i) => i !== realIdx);
+      });
+      const { data, error } = await supabase.functions.invoke("debate-chat", {
+        body: { thread_id: threadId, retry: true },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    } catch (e) {
+      pendingSendStartRef.current = null;
+      const msg = e instanceof Error ? e.message : "Något gick fel";
+      toast({ title: "Debatt-buddy", description: msg, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  }, [threadId, sending]);
+
   const uploadBrief = useCallback(
     async (file: File) => {
       if (!threadId || uploading) return;
@@ -201,5 +229,5 @@ export function useDebateChat(threadId: string | null) {
     })();
   }, [loading, threadId, user]);
 
-  return { messages, sending, uploading, sendMessage, uploadBrief, threadState, loading };
+  return { messages, sending, uploading, sendMessage, retryLastAssistant, uploadBrief, threadState, loading };
 }
