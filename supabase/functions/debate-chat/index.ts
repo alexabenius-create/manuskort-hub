@@ -979,6 +979,14 @@ Deno.serve(async (req) => {
           const sectionId = crypto.randomUUID();
           const sectionLabel = "Anförande";
           if (thread.manuscript_id) {
+            // Sätt manusets måltid = önskad längd för anförandet
+            const speechLenSec = Number((thread.bot_state as Record<string, unknown>)?.speech_length_seconds);
+            if (Number.isFinite(speechLenSec) && speechLenSec > 0) {
+              await admin
+                .from("manuscripts")
+                .update({ target_duration_seconds: Math.round(speechLenSec) })
+                .eq("id", thread.manuscript_id);
+            }
             const { data: existingCards } = await admin
               .from("cards")
               .select("position")
