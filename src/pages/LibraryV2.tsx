@@ -549,18 +549,6 @@ export default function LibraryV2() {
               >
                 <Upload className="h-4 w-4" /> Importera
               </button>
-              {hasDebateBuddy && (
-                <button
-                  type="button"
-                  onClick={() => navigate("/debatt-buddy")}
-                  className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white border border-v2-line gap-1.5 transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
-                  title="AI-stöd för debattanföranden"
-                >
-                  <MessagesSquare className="h-4 w-4 text-v2-violet" />
-                  Debatt-buddy
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-v2-violet/10 text-v2-violet">Beta</span>
-                </button>
-              )}
               <DialogContent className="rounded-3xl border-v2-line">
                 <DialogHeader>
                   <DialogTitle className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Nytt manus</DialogTitle>
