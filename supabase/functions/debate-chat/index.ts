@@ -24,6 +24,37 @@ interface ThreadRow {
   current_opponent_label: string;
 }
 
+/**
+ * Skapar en kort, läsbar trådtitel utifrån ärendetext.
+ * - Tar första meningen/raden
+ * - Tar bort inledande "att ", "om " etc., trimmar och kapar vid ~60 tecken
+ * - Versaliserar första bokstaven
+ */
+function deriveThreadTitle(issueText: string, topicArea?: string): string {
+  const raw = (issueText || "").trim();
+  if (!raw) return topicArea?.trim() || "Ny debatt";
+
+  // Plocka första meningen (stannar vid . ! ? eller radbryt)
+  const firstSentence = raw.split(/[.!?\n]/)[0].trim();
+  let t = firstSentence || raw;
+
+  // Ta bort omslutande citattecken
+  t = t.replace(/^["'«»“”„]+|["'«»“”„]+$/g, "").trim();
+
+  // Versalisera första bokstaven
+  if (t.length > 0) t = t[0].toUpperCase() + t.slice(1);
+
+  // Kapa vid 60 tecken på ordgräns
+  const MAX = 60;
+  if (t.length > MAX) {
+    const cut = t.slice(0, MAX);
+    const lastSpace = cut.lastIndexOf(" ");
+    t = (lastSpace > 30 ? cut.slice(0, lastSpace) : cut).trim() + "…";
+  }
+
+  return t || topicArea?.trim() || "Ny debatt";
+}
+
 const SYSTEM_PROMPT = `Du är **Debatt-buddy** — varm, peppig svensk debattcoach. Hjälper användaren förbereda anföranden och genmälen.
 
 KRITISKT — SVARSSTIL:
@@ -361,6 +392,7 @@ async function handleScripted(
         .update({
           topic_area: topic,
           issue_text: topic,
+          title: deriveThreadTitle(topic, topic),
           bot_state: { ...thread.bot_state, phase: "intake_brief" },
         })
         .eq("id", threadId);
@@ -380,6 +412,7 @@ async function handleScripted(
         .from("debate_threads")
         .update({
           issue_text: freetext,
+          title: deriveThreadTitle(freetext, thread.topic_area),
           bot_state: { ...thread.bot_state, phase: "intake_brief" },
         })
         .eq("id", threadId);
@@ -398,6 +431,7 @@ async function handleScripted(
         .from("debate_threads")
         .update({
           issue_text: freetext,
+          title: deriveThreadTitle(freetext, thread.topic_area),
           bot_state: { ...thread.bot_state, phase: "intake_brief" },
         })
         .eq("id", threadId);
@@ -940,6 +974,7 @@ Deno.serve(async (req) => {
         if (name === "set_issue") {
           const updates: Record<string, unknown> = {
             issue_text: args.issue_text,
+            title: deriveThreadTitle(args.issue_text, args.topic_area || thread.topic_area),
             bot_state: { ...thread.bot_state, phase: "intake_brief" },
           };
           if (args.topic_area) updates.topic_area = args.topic_area;
