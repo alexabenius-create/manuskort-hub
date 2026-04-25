@@ -704,6 +704,24 @@ export default function LibraryV2() {
                 const isSelected = selectedIds.has(m.id);
                 const selectionMode = selectedIds.size > 0;
                 const isModerator = m.mode === "moderator";
+                const isDebate = m.mode === "debate";
+                const modeLabel = isDebate ? "Debatt" : isModerator ? "Moderator" : "Talare";
+                const modeColorClass = isDebate
+                  ? "text-v2-pink"
+                  : isModerator
+                    ? "text-v2-violet"
+                    : "text-v2-blue";
+                const modeBg = isDebate
+                  ? "linear-gradient(135deg, rgba(236,72,153,0.10), rgba(168,85,247,0.10))"
+                  : isModerator
+                    ? "linear-gradient(135deg, rgba(99,102,241,0.10), rgba(59,130,246,0.10))"
+                    : "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(14,165,233,0.10))";
+                const modeBorder = isDebate
+                  ? "rgba(236,72,153,0.22)"
+                  : isModerator
+                    ? "rgba(99,102,241,0.22)"
+                    : "rgba(59,130,246,0.22)";
+                const ModeIcon = isDebate ? MessagesSquare : FileText;
                 return (
                   <li
                     key={m.id}
@@ -730,20 +748,14 @@ export default function LibraryV2() {
                       >
                         <div className="flex items-center gap-2 mb-3 flex-wrap">
                           <span
-                            className={`inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wide ${
-                              isModerator
-                                ? "text-v2-violet"
-                                : "text-v2-blue"
-                            }`}
+                            className={`inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wide ${modeColorClass}`}
                             style={{
-                              background: isModerator
-                                ? "linear-gradient(135deg, rgba(99,102,241,0.10), rgba(59,130,246,0.10))"
-                                : "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(14,165,233,0.10))",
-                              border: `1px solid ${isModerator ? "rgba(99,102,241,0.22)" : "rgba(59,130,246,0.22)"}`,
+                              background: modeBg,
+                              border: `1px solid ${modeBorder}`,
                             }}
                           >
-                            <FileText className="h-3 w-3" />
-                            {isModerator ? "Moderator" : "Talare"}
+                            <ModeIcon className="h-3 w-3" />
+                            {modeLabel}
                           </span>
                           {isExample && (
                             <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-full bg-[hsl(var(--cue-amber))]/12 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/35 uppercase tracking-wide">
