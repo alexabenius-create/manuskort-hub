@@ -91,7 +91,7 @@ export default function DebattBuddy() {
     // 1. Skapa manus
     const { data: manus, error: mErr } = await supabase
       .from("manuscripts")
-      .insert({ user_id: user.id, title: "Debatt – nytt manus" })
+      .insert({ user_id: user.id, title: "Debatt – nytt manus", mode: "debate" })
       .select("id")
       .single();
     if (mErr || !manus) {
