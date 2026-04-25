@@ -24,6 +24,7 @@ const Pricing = lazy(() => import("./pages/PricingV2"));
 const DebattBuddy = lazy(() => import("./pages/DebattBuddy"));
 const DebattBuddyThread = lazy(() => import("./pages/DebattBuddyThread"));
 const Admin = lazy(() => import("./pages/AdminV2"));
+const AdminFeatureFlags = lazy(() => import("./pages/AdminFeatureFlags"));
 const Messages = lazy(() => import("./pages/MessagesV2"));
 const Moderator = lazy(() => import("./pages/usecase/ModeratorV2"));
 const Talare = lazy(() => import("./pages/usecase/TalareV2"));
@@ -120,6 +121,7 @@ const App = () => (
                   <Route path="/manus/:id/utskrift" element={<RequireAuth><PrintView /></RequireAuth>} />
                   <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
                   <Route path="/admin-v2" element={<RequireAuth><AdminV2 /></RequireAuth>} />
+                  <Route path="/admin/flags" element={<RequireAuth><AdminFeatureFlags /></RequireAuth>} />
                   <Route path="/installningar-v2" element={<RequireAuth><SettingsV2 /></RequireAuth>} />
                   <Route path="/meddelanden" element={<RequireAuth><Messages /></RequireAuth>} />
                   <Route path="/meddelanden-v2" element={<RequireAuth><MessagesV2 /></RequireAuth>} />
