@@ -193,7 +193,7 @@ export default function DebattBuddy() {
             <Button
               onClick={createThread}
               disabled={creating}
-              className="rounded-full bg-amber-400 hover:bg-amber-500 text-v2-ink shadow-lg shadow-amber-400/40 hover:shadow-xl hover:shadow-amber-400/50 transition-all hover:-translate-y-0.5 border-0"
+              className="rounded-full bg-v2-ink hover:bg-v2-ink/90 text-white shadow-lg shadow-v2-ink/20 hover:shadow-xl hover:-translate-y-0.5 transition-all border-0"
             >
               {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
               Ny debatt
