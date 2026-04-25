@@ -1232,23 +1232,35 @@ Deno.serve(async (req) => {
     // (men hoppa över för rebuttal — vi har redan en bra scripted text och vill inte timeouta)
     const didRebuttal = executedTools.some((t) => t.name === "generate_rebuttal_cards");
     if (!assistantText && toolCalls.length > 0 && !didRebuttal) {
-      const followup = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const followupResult = await callLLM(
+        {
           model: "google/gemini-2.5-flash-lite",
           messages: [
             ...messages,
             { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Driv samtalet framåt enligt FLÖDET. Ställ nästa konkreta fråga som tar oss till nästa fas — fråga ALDRIG "Vad vill du göra härnäst?" eller liknande öppna meta-frågor. Använd alltid suggest_quick_replies.` },
           ],
-        }),
-      });
-      if (followup.ok) {
-        const fd = await followup.json();
-        assistantText = trimToTwoSentences(stripToolJunk(fd.choices?.[0]?.message?.content || ""));
+        },
+        LOVABLE_API_KEY,
+      );
+      if (followupResult.ok && followupResult.data) {
+        assistantText = trimToTwoSentences(
+          stripToolJunk(followupResult.data.choices?.[0]?.message?.content || ""),
+        );
+      } else if (!followupResult.ok) {
+        // Followup är icke-kritisk — logga men fall tillbaka på default-text nedan.
+        console.warn("[debate-chat] followup LLM failed:", followupResult.error_kind);
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "generation_failed",
+          event_props: {
+            error_kind: followupResult.error_kind,
+            attempts: followupResult.attempts,
+            duration_ms: followupResult.duration_ms,
+            model: "google/gemini-2.5-flash-lite",
+            phase: "followup",
+          },
+          thread_id: thread.id,
+        });
       }
     }
 
