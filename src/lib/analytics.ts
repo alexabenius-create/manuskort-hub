@@ -72,7 +72,7 @@ export async function trackEvent(
   try {
     const safeProps = sanitizeEventProps(props);
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("analytics_events").insert({
+    const row = {
       user_id: user?.id ?? null,
       session_id: getSessionId(),
       event_name: eventName,
@@ -81,7 +81,9 @@ export async function trackEvent(
       manuscript_id: context.manuscript_id ?? null,
       client_kind: detectClientKind(),
       platform: detectPlatform(),
-    });
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await supabase.from("analytics_events").insert(row as any);
   } catch (err) {
     // Analytics får ALDRIG störa user experience.
     console.warn("[analytics] track failed", eventName, err);
