@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +22,8 @@ interface ThreadState {
 
 export function useDebateChat(threadId: string | null) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -62,10 +65,19 @@ export function useDebateChat(threadId: string | null) {
           setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
           if (m.role === "assistant") {
             void loadThread();
+            const meta = (m.metadata as {
+              tools?: Array<{ name: string }>;
+              navigate_to_manuscript?: string;
+            } | undefined) || {};
             // Notify editor to refetch cards if generation tools ran
-            const tools = (m.metadata as { tools?: Array<{ name: string }> } | undefined)?.tools || [];
+            const tools = meta.tools || [];
             if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards")) {
               window.dispatchEvent(new CustomEvent("debate-cards-generated", { detail: { threadId } }));
+            }
+            // Navigera till nytt genmäle-manus om edge-funktionen skapade ett
+            const navTo = meta.navigate_to_manuscript;
+            if (navTo && !location.pathname.includes(`/manus/${navTo}`)) {
+              navigate(`/manus/${navTo}?debattbuddy=${threadId}`);
             }
           }
         },
@@ -75,7 +87,7 @@ export function useDebateChat(threadId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [threadId, user, loadThread]);
+  }, [threadId, user, loadThread, navigate, location.pathname]);
 
   const sendMessage = useCallback(
     async (text: string) => {

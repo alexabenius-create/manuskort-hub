@@ -1,74 +1,33 @@
-## Hybrid Debatt-buddy — implementation
+# Replikskifte → nytt manus + ny sida (Debatt-buddy följer med)
 
-### Mål
-Eliminera öppna meta-frågor genom att hårdkoda intake-faserna. LLM används bara där det behövs (tolka fritext + generera utkast/genmäle).
+## Beteende
+1. Användaren klickar **"Ja"** i chatten → stannar i chatten och fyller i motdebattörens argument.
+2. När AI:n genererar genmäle-korten skapas ett **nytt tomt manus** med titel `<trådens titel> – mot <motdebattör>` och korten läggs in där.
+3. Användaren navigeras automatiskt till `/manus/<nyttId>?debattbuddy=<threadId>`.
+4. Debatt-buddy följer med (EditorV4 renderar widgeten redan när `?debattbuddy=` finns i URL:en).
+5. Högst upp i nya manuset visas **"← Tillbaka till anförande"** som länkar till föregående manus i tråden.
 
-### Filer
-- **Modifieras**: `supabase/functions/debate-chat/index.ts`
-- **Deploy**: `debate-chat`
+## Konkreta ändringar
 
-### 1. Scripted phase-handler
+**1. `supabase/functions/debate-chat/index.ts`**
+- I tool-handlern för `generate_rebuttal_cards` (samt fallback-logiken): skapa **alltid ett nytt manus** för rebuttals i stället för att appenda. Titel: `${threadTitle} – mot ${current_opponent_label}`, mode `speaker`.
+- Sätt `manuscript_id` på den nya `debate_turns`-raden.
+- Inkludera `metadata.navigate_to_manuscript = <nyttId>` på assistant-meddelandet som returneras.
 
-Lägg till `SCRIPTED_PROMPTS`-tabell överst i edge-funktionen:
+**2. `src/hooks/useDebateChat.ts`**
+- I realtime-listenern på nya assistant-meddelanden: läs `metadata.navigate_to_manuscript`. Om den finns och inte matchar nuvarande URL → `navigate('/manus/<id>?debattbuddy=<threadId>')`.
 
-| Fas | Bot-text | Snabbsvar |
-|---|---|---|
-| `intake_issue` | "Vad ska vi debattera idag?" | Skola · Vård · Klimat · Skriv själv |
-| `intake_brief` | "Har du något underlag att dela?" | Ladda upp fil · Skriv kort · Hoppa över |
-| `intake_mode` | "Anförande eller replik?" | Hålla anförande · Bemöta någon |
-| `intake_speech_length` | "Hur långt ska anförandet vara?" | 1 min · 2 min · 3 min · 5 min |
-| `drafting_speech` | "Vad är ditt huvudbudskap?" | Skriv utkast åt mig · Jag skriver själv |
-| `post_perform_check` | "Fick du några repliker?" | Ja · Nej, klart |
+**3. `src/pages/EditorV4.tsx`**
+- När `?debattbuddy=<id>` finns: hämta trådens turer, hitta föregående manus-id (en turn med `manuscript_id` som inte är nuvarande).
+- Rendera en liten banner högst upp: **"← Tillbaka till anförande"** som länkar till `/manus/<prevId>?debattbuddy=<threadId>`.
 
-### 2. Deterministisk svarsparser (körs INNAN LLM)
+**4. `src/components/debate/PerformSpeechStep.tsx`**
+- Förenkla för rebuttals: ta bort logiken som återanvänder existerande manus / sektionsbanner / `basePosition`. Varje turn med kort = eget manus.
+- `own_speech` skapar manus som idag. För `rebuttal`/`own_reply` skapas manuset av edge-funktionen — komponenten navigerar bara om manuset finns.
+- Ta bort knappraden "Det kom en replik / Inget mothugg" eftersom flödet nu styrs av chatten ("Ja"/"Nej, klart").
 
-För varje inkommande user_message:
-1. Läs `bot_state.phase`
-2. Matcha mot kända snabbsvar för fasen:
-   - `intake_issue` + ["Skola","Vård","Klimat"] → spara `topic_area`, gå till `intake_brief`, returnera scripted text+quick_replies direkt (inget LLM)
-   - `intake_issue` + "Skriv själv" → gå till en mellanstate `intake_issue_freetext` med prompt "Beskriv ärendet kort:" (ingen quick_reply, fritext) → nästa svar går till LLM för tolkning
-   - `intake_brief` + "Ladda upp fil" → returnera prompt "Klicka på gemet nedan för att ladda upp" (UI har redan upload-knapp); state oförändrat
-   - `intake_brief` + "Hoppa över" → gå till `intake_mode`, scripted
-   - `intake_brief` + "Skriv kort" → mellanstate `intake_brief_freetext`, fritext → LLM extraherar
-   - `intake_mode` + "Hålla anförande" → `set_mode(speech)`, gå till `intake_speech_length`, scripted
-   - `intake_mode` + "Bemöta någon" → `set_mode(reply)`, gå till `intake_opponent_name`, scripted
-   - `intake_speech_length` + "X min" → spara `speech_length_seconds`, gå till `drafting_speech`, scripted
-   - `drafting_speech` + "Skriv utkast åt mig" → kör LLM-flow med `generate_speech_cards`-tool
-   - `drafting_speech` + "Jag skriver själv" → gå till `awaiting_perform`, scripted "Skriv klart i editorn så jag finns här när du behöver mig"
-   - `post_perform_check` + "Nej, klart" → gå till `idle`, scripted "Bra jobbat!"
-   - `post_perform_check` + "Ja" → gå till `intake_opponent_name`, scripted
+**5. Inga DB-migrationer behövs** — `debate_turns.manuscript_id` finns redan.
 
-3. Om ingen match → fall through till LLM (för fritext-tolkning eller draft/rebuttal generation)
-
-### 3. LLM-faser (oförändrat flow men skärpt)
-
-Endast dessa faser anropar LLM:
-- `intake_issue_freetext` — tolka topic, sätt `topic_area`/`issue_text`, gå till `intake_brief`
-- `intake_brief_freetext` — sammanfatta tyst, gå till `intake_mode`
-- `intake_brief` när dokument uppladdat — tyst tack (max 1 mening), gå till `intake_mode`
-- `drafting_speech` med "Skriv utkast åt mig" — använd `generate_speech_cards`-tool (130 ord/min × minuter)
-- `intake_opponent_args` — använd `generate_rebuttal_cards`-tool
-
-### 4. LLM-skärpningar
-
-- **Modellbyte**: `google/gemini-3-flash-preview` → `google/gemini-2.5-flash`
-- `max_tokens: 200` på fritext-svar
-- Post-process: klipp svar efter andra mening: `text.match(/^([^.!?]*[.!?]){1,2}/)?.[0]?.trim() ?? text`
-- Tvinga snabbsvar: om scripted fas saknar `quick_replies` i tool-output, injicera defaults
-- Förkortad systemprompt (ta bort långa "förklara aldrig"-listor — det är nu hanterat av scripted handler)
-
-### 5. Frontend
-
-Inga ändringar. `useDebateChat` + `DebateChatWidget` läser redan `metadata.quick_replies`.
-
-### Verifiering
-
-Manuellt flöde:
-1. Ny tråd → bot säger "Vad ska vi debattera idag?" + 4 chips
-2. Klicka "Skola" → omedelbart "Har du något underlag att dela?" + 3 chips
-3. Klicka "Hoppa över" → omedelbart "Anförande eller replik?" + 2 chips
-4. Klicka "Hålla anförande" → omedelbart "Hur långt?" + 4 chips
-5. Klicka "2 min" → omedelbart "Vad är ditt huvudbudskap?" + 2 chips
-6. Klicka "Skriv utkast åt mig" → LLM genererar ~260 ord fördelat på kort i editorn
-
-Inga öppna meta-frågor någonstans.
+## Risker
+- AI-generering kan ta tid → tydlig "sending"-status i chatten innan navigering.
+- Navigera bara om `metadata.navigate_to_manuscript` skiljer sig från URL:ens manus-id (undvik loop).

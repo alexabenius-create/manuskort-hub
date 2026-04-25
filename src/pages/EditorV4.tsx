@@ -129,6 +129,36 @@ export default function EditorV4() {
   const supportStatus = useShareRequestStatus(supportShareId);
   const debateBuddyThreadId = searchParams.get("debattbuddy");
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+  const [prevDebateManuscript, setPrevDebateManuscript] = useState<{ id: string; title: string } | null>(null);
+
+  // När vi är i debattbuddy-läge, hitta föregående manus i tråden (för "tillbaka"-banner)
+  useEffect(() => {
+    if (!debateBuddyThreadId || !id) {
+      setPrevDebateManuscript(null);
+      return;
+    }
+    (async () => {
+      const { data: turns } = await supabase
+        .from("debate_turns")
+        .select("manuscript_id, position, kind")
+        .eq("thread_id", debateBuddyThreadId)
+        .order("position", { ascending: true });
+      const otherIds = (turns || [])
+        .map((t) => t.manuscript_id as string | null)
+        .filter((mid): mid is string => !!mid && mid !== id);
+      const prevId = otherIds[otherIds.length - 1] || null;
+      if (!prevId) {
+        setPrevDebateManuscript(null);
+        return;
+      }
+      const { data: m } = await supabase
+        .from("manuscripts")
+        .select("id, title")
+        .eq("id", prevId)
+        .maybeSingle();
+      if (m) setPrevDebateManuscript({ id: m.id, title: m.title });
+    })();
+  }, [debateBuddyThreadId, id]);
 
   // Watcher: om delningen återkallas → kicka admin tillbaka till panelen
   useEffect(() => {
@@ -909,6 +939,20 @@ export default function EditorV4() {
 
         <main className="flex-1 w-full relative">
           <div className="max-w-[900px] mx-auto py-10 px-4">
+            {prevDebateManuscript && debateBuddyThreadId && (
+              <div className="mb-4">
+                <Link
+                  to={`/manus/${prevDebateManuscript.id}?debattbuddy=${debateBuddyThreadId}`}
+                  className="inline-flex items-center gap-2 text-[13px] text-v2-muted hover:text-v2-ink rounded-full border border-v2-line bg-white/70 backdrop-blur px-3 py-1.5 transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Tillbaka till anförande:{" "}
+                  <span className="font-medium text-v2-ink truncate max-w-[260px]">
+                    {prevDebateManuscript.title}
+                  </span>
+                </Link>
+              </div>
+            )}
             <TiptapDocEditor
               value={docHtml}
               onChange={handleDocChange}
