@@ -45,7 +45,7 @@ export function DebateChatInput({
   };
 
   return (
-    <div className="border-t border-v2-line bg-white rounded-b-2xl">
+    <div className="border-t border-v2-line bg-gradient-to-b from-white to-indigo-50/30 rounded-b-2xl">
       {quickReplies.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-3 pt-3">
           {quickReplies.map((q) => (
@@ -54,7 +54,7 @@ export function DebateChatInput({
               type="button"
               onClick={() => submit(q)}
               disabled={disabled}
-              className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-v2-violet/40 bg-v2-violet/5 text-v2-violet hover:bg-v2-violet/10 transition disabled:opacity-50"
+              className="text-[12px] font-medium px-3 py-1.5 rounded-full border border-indigo-200 bg-white text-indigo-700 hover:border-transparent hover:bg-gradient-to-r hover:from-indigo-600 hover:to-pink-500 hover:text-white hover:shadow-md hover:shadow-indigo-500/20 transition-all disabled:opacity-50"
             >
               {q}
             </button>
@@ -77,7 +77,7 @@ export function DebateChatInput({
               disabled={disabled || uploading}
               size="icon"
               variant="ghost"
-              className="h-10 w-10 shrink-0 rounded-full text-v2-violet hover:bg-v2-violet/10"
+              className="h-10 w-10 shrink-0 rounded-full text-indigo-600 hover:bg-indigo-100"
               aria-label="Ladda upp underlag"
               title="Ladda upp PDF, DOCX eller PPTX"
             >
@@ -92,16 +92,16 @@ export function DebateChatInput({
           placeholder={uploading ? "Läser dokument…" : "Skriv ett meddelande…"}
           disabled={disabled || uploading}
           rows={1}
-          className="min-h-[40px] max-h-32 resize-none text-[14px]"
+          className="min-h-[40px] max-h-32 resize-none text-[14px] bg-white border-v2-line focus-visible:ring-indigo-500/40"
         />
         <Button
           onClick={() => submit()}
           disabled={disabled || uploading || !text.trim()}
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
+          className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-indigo-600 via-fuchsia-500 to-pink-500 text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:hover:scale-100 border-0"
           aria-label="Skicka"
         >
-          <Send className="h-4 w-4" />
+          <Send className="h-4 w-4" strokeWidth={2.5} />
         </Button>
       </div>
     </div>

@@ -56,7 +56,7 @@ export function DebateChatWidget({ threadId }: Props) {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-2xl border border-v2-line flex flex-col"
+      className="fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-2xl shadow-indigo-900/15 ring-1 ring-indigo-100 border border-v2-line flex flex-col overflow-hidden animate-scale-in"
       style={{ width: "380px", height: "560px", maxHeight: "calc(100vh - 3rem)" }}
     >
       <DebateChatHeader
