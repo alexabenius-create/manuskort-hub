@@ -312,7 +312,14 @@ interface ScriptedReply {
 
 const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }> = {
   intake_issue: {
-    text: "Hej! Roligt att vi ska förbereda en debatt tillsammans. Vad ska vi debattera idag?",
+    text: `Hej! Mitt namn är **Debatt-buddy**. Jag är din bästa vän i debatten. Detta är några saker jag kan hjälpa dig med:
+
+* 📝 Skriva och strukturera **anföranden** anpassade efter din taltid
+* 💬 Ta fram skarpa **repliker** och **genmälen** mot dina motdebattörer
+* 🎯 Hitta dina starkaste **argument** och förutse motståndarens
+* 📚 Läsa och sammanfatta **underlag** (PDF, DOCX, PPTX)
+
+**Vad ska vi debattera idag?**`,
     quick_replies: ["Skola", "Vård", "Klimat", "Skriv själv"],
   },
   intake_brief: {
