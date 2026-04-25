@@ -52,7 +52,7 @@ export default function LibraryV2() {
   const [items, setItems] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [filterMode, setFilterMode] = useState<"all" | "moderator" | "speaker">("all");
+  const [filterMode, setFilterMode] = useState<"all" | "moderator" | "speaker" | "debate">("all");
   const [dragOver, setDragOver] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<{ title: string; description: string } | null>(null);
