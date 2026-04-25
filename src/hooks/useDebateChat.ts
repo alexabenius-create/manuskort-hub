@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/analytics";
+import { ANALYTICS_EVENTS } from "@/lib/analyticsEvents";
 
 export interface ChatMessage {
   id: string;
@@ -30,6 +32,7 @@ export function useDebateChat(threadId: string | null) {
   const [threadState, setThreadState] = useState<ThreadState | null>(null);
   const [loading, setLoading] = useState(true);
   const initSentRef = useRef(false);
+  const pendingSendStartRef = useRef<number | null>(null);
 
   const loadThread = useCallback(async () => {
     if (!threadId) return;
@@ -64,6 +67,16 @@ export function useDebateChat(threadId: string | null) {
           const m = payload.new as ChatMessage;
           setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
           if (m.role === "assistant") {
+            // Analytics: first-token-latens för senaste send
+            if (pendingSendStartRef.current !== null) {
+              const latency_ms = Math.round(performance.now() - pendingSendStartRef.current);
+              pendingSendStartRef.current = null;
+              void trackEvent(
+                ANALYTICS_EVENTS.GENERATION_FIRST_TOKEN,
+                { latency_ms },
+                { thread_id: threadId },
+              );
+            }
             void loadThread();
             const meta = (m.metadata as {
               tools?: Array<{ name: string }>;
@@ -93,6 +106,7 @@ export function useDebateChat(threadId: string | null) {
     async (text: string) => {
       if (!threadId || sending) return;
       setSending(true);
+      pendingSendStartRef.current = performance.now();
       try {
         const { data, error } = await supabase.functions.invoke("debate-chat", {
           body: { thread_id: threadId, user_message: text },
@@ -100,6 +114,7 @@ export function useDebateChat(threadId: string | null) {
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
       } catch (e) {
+        pendingSendStartRef.current = null;
         const msg = e instanceof Error ? e.message : "Något gick fel";
         toast({ title: "Debatt-buddy", description: msg, variant: "destructive" });
       } finally {
