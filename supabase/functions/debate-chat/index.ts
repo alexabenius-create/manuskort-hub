@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logEvent } from "../_shared/analytics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -931,6 +932,7 @@ Deno.serve(async (req) => {
     }
 
     // Anropa Lovable AI Gateway (icke-streaming för enkelhet — verktyg + svar)
+    const llmStartedAt = performance.now();
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -944,14 +946,44 @@ Deno.serve(async (req) => {
         tool_choice: toolChoice,
       }),
     });
+    const llmDurationMs = Math.round(performance.now() - llmStartedAt);
 
-    if (aiResp.status === 429) return json({ error: "Rate limited, försök igen om en stund." }, 429);
-    if (aiResp.status === 402) return json({ error: "AI-krediter slut. Kontakta admin." }, 402);
+    if (aiResp.status === 429) {
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "generation_failed",
+        event_props: { error_kind: "rate_limited", attempts: 1, duration_ms: llmDurationMs, model },
+        thread_id: thread.id,
+      });
+      return json({ error: "Rate limited, försök igen om en stund." }, 429);
+    }
+    if (aiResp.status === 402) {
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "generation_failed",
+        event_props: { error_kind: "no_credits", attempts: 1, duration_ms: llmDurationMs, model },
+        thread_id: thread.id,
+      });
+      return json({ error: "AI-krediter slut. Kontakta admin." }, 402);
+    }
     if (!aiResp.ok) {
       const txt = await aiResp.text();
       console.error("AI gateway error", aiResp.status, txt);
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "generation_failed",
+        event_props: { error_kind: "gateway_error", attempts: 1, duration_ms: llmDurationMs, model },
+        thread_id: thread.id,
+      });
       return json({ error: "AI-fel" }, 500);
     }
+
+    void logEvent(admin, {
+      user_id: thread.user_id,
+      event_name: "generation_completed",
+      event_props: { model, duration_ms: llmDurationMs, attempts: 1 },
+      thread_id: thread.id,
+    });
 
     const aiData = await aiResp.json();
     const choice = aiData.choices?.[0];
