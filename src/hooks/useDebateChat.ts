@@ -229,5 +229,5 @@ export function useDebateChat(threadId: string | null) {
     })();
   }, [loading, threadId, user]);
 
-  return { messages, sending, uploading, sendMessage, uploadBrief, threadState, loading };
+  return { messages, sending, uploading, sendMessage, retryLastAssistant, uploadBrief, threadState, loading };
 }
