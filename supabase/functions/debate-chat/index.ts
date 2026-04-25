@@ -1063,7 +1063,9 @@ Deno.serve(async (req) => {
     }
 
     // Om bara verktyg returnerades utan text, gör en uppföljning
-    if (!assistantText && toolCalls.length > 0) {
+    // (men hoppa över för rebuttal — vi har redan en bra scripted text och vill inte timeouta)
+    const didRebuttal = executedTools.some((t) => t.name === "generate_rebuttal_cards");
+    if (!assistantText && toolCalls.length > 0 && !didRebuttal) {
       const followup = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -1071,7 +1073,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-flash-lite",
           messages: [
             ...messages,
             { role: "system", content: `Verktyg utförda: ${executedTools.map((t) => t.name).join(", ")}. Driv samtalet framåt enligt FLÖDET. Ställ nästa konkreta fråga som tar oss till nästa fas — fråga ALDRIG "Vad vill du göra härnäst?" eller liknande öppna meta-frågor. Använd alltid suggest_quick_replies.` },
@@ -1085,7 +1087,9 @@ Deno.serve(async (req) => {
     }
 
     if (!assistantText) {
-      assistantText = "Okej, då går vi vidare!";
+      assistantText = didRebuttal
+        ? "Klart! Jag har skapat ett nytt manus med ditt genmäle — du flyttas dit nu."
+        : "Okej, då går vi vidare!";
     }
 
     // Plocka ut nytt-manus-id från generate_rebuttal_cards för navigering
