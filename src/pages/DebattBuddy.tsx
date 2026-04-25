@@ -184,7 +184,7 @@ export default function DebattBuddy() {
                 </span>
               </div>
               <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-tight text-v2-ink leading-[1.05]">
-                Debatt-<span className="bg-gradient-to-r from-v2-violet via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">buddy</span>
+                Debatt-<span className="bg-gradient-to-r from-v2-violet via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">buddy</span>
               </h1>
               <p className="text-v2-muted text-[15px] mt-2 max-w-md">
                 Din AI-coach för anföranden, repliker och genmälen — alltid redo i sidan.
