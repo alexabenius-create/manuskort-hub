@@ -149,7 +149,7 @@ const TOOLS: Tool[] = [
     type: "function",
     function: {
       name: "generate_rebuttal_cards",
-      description: "Skapa ett genmäle/replik på ca 30 sekunder talad tid (~65 ord totalt, ~130 ord/minut). Håll det kort, vasst och fokuserat på 1-2 huvudpoänger. Dela upp i 1-2 korta kort.",
+      description: "Skapa ett genmäle/replik på ca 1 minut talad tid (~130 ord totalt, ~130 ord/minut). Håll det vasst och fokuserat på 1-3 huvudpoänger. Dela upp i 1-3 korta kort.",
       parameters: {
         type: "object",
         properties: {
