@@ -298,6 +298,14 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
     text: "Vill du att jag skriver ett utkast åt dig, eller skriver du själv?",
     quick_replies: ["Skriv utkast åt mig", "Jag skriver själv"],
   },
+  intake_own_position: {
+    text: "Vad tycker du själv i frågan? Skriv några rader om för/emot och dina viktigaste argument.",
+    quick_replies: [],
+  },
+  confirm_draft_start: {
+    text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
+    quick_replies: ["Ja, skriv utkast", "Vänta lite"],
+  },
   awaiting_perform: {
     text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
     quick_replies: ["Klar — vad händer nu?"],
