@@ -167,18 +167,38 @@ export default function DebattBuddy() {
       <SEO title="Debatt-buddy – AI för debatter | Manuskort" description="Chatta med en AI-coach som hjälper dig förbereda anföranden, repliker och genmälen." canonical="/debatt-buddy" />
       <BackHeader />
       <main className="max-w-3xl mx-auto px-6 py-10">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="font-display text-4xl font-semibold tracking-tight text-v2-ink">Debatt-buddy</h1>
-              <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-v2-violet/10 text-v2-violet">BETA</span>
+        {/* HERO */}
+        <div className="relative overflow-hidden rounded-3xl border border-v2-line bg-gradient-to-br from-v2-violet/8 via-white to-pink-50/60 p-7 sm:p-9 mb-8">
+          {/* dekorativ glow */}
+          <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-v2-violet/20 blur-3xl animate-pulse" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-pink-300/25 blur-3xl" />
+
+          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-v2-violet to-pink-500 flex items-center justify-center shadow-lg shadow-v2-violet/30 animate-scale-in">
+                  <MessagesSquare className="h-5 w-5 text-white" strokeWidth={2.5} />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/80 backdrop-blur text-v2-violet border border-v2-violet/20">
+                  ✨ Beta
+                </span>
+              </div>
+              <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-tight text-v2-ink leading-[1.05]">
+                Debatt-<span className="bg-gradient-to-r from-v2-violet via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">buddy</span>
+              </h1>
+              <p className="text-v2-muted text-[15px] mt-2 max-w-md">
+                Din AI-coach för anföranden, repliker och genmälen — alltid redo i sidan.
+              </p>
             </div>
-            <p className="text-v2-muted text-[15px]">Chatta med en AI-coach medan du jobbar i manuset.</p>
+            <Button
+              onClick={createThread}
+              disabled={creating}
+              className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5"
+            >
+              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+              Ny debatt
+            </Button>
           </div>
-          <Button onClick={createThread} disabled={creating} className="rounded-full">
-            {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-            Ny debatt
-          </Button>
         </div>
 
         {loading ? (
@@ -186,27 +206,46 @@ export default function DebattBuddy() {
             <Loader2 className="h-5 w-5 animate-spin mx-auto" />
           </div>
         ) : threads.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl bg-white border border-v2-line">
-            <Sparkles className="h-8 w-8 mx-auto text-v2-violet mb-3" />
-            <h2 className="font-display text-xl font-semibold text-v2-ink mb-2">Ingen debatt än</h2>
-            <p className="text-v2-muted mb-5 text-[14px]">Starta en ny för att börja chatta med Debatt-buddy.</p>
-            <Button onClick={createThread} disabled={creating} className="rounded-full">
-              <Plus className="h-4 w-4 mr-2" /> Skapa min första debatt
-            </Button>
+          <div className="relative overflow-hidden text-center py-16 rounded-3xl bg-gradient-to-br from-white via-v2-violet/5 to-pink-50/50 border border-v2-line">
+            <div aria-hidden className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(circle_at_50%_0%,hsl(var(--v2-violet)/0.15),transparent_60%)]" />
+            <div className="relative">
+              <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-v2-violet to-pink-500 flex items-center justify-center shadow-lg shadow-v2-violet/30 mb-4 animate-scale-in">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <h2 className="font-display text-2xl font-semibold text-v2-ink mb-2">Dags för din första debatt</h2>
+              <p className="text-v2-muted mb-6 text-[14px] max-w-xs mx-auto">Berätta vad det handlar om — buddyn fixar struktur, argument och repliker.</p>
+              <Button
+                onClick={createThread}
+                disabled={creating}
+                className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Skapa min första debatt
+              </Button>
+            </div>
           </div>
         ) : (
-          <ul className="space-y-2">
-            {threads.map((t) => {
+          <ul className="space-y-2.5">
+            {threads.map((t, idx) => {
               const isEditing = editingId === t.id;
               return (
-                <li key={t.id}>
+                <li key={t.id} style={{ animationDelay: `${Math.min(idx, 8) * 40}ms` }} className="animate-fade-in">
                   <div
                     onClick={() => openThread(t)}
-                    className={`group w-full text-left flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-v2-line transition-colors ${isEditing ? "border-v2-violet/40" : "hover:border-v2-violet/40 cursor-pointer"}`}
+                    className={`group relative w-full text-left flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border transition-all ${
+                      isEditing
+                        ? "border-v2-violet/50 shadow-md shadow-v2-violet/10"
+                        : "border-v2-line hover:border-v2-violet/40 hover:shadow-md hover:shadow-v2-violet/10 hover:-translate-y-0.5 cursor-pointer"
+                    }`}
                   >
+                    {/* vänsterkant accent vid hover */}
+                    {!isEditing && (
+                      <span aria-hidden className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r bg-gradient-to-b from-v2-violet to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <MessagesSquare className="h-4 w-4 text-v2-violet shrink-0" />
+                      <div className="flex items-center gap-2.5">
+                        <span className="h-7 w-7 rounded-lg bg-gradient-to-br from-v2-violet/15 to-pink-500/15 flex items-center justify-center shrink-0 group-hover:from-v2-violet/25 group-hover:to-pink-500/25 transition-colors">
+                          <MessagesSquare className="h-3.5 w-3.5 text-v2-violet" strokeWidth={2.5} />
+                        </span>
                         {isEditing ? (
                           <Input
                             ref={inputRef}
