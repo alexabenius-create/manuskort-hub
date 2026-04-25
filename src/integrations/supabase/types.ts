@@ -205,6 +205,45 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          client_kind: string | null
+          event_name: string
+          event_props: Json
+          id: string
+          manuscript_id: string | null
+          occurred_at: string
+          platform: string | null
+          session_id: string | null
+          thread_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_kind?: string | null
+          event_name: string
+          event_props?: Json
+          id?: string
+          manuscript_id?: string | null
+          occurred_at?: string
+          platform?: string | null
+          session_id?: string | null
+          thread_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_kind?: string | null
+          event_name?: string
+          event_props?: Json
+          id?: string
+          manuscript_id?: string | null
+          occurred_at?: string
+          platform?: string | null
+          session_id?: string | null
+          thread_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       beta_features: {
         Row: {
           feature: string
