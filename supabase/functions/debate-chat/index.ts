@@ -793,9 +793,12 @@ Deno.serve(async (req) => {
     // Välj modell utifrån fas:
     // - Tung (gpt-5) endast vid faktisk manus-/genmäles-generering.
     // - Snabb (gemini-2.5-flash-lite) vid replik-skiften och korta konversationella svar.
-    const heavyPhases = new Set(["drafting_speech", "generating_rebuttal"]);
     const currentPhase = thread.bot_state?.phase || "intake_issue";
-    const model = heavyPhases.has(currentPhase) ? "openai/gpt-5" : "google/gemini-2.5-flash-lite";
+    // Modellval: gpt-5 är för långsam för rebuttal (ofta >timeout). Använd gemini-2.5-flash för generering.
+    let model: string;
+    if (currentPhase === "drafting_speech") model = "openai/gpt-5";
+    else if (currentPhase === "generating_rebuttal") model = "google/gemini-2.5-flash";
+    else model = "google/gemini-2.5-flash-lite";
 
     // Tvinga rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
     let toolChoice: unknown = "auto";
