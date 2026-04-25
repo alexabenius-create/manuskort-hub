@@ -45,7 +45,9 @@ FLÖDE (driv framåt aggressivt):
 2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela?" Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget → tacka kort (max 1 mening, t.ex. "Tack, jag har läst underlaget!"). Skriv ALDRIG ut sammanfattning, analys eller poänger från underlaget — det är internt. → \`set_brief\` → intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text.
 3. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
 4. **intake_speech_length** (om mode=speech): Fråga "Hur långt ska anförandet vara?" Snabbsvar: ["1 minut", "2 minuter", "3 minuter", "5 minuter"]. Spara längden i bot_state via \`set_speech_length\` (sekunder). Gå till drafting_speech.
-5. **drafting_speech**: Fråga kort efter huvudbudskap, max en mening. Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" → använd \`generate_speech_cards\` DIREKT med ~130 ord/minut (anpassa till sparad längd) → korten läggs in i manuset automatiskt. Bekräfta kort.
+5. **drafting_speech**: Fråga "Vill du att jag skriver utkast åt dig, eller skriver du själv?" Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" och **vi har redan användarens egen ståndpunkt** → använd \`generate_speech_cards\` DIREKT med ~130 ord/minut. Om vi saknar ståndpunkt → gå till intake_own_position.
+5b. **intake_own_position**: Be användaren beskriva sin egen åsikt i frågan (för/emot + viktigaste argument) i några rader. Spara i own_position. → confirm_draft_start.
+5c. **confirm_draft_start**: Fråga "Vill du att jag börjar skriva utkastet nu?" med snabbsvar ["Ja, skriv utkast", "Vänta lite"]. Vid Ja → drafting_speech + generate_speech_cards.
 6. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
 7. **intake_opponent_name** → \`set_opponent\` direkt.
 8. **intake_opponent_args** → be om motdebattörens argument. Användaren kan skicka flera meddelanden — efter varje fråga "Fler argument eller ska jag analysera?" med snabbsvar ["Fler argument", "Analysera nu"]. När "Analysera nu" → kör \`generate_rebuttal_cards\` med alla samlade argument.
@@ -228,6 +230,8 @@ const TOOLS: Tool[] = [
               "intake_mode",
               "intake_speech_length",
               "drafting_speech",
+              "intake_own_position",
+              "confirm_draft_start",
               "awaiting_perform",
               "post_perform_check",
               "intake_opponent_name",
@@ -295,6 +299,14 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
   drafting_speech: {
     text: "Vill du att jag skriver ett utkast åt dig, eller skriver du själv?",
     quick_replies: ["Skriv utkast åt mig", "Jag skriver själv"],
+  },
+  intake_own_position: {
+    text: "Vad tycker du själv i frågan? Skriv några rader om för/emot och dina viktigaste argument.",
+    quick_replies: [],
+  },
+  confirm_draft_start: {
+    text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
+    quick_replies: ["Ja, skriv utkast", "Vänta lite"],
   },
   awaiting_perform: {
     text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
@@ -503,7 +515,58 @@ async function handleScripted(
         quick_replies: ["Klar — fick replik", "Klar — ingen replik"],
       };
     }
-    // "Skriv utkast åt mig" → fall through till LLM (genererar kort)
+    // "Skriv utkast åt mig" → fråga först efter användarens egen ståndpunkt om vi inte har den
+    if ((msg.includes("skriv utkast") || msg.includes("utkast åt mig") || msg.includes("utkast at mig"))
+        && !(thread.own_position && thread.own_position.trim().length > 0)) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_own_position" } })
+        .eq("id", threadId);
+      return {
+        text: `Innan jag börjar — vad tycker du själv i frågan om ${thread.issue_text || thread.topic_area || "ärendet"}? Är du för eller emot, och vad är dina viktigaste argument? Skriv några rader.`,
+        quick_replies: [],
+      };
+    }
+    // Annars (vi har redan ståndpunkt) → fall through till LLM (genererar kort)
+  }
+
+  // intake_own_position — användaren beskriver sin ståndpunkt innan utkast skrivs
+  if (phase === "intake_own_position") {
+    const positionText = userMessage.trim().slice(0, 2000);
+    if (positionText.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          own_position: positionText,
+          bot_state: { ...thread.bot_state, phase: "confirm_draft_start" },
+        })
+        .eq("id", threadId);
+      return {
+        text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
+        quick_replies: ["Ja, skriv utkast", "Vänta lite"],
+      };
+    }
+  }
+
+  // confirm_draft_start — användaren bekräftar att utkastet ska genereras
+  if (phase === "confirm_draft_start") {
+    if (msg.includes("vänta") || msg.includes("vanta") || (msg.startsWith("nej"))) {
+      return {
+        text: "Inga problem — säg till när du är redo!",
+        quick_replies: ["Ja, skriv utkast nu"],
+      };
+    }
+    if (msg.includes("ja") || msg.includes("skriv utkast") || msg.includes("kör") || msg.includes("kor")) {
+      // Sätt tillbaka fasen till drafting_speech så LLM-grenen nedan triggar generering.
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech" } })
+        .eq("id", threadId);
+      // Returnera null → faller genom till LLM. För att tvinga generate_speech_cards
+      // måste userMessage innehålla "skriv utkast". Vi muterar inte userMessage här —
+      // istället hanteras det i LLM-grenen via en bot_state-flagga (se nedan).
+      return null;
+    }
   }
 
   // awaiting_perform
@@ -811,8 +874,12 @@ Deno.serve(async (req) => {
         content: "Du MÅSTE anropa verktyget generate_rebuttal_cards nu. Returnera inte genmälet som vanlig text.",
       });
     } else if (currentPhase === "drafting_speech") {
-      const lastUser = userMessage.toLowerCase();
-      if (lastUser.includes("skriv utkast") || lastUser.includes("utkast åt mig")) {
+      const lastUser = userMessage.toLowerCase().trim();
+      const isAffirmative = /^(ja|jadå|jada|absolut|kör|kor|gör det|gor det|okej|ok)\b/.test(lastUser)
+        || lastUser.includes("skriv utkast")
+        || lastUser.includes("utkast åt mig")
+        || lastUser.includes("utkast at mig");
+      if (isAffirmative) {
         toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
         toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_speech_cards");
         messages.push({
