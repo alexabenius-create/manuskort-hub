@@ -974,6 +974,7 @@ Deno.serve(async (req) => {
         if (name === "set_issue") {
           const updates: Record<string, unknown> = {
             issue_text: args.issue_text,
+            title: deriveThreadTitle(args.issue_text, args.topic_area || thread.topic_area),
             bot_state: { ...thread.bot_state, phase: "intake_brief" },
           };
           if (args.topic_area) updates.topic_area = args.topic_area;
