@@ -971,7 +971,39 @@ Deno.serve(async (req) => {
           });
           executedTools.push({ name, result: "ok" });
         } else if (name === "generate_rebuttal_cards") {
-          // Spara turn
+          const prevCount = Number((thread.bot_state as Record<string, unknown>)?.rebuttal_count) || 0;
+          const newCount = prevCount + 1;
+          const oppName = thread.current_opponent_label || "motdebattör";
+
+          // Skapa ETT NYTT MANUS för detta replikskifte (egen sida)
+          const newManusTitle = `${thread.title || "Debatt"} – mot ${oppName}${newCount > 1 ? ` (${newCount})` : ""}`;
+          const { data: newManus, error: newManusErr } = await admin
+            .from("manuscripts")
+            .insert({ user_id: userId, title: newManusTitle, mode: "speaker" })
+            .select("id")
+            .single();
+
+          let newManuscriptId: string | null = null;
+          if (newManusErr || !newManus) {
+            console.error("[debate-chat] kunde inte skapa nytt manus för genmäle", newManusErr);
+          } else {
+            newManuscriptId = newManus.id as string;
+            const sectionId = crypto.randomUUID();
+            const sectionLabel = `Replikskifte mot ${oppName}`;
+            const rows = (args.cards as Array<{ title: string; body: string }>).map((c, i) => ({
+              manuscript_id: newManuscriptId,
+              user_id: userId,
+              position: i,
+              role: "speaker",
+              title: c.title,
+              content_html: `<p>${c.body.replace(/\n/g, "</p><p>")}</p>`,
+              section_id: sectionId,
+              section_label: sectionLabel,
+            }));
+            if (rows.length) await admin.from("cards").insert(rows);
+          }
+
+          // Spara turn med koppling till det nya manuset
           const { data: lastTurn } = await admin
             .from("debate_turns")
             .select("position")
@@ -989,37 +1021,10 @@ Deno.serve(async (req) => {
             source_text: thread.current_opponent_label || "",
             ai_output_text: args.rebuttal_text,
             ai_card_split: args.cards,
+            manuscript_id: newManuscriptId,
           });
 
-          // Räkna upp replikskifte och skapa ny sektion
-          const prevCount = Number((thread.bot_state as Record<string, unknown>)?.rebuttal_count) || 0;
-          const newCount = prevCount + 1;
-          const oppName = thread.current_opponent_label || "motdebattör";
-          const sectionId = crypto.randomUUID();
-          const sectionLabel = `Replikskifte mot ${oppName} ${newCount}`;
-
-          // Skapa kort i manus om kopplat
-          if (thread.manuscript_id) {
-            const { data: existingCards } = await admin
-              .from("cards")
-              .select("position")
-              .eq("manuscript_id", thread.manuscript_id)
-              .order("position", { ascending: false })
-              .limit(1);
-            let pos = ((existingCards?.[0]?.position as number) ?? -1) + 1;
-            const rows = (args.cards as Array<{ title: string; body: string }>).map((c) => ({
-              manuscript_id: thread.manuscript_id,
-              user_id: userId,
-              position: pos++,
-              role: "speaker",
-              title: c.title,
-              content_html: `<p>${c.body.replace(/\n/g, "</p><p>")}</p>`,
-              section_id: sectionId,
-              section_label: sectionLabel,
-            }));
-            if (rows.length) await admin.from("cards").insert(rows);
-          }
-          // Rensa argument-bufferten + sätt fas till awaiting_perform och spara aktuell sektion
+          // Rensa argument-bufferten + sätt fas till awaiting_perform
           await admin
             .from("debate_threads")
             .update({
@@ -1027,12 +1032,17 @@ Deno.serve(async (req) => {
                 ...thread.bot_state,
                 phase: "awaiting_perform",
                 opponent_args_buffer: [],
-                current_section_id: sectionId,
                 rebuttal_count: newCount,
+                last_rebuttal_manuscript_id: newManuscriptId,
               },
             })
             .eq("id", threadId);
-          executedTools.push({ name, result: `${args.cards.length} kort` });
+          executedTools.push({
+            name,
+            result: newManuscriptId
+              ? `${args.cards.length} kort i nytt manus ${newManuscriptId.slice(0, 8)}`
+              : "no_manuscript_created",
+          });
         } else if (name === "advance_phase") {
           await admin
             .from("debate_threads")
