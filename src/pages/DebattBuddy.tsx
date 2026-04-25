@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, Plus, Sparkles, MessagesSquare } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, Plus, Sparkles, MessagesSquare, Pencil, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
 import { useBetaAccess } from "@/hooks/useBetaAccess";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SEO } from "@/components/SEO";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,6 +26,10 @@ export default function DebattBuddy() {
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +43,46 @@ export default function DebattBuddy() {
       if (!error && data) setThreads(data as ThreadRow[]);
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const startEdit = (t: ThreadRow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(t.id);
+    setEditValue(t.title || "");
+  };
+
+  const cancelEdit = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    setEditingId(null);
+    setEditValue("");
+  };
+
+  const saveEdit = async (id: string) => {
+    const newTitle = editValue.trim().slice(0, 120);
+    if (!newTitle) {
+      cancelEdit();
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("debate_threads")
+      .update({ title: newTitle })
+      .eq("id", id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Kunde inte byta titel", description: error.message, variant: "destructive" });
+      return;
+    }
+    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, title: newTitle } : t)));
+    setEditingId(null);
+    setEditValue("");
+  };
 
   const createThread = async () => {
     if (!user || creating) return;
@@ -71,6 +116,7 @@ export default function DebattBuddy() {
   };
 
   const openThread = (t: ThreadRow) => {
+    if (editingId === t.id) return;
     if (t.manuscript_id) {
       navigate(`/manus/${t.manuscript_id}?debattbuddy=${t.id}`);
     } else {
@@ -150,30 +196,97 @@ export default function DebattBuddy() {
           </div>
         ) : (
           <ul className="space-y-2">
-            {threads.map((t) => (
-              <li key={t.id}>
-                <button
-                  onClick={() => openThread(t)}
-                  className="w-full text-left flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-v2-line hover:border-v2-violet/40 transition-colors"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <MessagesSquare className="h-4 w-4 text-v2-violet shrink-0" />
-                      <span className="text-[15px] font-semibold text-v2-ink truncate">{t.title}</span>
-                      {!t.manuscript_id && (
-                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-v2-muted/10 text-v2-muted">klassisk</span>
+            {threads.map((t) => {
+              const isEditing = editingId === t.id;
+              return (
+                <li key={t.id}>
+                  <div
+                    onClick={() => openThread(t)}
+                    className={`group w-full text-left flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-v2-line transition-colors ${isEditing ? "border-v2-violet/40" : "hover:border-v2-violet/40 cursor-pointer"}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <MessagesSquare className="h-4 w-4 text-v2-violet shrink-0" />
+                        {isEditing ? (
+                          <Input
+                            ref={inputRef}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                void saveEdit(t.id);
+                              } else if (e.key === "Escape") {
+                                e.preventDefault();
+                                cancelEdit(e);
+                              }
+                            }}
+                            disabled={saving}
+                            maxLength={120}
+                            className="h-8 text-[15px] font-semibold"
+                          />
+                        ) : (
+                          <span className="text-[15px] font-semibold text-v2-ink truncate">{t.title}</span>
+                        )}
+                        {!t.manuscript_id && !isEditing && (
+                          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-v2-muted/10 text-v2-muted">klassisk</span>
+                        )}
+                      </div>
+                      {t.topic_area && !isEditing && (
+                        <div className="text-[12px] text-v2-muted mt-1">🏷 {t.topic_area}</div>
                       )}
                     </div>
-                    {t.topic_area && (
-                      <div className="text-[12px] text-v2-muted mt-1">🏷 {t.topic_area}</div>
+
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void saveEdit(t.id);
+                          }}
+                          disabled={saving}
+                          aria-label="Spara titel"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={cancelEdit}
+                          disabled={saving}
+                          aria-label="Avbryt"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => startEdit(t, e)}
+                          aria-label="Byt namn"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="text-[11px] text-v2-muted">
+                          {new Date(t.updated_at).toLocaleDateString("sv-SE")}
+                        </span>
+                      </div>
                     )}
                   </div>
-                  <span className="text-[11px] text-v2-muted shrink-0">
-                    {new Date(t.updated_at).toLocaleDateString("sv-SE")}
-                  </span>
-                </button>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>
