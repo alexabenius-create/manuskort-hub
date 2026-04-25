@@ -68,16 +68,16 @@ function MessageBubble({ message, isLastAssistant, onRetry, sending }: BubblePro
   if (isError) {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700/40 px-3.5 py-2.5 text-[14px] leading-relaxed text-amber-900 dark:text-amber-100">
+        <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-[14px] leading-relaxed text-foreground">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
             <div className="flex-1">
               <p className="whitespace-pre-wrap">{message.content}</p>
               {isLastAssistant && meta.retryable && onRetry && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-2 h-7 px-2.5 gap-1.5 text-[12px] border-amber-400/60 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                  className="mt-2 h-7 px-2.5 gap-1.5 text-[12px] border-destructive/40 hover:bg-destructive/15"
                   onClick={onRetry}
                   disabled={sending}
                 >
