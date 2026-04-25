@@ -469,6 +469,42 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled_for_tiers: string[]
+          enabled_for_user_ids: string[]
+          enabled_globally: boolean
+          flag_name: string
+          id: string
+          rollout_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled_for_tiers?: string[]
+          enabled_for_user_ids?: string[]
+          enabled_globally?: boolean
+          flag_name: string
+          id?: string
+          rollout_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled_for_tiers?: string[]
+          enabled_for_user_ids?: string[]
+          enabled_globally?: boolean
+          flag_name?: string
+          id?: string
+          rollout_percentage?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback_messages: {
         Row: {
           body: string
@@ -932,6 +968,10 @@ export type Database = {
       import_manuscript: {
         Args: { p_cards: Json; p_manuscript: Json; p_panelists: Json }
         Returns: string
+      }
+      is_feature_enabled: {
+        Args: { _flag_name: string; _user_id: string }
+        Returns: boolean
       }
       lookup_affiliate_referrer: { Args: { _code: string }; Returns: string }
       register_affiliate_referral: {
