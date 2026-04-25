@@ -281,10 +281,11 @@ export default function LibraryV2() {
     setRenameId(null);
   };
 
-  const filters: ["all" | "moderator" | "speaker", string][] = [
+  const filters: ["all" | "moderator" | "speaker" | "debate", string][] = [
     ["all", "Alla"],
     ["moderator", "Moderator"],
     ["speaker", "Talare"],
+    ["debate", "Debatt"],
   ];
 
   const dragCounter = { current: 0 };
