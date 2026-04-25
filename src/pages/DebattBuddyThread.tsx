@@ -29,6 +29,8 @@ import {
   type TurnKind,
 } from "@/lib/debatePhase";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
+import { ANALYTICS_EVENTS } from "@/lib/analyticsEvents";
 
 interface DebateThread {
   id: string;
@@ -116,6 +118,12 @@ export default function DebattBuddyThread() {
   useEffect(() => {
     if (!threadId) return;
     setPerformedTurnIds(loadPerformedSet(threadId));
+  }, [threadId]);
+
+  // Analytics: editor_opened när tråden mountas
+  useEffect(() => {
+    if (!threadId) return;
+    void trackEvent(ANALYTICS_EVENTS.EDITOR_OPENED, {}, { thread_id: threadId });
   }, [threadId]);
 
   const markPerformed = useCallback(
