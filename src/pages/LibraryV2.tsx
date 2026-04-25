@@ -505,15 +505,29 @@ export default function LibraryV2() {
           <p className="text-v2-muted text-[17px] sm:text-[18px] mt-4 max-w-xl">
             Skapa, redigera och håll flyt — från första hälsning till sista applåd.
           </p>
-          {(tier === "pro" || tier === "admin") && aiUsage && aiUsage.limit > 0 && (
-            <div className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-white/80 backdrop-blur px-5 py-2.5 border border-v2-line shadow-sm text-[14px] whitespace-nowrap">
-              <Sparkles className="h-4 w-4 text-v2-violet shrink-0" />
-              <span>
-                <span className="font-semibold text-v2-ink">{aiUsage.remaining}</span>
-                <span className="text-v2-muted"> / {aiUsage.limit} AI-förbättringar kvar denna månad</span>
-              </span>
-            </div>
-          )}
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            {hasDebateBuddy && (
+              <button
+                type="button"
+                onClick={() => navigate("/debatt-buddy")}
+                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+                title="AI-stöd för debattanföranden"
+              >
+                <MessagesSquare className="h-4 w-4 text-v2-violet" />
+                Debatt-buddy
+                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-v2-violet/10 text-v2-violet">Beta</span>
+              </button>
+            )}
+            {(tier === "pro" || tier === "admin") && aiUsage && aiUsage.limit > 0 && (
+              <div className="inline-flex items-center gap-2.5 rounded-full bg-white/80 backdrop-blur px-5 py-2.5 border border-v2-line shadow-sm text-[14px] whitespace-nowrap">
+                <Sparkles className="h-4 w-4 text-v2-violet shrink-0" />
+                <span>
+                  <span className="font-semibold text-v2-ink">{aiUsage.remaining}</span>
+                  <span className="text-v2-muted"> / {aiUsage.limit} AI-förbättringar kvar denna månad</span>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Controls */}
