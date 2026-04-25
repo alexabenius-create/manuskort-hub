@@ -22,6 +22,8 @@ interface ThreadState {
 
 export function useDebateChat(threadId: string | null) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
