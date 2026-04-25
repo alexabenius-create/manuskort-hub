@@ -230,6 +230,8 @@ const TOOLS: Tool[] = [
               "intake_mode",
               "intake_speech_length",
               "drafting_speech",
+              "intake_own_position",
+              "confirm_draft_start",
               "awaiting_perform",
               "post_perform_check",
               "intake_opponent_name",
