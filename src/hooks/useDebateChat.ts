@@ -87,7 +87,7 @@ export function useDebateChat(threadId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [threadId, user, loadThread]);
+  }, [threadId, user, loadThread, navigate, location.pathname]);
 
   const sendMessage = useCallback(
     async (text: string) => {
