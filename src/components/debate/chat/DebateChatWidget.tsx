@@ -39,7 +39,7 @@ export function DebateChatWidget({ threadId }: Props) {
               onToggleExpand={() => setMode("compact")}
               onMinimize={() => setMode("minimized")}
             />
-            <DebateChatMessages messages={messages} sending={sending} />
+            <DebateChatMessages messages={messages} sending={sending} onRetry={retryLastAssistant} />
             <DebateChatInput
               onSend={sendMessage}
               onUploadFile={uploadBrief}
@@ -65,7 +65,7 @@ export function DebateChatWidget({ threadId }: Props) {
         onToggleExpand={() => setMode("expanded")}
         onMinimize={() => setMode("minimized")}
       />
-      <DebateChatMessages messages={messages} sending={sending} />
+      <DebateChatMessages messages={messages} sending={sending} onRetry={retryLastAssistant} />
       <DebateChatInput
         onSend={sendMessage}
         onUploadFile={uploadBrief}
