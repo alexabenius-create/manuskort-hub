@@ -392,6 +392,7 @@ async function handleScripted(
         .update({
           topic_area: topic,
           issue_text: topic,
+          title: deriveThreadTitle(topic, topic),
           bot_state: { ...thread.bot_state, phase: "intake_brief" },
         })
         .eq("id", threadId);
