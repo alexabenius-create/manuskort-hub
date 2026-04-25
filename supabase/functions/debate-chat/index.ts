@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logEvent } from "../_shared/analytics.ts";
+import { callLLM, userFacingMessage } from "../_shared/llmCall.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
