@@ -1092,7 +1092,7 @@ Deno.serve(async (req) => {
           const newManusTitle = `${thread.title || "Debatt"} – mot ${oppName}${newCount > 1 ? ` (${newCount})` : ""}`;
           const { data: newManus, error: newManusErr } = await admin
             .from("manuscripts")
-            .insert({ user_id: userId, title: newManusTitle, mode: "speaker", target_duration_seconds: 60 })
+            .insert({ user_id: userId, title: newManusTitle, mode: "debate", target_duration_seconds: 60 })
             .select("id")
             .single();
 
