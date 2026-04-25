@@ -503,7 +503,58 @@ async function handleScripted(
         quick_replies: ["Klar — fick replik", "Klar — ingen replik"],
       };
     }
-    // "Skriv utkast åt mig" → fall through till LLM (genererar kort)
+    // "Skriv utkast åt mig" → fråga först efter användarens egen ståndpunkt om vi inte har den
+    if ((msg.includes("skriv utkast") || msg.includes("utkast åt mig") || msg.includes("utkast at mig"))
+        && !(thread.own_position && thread.own_position.trim().length > 0)) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "intake_own_position" } })
+        .eq("id", threadId);
+      return {
+        text: `Innan jag börjar — vad tycker du själv i frågan om ${thread.issue_text || thread.topic_area || "ärendet"}? Är du för eller emot, och vad är dina viktigaste argument? Skriv några rader.`,
+        quick_replies: [],
+      };
+    }
+    // Annars (vi har redan ståndpunkt) → fall through till LLM (genererar kort)
+  }
+
+  // intake_own_position — användaren beskriver sin ståndpunkt innan utkast skrivs
+  if (phase === "intake_own_position") {
+    const positionText = userMessage.trim().slice(0, 2000);
+    if (positionText.length >= 2) {
+      await admin
+        .from("debate_threads")
+        .update({
+          own_position: positionText,
+          bot_state: { ...thread.bot_state, phase: "confirm_draft_start" },
+        })
+        .eq("id", threadId);
+      return {
+        text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
+        quick_replies: ["Ja, skriv utkast", "Vänta lite"],
+      };
+    }
+  }
+
+  // confirm_draft_start — användaren bekräftar att utkastet ska genereras
+  if (phase === "confirm_draft_start") {
+    if (msg.includes("vänta") || msg.includes("vanta") || (msg.startsWith("nej"))) {
+      return {
+        text: "Inga problem — säg till när du är redo!",
+        quick_replies: ["Ja, skriv utkast nu"],
+      };
+    }
+    if (msg.includes("ja") || msg.includes("skriv utkast") || msg.includes("kör") || msg.includes("kor")) {
+      // Sätt tillbaka fasen till drafting_speech så LLM-grenen nedan triggar generering.
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech" } })
+        .eq("id", threadId);
+      // Returnera null → faller genom till LLM. För att tvinga generate_speech_cards
+      // måste userMessage innehålla "skriv utkast". Vi muterar inte userMessage här —
+      // istället hanteras det i LLM-grenen via en bot_state-flagga (se nedan).
+      return null;
+    }
   }
 
   // awaiting_perform
