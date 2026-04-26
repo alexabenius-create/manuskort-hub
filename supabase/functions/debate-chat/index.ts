@@ -868,12 +868,8 @@ async function handleScripted(
   // editing — låt LLM hantera fritext-instruktioner via edit_manuscript-tool.
   // Men korta scripted shortcuts först:
   if (phase === "editing") {
-    // "Klart" / "det ser bra ut" → completed
-    if (
-      msg === "klart" || msg === "klar" || msg === "det räcker" || msg === "det racker" ||
-      msg.includes("det ser bra ut") || msg.includes("nöjd") || msg.includes("nojd") ||
-      msg === "det ser bra ut, klart"
-    ) {
+    // "Klart" / "det ser bra ut" / "det räcker, klart" → completed (robust detektion)
+    if (detectCompletedIntent(userMessage)) {
       const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
       await admin
         .from("debate_threads")
