@@ -667,7 +667,7 @@ async function handleScripted(
     // Annars (vi har redan ståndpunkt) → fall through till LLM (genererar kort)
   }
 
-  // intake_own_position — användaren beskriver sin ståndpunkt innan utkast skrivs
+  // intake_own_position — efter sparat: gå DIREKT till drafting_speech (auto-generera).
   if (phase === "intake_own_position") {
     const positionText = userMessage.trim().slice(0, 2000);
     if (positionText.length >= 2) {
@@ -675,35 +675,21 @@ async function handleScripted(
         .from("debate_threads")
         .update({
           own_position: positionText,
-          bot_state: { ...thread.bot_state, phase: "confirm_draft_start" },
+          bot_state: { ...thread.bot_state, phase: "drafting_speech", pending_generate: true },
         })
         .eq("id", threadId);
-      return {
-        text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
-        quick_replies: ["Ja, skriv utkast", "Vänta lite"],
-      };
+      // Fall genom till LLM — generate_speech_cards triggas av pending_generate-flaggan.
+      return null;
     }
   }
 
-  // confirm_draft_start — användaren bekräftar att utkastet ska genereras
+  // confirm_draft_start — DEPRECATED. Vid äldre trådar: hoppa direkt vidare till generering.
   if (phase === "confirm_draft_start") {
-    if (msg.includes("vänta") || msg.includes("vanta") || (msg.startsWith("nej"))) {
-      return {
-        text: "Inga problem — säg till när du är redo!",
-        quick_replies: ["Ja, skriv utkast nu"],
-      };
-    }
-    if (msg.includes("ja") || msg.includes("skriv utkast") || msg.includes("kör") || msg.includes("kor")) {
-      // Sätt tillbaka fasen till drafting_speech så LLM-grenen nedan triggar generering.
-      await admin
-        .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech" } })
-        .eq("id", threadId);
-      // Returnera null → faller genom till LLM. För att tvinga generate_speech_cards
-      // måste userMessage innehålla "skriv utkast". Vi muterar inte userMessage här —
-      // istället hanteras det i LLM-grenen via en bot_state-flagga (se nedan).
-      return null;
-    }
+    await admin
+      .from("debate_threads")
+      .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech", pending_generate: true } })
+      .eq("id", threadId);
+    return null;
   }
 
   // awaiting_perform
