@@ -2635,13 +2635,18 @@ Deno.serve(async (req) => {
             });
           }
         } else if (name === "edit_manuscript") {
-          if (!thread.manuscript_id) {
+          // Sprint 1.7 v2: routa till aktiv flik (samma logik som scripted-grenen)
+          const llmTargetManuscriptId =
+            ((thread.bot_state as Record<string, unknown>)?.active_manuscript_id as string | undefined) ||
+            thread.manuscript_id ||
+            null;
+          if (!llmTargetManuscriptId) {
             executedTools.push({ name, result: "no_manuscript" });
             assistantText = "Jag ser inget kopplat manus att redigera.";
           } else {
             try {
               const result = await executeEditManuscript(
-                admin, thread.manuscript_id, userId, args, LOVABLE_API_KEY!,
+                admin, llmTargetManuscriptId, userId, args, LOVABLE_API_KEY!,
               );
               const summary = result.summary_override || String(args.user_friendly_summary || "Ändringen är gjord.");
               executedTools.push({ name, result: `${result.cards_affected} kort` });
@@ -2659,10 +2664,10 @@ Deno.serve(async (req) => {
                 event_props: {
                   operation: String(args.operation || ""),
                   cards_affected: result.cards_affected,
-                  manuscript_id: thread.manuscript_id,
+                  manuscript_id: llmTargetManuscriptId,
                 },
                 thread_id: thread.id,
-                manuscript_id: thread.manuscript_id,
+                manuscript_id: llmTargetManuscriptId,
               });
 
               assistantText = `${summary}\n\nVill du ändra något mer?`;
