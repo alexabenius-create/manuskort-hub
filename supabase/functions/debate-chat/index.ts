@@ -679,6 +679,138 @@ async function generateCardText(
   return { ok: true, text };
 }
 
+// ============= SPRINT 1.7 — REPLIKKEDJAN: PARSERS + REPLY-GEN =============
+
+interface ReplyStackEntry {
+  index: number;
+  name: string | null;
+  arguments: string;
+  manuscript_id: string;
+  generated_at: string;
+  completed_at: string | null;
+}
+
+/** Parsar fri text om en replik: försök extrahera namn + argument. Fallback: hela texten = arguments. */
+function parseReplyInput(msg: string): { name: string | null; arguments: string } {
+  const trimmed = msg.trim();
+  // "Namn (Efternamn) sa/menade/påstod/... att <argument>"
+  const m = trimmed.match(/^([A-ZÅÄÖ][\wåäöÅÄÖ\-]+(?:\s+[A-ZÅÄÖ][\wåäöÅÄÖ\-]+)?)\s+(?:sa|sade|menade|påstod|hävdade|tycker|tyckte|anser|ansåg|argumenterade|hävdar|påstår)\s+(?:att\s+)?(.+)$/);
+  if (m) return { name: m[1].trim(), arguments: m[2].trim() };
+  return { name: null, arguments: trimmed };
+}
+
+/** Detektion av "klar med replik N" / "klar" / "klart" / "framfört". Liknar detectCompletedIntent men replik-specifik. */
+function parseReplyDoneIntent(rawMsg: string): boolean {
+  const normalized = rawMsg.trim().toLowerCase().replace(/[.!?]+$/g, "");
+  const segments = normalized.split(/[,.;]+/).map((s) => s.trim()).filter(Boolean);
+  const TOKENS = new Set([
+    "klart", "klar", "klar med repliken", "klar med replik", "klar nu",
+    "framfört", "framfort", "har framfört", "har framfort",
+    "färdig", "fardig", "färdigt", "fardigt", "det räcker", "racker", "det racker",
+  ]);
+  if (TOKENS.has(normalized)) return true;
+  if (/^klar\s+med\s+replik(\s+\d+)?$/.test(normalized)) return true;
+  if (segments.some((seg) => TOKENS.has(seg))) return true;
+  return false;
+}
+
+/**
+ * Skapar nytt manuscript + cards + debate_turn (kind='reply') för ett replik-genmäle.
+ * Återanvänder befintlig infrastruktur — ingen migration behövs.
+ */
+async function generateReplyManuscript(
+  // deno-lint-ignore no-explicit-any
+  admin: ReturnType<typeof createClient<any>>,
+  apiKey: string,
+  thread: ThreadRow,
+  replyInput: { name: string | null; arguments: string },
+  replyIndex: number,
+): Promise<
+  | { ok: true; manuscript_id: string; cards_count: number }
+  | { ok: false; reason: string }
+> {
+  // 1. Generera genmäle-text via LLM (gemini-2.5-flash, ren textgenerering, inga tools)
+  const oppName = replyInput.name || "motdebattören";
+  const ownPos = thread.own_position || "(inte angiven)";
+  const topic = thread.topic_area || thread.issue_text || "(okänt ämne)";
+  const prompt = `Skriv ett kort, slagkraftigt genmäle (1-3 stycken, totalt 60-180 ord) till följande replik från en motdebattör. Genmälet ska bemöta argumentet konkret och hålla retorisk skärpa. INGA rubriker, INGA förklaringar — bara den färdiga tal-texten. Separera stycken med en tom rad.
+
+REPLIKANT: ${oppName}
+REPLIKANTENS ARGUMENT: ${replyInput.arguments}
+
+ANVÄNDARENS URSPRUNGLIGA POSITION: ${ownPos}
+ÄMNE: ${topic}`;
+
+  const llm = await callLLM(
+    {
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: "Du är en svensk debattcoach. Skriv tal-text som ska läsas högt — kort, konkret, talspråklig. INGEN markdown, INGA rubriker, INGA citationstecken runt svaret." },
+        { role: "user", content: prompt },
+      ],
+    },
+    apiKey,
+    { timeout_ms: 60_000, max_attempts: 1, function_name: "debate-chat-reply-gen" },
+  );
+
+  if (!llm.ok) return { ok: false, reason: llm.error_kind };
+  const text = String(llm.data?.choices?.[0]?.message?.content || "").trim();
+  if (!text) return { ok: false, reason: "empty" };
+
+  // 2. Skapa nytt manuscript (samma mönster som generate_rebuttal_cards)
+  const manusTitle = `${thread.title || "Debatt"} – genmäle ${replyIndex}${replyInput.name ? ` mot ${replyInput.name}` : ""}`;
+  const { data: manus, error: mErr } = await admin
+    .from("manuscripts")
+    .insert({ user_id: thread.user_id, title: manusTitle, mode: "debate", target_duration_seconds: 60 })
+    .select("id")
+    .single();
+  if (mErr || !manus) return { ok: false, reason: `manuscript_insert_failed: ${mErr?.message || "unknown"}` };
+  const manuscriptId = manus.id as string;
+
+  // 3. Splitta texten i kort + insert
+  const cards = splitIntoCards(text);
+  const sectionId = crypto.randomUUID();
+  const sectionLabel = `Genmäle ${replyIndex}${replyInput.name ? ` – ${replyInput.name}` : ""}`;
+  const rows = cards.map((c, i) => ({
+    manuscript_id: manuscriptId,
+    user_id: thread.user_id,
+    position: i,
+    role: "speaker",
+    title: c.title,
+    content_html: `<p>${c.body.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+    section_id: sectionId,
+    section_label: sectionLabel,
+  }));
+  if (rows.length) {
+    const { error: cErr } = await admin.from("cards").insert(rows);
+    if (cErr) return { ok: false, reason: `cards_insert_failed: ${cErr.message}` };
+  }
+
+  // 4. Skapa debate_turn-rad (kind='reply') kopplad till nya manuset
+  const { data: lastTurn } = await admin
+    .from("debate_turns")
+    .select("position")
+    .eq("thread_id", thread.id)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextPos = ((lastTurn?.position as number) || 0) + 1;
+  await admin.from("debate_turns").insert({
+    thread_id: thread.id,
+    user_id: thread.user_id,
+    position: nextPos,
+    kind: "reply",
+    speaker_label: replyInput.name || "Motdebattör",
+    source_text: replyInput.arguments,
+    ai_output_text: text,
+    ai_card_split: cards,
+    manuscript_id: manuscriptId,
+    round_number: replyIndex,
+  });
+
+  return { ok: true, manuscript_id: manuscriptId, cards_count: cards.length };
+}
+
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
 async function handleScripted(
   admin: ReturnType<typeof createClient<any>>,
