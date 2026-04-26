@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, Zap } from "lucide-react";
+import { Loader2, Paperclip, Sparkles, X, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { trackEvent } from "@/lib/analytics";
 import { ANALYTICS_EVENTS } from "@/lib/analyticsEvents";
+import {
+  extractDocumentText,
+  fileExtension,
+  formatFileSize,
+  isAllowedFile,
+  MAX_FILE_BYTES,
+} from "@/lib/extractDocumentText";
 
 interface Props {
   open: boolean;
@@ -20,20 +27,27 @@ const EXAMPLES = [
   { emoji: "🏛", text: "Inlägg om varför vi behöver bygga ut äldreboendet" },
 ];
 
+const MAX_CONTEXT_CHARS = 50_000;
+const MIN_CONTEXT_CHARS = 50;
+
 export function SnabbstartModal({ open, onOpenChange }: Props) {
   const navigate = useNavigate();
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [readingFile, setReadingFile] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       void trackEvent(ANALYTICS_EVENTS.SNABBSTART_OPENED, {});
-      // autofokus
       setTimeout(() => textareaRef.current?.focus(), 50);
     } else {
       setText("");
+      setFile(null);
       setLoading(false);
+      setReadingFile(false);
     }
   }, [open]);
 
@@ -43,18 +57,67 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
     textareaRef.current?.focus();
   };
 
+  const handleFilePick = (picked: File | null) => {
+    if (!picked) return;
+    if (!isAllowedFile(picked)) {
+      toast({
+        title: "Filen kunde inte bifogas",
+        description: `Filen är för stor (max ${MAX_FILE_BYTES / (1024 * 1024)} MB) — eller ej tillåtet format (PDF, DOCX, TXT).`,
+        variant: "destructive",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setFile(picked);
+  };
+
+  const handleRemoveFile = () => {
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = async () => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
     setLoading(true);
 
     try {
+      let attached_context: string | undefined;
+      if (file) {
+        setReadingFile(true);
+        try {
+          const raw = await extractDocumentText(file);
+          const cleaned = raw.replace(/\s+/g, " ").trim();
+          if (cleaned.length < MIN_CONTEXT_CHARS) {
+            toast({
+              title: "Kunde inte läsa dokumentet",
+              description: "Försök med ett annat format eller ett tydligare dokument.",
+              variant: "destructive",
+            });
+            setLoading(false);
+            setReadingFile(false);
+            return;
+          }
+          attached_context = cleaned.slice(0, MAX_CONTEXT_CHARS);
+        } catch (e) {
+          console.error("[snabbstart] extract failed", e);
+          toast({
+            title: "Kunde inte läsa dokumentet",
+            description: "Filen är skadad eller i fel format.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          setReadingFile(false);
+          return;
+        }
+        setReadingFile(false);
+      }
+
       const { data, error } = await supabase.functions.invoke("quick-intake", {
-        body: { text: trimmed },
+        body: { text: trimmed, attached_context },
       });
 
       if (error) {
-        // Försök tolka strukturerat fel från edge function
         // deno-lint-ignore no-explicit-any
         const ctx = (error as any).context;
         let status: number | undefined;
@@ -126,8 +189,11 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
       });
     } finally {
       setLoading(false);
+      setReadingFile(false);
     }
   };
+
+  const fileEmoji = file ? (fileExtension(file) === "pdf" ? "📄" : fileExtension(file) === "docx" ? "📝" : "📃") : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,6 +224,51 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
             disabled={loading}
             maxLength={1000}
           />
+
+          {/* Filuppladdning */}
+          <div className="space-y-1.5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,text/plain"
+              className="hidden"
+              onChange={(e) => handleFilePick(e.target.files?.[0] ?? null)}
+              disabled={loading}
+            />
+            {file ? (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border bg-muted/40 text-sm">
+                <span className="truncate">
+                  <span className="mr-1.5">{fileEmoji}</span>
+                  <span className="font-medium">{file.name}</span>
+                  <span className="text-muted-foreground"> · {formatFileSize(file.size)}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  disabled={loading}
+                  className="shrink-0 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  <X className="h-3 w-3" />
+                  Ta bort
+                </button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <Paperclip className="h-4 w-4" />
+                Bifoga underlag (valfritt)
+              </Button>
+            )}
+            <div className="text-[11px] text-muted-foreground px-1">
+              Boten läser dokumentet som bakgrund. Sparas inte permanent. PDF, DOCX eller TXT, max 5 MB.
+            </div>
+          </div>
 
           <div className="space-y-2">
             <div className="text-[12px] text-muted-foreground">Exempel — klicka för att ladda</div>
@@ -195,7 +306,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Tänker...
+                {readingFile ? "Läser dokumentet..." : "Tänker..."}
               </>
             ) : (
               <>
