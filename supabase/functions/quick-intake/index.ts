@@ -178,19 +178,30 @@ Deno.serve(async (req) => {
     const text = String(body.text || "").trim().slice(0, 1000);
     if (text.length < 3) return json({ error: "text_too_short" }, 400);
 
+    // Bifogat underlag (valfritt) — extraherat klient-sidan, max 50k tecken.
+    const attachedContextRaw = String(body.attached_context || "").slice(0, 50_000);
+    const hasAttachment = attachedContextRaw.length >= 50;
+
+    // För LLM-tolkning trunkerar vi hårdare (~8000 ord ≈ 48000 tecken).
+    const attachedForLlm = hasAttachment ? attachedContextRaw.slice(0, 48_000) : "";
+
     void logEvent(admin, {
       user_id: userId,
       event_name: "generation_started",
-      event_props: { source: "snabbstart" },
+      event_props: { source: "snabbstart", has_attachment: hasAttachment },
     });
 
     // ---- LLM-anrop ----
     const llmStart = Date.now();
+    const userPrompt = attachedForLlm
+      ? `${USER_TEMPLATE(text)}\n\nANVÄNDAREN HAR BIFOGAT FÖLJANDE UNDERLAG (utdrag, max 8 000 ord):\n\n---\n${attachedForLlm}\n---\n\nAnvänd detta som primär kontext för att förstå issue_text, opponent_arguments och topic_area. Citera ALDRIG ordagrant utan analysera och destillera.`
+      : USER_TEMPLATE(text);
+
     const result = await callLLM({
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_TEMPLATE(text) },
+        { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
       temperature: 0.2,
