@@ -557,12 +557,110 @@ function detectCompletedIntent(rawMsg: string): boolean {
 /** Mönster som indikerar att LLM hallucinerat en utförd edit i fri text utan att anropa edit_manuscript. */
 const EDIT_HALLUCINATION_PATTERN = /\b(bytt|bytte|ändrat|ändrade|andrat|andrade|skrivit\s+om|skrev\s+om|lagt\s+till|la\s+till|tagit\s+bort|tog\s+bort|justerat|justerade|uppdaterat|uppdaterade|omformulerat|omformulerade|gjort\s+(om|mer)|skapat|skapade)\b/i;
 
+// ============= SCRIPTED INTENT PARSERS (Sprint 1.6, Spår B) =============
+// Regex-baserade parsers för vanliga editing-instruktioner. Bypassar LLM-tool-calling
+// för rewrite_card / add_card / tweak_tone_global. Vid match returnerar { operation, params },
+// annars null → faller tillbaka till LLM.
+
+/** Parsar svenska kortreferenser: "kort 2", "första kortet", "sista kortet" → 0-indexerad position (eller -1 för "sista"). */
+function parseCardPosition(s: string): number | null {
+  const trimmed = s.trim().toLowerCase();
+  const numMatch = trimmed.match(/kort\s+(\d+)/);
+  if (numMatch) return parseInt(numMatch[1], 10) - 1;
+  const ordinals: Record<string, number> = {
+    "första kortet": 0, "andra kortet": 1, "tredje kortet": 2,
+    "fjärde kortet": 3, "femte kortet": 4, "sjätte kortet": 5, "sjunde kortet": 6,
+    "forsta kortet": 0, "fjarde kortet": 3, "sjatte kortet": 5,
+    "sista kortet": -1,
+  };
+  if (trimmed in ordinals) return ordinals[trimmed];
+  for (const [key, val] of Object.entries(ordinals)) {
+    if (trimmed.includes(key)) return val;
+  }
+  return null;
+}
+
+function parseRewriteCardInstruction(msg: string): { target_position: number; instruction: string } | null {
+  const verbs = "(?:skriv\\s+om|ändra|andra|omformulera|uppdatera|gör\\s+om|gor\\s+om)";
+  const cardRef = "(kort\\s+\\d+|(?:första|forsta|andra|tredje|fjärde|fjarde|femte|sjätte|sjatte|sjunde|sista)\\s+kortet)";
+  const re = new RegExp(`^${verbs}\\s+${cardRef}\\s*(.*)$`, "i");
+  const m = msg.trim().match(re);
+  if (!m) return null;
+  const pos = parseCardPosition(m[1]);
+  if (pos === null) return null;
+  const instruction = (m[2] || "").trim().replace(/^(så\s+(att\s+)?det\s+blir\s+|sa\s+(att\s+)?det\s+blir\s+|så\s+att\s+|sa\s+att\s+)/i, "").trim() || "skriv om mer engagerat";
+  return { target_position: pos, instruction };
+}
+
+function parseAddCardInstruction(msg: string): { position: "first" | "last" | "after"; after_position?: number; topic: string } | null {
+  const trimmed = msg.trim();
+  const verb = "(?:lägg\\s+till|lagg\\s+till|infoga|skapa)";
+  const cardWord = "(?:ett\\s+)?(?:nytt\\s+)?kort";
+
+  let m = trimmed.match(new RegExp(`^${verb}\\s+${cardWord}\\s+(?:sist|i\\s+slutet|på\\s+slutet|pa\\s+slutet)\\s*(.*)$`, "i"));
+  if (m) return { position: "last", topic: (m[1] || "").replace(/^om\s+/i, "").trim() };
+
+  m = trimmed.match(new RegExp(`^${verb}\\s+${cardWord}\\s+(?:först|forst|i\\s+början|i\\s+borjan|på\\s+början|pa\\s+borjan)\\s*(.*)$`, "i"));
+  if (m) return { position: "first", topic: (m[1] || "").replace(/^om\s+/i, "").trim() };
+
+  m = trimmed.match(new RegExp(`^${verb}\\s+${cardWord}\\s+efter\\s+(kort\\s+\\d+|(?:första|forsta|andra|tredje|fjärde|fjarde|femte|sjätte|sjatte|sjunde)\\s+kortet)\\s*(.*)$`, "i"));
+  if (m) {
+    const after = parseCardPosition(m[1]);
+    if (after === null) return null;
+    return { position: "after", after_position: after, topic: (m[2] || "").replace(/^om\s+/i, "").trim() };
+  }
+  return null;
+}
+
+function parseTweakToneInstruction(msg: string): { tone_descriptor: string } | null {
+  const trimmed = msg.trim();
+  const patterns = [
+    /^gör\s+(?:hela\s+)?(?:manuset|allt|texten|talet|alla\s+kort)\s+(?:lite\s+)?(?:mer\s+)?(.+?)$/i,
+    /^gor\s+(?:hela\s+)?(?:manuset|allt|texten|talet|alla\s+kort)\s+(?:lite\s+)?(?:mer\s+)?(.+?)$/i,
+    /^skriv\s+(?:om\s+)?(?:hela\s+)?(?:manuset|allt|texten|talet|alla\s+kort)\s+(?:lite\s+)?(?:mer\s+)?(.+?)$/i,
+    /^ändra\s+tonen\s+(?:till|på\s+manuset\s+till)\s+(.+?)$/i,
+    /^andra\s+tonen\s+(?:till|pa\s+manuset\s+till)\s+(.+?)$/i,
+    /^justera\s+tonen\s+(?:till|på\s+manuset\s+till|pa\s+manuset\s+till)\s+(.+?)$/i,
+  ];
+  for (const re of patterns) {
+    const m = trimmed.match(re);
+    if (m) {
+      const desc = m[1].trim().replace(/[.!?]+$/, "");
+      if (desc.length > 0 && desc.length < 100) return { tone_descriptor: desc };
+    }
+  }
+  return null;
+}
+
+/** Genererar ny korttext via LLM (gemini-2.5-flash, 60s timeout, 1 attempt) — för scripted rewrite_card / add_card. */
+async function generateCardText(
+  apiKey: string,
+  prompt: string,
+): Promise<{ ok: true; text: string } | { ok: false; reason: string }> {
+  const result = await callLLM(
+    {
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: "Du är en svensk debattcoach. Skriv tal-text som ska läsas högt — kort, konkret, talspråklig. INGEN markdown, INGA rubriker, INGA citationstecken runt svaret. Bara den färdiga texten." },
+        { role: "user", content: prompt },
+      ],
+    },
+    apiKey,
+    { timeout_ms: 60_000, max_attempts: 1, function_name: "debate-chat-scripted-edit" },
+  );
+  if (!result.ok) return { ok: false, reason: result.error_kind };
+  const text = String(result.data?.choices?.[0]?.message?.content || "").trim();
+  if (!text) return { ok: false, reason: "empty" };
+  return { ok: true, text };
+}
+
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
 async function handleScripted(
   admin: ReturnType<typeof createClient<any>>,
   thread: ThreadRow,
   userMessage: string,
   threadId: string,
+  apiKey: string,
 ): Promise<ScriptedReply | null> {
   const phase = thread.bot_state?.phase || "intake_issue";
   const msg = norm(userMessage);
@@ -939,7 +1037,199 @@ async function handleScripted(
         tools: [{ name: "edit_manuscript", result: `${result.cards_affected} kort` }, { name: "_cards_updated", result: "1" }],
       };
     }
+
+    // ===== Scripted intent-parsers (Spår B) — bypass LLM-tool-calling för rewrite/add/tone =====
+    if (thread.manuscript_id) {
+      const rewriteIntent = parseRewriteCardInstruction(userMessage);
+      const addIntent = parseAddCardInstruction(userMessage);
+      const toneIntent = !rewriteIntent && !addIntent ? parseTweakToneInstruction(userMessage) : null;
+
+      const matched = rewriteIntent ? "rewrite_card" : addIntent ? "add_card" : toneIntent ? "tweak_tone_global" : null;
+      if (matched) {
+        console.log("[debate-chat:editing] Scripted intent matched", {
+          operation: matched,
+          user_msg: userMessage.slice(0, 80),
+        });
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "editing_route_used",
+          event_props: { route: "scripted", operation: matched },
+          thread_id: thread.id,
+          manuscript_id: thread.manuscript_id,
+        });
+      }
+
+      // --- rewrite_card ---
+      if (rewriteIntent) {
+        const { data: cardsData } = await admin
+          .from("cards")
+          .select("id, position, title, content_html")
+          .eq("manuscript_id", thread.manuscript_id)
+          .order("position", { ascending: true });
+        const cardsList = (cardsData || []) as Array<{ id: string; position: number; title: string; content_html: string }>;
+        if (cardsList.length === 0) {
+          return { text: "Det finns inga kort att skriva om än.", quick_replies: ["Klart, det räcker"] };
+        }
+        const idx = rewriteIntent.target_position === -1 ? cardsList.length - 1 : rewriteIntent.target_position;
+        if (idx < 0 || idx >= cardsList.length) {
+          return {
+            text: `Det finns bara ${cardsList.length} kort — ange ett giltigt nummer.`,
+            quick_replies: [],
+          };
+        }
+        const card = cardsList[idx];
+        // Strip HTML till plain text för LLM-prompt
+        const oldText = card.content_html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>\s*<p>/gi, "\n\n").replace(/<[^>]+>/g, "").trim();
+        const prompt = `Skriv om följande tal-kort enligt instruktionen. Behåll ungefär samma längd och kärnbudskap.
+
+INSTRUKTION: ${rewriteIntent.instruction}
+
+NUVARANDE TEXT (kort ${idx + 1}, "${card.title}"):
+${oldText}
+
+Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förklaringar.`;
+        const gen = await generateCardText(apiKey, prompt);
+        if (!gen.ok) {
+          return {
+            text: `Jag kunde inte skriva om kortet just nu (${gen.reason}). Försök igen om en stund.`,
+            quick_replies: ["Försök igen", "Klart, det räcker"],
+          };
+        }
+        const result = await executeEditManuscript(
+          admin, thread.manuscript_id, thread.user_id,
+          { operation: "rewrite_card", target_card_position: idx + 1, new_card_text: gen.text, user_friendly_summary: "" },
+          apiKey,
+        );
+        const prevCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+        await admin.from("debate_threads")
+          .update({ bot_state: { ...thread.bot_state, edits_count: prevCount + 1 } })
+          .eq("id", threadId);
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "manuscript_edited",
+          event_props: { operation: "rewrite_card", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          thread_id: thread.id,
+          manuscript_id: thread.manuscript_id,
+        });
+        const summary = result.summary_override || `Skrev om kort ${idx + 1}.`;
+        return {
+          text: `${summary}\n\nVill du ändra något mer?`,
+          quick_replies: ["Klart, det räcker", "Ja, ytterligare en ändring"],
+          tools: [{ name: "edit_manuscript", result: `${result.cards_affected} kort` }, { name: "_cards_updated", result: "1" }],
+        };
+      }
+
+      // --- add_card ---
+      if (addIntent) {
+        const { data: cardsData } = await admin
+          .from("cards")
+          .select("id, position, title")
+          .eq("manuscript_id", thread.manuscript_id)
+          .order("position", { ascending: true });
+        const cardsList = (cardsData || []) as Array<{ id: string; position: number; title: string }>;
+        const total = cardsList.length;
+        // Beräkna 1-indexerad target_card_position + insert_position för executeEditManuscript
+        let targetPos1: number;
+        let insertPos: "before" | "after" | "end";
+        if (addIntent.position === "first") {
+          targetPos1 = 1;
+          insertPos = total === 0 ? "end" : "before";
+        } else if (addIntent.position === "last") {
+          targetPos1 = total;
+          insertPos = "end";
+        } else {
+          // after kort N: after_position är 0-indexerad
+          const after0 = addIntent.after_position!;
+          if (after0 < 0 || after0 >= total) {
+            return { text: `Det finns bara ${total} kort — ange ett giltigt nummer.`, quick_replies: [] };
+          }
+          targetPos1 = after0 + 1;
+          insertPos = "after";
+        }
+        const topic = addIntent.topic.trim() || "ett relevant ämne";
+        const prompt = `Skriv ett nytt tal-kort om följande ämne, för en svensk debatt. Cirka 60–100 ord, talspråklig, konkret.
+
+ÄMNE: ${topic}
+
+Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
+        const gen = await generateCardText(apiKey, prompt);
+        if (!gen.ok) {
+          return {
+            text: `Jag kunde inte skapa det nya kortet just nu (${gen.reason}). Försök igen.`,
+            quick_replies: ["Försök igen", "Klart, det räcker"],
+          };
+        }
+        // Bygg en kort titel av topic (max 40 tecken, första bokstaven versal)
+        const title = topic.length > 0
+          ? (topic[0].toUpperCase() + topic.slice(1)).slice(0, 40)
+          : "Nytt kort";
+        const result = await executeEditManuscript(
+          admin, thread.manuscript_id, thread.user_id,
+          {
+            operation: "add_card",
+            target_card_position: targetPos1,
+            insert_position: insertPos,
+            new_card_text: gen.text,
+            new_card_title: title,
+            user_friendly_summary: "",
+          },
+          apiKey,
+        );
+        const prevCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+        await admin.from("debate_threads")
+          .update({ bot_state: { ...thread.bot_state, edits_count: prevCount + 1 } })
+          .eq("id", threadId);
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "manuscript_edited",
+          event_props: { operation: "add_card", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          thread_id: thread.id,
+          manuscript_id: thread.manuscript_id,
+        });
+        const where = addIntent.position === "first" ? "i början" : addIntent.position === "last" ? "i slutet" : `efter kort ${targetPos1}`;
+        const summary = result.summary_override || `La till ett nytt kort ${where} om ${topic}.`;
+        return {
+          text: `${summary}\n\nVill du ändra något mer?`,
+          quick_replies: ["Klart, det räcker", "Ja, ytterligare en ändring"],
+          tools: [{ name: "edit_manuscript", result: `${result.cards_affected} kort` }, { name: "_cards_updated", result: "1" }],
+        };
+      }
+
+      // --- tweak_tone_global ---
+      if (toneIntent) {
+        const result = await executeEditManuscript(
+          admin, thread.manuscript_id, thread.user_id,
+          { operation: "tweak_tone_global", tone_instruction: toneIntent.tone_descriptor, user_friendly_summary: "" },
+          apiKey,
+        );
+        const prevCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+        await admin.from("debate_threads")
+          .update({ bot_state: { ...thread.bot_state, edits_count: prevCount + 1 } })
+          .eq("id", threadId);
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "manuscript_edited",
+          event_props: { operation: "tweak_tone_global", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          thread_id: thread.id,
+          manuscript_id: thread.manuscript_id,
+        });
+        const summary = result.summary_override || `Justerade tonen i ${result.cards_affected} kort till ${toneIntent.tone_descriptor}.`;
+        return {
+          text: `${summary}\n\nVill du ändra något mer?`,
+          quick_replies: ["Klart, det räcker", "Ja, ytterligare en ändring"],
+          tools: [{ name: "edit_manuscript", result: `${result.cards_affected} kort` }, { name: "_cards_updated", result: "1" }],
+        };
+      }
+    }
+
     // Annars: fall through till LLM som tolkar instruktionen och kallar edit_manuscript.
+    void logEvent(admin, {
+      user_id: thread.user_id,
+      event_name: "editing_route_used",
+      event_props: { route: "llm" },
+      thread_id: thread.id,
+      manuscript_id: thread.manuscript_id ?? undefined,
+    });
     return null;
   }
 
@@ -1421,7 +1711,7 @@ Deno.serve(async (req) => {
     }
 
     // ============= SCRIPTED SHORT-CIRCUIT =============
-    const scripted = await handleScripted(admin, thread, userMessage, threadId);
+    const scripted = await handleScripted(admin, thread, userMessage, threadId, LOVABLE_API_KEY);
     if (scripted) {
       await admin.from("debate_chat_messages").insert({
         thread_id: threadId,
@@ -1489,6 +1779,8 @@ Deno.serve(async (req) => {
     let model: string;
     if (currentPhase === "drafting_speech") model = "google/gemini-2.5-flash";
     else if (currentPhase === "generating_rebuttal") model = "google/gemini-2.5-flash";
+    // Editing-fasen behöver tool-calling som fungerar pålitligt → flash (inte flash-lite).
+    else if (currentPhase === "editing") model = "google/gemini-2.5-flash";
     else model = "google/gemini-2.5-flash-lite";
 
     // Tvinga rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
@@ -1531,6 +1823,8 @@ Deno.serve(async (req) => {
     const attachedLen = (thread.issue_document_text || "").length;
     const chatTimeoutMs = currentPhase === "drafting_speech"
       ? (attachedLen > 1000 ? 55_000 : 45_000)
+      : currentPhase === "editing"
+      ? 60_000
       : (attachedLen > 1000 ? 60_000 : 30_000);
 
     // Anropa Lovable AI Gateway via callLLM-helper (retry + timeout + felklassning).
@@ -1544,7 +1838,7 @@ Deno.serve(async (req) => {
       LOVABLE_API_KEY,
       {
         timeout_ms: chatTimeoutMs,
-        max_attempts: currentPhase === "drafting_speech" ? 1 : 2,
+        max_attempts: currentPhase === "drafting_speech" || currentPhase === "editing" ? 1 : 2,
         function_name: "debate-chat",
         analyticsClient: admin,
         user_id: thread.user_id,
