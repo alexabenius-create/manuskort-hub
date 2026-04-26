@@ -1218,6 +1218,12 @@ async function handleScripted(
   // editing — låt LLM hantera fritext-instruktioner via edit_manuscript-tool.
   // Men korta scripted shortcuts först:
   if (phase === "editing") {
+    // Sprint 1.7 v2: routa edit-tools till aktiv flik (active_manuscript_id) istället för
+    // alltid huvudtalet. Fallback: thread.manuscript_id (legacy / första anförandet).
+    const targetManuscriptId =
+      ((thread.bot_state as Record<string, unknown>)?.active_manuscript_id as string | undefined) ||
+      thread.manuscript_id ||
+      null;
     // "Klart" / "det ser bra ut" / "det räcker, klart" → completed (robust detektion)
     if (detectCompletedIntent(userMessage)) {
       const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
