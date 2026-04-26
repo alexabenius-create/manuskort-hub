@@ -100,19 +100,45 @@ function decidePhase(parsed: ParsedIntake): string {
   return parsed.mode === "speech" ? "drafting_speech" : "generating_rebuttal";
 }
 
-function buildScriptedConfirm(parsed: ParsedIntake, phase: string): string {
-  const lenMin = Math.round(parsed.speech_length_seconds / 60);
+interface ScriptedConfirm {
+  content: string;
+  quick_replies: string[];
+}
+
+function buildScriptedConfirm(parsed: ParsedIntake): ScriptedConfirm {
+  const lenMin = Math.max(1, Math.round(parsed.speech_length_seconds / 60));
+  const issue = parsed.issue_text || parsed.topic_area.toLowerCase();
+  const opp = parsed.opponent_label || "motdebattören";
+  const kommunSuffix = parsed.kommun ? ` Jag anpassar för ${parsed.kommun}.` : "";
+
+  // Första missing_info-posten styr (om någon)
+  const firstMissing = parsed.missing_info[0];
+
+  if (firstMissing === "own_position") {
+    return {
+      content: `Innan jag börjar skriva — vad är **din ståndpunkt** i den här frågan? Skriv kort, jag bygger sedan korten kring det.${kommunSuffix}`,
+      quick_replies: ["För, motargument behövs", "Emot, motargument behövs", "Nyanserad — låt mig förklara"],
+    };
+  }
+
+  if (firstMissing === "opponent_arguments" && parsed.mode === "reply") {
+    return {
+      content: `Bra. **Vad är de viktigaste argumenten ${opp} använt?** Skriv ett-två stycken, så bygger jag genmälet.${kommunSuffix}`,
+      quick_replies: [],
+    };
+  }
+
+  // Inga missing_info → direkt generering
   if (parsed.mode === "speech") {
-    if (phase === "intake_own_position") {
-      return `Tack! Jag har förstått: ${lenMin} min anförande om ${parsed.topic_area.toLowerCase()}${parsed.kommun ? ` i ${parsed.kommun}` : ""}. Vad är din ståndpunkt i frågan?`;
-    }
-    return `Perfekt — ${lenMin} min anförande om ${parsed.topic_area.toLowerCase()}${parsed.kommun ? ` i ${parsed.kommun}` : ""}. Jag börjar skriva utkastet nu. ✨`;
+    return {
+      content: `Då kör vi! Jag skriver ett **${lenMin} min anförande** om _${issue}_. Skriver korten nu — ge mig 30 sek.${kommunSuffix}`,
+      quick_replies: [],
+    };
   }
-  // reply
-  if (phase === "intake_own_position") {
-    return `Tack! Replik på ${parsed.opponent_label || "motdebattören"} om ${parsed.topic_area.toLowerCase()}. Vad är din ståndpunkt i frågan?`;
-  }
-  return `Perfekt — replik på ${parsed.opponent_label || "motdebattören"} om ${parsed.topic_area.toLowerCase()}. Jag analyserar och skriver genmäle nu. ⚡`;
+  return {
+    content: `Då kör vi! Jag skriver ett **${lenMin} min genmäle** mot ${opp} om _${issue}_. Skriver korten nu — ge mig 30 sek.${kommunSuffix}`,
+    quick_replies: [],
+  };
 }
 
 Deno.serve(async (req) => {
