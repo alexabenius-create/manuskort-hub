@@ -67,13 +67,36 @@ export const TIMEOUT_MS = 45000;
 export async function callLLM(
   options: LLMCallOptions,
   apiKey: string,
+  extras: LLMCallExtras = {},
 ): Promise<LLMCallResult | LLMCallError> {
   const start = Date.now();
+  const timeoutMs = extras.timeout_ms ?? TIMEOUT_MS;
   let lastError: unknown = null;
+
+  const logDuration = async (
+    outcome: "success" | "failed",
+    failureReason?: "timeout" | "parse_error" | "api_error" | "other",
+  ) => {
+    if (!extras.analyticsClient || !extras.function_name) return;
+    try {
+      await extras.analyticsClient.from("analytics_events").insert({
+        user_id: extras.user_id ?? null,
+        event_name: "llm_call_duration",
+        event_props: {
+          function_name: extras.function_name,
+          model: options.model,
+          duration_ms: Date.now() - start,
+          outcome,
+          ...(failureReason ? { failure_reason: failureReason } : {}),
+        },
+        client_kind: "edge",
+      });
+    } catch (_e) { /* swallow */ }
+  };
 
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
     const controller = new AbortController();
-    const timeoutHandle = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(LOVABLE_AI_URL, {
