@@ -118,6 +118,11 @@ export function useDebateChat(threadId: string | null) {
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        await refreshMessages();
+        const tools = (data?.tools || []) as Array<{ name: string }>;
+        if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards" || t.name === "_cards_updated")) {
+          window.dispatchEvent(new CustomEvent("debate-cards-generated", { detail: { threadId } }));
+        }
       } catch (e) {
         pendingSendStartRef.current = null;
         const msg = e instanceof Error ? e.message : "Något gick fel";
