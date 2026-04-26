@@ -1823,6 +1823,8 @@ Deno.serve(async (req) => {
     const attachedLen = (thread.issue_document_text || "").length;
     const chatTimeoutMs = currentPhase === "drafting_speech"
       ? (attachedLen > 1000 ? 55_000 : 45_000)
+      : currentPhase === "editing"
+      ? 60_000
       : (attachedLen > 1000 ? 60_000 : 30_000);
 
     // Anropa Lovable AI Gateway via callLLM-helper (retry + timeout + felklassning).
@@ -1836,7 +1838,7 @@ Deno.serve(async (req) => {
       LOVABLE_API_KEY,
       {
         timeout_ms: chatTimeoutMs,
-        max_attempts: currentPhase === "drafting_speech" ? 1 : 2,
+        max_attempts: currentPhase === "drafting_speech" || currentPhase === "editing" ? 1 : 2,
         function_name: "debate-chat",
         analyticsClient: admin,
         user_id: thread.user_id,
