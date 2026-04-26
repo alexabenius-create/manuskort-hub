@@ -405,6 +405,7 @@ Deno.serve(async (req) => {
         has_kommun: Boolean(parsed.kommun),
         has_opponent: Boolean(parsed.opponent_label),
         speech_length_seconds: parsed.speech_length_seconds,
+        speech_length_confirmed: parsed.speech_length_confirmed,
         has_attachment: hasAttachment,
       },
       thread_id: thread.id,
