@@ -575,23 +575,69 @@ async function handleScripted(
     }
   }
 
-  // intake_speech_length
+  // intake_speech_length — robust parser; sätt längden och gå DIREKT till generering.
   if (phase === "intake_speech_length") {
+    let seconds: number | null = null;
+
+    // "1 minut", "2 minuter", "5 min", "10 min"
     const minMatch = msg.match(/(\d+)\s*min/);
-    if (minMatch) {
-      const minutes = parseInt(minMatch[1], 10);
-      const seconds = Math.max(30, Math.min(600, minutes * 60));
+    // "60 sek", "120 sekunder", "300s"
+    const secMatch = msg.match(/(\d+)\s*(?:sek|sekunder|s\b)/);
+    // Bara siffra, t.ex. "5"
+    const bareNumMatch = msg.match(/^\s*(\d+)\s*$/);
+
+    if (secMatch) {
+      seconds = parseInt(secMatch[1], 10);
+    } else if (minMatch) {
+      seconds = parseInt(minMatch[1], 10) * 60;
+    } else if (bareNumMatch) {
+      const n = parseInt(bareNumMatch[1], 10);
+      // <30 → tolka som minuter, >=30 → sekunder
+      seconds = n < 30 ? n * 60 : n;
+    }
+
+    // Om vi inte kunde parsa: fall back till 120s OCH gå vidare ändå (fråga inte igen)
+    if (seconds == null || !Number.isFinite(seconds)) seconds = 120;
+    seconds = Math.max(30, Math.min(1800, Math.round(seconds)));
+
+    // Bestäm nästa fas: om vi har ståndpunkt → drafting_speech (auto-generera).
+    // Annars → intake_own_position.
+    const hasOwnPosition = (thread.own_position || "").trim().length >= 2;
+    const nextPhase = hasOwnPosition ? "drafting_speech" : "intake_own_position";
+
+    const newBotState: Record<string, unknown> = {
+      ...thread.bot_state,
+      phase: nextPhase,
+      speech_length_seconds: seconds,
+      speech_length_confirmed: true,
+      // Tvinga LLM att generera direkt vid nästa anrop när vi går till drafting_speech
+      pending_generate: nextPhase === "drafting_speech",
+      // Reset autostart-flaggan så useDebateChat skickar tomt msg som triggar genereringen
+      snabbstart_autostarted: nextPhase === "drafting_speech" ? false : (thread.bot_state as Record<string, unknown>)?.snabbstart_autostarted,
+    };
+
+    await admin
+      .from("debate_threads")
+      .update({ bot_state: newBotState })
+      .eq("id", threadId);
+
+    // Uppdatera även manus.target_duration_seconds
+    if (thread.manuscript_id) {
       await admin
-        .from("debate_threads")
-        .update({
-          bot_state: { ...thread.bot_state, phase: "drafting_speech", speech_length_seconds: seconds },
-        })
-        .eq("id", threadId);
+        .from("manuscripts")
+        .update({ target_duration_seconds: seconds })
+        .eq("id", thread.manuscript_id);
+    }
+
+    if (nextPhase === "intake_own_position") {
       return {
-        text: `Perfekt — ${minutes} minut${minutes === 1 ? "" : "er"} (~${Math.round((seconds / 60) * 130)} ord). Vill du att jag skriver utkast åt dig, eller skriver du själv?`,
-        quick_replies: SCRIPTED_PROMPTS.drafting_speech.quick_replies,
+        text: SCRIPTED_PROMPTS.intake_own_position.text,
+        quick_replies: SCRIPTED_PROMPTS.intake_own_position.quick_replies,
       };
     }
+
+    // nextPhase === "drafting_speech" → fall genom till LLM-grenen som auto-genererar.
+    return null;
   }
 
   // drafting_speech
