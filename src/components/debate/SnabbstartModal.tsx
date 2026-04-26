@@ -35,6 +35,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [readingFile, setReadingFile] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "reading" | "intake" | "drafting">("idle");
   const [file, setFile] = useState<File | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
