@@ -673,6 +673,7 @@ export type Database = {
       }
       manuscripts: {
         Row: {
+          archived_at: string | null
           created_at: string
           id: string
           mode: Database["public"]["Enums"]["manuscript_mode"]
@@ -689,6 +690,7 @@ export type Database = {
           wpm: number
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           id?: string
           mode?: Database["public"]["Enums"]["manuscript_mode"]
@@ -705,6 +707,7 @@ export type Database = {
           wpm?: number
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           id?: string
           mode?: Database["public"]["Enums"]["manuscript_mode"]
