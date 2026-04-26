@@ -1657,6 +1657,8 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
     "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
     "intake_mode", "intake_speech_length",
     "awaiting_perform", "post_perform_check", "completed", "idle",
+    // Sprint 1.7 — replikkedjan
+    "post_speech_intake", "reply_intake", "awaiting_reply_perform", "between_replies", "post_speech_completed",
   ]);
   if (intakePhases.has(phase)) {
     const p = SCRIPTED_PROMPTS[phase];
