@@ -39,13 +39,17 @@ KRITISKT — INTEGRITET:
 
 REGLER:
 - Default mode = "speech" om oklart.
-- Default speech_length_seconds = 120.
+- speech_length_seconds: ENDAST om användaren EXPLICIT angett en längd (t.ex. "2 min", "5 minuter", "30 sekunder", "180 sek"). Annars sätt null.
 - Hitta ALDRIG på info. Om något är osäkert: lägg fältnamnet i missing_info.
+- Om speech_length_seconds = null, lägg till "speech_length" i missing_info.
 - Returnera ENDAST JSON enligt schemat. Ingen text utanför JSON.
 
 EXEMPEL:
 Input: "2 min anförande mot S-budgeten i Lerums fullmäktige om förskola"
 Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot S-budgeten om förskola","speech_length_seconds":120,"own_position":"","opponent_label":"S-budgeten","opponent_arguments":[],"kommun":"Lerum","missing_info":["own_position"]}
+
+Input: "Anförande mot förskolebesparingar i Lerum, jag är emot"
+Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot förskolebesparingar","speech_length_seconds":null,"own_position":"emot förskolebesparingar","opponent_label":null,"opponent_arguments":[],"kommun":"Lerum","missing_info":["speech_length"]}
 
 Input: "Replik på Annas kritik av nya cykelbanan på Lillgatan"
 Output: {"mode":"reply","topic_area":"Trafik","issue_text":"Replik om cykelbanan på Lillgatan","speech_length_seconds":60,"own_position":"","opponent_label":"Anna","opponent_arguments":["kritik av nya cykelbanan på Lillgatan"],"kommun":null,"missing_info":["own_position"]}`;
