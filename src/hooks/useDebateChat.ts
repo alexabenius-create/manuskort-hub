@@ -44,17 +44,22 @@ export function useDebateChat(threadId: string | null) {
     if (data) setThreadState(data as ThreadState);
   }, [threadId]);
 
+  const refreshMessages = useCallback(async () => {
+    if (!threadId) return;
+    const { data } = await supabase
+      .from("debate_chat_messages")
+      .select("id, role, content, created_at, metadata")
+      .eq("thread_id", threadId)
+      .order("created_at", { ascending: true });
+    setMessages((data || []) as ChatMessage[]);
+    await loadThread();
+  }, [threadId, loadThread]);
+
   useEffect(() => {
     if (!threadId || !user) return;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from("debate_chat_messages")
-        .select("id, role, content, created_at, metadata")
-        .eq("thread_id", threadId)
-        .order("created_at", { ascending: true });
-      setMessages((data || []) as ChatMessage[]);
-      await loadThread();
+      await refreshMessages();
       setLoading(false);
     })();
 
