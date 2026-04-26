@@ -2045,7 +2045,6 @@ Deno.serve(async (req) => {
         assistant: scripted.text,
         tools: scripted.tools || [],
         quick_replies: scripted.quick_replies,
-        ...(scripted.navigate_to_manuscript ? { navigate_to_manuscript: scripted.navigate_to_manuscript } : {}),
       });
     }
 
