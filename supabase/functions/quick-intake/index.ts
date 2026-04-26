@@ -389,6 +389,8 @@ Deno.serve(async (req) => {
       opponent_args_buffer: parsed.opponent_arguments,
       rebuttal_count: 0,
       source: "snabbstart",
+      // Tvinga frontend att trigga första debate-chat-anropet när vi går direkt till generering.
+      pending_generate: phase === "drafting_speech" || phase === "generating_rebuttal",
     };
 
     const { data: thread, error: threadErr } = await admin
