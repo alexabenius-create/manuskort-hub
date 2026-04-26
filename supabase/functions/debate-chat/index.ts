@@ -1722,12 +1722,18 @@ Deno.serve(async (req) => {
         user_id: userId,
         role: "assistant",
         content: scripted.text,
-        metadata: { scripted: true, quick_replies: scripted.quick_replies, tools: scripted.tools || [] },
+        metadata: {
+          scripted: true,
+          quick_replies: scripted.quick_replies,
+          tools: scripted.tools || [],
+          ...(scripted.metadata_extra || {}),
+        },
       });
       return json({
         assistant: scripted.text,
         tools: scripted.tools || [],
         quick_replies: scripted.quick_replies,
+        ...(scripted.navigate_to_manuscript ? { navigate_to_manuscript: scripted.navigate_to_manuscript } : {}),
       });
     }
 
