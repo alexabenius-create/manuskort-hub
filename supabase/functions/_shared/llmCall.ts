@@ -22,6 +22,18 @@ export interface LLMCallOptions {
   stream?: boolean;
 }
 
+export interface LLMCallExtras {
+  /** Per-call timeout override i ms. Default 45000. */
+  timeout_ms?: number;
+  /** Namn på edge function som anropar — används för analytics. */
+  function_name?: string;
+  /** Supabase admin-client för att logga llm_call_duration-event. */
+  // deno-lint-ignore no-explicit-any
+  analyticsClient?: any;
+  /** user_id för analytics. */
+  user_id?: string;
+}
+
 export interface LLMCallResult {
   ok: true;
   data?: any;
@@ -55,13 +67,36 @@ export const TIMEOUT_MS = 45000;
 export async function callLLM(
   options: LLMCallOptions,
   apiKey: string,
+  extras: LLMCallExtras = {},
 ): Promise<LLMCallResult | LLMCallError> {
   const start = Date.now();
+  const timeoutMs = extras.timeout_ms ?? TIMEOUT_MS;
   let lastError: unknown = null;
+
+  const logDuration = async (
+    outcome: "success" | "failed",
+    failureReason?: "timeout" | "parse_error" | "api_error" | "other",
+  ) => {
+    if (!extras.analyticsClient || !extras.function_name) return;
+    try {
+      await extras.analyticsClient.from("analytics_events").insert({
+        user_id: extras.user_id ?? null,
+        event_name: "llm_call_duration",
+        event_props: {
+          function_name: extras.function_name,
+          model: options.model,
+          duration_ms: Date.now() - start,
+          outcome,
+          ...(failureReason ? { failure_reason: failureReason } : {}),
+        },
+        client_kind: "edge",
+      });
+    } catch (_e) { /* swallow */ }
+  };
 
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
     const controller = new AbortController();
-    const timeoutHandle = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(LOVABLE_AI_URL, {
@@ -77,6 +112,7 @@ export async function callLLM(
 
       if (response.ok) {
         if (options.stream) {
+          void logDuration("success");
           return {
             ok: true,
             body: response.body!,
@@ -85,11 +121,13 @@ export async function callLLM(
           };
         }
         const data = await response.json();
+        void logDuration("success");
         return { ok: true, data, duration_ms: Date.now() - start, attempts: attempt };
       }
 
       // Status-baserad felklassning
       if (response.status === 401 || response.status === 403) {
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "auth",
@@ -102,6 +140,7 @@ export async function callLLM(
 
       if (response.status === 400) {
         const errBody = await response.text().catch(() => "");
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "bad_request",
@@ -121,6 +160,7 @@ export async function callLLM(
           await new Promise((r) => setTimeout(r, waitMs));
           continue;
         }
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "rate_limit",
@@ -136,6 +176,7 @@ export async function callLLM(
           await new Promise((r) => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt - 1)));
           continue;
         }
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "model_unavailable",
@@ -155,6 +196,7 @@ export async function callLLM(
           await new Promise((r) => setTimeout(r, RETRY_BASE_MS));
           continue;
         }
+        void logDuration("failed", "timeout");
         return {
           ok: false,
           error_kind: "timeout",
@@ -171,6 +213,7 @@ export async function callLLM(
     }
   }
 
+  void logDuration("failed", "other");
   return {
     ok: false,
     error_kind: "unknown",
