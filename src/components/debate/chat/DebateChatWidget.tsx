@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDebateChat } from "@/hooks/useDebateChat";
 import { DebateChatHeader } from "./DebateChatHeader";
 import { DebateChatMessages } from "./DebateChatMessages";
@@ -14,6 +14,13 @@ type Mode = "compact" | "expanded" | "minimized";
 export function DebateChatWidget({ threadId }: Props) {
   const [mode, setMode] = useState<Mode>("compact");
   const { messages, sending, uploading, sendMessage, retryLastAssistant, uploadBrief, threadState } = useDebateChat(threadId);
+
+  // Externa triggers (t.ex. "+ Nytt genmäle") kan be widgeten öppna sig så bot-svaret syns.
+  useEffect(() => {
+    const handler = () => setMode((m) => (m === "minimized" ? "compact" : m));
+    window.addEventListener("debate-chat-open", handler);
+    return () => window.removeEventListener("debate-chat-open", handler);
+  }, []);
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const quickReplies = ((lastAssistant?.metadata as { quick_replies?: string[] } | undefined)?.quick_replies) || [];
