@@ -1319,6 +1319,12 @@ Deno.serve(async (req) => {
           ],
         },
         LOVABLE_API_KEY,
+        {
+          timeout_ms: 30000,
+          function_name: "debate-chat-followup",
+          analyticsClient: admin,
+          user_id: thread.user_id,
+        },
       );
       if (followupResult.ok && followupResult.data) {
         assistantText = trimToTwoSentences(
