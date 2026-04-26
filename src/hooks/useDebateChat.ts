@@ -108,7 +108,7 @@ export function useDebateChat(threadId: string | null) {
   }, [threadId, user, loadThread, navigate, location.pathname]);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, opts?: { activeManuscriptId?: string | null }) => {
       if (!threadId || sending) return;
       setSending(true);
       pendingSendStartRef.current = performance.now();
@@ -118,7 +118,12 @@ export function useDebateChat(threadId: string | null) {
         let lastError: unknown = null;
         for (let attempt = 1; attempt <= 3; attempt++) {
           const res = await supabase.functions.invoke("debate-chat", {
-            body: { thread_id: threadId, user_message: text },
+            body: {
+              thread_id: threadId,
+              user_message: text,
+              // Sprint 1.7 v2: routa edits till aktiv flik (om frontend skickar)
+              active_manuscript_id: opts?.activeManuscriptId ?? undefined,
+            },
           });
           if (!res.error && !res.data?.error) {
             data = res.data;
