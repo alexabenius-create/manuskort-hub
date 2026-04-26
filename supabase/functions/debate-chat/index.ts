@@ -1399,6 +1399,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    const didSpeech = executedTools.some((t) => t.name === "generate_speech_cards");
+    if (didSpeech) assistantText = "Klart! Jag har lagt in anförandet som manuskort.";
+
     if (!assistantText) {
       assistantText = didRebuttal
         ? "Klart! Jag har skapat ett nytt manus med ditt genmäle — du flyttas dit nu."
