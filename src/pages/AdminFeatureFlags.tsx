@@ -160,15 +160,30 @@ export default function AdminFeatureFlags() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Globalt */}
-                  <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3">
+                  <div
+                    className={`flex items-center justify-between rounded-lg border px-4 py-3 transition-colors ${
+                      flag.enabled_globally
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border bg-surface"
+                    }`}
+                  >
                     <div>
                       <p className="text-sm font-medium">Aktiv globalt</p>
                       <p className="text-xs text-muted-foreground">Slår på för alla användare.</p>
                     </div>
-                    <Switch
-                      checked={flag.enabled_globally}
-                      onCheckedChange={(v) => updateLocal(flag.id, { enabled_globally: v })}
-                    />
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                          flag.enabled_globally ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {flag.enabled_globally ? "PÅ" : "AV"}
+                      </span>
+                      <Switch
+                        checked={flag.enabled_globally}
+                        onCheckedChange={(v) => updateLocal(flag.id, { enabled_globally: v })}
+                      />
+                    </div>
                   </div>
 
                   {/* Tiers */}
@@ -182,10 +197,11 @@ export default function AdminFeatureFlags() {
                             key={t}
                             type="button"
                             onClick={() => toggleTier(flag, t)}
-                            className={`px-2.5 py-1 rounded-md text-[12px] font-medium border transition-colors ${
+                            aria-pressed={on}
+                            className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-all ${
                               on
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background text-muted-foreground border-border hover:text-foreground"
+                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
                             }`}
                           >
                             {t}
