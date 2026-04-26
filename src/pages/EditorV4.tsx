@@ -11,6 +11,7 @@ import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { TiptapDocEditor } from "@/components/editor/TiptapDocEditor";
 import { PanelistSidebar } from "@/components/editor/PanelistSidebar";
 import { DebateChatWidget } from "@/components/debate/chat/DebateChatWidget";
+import { ManuscriptTabBar } from "@/components/debate/ManuscriptTabBar";
 import { SupportEditorBanner } from "@/components/SupportModeBanner";
 import { useShareRequestStatus } from "@/hooks/useShareRequests";
 import { FindReplaceDialog } from "@/components/editor/FindReplaceDialog";
