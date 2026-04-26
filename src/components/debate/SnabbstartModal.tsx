@@ -114,7 +114,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
       }
 
       const { data, error } = await supabase.functions.invoke("quick-intake", {
-        body: { text: trimmed, attached_context },
+        body: { text: trimmed, attached_context, file_type: file ? fileExtension(file) : undefined },
       });
 
       if (error) {
