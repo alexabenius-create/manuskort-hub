@@ -515,6 +515,27 @@ Eller säg "klart" när du är nöjd.`,
     text: "Bra jobbat! Hör av dig om du behöver mer hjälp.",
     quick_replies: ["Ny debatt"],
   },
+  // Sprint 1.7 — Replikkedjan
+  post_speech_intake: {
+    text: "Hur gick det? Tog du emot några repliker?",
+    quick_replies: ["Ja, fick repliker", "Nej, inga repliker"],
+  },
+  reply_intake: {
+    text: "Berätta vem som replikerade och vad de sa, så hjälper jag dig formulera ett genmäle.\n\nExempel: \"Anna Karlsson sa att utbyggd kollektivtrafik är för dyr för kommunen.\"",
+    quick_replies: [],
+  },
+  awaiting_reply_perform: {
+    text: "Säg till när du framfört genmälet.",
+    quick_replies: ["Klar med repliken"],
+  },
+  between_replies: {
+    text: "Bra! Tog du emot fler repliker?",
+    quick_replies: ["Ja, nästa replik", "Nej, det var allt"],
+  },
+  post_speech_completed: {
+    text: "Bra kämpat! Lycka till med resten av sammanträdet.",
+    quick_replies: [],
+  },
 };
 
 function norm(s: string): string {
