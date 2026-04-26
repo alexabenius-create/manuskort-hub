@@ -22,6 +22,18 @@ export interface LLMCallOptions {
   stream?: boolean;
 }
 
+export interface LLMCallExtras {
+  /** Per-call timeout override i ms. Default 45000. */
+  timeout_ms?: number;
+  /** Namn på edge function som anropar — används för analytics. */
+  function_name?: string;
+  /** Supabase admin-client för att logga llm_call_duration-event. */
+  // deno-lint-ignore no-explicit-any
+  analyticsClient?: any;
+  /** user_id för analytics. */
+  user_id?: string;
+}
+
 export interface LLMCallResult {
   ok: true;
   data?: any;
