@@ -54,9 +54,9 @@ export function computeMaxWordsPerCard(textSize: TextSize = "md"): number {
 
     // Samma geometri-konstanter som cardLimits internt
     const PRES_GEOM = {
-      sm: { fontSize: 24, lineHeight: 1.7, widthPx: Math.round(75 * 24 * 0.52) },
-      md: { fontSize: 30, lineHeight: 1.7, widthPx: Math.round(75 * 30 * 0.52) },
-      lg: { fontSize: 38, lineHeight: 1.7, widthPx: Math.round(75 * 38 * 0.52) },
+      sm: { fontSize: 24, lineHeight: 1.85, widthPx: Math.round(75 * 24 * 0.52) },
+      md: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(75 * 30 * 0.52) },
+      lg: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(75 * 38 * 0.52) },
     } as const;
     const g = PRES_GEOM[textSize];
     el.style.width = `${g.widthPx}px`;
