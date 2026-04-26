@@ -542,7 +542,7 @@ Eller säg "klart" när du är nöjd.`,
   },
   // Sprint 1.7 v2 — Tab-arkitekturen: replik-flödet är nu helt explicit (klick på + Nytt genmäle).
   reply_intake: {
-    text: "Berätta vem som replikerade och vad de sa, så hjälper jag dig formulera ett genmäle.\n\nExempel: \"Anna Karlsson sa att utbyggd kollektivtrafik är för dyr för kommunen.\"",
+    text: "Då förbereder vi ett nytt genmäle! Berätta vem som replikerade och vad de sa, så hjälper jag dig formulera ett genmäle.\n\nExempel: \"Anna Karlsson sa att utbyggd kollektivtrafik är för dyr för kommunen.\"",
     quick_replies: [],
   },
 };
