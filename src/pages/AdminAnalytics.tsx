@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
@@ -24,6 +24,46 @@ interface AnalyticsRow {
   platform: string | null;
 }
 
+interface RecentEventRow {
+  id: string;
+  occurred_at: string;
+  event_name: string;
+  // deno-lint-ignore no-explicit-any
+  event_props: any;
+  user_id: string | null;
+}
+
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const sec = Math.round(diffMs / 1000);
+  if (sec < 60) return `${sec}s sedan`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} min sedan`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h sedan`;
+  const d = Math.round(h / 24);
+  return `${d} d sedan`;
+}
+
+function formatProps(props: Record<string, unknown> | null | undefined): string {
+  if (!props || typeof props !== "object") return "—";
+  const keys = ["function_name", "model", "duration_ms", "outcome", "failure_reason", "error_kind", "source", "attempts", "has_attachment"];
+  const parts: string[] = [];
+  for (const k of keys) {
+    if (k in props && props[k] !== null && props[k] !== undefined && props[k] !== "") {
+      parts.push(`${k}=${String(props[k])}`);
+    }
+  }
+  // Lägg till övriga props sist
+  for (const [k, v] of Object.entries(props)) {
+    if (keys.includes(k)) continue;
+    if (v === null || v === undefined || v === "") continue;
+    if (typeof v === "object") continue;
+    parts.push(`${k}=${String(v)}`);
+  }
+  return parts.length ? parts.join(", ") : "—";
+}
+
 export default function AdminAnalytics() {
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useTier();
@@ -31,6 +71,8 @@ export default function AdminAnalytics() {
   const [rows, setRows] = useState<AnalyticsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [platform, setPlatform] = useState<PlatformFilter>("all");
+  const [recentEvents, setRecentEvents] = useState<RecentEventRow[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
 
   useEffect(() => {
     if (!tierLoading && tier !== "admin") {
@@ -66,13 +108,34 @@ export default function AdminAnalytics() {
     };
   }, [user, tier, platform]);
 
+  const fetchRecent = useCallback(async () => {
+    if (!user || tier !== "admin") return;
+    setRecentLoading(true);
+    const { data, error } = await supabase
+      .from("analytics_events")
+      .select("id, occurred_at, event_name, event_props, user_id")
+      .order("occurred_at", { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error("[admin-analytics] recent", error);
+      setRecentEvents([]);
+    } else {
+      setRecentEvents((data ?? []) as RecentEventRow[]);
+    }
+    setRecentLoading(false);
+  }, [user, tier]);
+
+  useEffect(() => {
+    void fetchRecent();
+    const interval = setInterval(() => void fetchRecent(), 30_000);
+    return () => clearInterval(interval);
+  }, [fetchRecent]);
+
   const metrics: MetricCard[] = useMemo(() => {
     const uniqueUsers = new Set<string>();
     let snabbstartCount = 0;
     let failedCount = 0;
 
-    // För avg-time-to-first-token: per (user_id|session_id), ta första snabbstart_submitted
-    // och första efterföljande generation_first_token, mät diff.
     type Bucket = { firstSubmit?: number; firstToken?: number };
     const buckets = new Map<string, Bucket>();
 
@@ -168,7 +231,7 @@ export default function AdminAnalytics() {
         </div>
       </header>
 
-      <main className="max-w-[1100px] mx-auto px-5 sm:px-8 py-8">
+      <main className="max-w-[1100px] mx-auto px-5 sm:px-8 py-8 space-y-10">
         {loading ? (
           <p className="text-sm text-muted-foreground">Laddar…</p>
         ) : (
@@ -182,9 +245,88 @@ export default function AdminAnalytics() {
             ))}
           </div>
         )}
-        <p className="text-xs text-muted-foreground mt-6">
+        <p className="text-xs text-muted-foreground">
           Begränsat till 10 000 events. Filter: plattform = <span className="font-mono">{platform}</span>.
         </p>
+
+        {/* ============== Senaste 20 händelser ============== */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium">Senaste 20 händelser</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void fetchRecent()}
+              disabled={recentLoading}
+              className="gap-1.5"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${recentLoading ? "animate-spin" : ""}`} />
+              Uppdatera
+            </Button>
+          </div>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Tidpunkt</th>
+                    <th className="px-3 py-2 text-left font-medium">Event</th>
+                    <th className="px-3 py-2 text-left font-medium">Props</th>
+                    <th className="px-3 py-2 text-left font-medium">Användare</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentEvents.length === 0 && !recentLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">
+                        Inga händelser
+                      </td>
+                    </tr>
+                  ) : (
+                    recentEvents.map((ev) => {
+                      const props = (ev.event_props ?? {}) as Record<string, unknown>;
+                      const isFailed =
+                        props.outcome === "failed" ||
+                        ev.event_name === "generation_failed" ||
+                        ev.event_name === "llm_timeout";
+                      const dur = Number(props.duration_ms);
+                      const isSlow = Number.isFinite(dur) && dur > 30_000 && !isFailed;
+                      const userTag = ev.user_id ? `user_${ev.user_id.slice(0, 8)}` : "anon";
+                      return (
+                        <tr
+                          key={ev.id}
+                          className={`border-t border-border ${
+                            isFailed
+                              ? "bg-destructive/5 border-l-4 border-l-destructive"
+                              : isSlow
+                              ? "bg-amber-500/5 border-l-4 border-l-amber-500"
+                              : ""
+                          }`}
+                        >
+                          <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                            {relativeTime(ev.occurred_at)}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-[12px] whitespace-nowrap">
+                            {ev.event_name}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground break-all">
+                            {formatProps(props)}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                            {userTag}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Auto-refresh var 30:e sekund. Röd = failed, gul = långsam (&gt;30s).
+          </p>
+        </section>
       </main>
     </div>
   );
