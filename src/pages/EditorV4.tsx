@@ -946,14 +946,23 @@ export default function EditorV4() {
                 activeManuscriptId={manuscript.id}
                 phase={undefined}
                 onSendNewReplyTrigger={async () => {
-                  const { error } = await supabase.functions.invoke("debate-chat", {
-                    body: {
-                      thread_id: debateBuddyThreadId,
-                      user_message: "__NEW_REPLY__",
-                      active_manuscript_id: manuscript.id,
-                    },
-                  });
+                  const invokeOnce = async () =>
+                    supabase.functions.invoke("debate-chat", {
+                      body: {
+                        thread_id: debateBuddyThreadId,
+                        user_message: "__NEW_REPLY__",
+                        active_manuscript_id: manuscript.id,
+                      },
+                    });
+                  let { error } = await invokeOnce();
+                  // Retry en gång vid transient cold-boot/503
+                  if (error) {
+                    await new Promise((r) => setTimeout(r, 600));
+                    ({ error } = await invokeOnce());
+                  }
                   if (error) throw error;
+                  // Säkerställ att användaren ser bot-svaret — öppna chatten
+                  window.dispatchEvent(new CustomEvent("debate-chat-open"));
                 }}
               />
             </div>
