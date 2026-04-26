@@ -1654,6 +1654,24 @@ Deno.serve(async (req) => {
         } else if (name === "generate_speech_cards") {
           const sectionId = crypto.randomUUID();
           const sectionLabel = "Anförande";
+          // Fallback: om modellen glömde cards men gav speech_text — splitta texten i 3 kort
+          let cardsArg = (args.cards as Array<{ title: string; body: string }> | undefined) || [];
+          const speechText = String(args.speech_text || "").trim();
+          if ((!cardsArg || cardsArg.length === 0) && speechText) {
+            const paragraphs = speechText.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+            const target = Math.min(4, Math.max(2, Math.ceil(paragraphs.length / 2)));
+            const chunkSize = Math.max(1, Math.ceil(paragraphs.length / target));
+            const chunks: string[] = [];
+            for (let i = 0; i < paragraphs.length; i += chunkSize) {
+              chunks.push(paragraphs.slice(i, i + chunkSize).join("\n\n"));
+            }
+            const titles = ["Inledning", "Argument", "Fördjupning", "Avslutning"];
+            cardsArg = chunks.map((body, i) => ({
+              title: titles[i] || `Del ${i + 1}`,
+              body,
+            }));
+            console.warn("[debate-chat] generate_speech_cards: cards saknades, splittade speech_text i", cardsArg.length, "kort");
+          }
           if (thread.manuscript_id) {
             // Sätt manusets måltid = önskad längd för anförandet
             const speechLenSec = Number((thread.bot_state as Record<string, unknown>)?.speech_length_seconds);
@@ -1670,18 +1688,28 @@ Deno.serve(async (req) => {
               .order("position", { ascending: false })
               .limit(1);
             let pos = ((existingCards?.[0]?.position as number) ?? -1) + 1;
-            const rows = (args.cards as Array<{ title: string; body: string }>).map((c) => ({
+            const rows = cardsArg.map((c) => ({
               manuscript_id: thread.manuscript_id,
               user_id: userId,
               position: pos++,
               role: "speaker",
-              title: c.title,
-              content_html: `<p>${c.body.replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+              title: c.title || "",
+              content_html: `<p>${(c.body || "").replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
               section_id: sectionId,
               section_label: sectionLabel,
             }));
-            if (rows.length) await admin.from("cards").insert(rows);
-            executedTools.push({ name, result: `${rows.length} kort` });
+            if (rows.length) {
+              const { error: insErr } = await admin.from("cards").insert(rows);
+              if (insErr) {
+                console.error("[debate-chat] cards insert failed:", insErr);
+                executedTools.push({ name, result: `error: ${insErr.message}` });
+              } else {
+                executedTools.push({ name, result: `${rows.length} kort` });
+              }
+            } else {
+              console.error("[debate-chat] generate_speech_cards: 0 kort efter fallback. args keys:", Object.keys(args));
+              executedTools.push({ name, result: "0 kort" });
+            }
           } else {
             executedTools.push({ name, result: "no_manuscript" });
           }
