@@ -25,12 +25,14 @@ export default function DebattBuddy() {
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useTier();
   const { hasAccess, loading: betaLoading } = useBetaAccess("debate_buddy");
+  const { enabled: snabbstartEnabled } = useFeatureFlag("snabbstart");
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [snabbstartOpen, setSnabbstartOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
