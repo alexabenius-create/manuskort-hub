@@ -113,11 +113,25 @@ export function useDebateChat(threadId: string | null) {
       setSending(true);
       pendingSendStartRef.current = performance.now();
       try {
-        const { data, error } = await supabase.functions.invoke("debate-chat", {
-          body: { thread_id: threadId, user_message: text },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        // Retry vid 503/temporärt fel (cold-start på edge runtime)
+        let data: { error?: string; tools?: Array<{ name: string }> } | null = null;
+        let lastError: unknown = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const res = await supabase.functions.invoke("debate-chat", {
+            body: { thread_id: threadId, user_message: text },
+          });
+          if (!res.error && !res.data?.error) {
+            data = res.data;
+            lastError = null;
+            break;
+          }
+          lastError = res.error || new Error(res.data?.error || "Unknown");
+          const msg = (res.error as { message?: string } | undefined)?.message || "";
+          const isTransient = /503|temporarily unavailable|EDGE_RUNTIME_ERROR|Failed to send/i.test(msg);
+          if (!isTransient || attempt === 3) break;
+          await new Promise((r) => setTimeout(r, 600 * attempt));
+        }
+        if (lastError) throw lastError;
         await refreshMessages();
         const tools = (data?.tools || []) as Array<{ name: string }>;
         if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards" || t.name === "_cards_updated")) {
