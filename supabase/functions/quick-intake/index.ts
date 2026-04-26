@@ -195,7 +195,12 @@ Deno.serve(async (req) => {
       response_format: { type: "json_object" },
       temperature: 0.2,
       max_tokens: 600,
-    }, LOVABLE_API_KEY);
+    }, LOVABLE_API_KEY, {
+      timeout_ms: 30000,
+      function_name: "quick-intake",
+      analyticsClient: admin,
+      user_id: userId,
+    });
 
     if (!result.ok) {
       void logEvent(admin, {
