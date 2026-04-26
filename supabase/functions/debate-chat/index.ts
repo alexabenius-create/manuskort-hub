@@ -433,9 +433,22 @@ const TOOLS: Tool[] = [
 // ============= SCRIPTED PHASE HANDLER =============
 // Hårdkodade frågor och snabbsvar för intake-faser. LLM används bara för fritext-tolkning + utkast/genmäle.
 
+/**
+ * Strukturerad quick-reply. Frontend skickar tillbaka `payload` (om satt) istället för
+ * `label` när knappen klickas — så backend kan matcha på stabil action-id istället för
+ * regex på fri text. Backend behåller regex-fallback för manuell input.
+ *
+ * Backwards-compat: `quick_replies` får fortfarande vara `string[]` (rena labels).
+ */
+interface QuickReply {
+  label: string;
+  payload?: string;
+}
+type QuickReplyList = Array<string | QuickReply>;
+
 interface ScriptedReply {
   text: string;
-  quick_replies: string[];
+  quick_replies: QuickReplyList;
   tools?: Array<{ name: string; result: string }>;
   state_updates?: Record<string, unknown>;
   bot_state_patch?: Record<string, unknown>;
