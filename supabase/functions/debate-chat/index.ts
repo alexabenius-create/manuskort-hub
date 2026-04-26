@@ -538,6 +538,25 @@ function parseReplaceInstruction(input: string): { old_phrase: string; new_phras
   return null;
 }
 
+/** Robust detektion av "klart"-intent i editing-fasen. Hanterar segmenterade meddelanden som "Det räcker, klart". */
+function detectCompletedIntent(rawMsg: string): boolean {
+  const normalized = rawMsg.trim().toLowerCase().replace(/[.!?]+$/g, "");
+  const segments = normalized.split(/[,.;]+/).map((s) => s.trim()).filter(Boolean);
+  const COMPLETED_TOKENS = new Set([
+    "klart", "klar", "klar nu", "färdig", "färdigt", "fardig", "fardigt",
+    "det räcker", "räcker", "det räcker nu", "det racker", "racker", "det racker nu",
+    "nöjd", "är nöjd", "jag är nöjd", "nojd", "ar nojd", "jag ar nojd",
+    "det ser bra ut", "ser bra ut", "det blir bra",
+    "det ser bra ut, klart", "klart, det ser bra ut",
+  ]);
+  if (COMPLETED_TOKENS.has(normalized)) return true;
+  if (segments.some((seg) => COMPLETED_TOKENS.has(seg))) return true;
+  return false;
+}
+
+/** Mönster som indikerar att LLM hallucinerat en utförd edit i fri text utan att anropa edit_manuscript. */
+const EDIT_HALLUCINATION_PATTERN = /\b(bytt|bytte|ändrat|ändrade|andrat|andrade|skrivit\s+om|skrev\s+om|lagt\s+till|la\s+till|tagit\s+bort|tog\s+bort|justerat|justerade|uppdaterat|uppdaterade|omformulerat|omformulerade|gjort\s+(om|mer)|skapat|skapade)\b/i;
+
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
 async function handleScripted(
   admin: ReturnType<typeof createClient<any>>,
@@ -849,12 +868,8 @@ async function handleScripted(
   // editing — låt LLM hantera fritext-instruktioner via edit_manuscript-tool.
   // Men korta scripted shortcuts först:
   if (phase === "editing") {
-    // "Klart" / "det ser bra ut" → completed
-    if (
-      msg === "klart" || msg === "klar" || msg === "det räcker" || msg === "det racker" ||
-      msg.includes("det ser bra ut") || msg.includes("nöjd") || msg.includes("nojd") ||
-      msg === "det ser bra ut, klart"
-    ) {
+    // "Klart" / "det ser bra ut" / "det räcker, klart" → completed (robust detektion)
+    if (detectCompletedIntent(userMessage)) {
       const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
       await admin
         .from("debate_threads")
@@ -1603,6 +1618,93 @@ Deno.serve(async (req) => {
     let toolCalls = assistantMsg?.tool_calls || [];
     const executedTools: Array<{ name: string; result: string }> = [];
     let quickReplies: string[] = [];
+
+    // Fix 1: permanent loggning av LLM-svar i editing-fasen — ger oss synlighet på tool-call-beteendet.
+    if (currentPhase === "editing") {
+      console.log("[debate-chat:editing] LLM response", {
+        phase: currentPhase,
+        user_msg: userMessage.slice(0, 80),
+        has_tool_calls: toolCalls.length > 0,
+        tool_call_count: toolCalls.length,
+        tool_names: toolCalls.map((t: any) => t.function?.name),
+        text_len: rawAssistantText?.length ?? 0,
+        text_preview: rawAssistantText?.slice(0, 120) ?? null,
+      });
+
+      // Fix 2: Smart retry vid hallucination — LLM:n svarar med fri bekräftelse-text utan att kalla edit_manuscript.
+      // Om text matchar bekräftelse-mönster MEN inga tool calls → forcera tool_choice och retry.
+      // Om text INTE matchar mönster (t.ex. "Vilket kort menar du?") → låt det passera som clarifying question.
+      if (toolCalls.length === 0 && rawAssistantText.trim() && EDIT_HALLUCINATION_PATTERN.test(rawAssistantText)) {
+        console.warn("[debate-chat:editing] Hallucination detected — retry with forced tool_choice", {
+          hallucinated_preview: rawAssistantText.slice(0, 200),
+        });
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "editing_tool_retry_forced",
+          event_props: {
+            hallucinated_text: rawAssistantText.slice(0, 200),
+            user_msg: userMessage.slice(0, 200),
+          },
+          thread_id: thread.id,
+          manuscript_id: thread.manuscript_id ?? undefined,
+        });
+
+        const retryResult = await callLLM(
+          {
+            model,
+            messages: [
+              ...messages,
+              {
+                role: "system",
+                content: "Du MÅSTE anropa verktyget edit_manuscript nu för att utföra ändringen. Returnera inte fri text som hävdar att ändringen redan är gjord — den är inte gjord förrän verktyget har anropats.",
+              },
+            ],
+            tools: toolsForRequest,
+            tool_choice: { type: "function", function: { name: "edit_manuscript" } },
+          },
+          LOVABLE_API_KEY,
+          {
+            timeout_ms: chatTimeoutMs,
+            max_attempts: 1,
+            function_name: "debate-chat",
+            analyticsClient: admin,
+            user_id: thread.user_id,
+          },
+        );
+
+        if (retryResult.ok) {
+          const retryMsg = retryResult.data.choices?.[0]?.message;
+          const retryToolCalls = retryMsg?.tool_calls || [];
+          console.log("[debate-chat:editing] retry result", {
+            tool_call_count: retryToolCalls.length,
+            tool_names: retryToolCalls.map((t: any) => t.function?.name),
+          });
+          if (retryToolCalls.length > 0) {
+            toolCalls = retryToolCalls;
+            // Behåll en kort assistant-bekräftelse — användarvänlig text sätts av tool-handlern nedan.
+            assistantText = "";
+          } else {
+            void logEvent(admin, {
+              user_id: thread.user_id,
+              event_name: "editing_tool_retry_failed",
+              event_props: { reason: "no_tool_calls_after_retry" },
+              thread_id: thread.id,
+              manuscript_id: thread.manuscript_id ?? undefined,
+            });
+            assistantText = "Jag kunde inte utföra ändringen — kan du formulera om instruktionen?";
+          }
+        } else {
+          void logEvent(admin, {
+            user_id: thread.user_id,
+            event_name: "editing_tool_retry_failed",
+            event_props: { reason: "llm_error", error_kind: retryResult.error_kind },
+            thread_id: thread.id,
+            manuscript_id: thread.manuscript_id ?? undefined,
+          });
+          assistantText = "Jag kunde inte utföra ändringen — kan du formulera om instruktionen?";
+        }
+      }
+    }
 
     if (currentPhase === "generating_rebuttal" && toolCalls.length === 0 && rawAssistantText.trim()) {
       const cards = splitIntoCards(rawAssistantText);
