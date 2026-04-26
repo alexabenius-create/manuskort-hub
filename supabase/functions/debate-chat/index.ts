@@ -1519,7 +1519,7 @@ Deno.serve(async (req) => {
     }
 
     // ============= SCRIPTED SHORT-CIRCUIT =============
-    const scripted = await handleScripted(admin, thread, userMessage, threadId);
+    const scripted = await handleScripted(admin, thread, userMessage, threadId, LOVABLE_API_KEY);
     if (scripted) {
       await admin.from("debate_chat_messages").insert({
         thread_id: threadId,
