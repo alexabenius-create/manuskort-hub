@@ -1727,11 +1727,71 @@ Deno.serve(async (req) => {
               : "no_manuscript_created",
           });
         } else if (name === "advance_phase") {
-          await admin
-            .from("debate_threads")
-            .update({ bot_state: { ...thread.bot_state, phase: args.next_phase } })
-            .eq("id", threadId);
-          executedTools.push({ name, result: args.next_phase });
+          const nextPhase = String(args.next_phase || "");
+          const patch: Record<string, unknown> = { ...thread.bot_state, phase: nextPhase };
+          if (nextPhase === "drafting_speech") patch.pending_generate = true;
+          await admin.from("debate_threads").update({ bot_state: patch }).eq("id", threadId);
+          executedTools.push({ name, result: nextPhase });
+          // Om vi går till editing — posta välkomsten direkt
+          if (nextPhase === "editing") {
+            await admin.from("debate_chat_messages").insert({
+              thread_id: threadId,
+              user_id: userId,
+              role: "assistant",
+              content: SCRIPTED_PROMPTS.editing.text,
+              metadata: { scripted: true, quick_replies: SCRIPTED_PROMPTS.editing.quick_replies },
+            });
+          } else if (nextPhase === "completed") {
+            const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+            void logEvent(admin, {
+              user_id: thread.user_id,
+              event_name: "editing_completed",
+              event_props: { total_edits: editsCount },
+              thread_id: thread.id,
+            });
+          }
+        } else if (name === "edit_manuscript") {
+          if (!thread.manuscript_id) {
+            executedTools.push({ name, result: "no_manuscript" });
+            assistantText = "Jag ser inget kopplat manus att redigera.";
+          } else {
+            try {
+              const result = await executeEditManuscript(
+                admin, thread.manuscript_id, userId, args, LOVABLE_API_KEY!,
+              );
+              const summary = result.summary_override || String(args.user_friendly_summary || "Ändringen är gjord.");
+              executedTools.push({ name, result: `${result.cards_affected} kort` });
+
+              // Bumpa edits_count
+              const prevCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+              await admin
+                .from("debate_threads")
+                .update({ bot_state: { ...thread.bot_state, edits_count: prevCount + 1 } })
+                .eq("id", threadId);
+
+              void logEvent(admin, {
+                user_id: thread.user_id,
+                event_name: "manuscript_edited",
+                event_props: {
+                  operation: String(args.operation || ""),
+                  cards_affected: result.cards_affected,
+                  manuscript_id: thread.manuscript_id,
+                },
+                thread_id: thread.id,
+                manuscript_id: thread.manuscript_id,
+              });
+
+              assistantText = `${summary}\n\nVill du ändra något mer?`;
+              quickReplies = ["Klart, det räcker", "Ja, ytterligare en ändring"];
+
+              // Notifiera frontend att korten ändrats så editorn refetchar
+              executedTools.push({ name: "_cards_updated", result: "1" });
+            } catch (e) {
+              console.error("[debate-chat] edit_manuscript error", e);
+              executedTools.push({ name, result: "error" });
+              assistantText = "Något gick fel när jag försökte ändra manuset. Försök igen?";
+            }
+          }
         } else if (name === "suggest_quick_replies") {
           quickReplies = Array.isArray(args.replies) ? args.replies.slice(0, 4) : [];
           executedTools.push({ name, result: `${quickReplies.length}` });
