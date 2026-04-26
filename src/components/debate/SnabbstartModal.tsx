@@ -14,6 +14,7 @@ import {
   formatFileSize,
   isAllowedFile,
   MAX_FILE_BYTES,
+  LARGE_FILE_WARN_BYTES,
 } from "@/lib/extractDocumentText";
 
 interface Props {
