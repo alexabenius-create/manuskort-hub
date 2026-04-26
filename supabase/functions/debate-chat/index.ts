@@ -1218,6 +1218,12 @@ async function handleScripted(
   // editing — låt LLM hantera fritext-instruktioner via edit_manuscript-tool.
   // Men korta scripted shortcuts först:
   if (phase === "editing") {
+    // Sprint 1.7 v2: routa edit-tools till aktiv flik (active_manuscript_id) istället för
+    // alltid huvudtalet. Fallback: thread.manuscript_id (legacy / första anförandet).
+    const targetManuscriptId =
+      ((thread.bot_state as Record<string, unknown>)?.active_manuscript_id as string | undefined) ||
+      thread.manuscript_id ||
+      null;
     // "Klart" / "det ser bra ut" / "det räcker, klart" → completed (robust detektion)
     if (detectCompletedIntent(userMessage)) {
       const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
@@ -1258,10 +1264,10 @@ async function handleScripted(
       };
     }
     const replacement = parseReplaceInstruction(userMessage);
-    if (replacement && thread.manuscript_id) {
+    if (replacement && targetManuscriptId) {
       const result = await executeEditManuscript(
         admin,
-        thread.manuscript_id,
+        targetManuscriptId,
         thread.user_id,
         { operation: "replace_phrase_global", ...replacement, user_friendly_summary: "" },
         "",
@@ -1277,10 +1283,10 @@ async function handleScripted(
         event_props: {
           operation: "replace_phrase_global",
           cards_affected: result.cards_affected,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         },
         thread_id: thread.id,
-        manuscript_id: thread.manuscript_id,
+        manuscript_id: targetManuscriptId,
       });
       const summary = result.summary_override || `Bytt "${replacement.old_phrase}" mot "${replacement.new_phrase}" i ${result.cards_affected} kort.`;
       return {
@@ -1291,7 +1297,7 @@ async function handleScripted(
     }
 
     // ===== Scripted intent-parsers (Spår B) — bypass LLM-tool-calling för rewrite/add/tone =====
-    if (thread.manuscript_id) {
+    if (targetManuscriptId) {
       const rewriteIntent = parseRewriteCardInstruction(userMessage);
       const addIntent = parseAddCardInstruction(userMessage);
       const toneIntent = !rewriteIntent && !addIntent ? parseTweakToneInstruction(userMessage) : null;
@@ -1307,7 +1313,7 @@ async function handleScripted(
           event_name: "editing_route_used",
           event_props: { route: "scripted", operation: matched },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
       }
 
@@ -1316,7 +1322,7 @@ async function handleScripted(
         const { data: cardsData } = await admin
           .from("cards")
           .select("id, position, title, content_html")
-          .eq("manuscript_id", thread.manuscript_id)
+          .eq("manuscript_id", targetManuscriptId)
           .order("position", { ascending: true });
         const cardsList = (cardsData || []) as Array<{ id: string; position: number; title: string; content_html: string }>;
         if (cardsList.length === 0) {
@@ -1348,7 +1354,7 @@ Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förkl
           };
         }
         const result = await executeEditManuscript(
-          admin, thread.manuscript_id, thread.user_id,
+          admin, targetManuscriptId, thread.user_id,
           { operation: "rewrite_card", target_card_position: idx + 1, new_card_text: gen.text, user_friendly_summary: "" },
           apiKey,
         );
@@ -1359,9 +1365,9 @@ Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förkl
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "manuscript_edited",
-          event_props: { operation: "rewrite_card", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          event_props: { operation: "rewrite_card", cards_affected: result.cards_affected, manuscript_id: targetManuscriptId },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
         const summary = result.summary_override || `Skrev om kort ${idx + 1}.`;
         return {
@@ -1376,7 +1382,7 @@ Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förkl
         const { data: cardsData } = await admin
           .from("cards")
           .select("id, position, title")
-          .eq("manuscript_id", thread.manuscript_id)
+          .eq("manuscript_id", targetManuscriptId)
           .order("position", { ascending: true });
         const cardsList = (cardsData || []) as Array<{ id: string; position: number; title: string }>;
         const total = cardsList.length;
@@ -1416,7 +1422,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
           ? (topic[0].toUpperCase() + topic.slice(1)).slice(0, 40)
           : "Nytt kort";
         const result = await executeEditManuscript(
-          admin, thread.manuscript_id, thread.user_id,
+          admin, targetManuscriptId, thread.user_id,
           {
             operation: "add_card",
             target_card_position: targetPos1,
@@ -1434,9 +1440,9 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "manuscript_edited",
-          event_props: { operation: "add_card", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          event_props: { operation: "add_card", cards_affected: result.cards_affected, manuscript_id: targetManuscriptId },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
         const where = addIntent.position === "first" ? "i början" : addIntent.position === "last" ? "i slutet" : `efter kort ${targetPos1}`;
         const summary = result.summary_override || `La till ett nytt kort ${where} om ${topic}.`;
@@ -1450,7 +1456,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       // --- tweak_tone_global ---
       if (toneIntent) {
         const result = await executeEditManuscript(
-          admin, thread.manuscript_id, thread.user_id,
+          admin, targetManuscriptId, thread.user_id,
           { operation: "tweak_tone_global", tone_instruction: toneIntent.tone_descriptor, user_friendly_summary: "" },
           apiKey,
         );
@@ -1461,9 +1467,9 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "manuscript_edited",
-          event_props: { operation: "tweak_tone_global", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          event_props: { operation: "tweak_tone_global", cards_affected: result.cards_affected, manuscript_id: targetManuscriptId },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
         const summary = result.summary_override || `Justerade tonen i ${result.cards_affected} kort till ${toneIntent.tone_descriptor}.`;
         return {
@@ -1480,7 +1486,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       event_name: "editing_route_used",
       event_props: { route: "llm" },
       thread_id: thread.id,
-      manuscript_id: thread.manuscript_id ?? undefined,
+      manuscript_id: targetManuscriptId ?? undefined,
     });
     return null;
   }
@@ -2003,6 +2009,9 @@ Deno.serve(async (req) => {
     const threadId = String(body.thread_id || "");
     let userMessage = String(body.user_message || "");
     const isRetry = Boolean(body.retry);
+    const clientActiveManuscriptId = body.active_manuscript_id
+      ? String(body.active_manuscript_id)
+      : null;
     if (!threadId) return json({ error: "thread_id required" }, 400);
 
     const { data: threadData, error: threadErr } = await admin
@@ -2013,6 +2022,20 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (threadErr || !threadData) return json({ error: "Thread not found" }, 404);
     let thread = threadData as ThreadRow;
+
+    // Sprint 1.7 v2: synka active_manuscript_id från frontend → bot_state.
+    // Detta gör att editing-fasen routar till rätt flik (inte alltid huvudtalet).
+    if (
+      clientActiveManuscriptId &&
+      (thread.bot_state as Record<string, unknown>)?.active_manuscript_id !== clientActiveManuscriptId
+    ) {
+      const newBotState = { ...thread.bot_state, active_manuscript_id: clientActiveManuscriptId };
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: newBotState })
+        .eq("id", threadId);
+      thread = { ...thread, bot_state: newBotState } as ThreadRow;
+    }
 
     // Retry-flöde: ta bort senaste error-assistant + återanvänd senaste user-msg.
     if (isRetry) {
@@ -2612,13 +2635,18 @@ Deno.serve(async (req) => {
             });
           }
         } else if (name === "edit_manuscript") {
-          if (!thread.manuscript_id) {
+          // Sprint 1.7 v2: routa till aktiv flik (samma logik som scripted-grenen)
+          const llmTargetManuscriptId =
+            ((thread.bot_state as Record<string, unknown>)?.active_manuscript_id as string | undefined) ||
+            thread.manuscript_id ||
+            null;
+          if (!llmTargetManuscriptId) {
             executedTools.push({ name, result: "no_manuscript" });
             assistantText = "Jag ser inget kopplat manus att redigera.";
           } else {
             try {
               const result = await executeEditManuscript(
-                admin, thread.manuscript_id, userId, args, LOVABLE_API_KEY!,
+                admin, llmTargetManuscriptId, userId, args, LOVABLE_API_KEY!,
               );
               const summary = result.summary_override || String(args.user_friendly_summary || "Ändringen är gjord.");
               executedTools.push({ name, result: `${result.cards_affected} kort` });
@@ -2636,10 +2664,10 @@ Deno.serve(async (req) => {
                 event_props: {
                   operation: String(args.operation || ""),
                   cards_affected: result.cards_affected,
-                  manuscript_id: thread.manuscript_id,
+                  manuscript_id: llmTargetManuscriptId,
                 },
                 thread_id: thread.id,
-                manuscript_id: thread.manuscript_id,
+                manuscript_id: llmTargetManuscriptId,
               });
 
               assistantText = `${summary}\n\nVill du ändra något mer?`;
