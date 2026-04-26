@@ -861,10 +861,25 @@ async function handleScripted(
     }
     if (
       msg === "jag vill ändra något" || msg === "jag vill andra nagot" ||
-      msg === "redigera manuset" || msg === "redigera"
+      msg === "redigera manuset" || msg === "redigera" ||
+      msg === "ja, ytterligare en ändring" || msg === "ja, ytterligare en andring" ||
+      msg === "ytterligare en ändring" || msg === "ytterligare en andring" ||
+      msg === "en ändring till" || msg === "en andring till" ||
+      msg === "byt ord/fraser" || msg === "byt ord" || msg === "byt fraser" ||
+      msg === "skriv om kort" || msg === "lägg till/ta bort kort" || msg === "lagg till/ta bort kort" ||
+      msg === "justera tonen"
     ) {
+      const hint = msg.startsWith("byt")
+        ? '\n\nExempel: "byt Herr ordförande mot Fru ordförande"'
+        : msg.startsWith("skriv om")
+        ? '\n\nExempel: "skriv om kort 2 mer talspråkligt"'
+        : msg.includes("ta bort")
+        ? '\n\nExempel: "ta bort sista kortet" eller "lägg till ett kort om miljön"'
+        : msg.includes("tonen")
+        ? '\n\nExempel: "gör hela manuset mer passionerat"'
+        : '\n\nExempel:\n• "byt Herr mot Fru ordförande"\n• "skriv om kort 2 mer talspråkligt"\n• "ta bort sista kortet"\n• "gör hela manuset mer passionerat"';
       return {
-        text: "Säg vad du vill ändra — skriv din instruktion här i chatten.\n\nExempel:\n• \"byt Herr mot Fru ordförande\"\n• \"skriv om kort 2 mer talspråkligt\"\n• \"ta bort sista kortet\"\n• \"gör hela manuset mer passionerat\"",
+        text: `Säg vad du vill ändra — skriv din instruktion här i chatten.${hint}`,
         quick_replies: [],
       };
     }
