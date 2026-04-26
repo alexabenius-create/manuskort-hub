@@ -263,7 +263,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
                   </button>
                 </div>
                 {file.size > LARGE_FILE_WARN_BYTES && (
-                  <div className="text-[12px] text-amber-600 dark:text-amber-500 px-1 pt-1">
+                  <div className="text-[12px] text-destructive/80 px-1 pt-1">
                     ⚠️ Stor fil ({formatFileSize(file.size)}). Filer över 5 MB kan göra det långsammare att få fram anförandet.
                   </div>
                 )}
