@@ -231,13 +231,25 @@ export default function DebattBuddy() {
               </div>
               <h2 className="font-display text-2xl font-semibold text-v2-ink mb-2">Dags för din första debatt</h2>
               <p className="text-v2-muted mb-6 text-[14px] max-w-xs mx-auto">Berätta vad det handlar om — buddyn fixar struktur, argument och repliker.</p>
-              <Button
-                onClick={createThread}
-                disabled={creating}
-                className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5"
-              >
-                <Plus className="h-4 w-4 mr-2" /> Skapa min första debatt
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                {snabbstartEnabled && (
+                  <Button
+                    onClick={() => setSnabbstartOpen(true)}
+                    size="lg"
+                    className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5 gap-2"
+                  >
+                    <Zap className="h-4 w-4" /> Snabbstart
+                  </Button>
+                )}
+                <Button
+                  onClick={createThread}
+                  disabled={creating}
+                  variant="outline"
+                  className="rounded-full border-v2-violet/30 hover:bg-v2-violet/5 hover:border-v2-violet/60"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> {snabbstartEnabled ? "Klassisk debatt" : "Skapa min första debatt"}
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
