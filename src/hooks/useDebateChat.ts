@@ -198,6 +198,34 @@ export function useDebateChat(threadId: string | null) {
     }
   }, [loading, threadId, messages.length, sendMessage]);
 
+  // Snabbstart auto-trigger: när user landar i editorn med ett färdigt thread
+  // (phase=drafting_speech eller generating_rebuttal) och boten ännu inte
+  // har börjat generera. Trigga EN gång per thread via bot_state-flagga.
+  useEffect(() => {
+    if (loading || !threadId || !threadState || initSentRef.current) return;
+    const phase = threadState.bot_state?.phase;
+    const autostartPhases = ["drafting_speech", "generating_rebuttal"];
+    if (!autostartPhases.includes(phase || "")) return;
+
+    // deno-lint-ignore no-explicit-any
+    const bs = threadState.bot_state as any;
+    if (bs?.snabbstart_autostarted) return;
+
+    // Inga user-meddelanden ännu? (scripted assistant-msg räknas inte)
+    const hasUserMsg = messages.some((m) => m.role === "user");
+    if (hasUserMsg) return;
+
+    initSentRef.current = true;
+    (async () => {
+      // Sätt flaggan FÖRST så omladdning inte triggar igen
+      await supabase
+        .from("debate_threads")
+        .update({ bot_state: { ...bs, snabbstart_autostarted: true } })
+        .eq("id", threadId);
+      void sendMessage("");
+    })();
+  }, [loading, threadId, threadState, messages, sendMessage]);
+
   // Efter avslutad presentation: trigga post_perform_check-frågan
   useEffect(() => {
     if (loading || !threadId || !user) return;

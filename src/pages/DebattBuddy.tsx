@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, Plus, Sparkles, MessagesSquare, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, Plus, Sparkles, MessagesSquare, Pencil, Check, X, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
 import { useBetaAccess } from "@/hooks/useBetaAccess";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SEO } from "@/components/SEO";
 import { toast } from "@/hooks/use-toast";
+import { SnabbstartModal } from "@/components/debate/SnabbstartModal";
 
 interface ThreadRow {
   id: string;
@@ -23,12 +25,14 @@ export default function DebattBuddy() {
   const { user } = useAuth();
   const { tier, loading: tierLoading } = useTier();
   const { hasAccess, loading: betaLoading } = useBetaAccess("debate_buddy");
+  const { enabled: snabbstartEnabled } = useFeatureFlag("snabbstart");
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [snabbstartOpen, setSnabbstartOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -190,14 +194,27 @@ export default function DebattBuddy() {
                 Din AI-coach för anföranden, repliker och genmälen — alltid redo i sidan.
               </p>
             </div>
-            <Button
-              onClick={createThread}
-              disabled={creating}
-              className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all border-0"
-            >
-              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-              Ny debatt
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              {snabbstartEnabled && (
+                <Button
+                  onClick={() => setSnabbstartOpen(true)}
+                  size="lg"
+                  className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all border-0 gap-2"
+                >
+                  <Zap className="h-5 w-5" />
+                  Snabbstart
+                </Button>
+              )}
+              <Button
+                onClick={createThread}
+                disabled={creating}
+                variant="outline"
+                className="rounded-full border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all"
+              >
+                {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Ny debatt
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -214,13 +231,25 @@ export default function DebattBuddy() {
               </div>
               <h2 className="font-display text-2xl font-semibold text-v2-ink mb-2">Dags för din första debatt</h2>
               <p className="text-v2-muted mb-6 text-[14px] max-w-xs mx-auto">Berätta vad det handlar om — buddyn fixar struktur, argument och repliker.</p>
-              <Button
-                onClick={createThread}
-                disabled={creating}
-                className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5"
-              >
-                <Plus className="h-4 w-4 mr-2" /> Skapa min första debatt
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                {snabbstartEnabled && (
+                  <Button
+                    onClick={() => setSnabbstartOpen(true)}
+                    size="lg"
+                    className="rounded-full bg-gradient-to-r from-v2-violet to-pink-500 hover:from-v2-violet/90 hover:to-pink-500/90 shadow-lg shadow-v2-violet/25 hover:shadow-xl hover:shadow-v2-violet/40 transition-all hover:-translate-y-0.5 gap-2"
+                  >
+                    <Zap className="h-4 w-4" /> Snabbstart
+                  </Button>
+                )}
+                <Button
+                  onClick={createThread}
+                  disabled={creating}
+                  variant="outline"
+                  className="rounded-full border-v2-violet/30 hover:bg-v2-violet/5 hover:border-v2-violet/60"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> {snabbstartEnabled ? "Klassisk debatt" : "Skapa min första debatt"}
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -329,6 +358,7 @@ export default function DebattBuddy() {
           </ul>
         )}
       </main>
+      <SnabbstartModal open={snabbstartOpen} onOpenChange={setSnabbstartOpen} />
     </div>
   );
 }
