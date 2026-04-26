@@ -1779,6 +1779,8 @@ Deno.serve(async (req) => {
     let model: string;
     if (currentPhase === "drafting_speech") model = "google/gemini-2.5-flash";
     else if (currentPhase === "generating_rebuttal") model = "google/gemini-2.5-flash";
+    // Editing-fasen behöver tool-calling som fungerar pålitligt → flash (inte flash-lite).
+    else if (currentPhase === "editing") model = "google/gemini-2.5-flash";
     else model = "google/gemini-2.5-flash-lite";
 
     // Tvinga rätt verktyg vid generationsfaser så modellen inte bara skriver fritext.
