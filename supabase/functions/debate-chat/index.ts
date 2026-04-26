@@ -1297,7 +1297,7 @@ async function handleScripted(
     }
 
     // ===== Scripted intent-parsers (Spår B) — bypass LLM-tool-calling för rewrite/add/tone =====
-    if (thread.manuscript_id) {
+    if (targetManuscriptId) {
       const rewriteIntent = parseRewriteCardInstruction(userMessage);
       const addIntent = parseAddCardInstruction(userMessage);
       const toneIntent = !rewriteIntent && !addIntent ? parseTweakToneInstruction(userMessage) : null;
@@ -1313,7 +1313,7 @@ async function handleScripted(
           event_name: "editing_route_used",
           event_props: { route: "scripted", operation: matched },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
       }
 
@@ -1322,7 +1322,7 @@ async function handleScripted(
         const { data: cardsData } = await admin
           .from("cards")
           .select("id, position, title, content_html")
-          .eq("manuscript_id", thread.manuscript_id)
+          .eq("manuscript_id", targetManuscriptId)
           .order("position", { ascending: true });
         const cardsList = (cardsData || []) as Array<{ id: string; position: number; title: string; content_html: string }>;
         if (cardsList.length === 0) {
@@ -1354,7 +1354,7 @@ Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förkl
           };
         }
         const result = await executeEditManuscript(
-          admin, thread.manuscript_id, thread.user_id,
+          admin, targetManuscriptId, thread.user_id,
           { operation: "rewrite_card", target_card_position: idx + 1, new_card_text: gen.text, user_friendly_summary: "" },
           apiKey,
         );
@@ -1365,9 +1365,9 @@ Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förkl
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "manuscript_edited",
-          event_props: { operation: "rewrite_card", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          event_props: { operation: "rewrite_card", cards_affected: result.cards_affected, manuscript_id: targetManuscriptId },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
         const summary = result.summary_override || `Skrev om kort ${idx + 1}.`;
         return {
@@ -1382,7 +1382,7 @@ Skriv den nya texten nu — bara den färdiga texten, inga rubriker eller förkl
         const { data: cardsData } = await admin
           .from("cards")
           .select("id, position, title")
-          .eq("manuscript_id", thread.manuscript_id)
+          .eq("manuscript_id", targetManuscriptId)
           .order("position", { ascending: true });
         const cardsList = (cardsData || []) as Array<{ id: string; position: number; title: string }>;
         const total = cardsList.length;
@@ -1422,7 +1422,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
           ? (topic[0].toUpperCase() + topic.slice(1)).slice(0, 40)
           : "Nytt kort";
         const result = await executeEditManuscript(
-          admin, thread.manuscript_id, thread.user_id,
+          admin, targetManuscriptId, thread.user_id,
           {
             operation: "add_card",
             target_card_position: targetPos1,
@@ -1440,9 +1440,9 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "manuscript_edited",
-          event_props: { operation: "add_card", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          event_props: { operation: "add_card", cards_affected: result.cards_affected, manuscript_id: targetManuscriptId },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
         const where = addIntent.position === "first" ? "i början" : addIntent.position === "last" ? "i slutet" : `efter kort ${targetPos1}`;
         const summary = result.summary_override || `La till ett nytt kort ${where} om ${topic}.`;
@@ -1456,7 +1456,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       // --- tweak_tone_global ---
       if (toneIntent) {
         const result = await executeEditManuscript(
-          admin, thread.manuscript_id, thread.user_id,
+          admin, targetManuscriptId, thread.user_id,
           { operation: "tweak_tone_global", tone_instruction: toneIntent.tone_descriptor, user_friendly_summary: "" },
           apiKey,
         );
@@ -1467,9 +1467,9 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "manuscript_edited",
-          event_props: { operation: "tweak_tone_global", cards_affected: result.cards_affected, manuscript_id: thread.manuscript_id },
+          event_props: { operation: "tweak_tone_global", cards_affected: result.cards_affected, manuscript_id: targetManuscriptId },
           thread_id: thread.id,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         });
         const summary = result.summary_override || `Justerade tonen i ${result.cards_affected} kort till ${toneIntent.tone_descriptor}.`;
         return {
@@ -1486,7 +1486,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       event_name: "editing_route_used",
       event_props: { route: "llm" },
       thread_id: thread.id,
-      manuscript_id: thread.manuscript_id ?? undefined,
+      manuscript_id: targetManuscriptId ?? undefined,
     });
     return null;
   }
