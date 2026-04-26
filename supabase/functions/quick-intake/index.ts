@@ -365,10 +365,34 @@ Deno.serve(async (req) => {
         has_kommun: Boolean(parsed.kommun),
         has_opponent: Boolean(parsed.opponent_label),
         speech_length_seconds: parsed.speech_length_seconds,
+        has_attachment: hasAttachment,
       },
       thread_id: thread.id,
       manuscript_id: manus.id,
     });
+
+    if (hasAttachment) {
+      const charLen = attachedContextRaw.length;
+      const bucket =
+        charLen < 1000 ? "<1k" :
+        charLen < 5000 ? "1-5k" :
+        charLen < 20000 ? "5-20k" :
+        charLen < 50000 ? "20-50k" : ">50k";
+      // file_type: ren metadata, ingen filnamn skickas till klienten
+      // deno-lint-ignore no-explicit-any
+      const fileType = String((body as any).file_type || "").toLowerCase();
+      void logEvent(admin, {
+        user_id: userId,
+        event_name: "snabbstart_attachment_used",
+        event_props: {
+          file_type: ["pdf", "docx", "txt"].includes(fileType) ? fileType : "unknown",
+          char_bucket: bucket,
+          truncated: charLen >= 50_000,
+        },
+        thread_id: thread.id,
+        manuscript_id: manus.id,
+      });
+    }
 
     void logEvent(admin, {
       user_id: userId,
