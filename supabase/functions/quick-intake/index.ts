@@ -44,15 +44,37 @@ REGLER:
 - Om speech_length_seconds = null, lägg till "speech_length" i missing_info.
 - Returnera ENDAST JSON enligt schemat. Ingen text utanför JSON.
 
+EXTRAHERA own_position AGGRESSIVT:
+Om texten innehåller något av dessa signalord, sätt own_position direkt — lägg INTE "own_position" i missing_info:
+- "mot", "emot", "kritisk", "kritiserar", "argumenterar mot", "tala emot", "motsätter mig", "vänder mig mot" → own_position = "Emot {kort kontext}"
+- "för", "stödjer", "försvarar", "argumenterar för", "tala för", "förespråkar", "ställer mig bakom" → own_position = "För {kort kontext}"
+- "nyanserad", "balanserad", "både och", "delvis enig" → own_position = "Nyanserad — kräver utveckling"
+
+Detta gäller även när användaren refererar till EXTERNT objekt:
+- "anförande mot förslaget" → own_position = "Emot förslaget"
+- "tala för budgeten" → own_position = "För budgeten"
+- "kritiserar oppositionens utspel" → own_position = "Kritisk till oppositionens utspel"
+
+Lägg ENDAST "own_position" i missing_info OM texten är helt neutral och inget signalord finns (t.ex. "klimatpolitik", "Solgården", "anförande baserat på bifogad text").
+
 EXEMPEL:
 Input: "2 min anförande mot S-budgeten i Lerums fullmäktige om förskola"
-Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot S-budgeten om förskola","speech_length_seconds":120,"own_position":"","opponent_label":"S-budgeten","opponent_arguments":[],"kommun":"Lerum","missing_info":["own_position"]}
+Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot S-budgeten om förskola","speech_length_seconds":120,"own_position":"Emot S-budgeten","opponent_label":"S-budgeten","opponent_arguments":[],"kommun":"Lerum","missing_info":[]}
 
 Input: "Anförande mot förskolebesparingar i Lerum, jag är emot"
-Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot förskolebesparingar","speech_length_seconds":null,"own_position":"emot förskolebesparingar","opponent_label":null,"opponent_arguments":[],"kommun":"Lerum","missing_info":["speech_length"]}
+Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot förskolebesparingar","speech_length_seconds":null,"own_position":"Emot förskolebesparingar","opponent_label":null,"opponent_arguments":[],"kommun":"Lerum","missing_info":["speech_length"]}
 
 Input: "Replik på Annas kritik av nya cykelbanan på Lillgatan"
-Output: {"mode":"reply","topic_area":"Trafik","issue_text":"Replik om cykelbanan på Lillgatan","speech_length_seconds":60,"own_position":"","opponent_label":"Anna","opponent_arguments":["kritik av nya cykelbanan på Lillgatan"],"kommun":null,"missing_info":["own_position"]}`;
+Output: {"mode":"reply","topic_area":"Trafik","issue_text":"Replik om cykelbanan på Lillgatan","speech_length_seconds":60,"own_position":"","opponent_label":"Anna","opponent_arguments":["kritik av nya cykelbanan på Lillgatan"],"kommun":null,"missing_info":["own_position"]}
+
+Input: "5 min anförande mot förslaget"
+Output: {"mode":"speech","topic_area":"Annat","issue_text":"Anförande mot förslaget","speech_length_seconds":300,"own_position":"Emot förslaget","opponent_label":null,"opponent_arguments":[],"kommun":null,"missing_info":[]}
+
+Input: "tala för den nya budgeten 3 min"
+Output: {"mode":"speech","topic_area":"Ekonomi/budget","issue_text":"Tala för den nya budgeten","speech_length_seconds":180,"own_position":"För den nya budgeten","opponent_label":null,"opponent_arguments":[],"kommun":null,"missing_info":[]}
+
+Input: "anförande baserat på bifogad text"
+Output: {"mode":"speech","topic_area":"Annat","issue_text":"Anförande baserat på bifogat underlag","speech_length_seconds":null,"own_position":"","opponent_label":null,"opponent_arguments":[],"kommun":null,"missing_info":["own_position","speech_length"]}`;
 
 const USER_TEMPLATE = (text: string) => `Tolka denna prompt och returnera JSON:\n\n"""${text}"""`;
 
