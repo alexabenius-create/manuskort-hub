@@ -1,6 +1,6 @@
 // Max antal visuella rader per kort beroende på textstorlek.
 // Optimerat för A5 liggande + framtida visningsläge på iPad/desktop.
-export const MAX_ROWS_BY_SIZE = { sm: 8, md: 6, lg: 5 } as const;
+export const MAX_ROWS_BY_SIZE = { sm: 7, md: 5, lg: 4 } as const;
 export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
 
 /**
@@ -11,12 +11,13 @@ export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
  * Bredd: 75ch i font-display vid given fontSize. ch ≈ 0.5em för proportionella
  * fonter — vi använder 0.52 som rimligt medel för Inter Tight.
  *
- * lineHeight 1.85: ger luftigare kort utan att kännas glest (var 1.7).
+ * lineHeight 1.85: ger luftigare kort utan att kännas glest.
+ * Standard (md) höjd från 30 → 38px för bättre läsbarhet på avstånd.
  */
 const PRESENTATION_GEOMETRY = {
-  sm: { fontSize: 24, lineHeight: 1.85, widthPx: Math.round(75 * 24 * 0.52) },
-  md: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(75 * 30 * 0.52) },
-  lg: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(75 * 38 * 0.52) },
+  sm: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(75 * 30 * 0.52) },
+  md: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(75 * 38 * 0.52) },
+  lg: { fontSize: 46, lineHeight: 1.85, widthPx: Math.round(75 * 46 * 0.52) },
 } as const;
 
 let presentationMeasurer: HTMLDivElement | null = null;
