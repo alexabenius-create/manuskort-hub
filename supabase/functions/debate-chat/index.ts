@@ -1013,6 +1013,12 @@ Deno.serve(async (req) => {
         tool_choice: toolChoice,
       },
       LOVABLE_API_KEY,
+      {
+        timeout_ms: 90000,
+        function_name: "debate-chat",
+        analyticsClient: admin,
+        user_id: thread.user_id,
+      },
     );
 
     if (!llmResult.ok) {
