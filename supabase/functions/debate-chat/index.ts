@@ -434,6 +434,7 @@ async function handleScripted(
 
   // Tom första-prompt → visa scripted intro för aktuell fas
   if (!userMessage.trim()) {
+    if ((thread.bot_state as Record<string, unknown>)?.pending_generate === true) return null;
     const p = SCRIPTED_PROMPTS[phase];
     if (p) return { text: p.text, quick_replies: p.quick_replies };
     return null;
@@ -1007,7 +1008,7 @@ Deno.serve(async (req) => {
     const currentPhase = thread.bot_state?.phase || "intake_issue";
     // Modellval: gpt-5 är för långsam för rebuttal (ofta >timeout). Använd gemini-2.5-flash för generering.
     let model: string;
-    if (currentPhase === "drafting_speech") model = "openai/gpt-5";
+    if (currentPhase === "drafting_speech") model = "google/gemini-2.5-flash";
     else if (currentPhase === "generating_rebuttal") model = "google/gemini-2.5-flash";
     else model = "google/gemini-2.5-flash-lite";
 
@@ -1047,9 +1048,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Dynamisk timeout: 90s default, 180s om bifogat underlag är >1000 tecken
+    // Dynamisk timeout inom edge-runtime-budget: låt callLLM returnera kontrollerat fel i stället för 503.
     const attachedLen = (thread.issue_document_text || "").length;
-    const chatTimeoutMs = attachedLen > 1000 ? 180_000 : 90_000;
+    const chatTimeoutMs = currentPhase === "drafting_speech"
+      ? (attachedLen > 1000 ? 55_000 : 45_000)
+      : (attachedLen > 1000 ? 60_000 : 30_000);
 
     // Anropa Lovable AI Gateway via callLLM-helper (retry + timeout + felklassning).
     const llmResult = await callLLM(
@@ -1062,6 +1065,7 @@ Deno.serve(async (req) => {
       LOVABLE_API_KEY,
       {
         timeout_ms: chatTimeoutMs,
+        max_attempts: currentPhase === "drafting_speech" ? 1 : 2,
         function_name: "debate-chat",
         analyticsClient: admin,
         user_id: thread.user_id,
@@ -1225,16 +1229,17 @@ Deno.serve(async (req) => {
           } else {
             executedTools.push({ name, result: "no_manuscript" });
           }
+          const nextBotState: Record<string, unknown> = {
+            ...thread.bot_state,
+            phase: "awaiting_perform",
+            current_section_id: sectionId,
+            rebuttal_count: 0,
+          };
+          delete nextBotState.pending_generate;
+
           await admin
             .from("debate_threads")
-            .update({
-              bot_state: {
-                ...thread.bot_state,
-                phase: "awaiting_perform",
-                current_section_id: sectionId,
-                rebuttal_count: 0,
-              },
-            })
+            .update({ bot_state: nextBotState })
             .eq("id", threadId);
         } else if (name === "set_opponent") {
           await admin
@@ -1394,6 +1399,9 @@ Deno.serve(async (req) => {
         });
       }
     }
+
+    const didSpeech = executedTools.some((t) => t.name === "generate_speech_cards");
+    if (didSpeech) assistantText = "Klart! Jag har lagt in anförandet som manuskort.";
 
     if (!assistantText) {
       assistantText = didRebuttal

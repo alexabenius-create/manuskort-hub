@@ -25,6 +25,8 @@ export interface LLMCallOptions {
 export interface LLMCallExtras {
   /** Per-call timeout override i ms. Default 45000. */
   timeout_ms?: number;
+  /** Max antal försök för anropet. Default 3. */
+  max_attempts?: number;
   /** Namn på edge function som anropar — används för analytics. */
   function_name?: string;
   /** Supabase admin-client för att logga llm_call_duration-event. */
@@ -71,6 +73,7 @@ export async function callLLM(
 ): Promise<LLMCallResult | LLMCallError> {
   const start = Date.now();
   const timeoutMs = extras.timeout_ms ?? TIMEOUT_MS;
+  const maxAttempts = Math.max(1, Math.min(RETRY_ATTEMPTS, Math.round(extras.max_attempts ?? RETRY_ATTEMPTS)));
   let lastError: unknown = null;
 
   const logDuration = async (
@@ -94,7 +97,7 @@ export async function callLLM(
     } catch (_e) { /* swallow */ }
   };
 
-  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const controller = new AbortController();
     const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -156,7 +159,7 @@ export async function callLLM(
         const waitMs = retryAfter
           ? parseInt(retryAfter) * 1000
           : RETRY_BASE_MS * Math.pow(2, attempt - 1);
-        if (attempt < RETRY_ATTEMPTS) {
+        if (attempt < maxAttempts) {
           await new Promise((r) => setTimeout(r, waitMs));
           continue;
         }
@@ -172,7 +175,7 @@ export async function callLLM(
       }
 
       if (response.status >= 500) {
-        if (attempt < RETRY_ATTEMPTS) {
+        if (attempt < maxAttempts) {
           await new Promise((r) => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt - 1)));
           continue;
         }
@@ -192,7 +195,7 @@ export async function callLLM(
       clearTimeout(timeoutHandle);
       const e = err as { name?: string };
       if (e?.name === "AbortError") {
-        if (attempt < RETRY_ATTEMPTS) {
+        if (attempt < maxAttempts) {
           await new Promise((r) => setTimeout(r, RETRY_BASE_MS));
           continue;
         }
@@ -206,7 +209,7 @@ export async function callLLM(
         };
       }
       lastError = err;
-      if (attempt < RETRY_ATTEMPTS) {
+      if (attempt < maxAttempts) {
         await new Promise((r) => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt - 1)));
         continue;
       }
@@ -219,7 +222,7 @@ export async function callLLM(
     error_kind: "unknown",
     message: String(lastError ?? "Unknown error"),
     duration_ms: Date.now() - start,
-    attempts: RETRY_ATTEMPTS,
+      attempts: maxAttempts,
   };
 }
 
