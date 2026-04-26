@@ -1006,8 +1006,246 @@ function splitIntoCards(text: string): Array<{ title: string; body: string }> {
       { title: "Avslut", body: paragraphs.slice(splitAt).join("\n\n") },
     ].filter((c) => c.body.trim());
   }
-  return [{ title: "Genmäle", body: cleaned || text }];
 }
+
+// ============= EDIT_MANUSCRIPT IMPLEMENTATION =============
+
+interface CardRow {
+  id: string;
+  position: number;
+  title: string;
+  content_html: string;
+}
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\/p\s*>/gi, "\n\n")
+    .replace(/<br\s*\/?>(\s*)/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function plainTextToHtml(text: string): string {
+  const escape = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (paragraphs.length === 0) return `<p>${escape(text.trim() || " ")}</p>`;
+  return paragraphs.map((p) => `<p>${escape(p).replace(/\n/g, "<br/>")}</p>`).join("");
+}
+
+/** Ersätt fras i både title och content_html (men respektera HTML-strukturen). */
+function replacePhraseInCard(card: CardRow, oldPhrase: string, newPhrase: string): { changed: boolean; title: string; content_html: string } {
+  if (!oldPhrase) return { changed: false, title: card.title, content_html: card.content_html };
+  const escaped = oldPhrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(escaped, "gi");
+  const newTitle = card.title.replace(re, newPhrase);
+  // Konvertera, ersätt i plain text, konvertera tillbaka — undviker att bryta HTML-attribut
+  const plain = htmlToPlainText(card.content_html);
+  const newPlain = plain.replace(re, newPhrase);
+  const changed = newTitle !== card.title || newPlain !== plain;
+  return {
+    changed,
+    title: newTitle,
+    content_html: changed && newPlain !== plain ? plainTextToHtml(newPlain) : card.content_html,
+  };
+}
+
+interface EditResult {
+  cards_affected: number;
+  summary_override?: string;
+}
+
+async function executeEditManuscript(
+  admin: ReturnType<typeof createClient<any>>,
+  manuscriptId: string,
+  userId: string,
+  args: Record<string, any>,
+  apiKey: string,
+): Promise<EditResult> {
+  const op = args.operation as string;
+
+  // Hämta alla kort sorterade efter position
+  const { data: cardsData } = await admin
+    .from("cards")
+    .select("id, position, title, content_html")
+    .eq("manuscript_id", manuscriptId)
+    .order("position", { ascending: true });
+  const cards = (cardsData || []) as CardRow[];
+  if (cards.length === 0) return { cards_affected: 0, summary_override: "Inga kort att redigera." };
+
+  if (op === "replace_phrase_global") {
+    const oldP = String(args.old_phrase || "");
+    const newP = String(args.new_phrase || "");
+    if (!oldP) return { cards_affected: 0, summary_override: "Saknar fras att ersätta." };
+    let affected = 0;
+    for (const c of cards) {
+      const res = replacePhraseInCard(c, oldP, newP);
+      if (res.changed) {
+        await admin.from("cards").update({ title: res.title, content_html: res.content_html }).eq("id", c.id);
+        affected++;
+      }
+    }
+    return { cards_affected: affected };
+  }
+
+  if (op === "edit_specific_text") {
+    const pos = Number(args.target_card_position) || 0;
+    const oldP = String(args.old_phrase || "");
+    const newP = String(args.new_phrase || "");
+    if (pos < 1 || pos > cards.length) return { cards_affected: 0, summary_override: `Kort ${pos} finns inte.` };
+    const card = cards[pos - 1];
+    const res = replacePhraseInCard(card, oldP, newP);
+    if (!res.changed) return { cards_affected: 0, summary_override: `Hittade inte "${oldP}" i kort ${pos}.` };
+    await admin.from("cards").update({ title: res.title, content_html: res.content_html }).eq("id", card.id);
+    return { cards_affected: 1 };
+  }
+
+  if (op === "rewrite_card") {
+    const pos = Number(args.target_card_position) || 0;
+    const newText = String(args.new_card_text || "");
+    if (pos < 1 || pos > cards.length) return { cards_affected: 0, summary_override: `Kort ${pos} finns inte.` };
+    if (!newText.trim()) return { cards_affected: 0, summary_override: "Saknar ny text för kortet." };
+    const card = cards[pos - 1];
+    const update: Record<string, unknown> = { content_html: plainTextToHtml(newText) };
+    if (typeof args.new_card_title === "string" && args.new_card_title.trim()) {
+      update.title = args.new_card_title.trim();
+    }
+    await admin.from("cards").update(update).eq("id", card.id);
+    return { cards_affected: 1 };
+  }
+
+  if (op === "add_card") {
+    const newText = String(args.new_card_text || "");
+    if (!newText.trim()) return { cards_affected: 0, summary_override: "Saknar text för nytt kort." };
+    const insertPos = String(args.insert_position || "end");
+    const targetPos = Number(args.target_card_position) || 0;
+    let newPosition: number;
+    if (insertPos === "end" || targetPos < 1 || targetPos > cards.length) {
+      newPosition = (cards[cards.length - 1].position) + 1;
+    } else if (insertPos === "before") {
+      newPosition = cards[targetPos - 1].position;
+      // Skifta alla kort >= newPosition uppåt
+      for (let i = cards.length - 1; i >= targetPos - 1; i--) {
+        await admin.from("cards").update({ position: cards[i].position + 1 }).eq("id", cards[i].id);
+      }
+    } else {
+      // after
+      newPosition = cards[targetPos - 1].position + 1;
+      for (let i = cards.length - 1; i >= targetPos; i--) {
+        await admin.from("cards").update({ position: cards[i].position + 1 }).eq("id", cards[i].id);
+      }
+    }
+    await admin.from("cards").insert({
+      manuscript_id: manuscriptId,
+      user_id: userId,
+      position: newPosition,
+      role: "speaker",
+      title: typeof args.new_card_title === "string" ? args.new_card_title : "Nytt kort",
+      content_html: plainTextToHtml(newText),
+    });
+    return { cards_affected: 1 };
+  }
+
+  if (op === "delete_card") {
+    const pos = Number(args.target_card_position) || 0;
+    if (pos < 1 || pos > cards.length) return { cards_affected: 0, summary_override: `Kort ${pos} finns inte.` };
+    const card = cards[pos - 1];
+    await admin.from("cards").delete().eq("id", card.id);
+    // Re-numrera kvarvarande kort: minska position med 1 för alla efter
+    for (let i = pos; i < cards.length; i++) {
+      await admin.from("cards").update({ position: cards[i].position - 1 }).eq("id", cards[i].id);
+    }
+    return { cards_affected: 1 };
+  }
+
+  if (op === "reorder_cards") {
+    const order = Array.isArray(args.reorder_positions) ? (args.reorder_positions as number[]) : [];
+    if (order.length !== cards.length) {
+      return { cards_affected: 0, summary_override: `Reorder kräver ${cards.length} positioner, fick ${order.length}.` };
+    }
+    // order[i] = den GAMLA 1-indexerade position som ska ligga på ny position i+1
+    // Validera alla positioner finns och är unika
+    const seen = new Set<number>();
+    for (const p of order) {
+      if (p < 1 || p > cards.length || seen.has(p)) {
+        return { cards_affected: 0, summary_override: "Ogiltig ordning." };
+      }
+      seen.add(p);
+    }
+    // Sätt position till en stor offset först för att undvika unique-konflikt vid omnumrering
+    const OFFSET = 10000;
+    for (const c of cards) {
+      await admin.from("cards").update({ position: c.position + OFFSET }).eq("id", c.id);
+    }
+    for (let i = 0; i < order.length; i++) {
+      const oldCard = cards[order[i] - 1];
+      await admin.from("cards").update({ position: i }).eq("id", oldCard.id);
+    }
+    return { cards_affected: cards.length };
+  }
+
+  if (op === "tweak_tone_global") {
+    const tone = String(args.tone_instruction || "").trim();
+    if (!tone) return { cards_affected: 0, summary_override: "Saknar tonbeskrivning." };
+    // Bygg prompt med alla kort i ren text
+    const cardTexts = cards.map((c, i) => `--- KORT ${i + 1}: ${c.title} ---\n${htmlToPlainText(c.content_html)}`).join("\n\n");
+    const tonePrompt = `Här är ett manuskript uppdelat i kort. Skriv om varje kort så att tonen blir: ${tone}.
+BEVARA strukturen (lika många kort, samma titlar). Behåll innebörd och konkreta påståenden — ändra BARA tonen och ordvalen.
+
+Returnera ENBART en JSON-array med objekt: [{"position": 1, "title": "...", "body": "..."}, ...]
+- position: 1-indexerad
+- title: kortets nya titel
+- body: kortets nya brödtext (ren text, paragrafer separerade med dubbla radbrytningar)
+
+INGA förklaringar, INGEN markdown — bara ren JSON.
+
+MANUSKRIPT:
+${cardTexts}`;
+
+    const toneResult = await callLLM(
+      {
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: tonePrompt }],
+      },
+      apiKey,
+      { timeout_ms: 60_000, max_attempts: 1, function_name: "debate-chat-tone" },
+    );
+    if (!toneResult.ok) {
+      return { cards_affected: 0, summary_override: `Tonjustering misslyckades: ${toneResult.error_kind}.` };
+    }
+    const raw = String(toneResult.data.choices?.[0]?.message?.content || "");
+    // Plocka ut JSON-array (modeller wrappar ibland i ```json)
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return { cards_affected: 0, summary_override: "Kunde inte tolka tonsvar från modellen." };
+    let parsed: Array<{ position: number; title?: string; body: string }>;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      return { cards_affected: 0, summary_override: "Kunde inte parsa tonsvar." };
+    }
+    let affected = 0;
+    for (const item of parsed) {
+      const idx = (Number(item.position) || 0) - 1;
+      if (idx < 0 || idx >= cards.length) continue;
+      const card = cards[idx];
+      const update: Record<string, unknown> = { content_html: plainTextToHtml(String(item.body || "")) };
+      if (typeof item.title === "string" && item.title.trim()) update.title = item.title.trim();
+      await admin.from("cards").update(update).eq("id", card.id);
+      affected++;
+    }
+    return { cards_affected: affected };
+  }
+
+  return { cards_affected: 0, summary_override: `Okänd operation: ${op}.` };
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
