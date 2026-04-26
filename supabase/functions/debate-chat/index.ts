@@ -1389,11 +1389,11 @@ Deno.serve(async (req) => {
         user_id: userId,
         role: "assistant",
         content: scripted.text,
-        metadata: { scripted: true, quick_replies: scripted.quick_replies },
+        metadata: { scripted: true, quick_replies: scripted.quick_replies, tools: scripted.tools || [] },
       });
       return json({
         assistant: scripted.text,
-        tools: [],
+        tools: scripted.tools || [],
         quick_replies: scripted.quick_replies,
       });
     }
