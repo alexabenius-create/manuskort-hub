@@ -50,15 +50,37 @@ export function ManuscriptTabBar({
 
   const fetchTabs = useCallback(async () => {
     if (!threadId) return;
-    const { data: turns } = await supabase
-      .from("debate_turns")
-      .select("manuscript_id, kind, speaker_label, position, round_number, created_at")
-      .eq("thread_id", threadId)
-      .not("manuscript_id", "is", null)
-      .order("position", { ascending: true });
+    const [{ data: turns }, { data: thread }] = await Promise.all([
+      supabase
+        .from("debate_turns")
+        .select("manuscript_id, kind, speaker_label, position, round_number, created_at")
+        .eq("thread_id", threadId)
+        .not("manuscript_id", "is", null)
+        .order("position", { ascending: true }),
+      supabase
+        .from("debate_threads")
+        .select("manuscript_id")
+        .eq("id", threadId)
+        .maybeSingle(),
+    ]);
 
     // Dedup på manuscript_id (samma manus kan ha flera kopplade turns)
     const uniqueByManus = new Map<string, TabMeta>();
+
+    // Fallback: om tråden har ett manuscript_id (huvudtalet) men ingen speech-turn
+    // finns ännu (t.ex. äldre Snabbstart-flöden), lägg in det som speech-flik.
+    const threadManuscriptId = (thread?.manuscript_id as string | null) || null;
+    if (threadManuscriptId) {
+      uniqueByManus.set(threadManuscriptId, {
+        manuscript_id: threadManuscriptId,
+        kind: "speech",
+        speaker_label: "",
+        position: 0,
+        round_number: 0,
+        title: "",
+      });
+    }
+
     for (const t of turns || []) {
       if (!t.manuscript_id) continue;
       if (uniqueByManus.has(t.manuscript_id)) continue;
