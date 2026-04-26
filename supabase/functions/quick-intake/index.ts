@@ -340,13 +340,15 @@ Deno.serve(async (req) => {
 
     // ---- Skapa manuscript ----
     const title = deriveTitle(parsed.issue_text);
+    // target_duration_seconds: bara om längd är bekräftad — annars defaultas senare när användaren svarar
+    const effectiveLength = parsed.speech_length_seconds ?? 120;
     const { data: manus, error: manusErr } = await admin
       .from("manuscripts")
       .insert({
         user_id: userId,
         title,
         mode: "debate",
-        target_duration_seconds: parsed.speech_length_seconds,
+        target_duration_seconds: parsed.speech_length_confirmed ? parsed.speech_length_seconds : null,
       })
       .select("id")
       .single();
@@ -357,7 +359,8 @@ Deno.serve(async (req) => {
     const botState: Record<string, unknown> = {
       phase,
       mode: parsed.mode,
-      speech_length_seconds: parsed.speech_length_seconds,
+      speech_length_seconds: effectiveLength,
+      speech_length_confirmed: parsed.speech_length_confirmed,
       opponent_args_buffer: parsed.opponent_arguments,
       rebuttal_count: 0,
       source: "snabbstart",
