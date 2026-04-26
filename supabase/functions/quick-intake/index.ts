@@ -178,19 +178,30 @@ Deno.serve(async (req) => {
     const text = String(body.text || "").trim().slice(0, 1000);
     if (text.length < 3) return json({ error: "text_too_short" }, 400);
 
+    // Bifogat underlag (valfritt) — extraherat klient-sidan, max 50k tecken.
+    const attachedContextRaw = String(body.attached_context || "").slice(0, 50_000);
+    const hasAttachment = attachedContextRaw.length >= 50;
+
+    // För LLM-tolkning trunkerar vi hårdare (~8000 ord ≈ 48000 tecken).
+    const attachedForLlm = hasAttachment ? attachedContextRaw.slice(0, 48_000) : "";
+
     void logEvent(admin, {
       user_id: userId,
       event_name: "generation_started",
-      event_props: { source: "snabbstart" },
+      event_props: { source: "snabbstart", has_attachment: hasAttachment },
     });
 
     // ---- LLM-anrop ----
     const llmStart = Date.now();
+    const userPrompt = attachedForLlm
+      ? `${USER_TEMPLATE(text)}\n\nANVÄNDAREN HAR BIFOGAT FÖLJANDE UNDERLAG (utdrag, max 8 000 ord):\n\n---\n${attachedForLlm}\n---\n\nAnvänd detta som primär kontext för att förstå issue_text, opponent_arguments och topic_area. Citera ALDRIG ordagrant utan analysera och destillera.`
+      : USER_TEMPLATE(text);
+
     const result = await callLLM({
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: USER_TEMPLATE(text) },
+        { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
       temperature: 0.2,
@@ -266,6 +277,8 @@ Deno.serve(async (req) => {
           title: deriveTitle(text),
           issue_text: text.slice(0, 200),
           manuscript_id: manus.id,
+          issue_document_text: attachedContextRaw,
+          issue_document_filename: hasAttachment ? "Bifogat underlag" : null,
           bot_state: { phase: "intake_brief", source: "snabbstart_fallback" },
         })
         .select("id")
@@ -323,6 +336,8 @@ Deno.serve(async (req) => {
         own_position: parsed.own_position,
         current_opponent_label: parsed.opponent_label || "",
         manuscript_id: manus.id,
+        issue_document_text: attachedContextRaw,
+        issue_document_filename: hasAttachment ? "Bifogat underlag" : null,
         user_role: parsed.mode === "reply" ? "speaker" : "speaker",
         bot_state: botState,
       })
@@ -350,10 +365,34 @@ Deno.serve(async (req) => {
         has_kommun: Boolean(parsed.kommun),
         has_opponent: Boolean(parsed.opponent_label),
         speech_length_seconds: parsed.speech_length_seconds,
+        has_attachment: hasAttachment,
       },
       thread_id: thread.id,
       manuscript_id: manus.id,
     });
+
+    if (hasAttachment) {
+      const charLen = attachedContextRaw.length;
+      const bucket =
+        charLen < 1000 ? "<1k" :
+        charLen < 5000 ? "1-5k" :
+        charLen < 20000 ? "5-20k" :
+        charLen < 50000 ? "20-50k" : ">50k";
+      // file_type: ren metadata, ingen filnamn skickas till klienten
+      // deno-lint-ignore no-explicit-any
+      const fileType = String((body as any).file_type || "").toLowerCase();
+      void logEvent(admin, {
+        user_id: userId,
+        event_name: "snabbstart_attachment_used",
+        event_props: {
+          file_type: ["pdf", "docx", "txt"].includes(fileType) ? fileType : "unknown",
+          char_bucket: bucket,
+          truncated: charLen >= 50_000,
+        },
+        thread_id: thread.id,
+        manuscript_id: manus.id,
+      });
+    }
 
     void logEvent(admin, {
       user_id: userId,
