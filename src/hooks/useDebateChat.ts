@@ -131,7 +131,7 @@ export function useDebateChat(threadId: string | null) {
         setSending(false);
       }
     },
-    [threadId, sending],
+    [threadId, sending, refreshMessages],
   );
 
   const retryLastAssistant = useCallback(async () => {
