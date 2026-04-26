@@ -82,6 +82,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
     setLoading(true);
+    setPhase(file ? "reading" : "intake");
 
     try {
       let attached_context: string | undefined;
@@ -98,6 +99,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
             });
             setLoading(false);
             setReadingFile(false);
+            setPhase("idle");
             return;
           }
           attached_context = cleaned.slice(0, MAX_CONTEXT_CHARS);
@@ -110,9 +112,11 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
           });
           setLoading(false);
           setReadingFile(false);
+          setPhase("idle");
           return;
         }
         setReadingFile(false);
+        setPhase("intake");
       }
 
       const { data, error } = await supabase.functions.invoke("quick-intake", {
