@@ -184,6 +184,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
         });
       }
 
+      setPhase("drafting");
       onOpenChange(false);
       navigate(`/manus/${manuscript_id}?debattbuddy=${thread_id}`);
     } catch (e) {
@@ -196,6 +197,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
     } finally {
       setLoading(false);
       setReadingFile(false);
+      setPhase("idle");
     }
   };
 
