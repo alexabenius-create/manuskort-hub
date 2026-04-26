@@ -1944,8 +1944,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    const didSpeech = executedTools.some((t) => t.name === "generate_speech_cards");
-    if (didSpeech) assistantText = "Klart! Jag har lagt in anförandet som manuskort.";
+    const speechTool = executedTools.find((t) => t.name === "generate_speech_cards");
+    const didSpeech = Boolean(speechTool);
+    const speechCardsCreated = (() => {
+      const m = (speechTool?.result || "").match(/^(\d+) kort/);
+      return m ? Number(m[1]) : 0;
+    })();
+    if (didSpeech) {
+      assistantText = speechCardsCreated > 0
+        ? "Klart! Jag har lagt in anförandet som manuskort."
+        : "Hmm, något gick snett när jag skulle skapa korten — inga kort skapades. Skriv \"försök igen\" så kör jag om det.";
+    }
 
     if (!assistantText) {
       assistantText = didRebuttal
@@ -1955,7 +1964,9 @@ Deno.serve(async (req) => {
 
     // Efter ny generering (speech/rebuttal) — erbjud editing-ingång direkt
     if ((didSpeech || didRebuttal) && quickReplies.length === 0) {
-      quickReplies = ["Redigera manuset", "Klar — vad händer nu?"];
+      quickReplies = didSpeech && speechCardsCreated === 0
+        ? ["Försök igen"]
+        : ["Redigera manuset", "Klar — vad händer nu?"];
     }
 
     // Plocka ut nytt-manus-id från generate_rebuttal_cards för navigering
