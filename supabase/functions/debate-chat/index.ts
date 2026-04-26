@@ -1023,17 +1023,27 @@ Deno.serve(async (req) => {
       });
     } else if (currentPhase === "drafting_speech") {
       const lastUser = userMessage.toLowerCase().trim();
+      const pendingGenerate = Boolean((thread.bot_state as Record<string, unknown>)?.pending_generate);
+      const fromSnabbstart = (thread.bot_state as Record<string, unknown>)?.source === "snabbstart";
+      const hasOwnPosition = (thread.own_position || "").trim().length >= 2;
       const isAffirmative = /^(ja|jadå|jada|absolut|kör|kor|gör det|gor det|okej|ok)\b/.test(lastUser)
         || lastUser.includes("skriv utkast")
         || lastUser.includes("utkast åt mig")
         || lastUser.includes("utkast at mig");
-      if (isAffirmative) {
+      // Tvinga generering om: explicit pending_generate, eller Snabbstart med ståndpunkt, eller affirmativt user-svar
+      if (pendingGenerate || isAffirmative || (fromSnabbstart && hasOwnPosition)) {
         toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
         toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_speech_cards");
         messages.push({
           role: "system",
           content: "Du MÅSTE anropa verktyget generate_speech_cards nu. Returnera inte anförandet som vanlig text.",
         });
+        // Rensa pending_generate så vi inte triggar igen
+        if (pendingGenerate) {
+          const bs = { ...(thread.bot_state as Record<string, unknown>) };
+          delete bs.pending_generate;
+          await admin.from("debate_threads").update({ bot_state: bs }).eq("id", threadId);
+        }
       }
     }
 
