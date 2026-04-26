@@ -336,6 +336,8 @@ Deno.serve(async (req) => {
         own_position: parsed.own_position,
         current_opponent_label: parsed.opponent_label || "",
         manuscript_id: manus.id,
+        issue_document_text: attachedContextRaw,
+        issue_document_filename: hasAttachment ? "Bifogat underlag" : null,
         user_role: parsed.mode === "reply" ? "speaker" : "speaker",
         bot_state: botState,
       })
