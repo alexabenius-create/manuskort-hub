@@ -538,6 +538,25 @@ function parseReplaceInstruction(input: string): { old_phrase: string; new_phras
   return null;
 }
 
+/** Robust detektion av "klart"-intent i editing-fasen. Hanterar segmenterade meddelanden som "Det räcker, klart". */
+function detectCompletedIntent(rawMsg: string): boolean {
+  const normalized = rawMsg.trim().toLowerCase().replace(/[.!?]+$/g, "");
+  const segments = normalized.split(/[,.;]+/).map((s) => s.trim()).filter(Boolean);
+  const COMPLETED_TOKENS = new Set([
+    "klart", "klar", "klar nu", "färdig", "färdigt", "fardig", "fardigt",
+    "det räcker", "räcker", "det räcker nu", "det racker", "racker", "det racker nu",
+    "nöjd", "är nöjd", "jag är nöjd", "nojd", "ar nojd", "jag ar nojd",
+    "det ser bra ut", "ser bra ut", "det blir bra",
+    "det ser bra ut, klart", "klart, det ser bra ut",
+  ]);
+  if (COMPLETED_TOKENS.has(normalized)) return true;
+  if (segments.some((seg) => COMPLETED_TOKENS.has(seg))) return true;
+  return false;
+}
+
+/** Mönster som indikerar att LLM hallucinerat en utförd edit i fri text utan att anropa edit_manuscript. */
+const EDIT_HALLUCINATION_PATTERN = /\b(bytt|bytte|ändrat|ändrade|andrat|andrade|skrivit\s+om|skrev\s+om|lagt\s+till|la\s+till|tagit\s+bort|tog\s+bort|justerat|justerade|uppdaterat|uppdaterade|omformulerat|omformulerade|gjort\s+(om|mer)|skapat|skapade)\b/i;
+
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
 async function handleScripted(
   admin: ReturnType<typeof createClient<any>>,
