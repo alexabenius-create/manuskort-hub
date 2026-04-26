@@ -453,10 +453,22 @@ interface ScriptedReply {
   state_updates?: Record<string, unknown>;
   bot_state_patch?: Record<string, unknown>;
   next_phase?: string;
-  /** Extra metadata att merga in på assistant-meddelandet (t.ex. navigate_to_manuscript). */
+  /** Extra metadata att merga in på assistant-meddelandet. */
   metadata_extra?: Record<string, unknown>;
-  /** Top-level fält att inkludera i JSON-svaret från endpointen. */
-  navigate_to_manuscript?: string;
+}
+
+/**
+ * Sprint 1.7 v2 (tab-arkitektur): mappa borttagna chat-driven phases till `completed`
+ * så att gamla test-threads inte fastnar med 500-fel om de öppnas efter pivoten.
+ */
+const REMOVED_PHASES = new Set([
+  "post_speech_intake",
+  "awaiting_reply_perform",
+  "between_replies",
+  "post_speech_completed",
+]);
+function coercePhase(phase: string): string {
+  return REMOVED_PHASES.has(phase) ? "completed" : phase;
 }
 
 const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }> = {
