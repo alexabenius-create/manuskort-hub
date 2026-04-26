@@ -434,6 +434,7 @@ async function handleScripted(
 
   // Tom första-prompt → visa scripted intro för aktuell fas
   if (!userMessage.trim()) {
+    if ((thread.bot_state as Record<string, unknown>)?.pending_generate === true) return null;
     const p = SCRIPTED_PROMPTS[phase];
     if (p) return { text: p.text, quick_replies: p.quick_replies };
     return null;
