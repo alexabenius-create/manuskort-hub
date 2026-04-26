@@ -727,6 +727,15 @@ function parseReplyDoneIntent(rawMsg: string): boolean {
   return false;
 }
 
+/** Normalisera arguments för dedup-jämförelse: lowercase, strip trailing punct, collapse whitespace. */
+function normalizeReplyArgument(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[.!?,;:]+$/g, "")
+    .replace(/\s+/g, " ");
+}
+
 /**
  * Skapar nytt manuscript + cards + debate_turn (kind='reply') för ett replik-genmäle.
  * Återanvänder befintlig infrastruktur — ingen migration behövs.
