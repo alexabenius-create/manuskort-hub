@@ -107,7 +107,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       // Starta från önskad storlek varje pass
       let size = desiredFontSize;
       article.style.fontSize = `${size}px`;
-      article.style.lineHeight = "1.7";
+      article.style.lineHeight = "1.85";
       // Krymp tills det ryms eller golv nås
       // (max ~30 iterationer för säkerhet)
       let guard = 0;
@@ -116,7 +116,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
         article.style.fontSize = `${size}px`;
         if (size <= desiredFontSize - 4) {
           // Tätare radhöjd när vi tvingats krympa märkbart
-          article.style.lineHeight = "1.55";
+          article.style.lineHeight = "1.6";
         }
         guard += 1;
       }
@@ -139,7 +139,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   }, [html, desiredFontSize, MIN_FONT, card.id]);
 
   const fontSize = fittedFontSize;
-  const lineHeight = fittedFontSize <= desiredFontSize - 4 ? 1.55 : 1.7;
+  const lineHeight = fittedFontSize <= desiredFontSize - 4 ? 1.6 : 1.85;
 
   const [notesOffset, setNotesOffset] = useState(0);
   useEffect(() => {
