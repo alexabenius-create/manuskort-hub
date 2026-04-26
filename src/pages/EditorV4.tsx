@@ -939,21 +939,26 @@ export default function EditorV4() {
         </header>
 
         <main className="flex-1 w-full relative">
+          {debateBuddyThreadId && manuscript && (
+            <div className="max-w-[900px] mx-auto px-4 pt-4">
+              <ManuscriptTabBar
+                threadId={debateBuddyThreadId}
+                activeManuscriptId={manuscript.id}
+                phase={undefined}
+                onSendNewReplyTrigger={async () => {
+                  const { error } = await supabase.functions.invoke("debate-chat", {
+                    body: {
+                      thread_id: debateBuddyThreadId,
+                      user_message: "__NEW_REPLY__",
+                      active_manuscript_id: manuscript.id,
+                    },
+                  });
+                  if (error) throw error;
+                }}
+              />
+            </div>
+          )}
           <div className="max-w-[900px] mx-auto py-10 px-4">
-            {prevDebateManuscript && debateBuddyThreadId && (
-              <div className="mb-4">
-                <Link
-                  to={`/manus/${prevDebateManuscript.id}?debattbuddy=${debateBuddyThreadId}`}
-                  className="inline-flex items-center gap-2 text-[13px] text-v2-muted hover:text-v2-ink rounded-full border border-v2-line bg-white/70 backdrop-blur px-3 py-1.5 transition-colors"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Tillbaka till anförande:{" "}
-                  <span className="font-medium text-v2-ink truncate max-w-[260px]">
-                    {prevDebateManuscript.title}
-                  </span>
-                </Link>
-              </div>
-            )}
             <TiptapDocEditor
               value={docHtml}
               onChange={handleDocChange}
