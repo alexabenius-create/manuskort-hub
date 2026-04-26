@@ -440,6 +440,10 @@ interface ScriptedReply {
   state_updates?: Record<string, unknown>;
   bot_state_patch?: Record<string, unknown>;
   next_phase?: string;
+  /** Extra metadata att merga in på assistant-meddelandet (t.ex. navigate_to_manuscript). */
+  metadata_extra?: Record<string, unknown>;
+  /** Top-level fält att inkludera i JSON-svaret från endpointen. */
+  navigate_to_manuscript?: string;
 }
 
 const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }> = {
@@ -510,6 +514,27 @@ Eller säg "klart" när du är nöjd.`,
   idle: {
     text: "Bra jobbat! Hör av dig om du behöver mer hjälp.",
     quick_replies: ["Ny debatt"],
+  },
+  // Sprint 1.7 — Replikkedjan
+  post_speech_intake: {
+    text: "Hur gick det? Tog du emot några repliker?",
+    quick_replies: ["Ja, fick repliker", "Nej, inga repliker"],
+  },
+  reply_intake: {
+    text: "Berätta vem som replikerade och vad de sa, så hjälper jag dig formulera ett genmäle.\n\nExempel: \"Anna Karlsson sa att utbyggd kollektivtrafik är för dyr för kommunen.\"",
+    quick_replies: [],
+  },
+  awaiting_reply_perform: {
+    text: "Säg till när du framfört genmälet.",
+    quick_replies: ["Klar med repliken"],
+  },
+  between_replies: {
+    text: "Bra! Tog du emot fler repliker?",
+    quick_replies: ["Ja, nästa replik", "Nej, det var allt"],
+  },
+  post_speech_completed: {
+    text: "Bra kämpat! Lycka till med resten av sammanträdet.",
+    quick_replies: [],
   },
 };
 
@@ -652,6 +677,138 @@ async function generateCardText(
   const text = String(result.data?.choices?.[0]?.message?.content || "").trim();
   if (!text) return { ok: false, reason: "empty" };
   return { ok: true, text };
+}
+
+// ============= SPRINT 1.7 — REPLIKKEDJAN: PARSERS + REPLY-GEN =============
+
+interface ReplyStackEntry {
+  index: number;
+  name: string | null;
+  arguments: string;
+  manuscript_id: string;
+  generated_at: string;
+  completed_at: string | null;
+}
+
+/** Parsar fri text om en replik: försök extrahera namn + argument. Fallback: hela texten = arguments. */
+function parseReplyInput(msg: string): { name: string | null; arguments: string } {
+  const trimmed = msg.trim();
+  // "Namn (Efternamn) sa/menade/påstod/... att <argument>"
+  const m = trimmed.match(/^([A-ZÅÄÖ][\wåäöÅÄÖ\-]+(?:\s+[A-ZÅÄÖ][\wåäöÅÄÖ\-]+)?)\s+(?:sa|sade|menade|påstod|hävdade|tycker|tyckte|anser|ansåg|argumenterade|hävdar|påstår)\s+(?:att\s+)?(.+)$/);
+  if (m) return { name: m[1].trim(), arguments: m[2].trim() };
+  return { name: null, arguments: trimmed };
+}
+
+/** Detektion av "klar med replik N" / "klar" / "klart" / "framfört". Liknar detectCompletedIntent men replik-specifik. */
+function parseReplyDoneIntent(rawMsg: string): boolean {
+  const normalized = rawMsg.trim().toLowerCase().replace(/[.!?]+$/g, "");
+  const segments = normalized.split(/[,.;]+/).map((s) => s.trim()).filter(Boolean);
+  const TOKENS = new Set([
+    "klart", "klar", "klar med repliken", "klar med replik", "klar nu",
+    "framfört", "framfort", "har framfört", "har framfort",
+    "färdig", "fardig", "färdigt", "fardigt", "det räcker", "racker", "det racker",
+  ]);
+  if (TOKENS.has(normalized)) return true;
+  if (/^klar\s+med\s+replik(\s+\d+)?$/.test(normalized)) return true;
+  if (segments.some((seg) => TOKENS.has(seg))) return true;
+  return false;
+}
+
+/**
+ * Skapar nytt manuscript + cards + debate_turn (kind='reply') för ett replik-genmäle.
+ * Återanvänder befintlig infrastruktur — ingen migration behövs.
+ */
+async function generateReplyManuscript(
+  // deno-lint-ignore no-explicit-any
+  admin: ReturnType<typeof createClient<any>>,
+  apiKey: string,
+  thread: ThreadRow,
+  replyInput: { name: string | null; arguments: string },
+  replyIndex: number,
+): Promise<
+  | { ok: true; manuscript_id: string; cards_count: number }
+  | { ok: false; reason: string }
+> {
+  // 1. Generera genmäle-text via LLM (gemini-2.5-flash, ren textgenerering, inga tools)
+  const oppName = replyInput.name || "motdebattören";
+  const ownPos = thread.own_position || "(inte angiven)";
+  const topic = thread.topic_area || thread.issue_text || "(okänt ämne)";
+  const prompt = `Skriv ett kort, slagkraftigt genmäle (1-3 stycken, totalt 60-180 ord) till följande replik från en motdebattör. Genmälet ska bemöta argumentet konkret och hålla retorisk skärpa. INGA rubriker, INGA förklaringar — bara den färdiga tal-texten. Separera stycken med en tom rad.
+
+REPLIKANT: ${oppName}
+REPLIKANTENS ARGUMENT: ${replyInput.arguments}
+
+ANVÄNDARENS URSPRUNGLIGA POSITION: ${ownPos}
+ÄMNE: ${topic}`;
+
+  const llm = await callLLM(
+    {
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: "Du är en svensk debattcoach. Skriv tal-text som ska läsas högt — kort, konkret, talspråklig. INGEN markdown, INGA rubriker, INGA citationstecken runt svaret." },
+        { role: "user", content: prompt },
+      ],
+    },
+    apiKey,
+    { timeout_ms: 60_000, max_attempts: 1, function_name: "debate-chat-reply-gen" },
+  );
+
+  if (!llm.ok) return { ok: false, reason: llm.error_kind };
+  const text = String(llm.data?.choices?.[0]?.message?.content || "").trim();
+  if (!text) return { ok: false, reason: "empty" };
+
+  // 2. Skapa nytt manuscript (samma mönster som generate_rebuttal_cards)
+  const manusTitle = `${thread.title || "Debatt"} – genmäle ${replyIndex}${replyInput.name ? ` mot ${replyInput.name}` : ""}`;
+  const { data: manus, error: mErr } = await admin
+    .from("manuscripts")
+    .insert({ user_id: thread.user_id, title: manusTitle, mode: "debate", target_duration_seconds: 60 })
+    .select("id")
+    .single();
+  if (mErr || !manus) return { ok: false, reason: `manuscript_insert_failed: ${mErr?.message || "unknown"}` };
+  const manuscriptId = manus.id as string;
+
+  // 3. Splitta texten i kort + insert
+  const cards = splitIntoCards(text);
+  const sectionId = crypto.randomUUID();
+  const sectionLabel = `Genmäle ${replyIndex}${replyInput.name ? ` – ${replyInput.name}` : ""}`;
+  const rows = cards.map((c, i) => ({
+    manuscript_id: manuscriptId,
+    user_id: thread.user_id,
+    position: i,
+    role: "speaker",
+    title: c.title,
+    content_html: `<p>${c.body.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br/>")}</p>`,
+    section_id: sectionId,
+    section_label: sectionLabel,
+  }));
+  if (rows.length) {
+    const { error: cErr } = await admin.from("cards").insert(rows);
+    if (cErr) return { ok: false, reason: `cards_insert_failed: ${cErr.message}` };
+  }
+
+  // 4. Skapa debate_turn-rad (kind='reply') kopplad till nya manuset
+  const { data: lastTurn } = await admin
+    .from("debate_turns")
+    .select("position")
+    .eq("thread_id", thread.id)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextPos = ((lastTurn?.position as number) || 0) + 1;
+  await admin.from("debate_turns").insert({
+    thread_id: thread.id,
+    user_id: thread.user_id,
+    position: nextPos,
+    kind: "reply",
+    speaker_label: replyInput.name || "Motdebattör",
+    source_text: replyInput.arguments,
+    ai_output_text: text,
+    ai_card_split: cards,
+    manuscript_id: manuscriptId,
+    round_number: replyIndex,
+  });
+
+  return { ok: true, manuscript_id: manuscriptId, cards_count: cards.length };
 }
 
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
@@ -1244,21 +1401,189 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
     }
   }
 
-  // post_perform_check
+  // post_perform_check — Sprint 1.7: triggar replikkedjan ovanpå befintlig fas
   if (phase === "post_perform_check") {
-    if (msg === "ja") {
+    if (msg === "ja" || msg.startsWith("ja,") || msg.startsWith("ja ") || msg === "ja, fick repliker" || msg.includes("fick repliker")) {
+      // Initiera reply_stack och gå till reply_intake
       await admin
         .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "intake_opponent_name" } })
+        .update({
+          bot_state: {
+            ...thread.bot_state,
+            phase: "reply_intake",
+            reply_stack: Array.isArray((thread.bot_state as Record<string, unknown>)?.reply_stack)
+              ? (thread.bot_state as Record<string, unknown>).reply_stack
+              : [],
+          },
+        })
         .eq("id", threadId);
-      return { text: SCRIPTED_PROMPTS.intake_opponent_name.text, quick_replies: [] };
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "post_speech_started",
+        thread_id: thread.id,
+      });
+      return {
+        text: SCRIPTED_PROMPTS.reply_intake.text,
+        quick_replies: SCRIPTED_PROMPTS.reply_intake.quick_replies,
+      };
     }
-    if (msg.includes("nej") || msg === "klart" || msg.includes("nej, klart")) {
+    if (msg.includes("nej") || msg === "klart" || msg === "nej, inga repliker" || msg.includes("inga repliker")) {
       await admin
         .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "idle" } })
+        .update({ bot_state: { ...thread.bot_state, phase: "post_speech_completed" } })
         .eq("id", threadId);
-      return { text: SCRIPTED_PROMPTS.idle.text, quick_replies: SCRIPTED_PROMPTS.idle.quick_replies };
+      const replyStack = (thread.bot_state as Record<string, unknown>)?.reply_stack;
+      const total = Array.isArray(replyStack) ? replyStack.length : 0;
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "post_speech_finished",
+        event_props: { total_replies: total },
+        thread_id: thread.id,
+      });
+      return {
+        text: SCRIPTED_PROMPTS.post_speech_completed.text,
+        quick_replies: SCRIPTED_PROMPTS.post_speech_completed.quick_replies,
+      };
+    }
+  }
+
+  // reply_intake — Sprint 1.7: användaren beskriver replik → vi genererar genmäle
+  if (phase === "reply_intake") {
+    const trimmed = userMessage.trim();
+    if (trimmed.length < 3) {
+      return {
+        text: SCRIPTED_PROMPTS.reply_intake.text,
+        quick_replies: SCRIPTED_PROMPTS.reply_intake.quick_replies,
+      };
+    }
+    const replyInput = parseReplyInput(trimmed);
+    const replyStackRaw = (thread.bot_state as Record<string, unknown>)?.reply_stack;
+    const replyStack: ReplyStackEntry[] = Array.isArray(replyStackRaw) ? (replyStackRaw as ReplyStackEntry[]) : [];
+    const replyIndex = replyStack.length + 1;
+
+    const gen = await generateReplyManuscript(admin, apiKey, thread, replyInput, replyIndex);
+    if (!gen.ok) {
+      console.error("[debate-chat:reply] gen failed", gen.reason);
+      return {
+        text: "Jag kunde inte skapa genmälet just nu. Försök igen om en stund.",
+        quick_replies: ["Försök igen"],
+      };
+    }
+
+    const newEntry: ReplyStackEntry = {
+      index: replyIndex,
+      name: replyInput.name,
+      arguments: replyInput.arguments,
+      manuscript_id: gen.manuscript_id,
+      generated_at: new Date().toISOString(),
+      completed_at: null,
+    };
+    const updatedStack = [...replyStack, newEntry];
+    await admin
+      .from("debate_threads")
+      .update({
+        bot_state: {
+          ...thread.bot_state,
+          phase: "awaiting_reply_perform",
+          reply_stack: updatedStack,
+          last_reply_manuscript_id: gen.manuscript_id,
+        },
+      })
+      .eq("id", threadId);
+
+    void logEvent(admin, {
+      user_id: thread.user_id,
+      event_name: "reply_generated",
+      event_props: {
+        reply_index: replyIndex,
+        has_name: !!replyInput.name,
+        cards_count: gen.cards_count,
+      },
+      thread_id: thread.id,
+      manuscript_id: gen.manuscript_id,
+    });
+
+    const oppLabel = replyInput.name || "replikanten";
+    return {
+      text: `Här är ditt genmäle till ${oppLabel} — ${gen.cards_count} kort. Du framför det när du är redo.`,
+      quick_replies: [`Klar med replik ${replyIndex}`, "Skriv om genmälet"],
+      tools: [{ name: "_cards_updated", result: "1" }],
+      metadata_extra: { navigate_to_manuscript: gen.manuscript_id },
+      navigate_to_manuscript: gen.manuscript_id,
+    };
+  }
+
+  // awaiting_reply_perform — Sprint 1.7: användaren håller på att framföra → vänta på "klar"
+  if (phase === "awaiting_reply_perform") {
+    if (msg.includes("skriv om") || msg.includes("ändra genmäl") || msg.includes("andra genmal")) {
+      return {
+        text: "Att skriva om ett färdigt genmäle kommer i en senare uppdatering. Säg till när du framfört det, eller om du vill avstå att hålla det.",
+        quick_replies: ["Klar med repliken", "Avstå"],
+      };
+    }
+    if (parseReplyDoneIntent(userMessage) || msg === "avstå" || msg === "avsta") {
+      // Markera senaste reply som klar
+      const replyStackRaw = (thread.bot_state as Record<string, unknown>)?.reply_stack;
+      const replyStack: ReplyStackEntry[] = Array.isArray(replyStackRaw) ? (replyStackRaw as ReplyStackEntry[]) : [];
+      if (replyStack.length > 0) {
+        replyStack[replyStack.length - 1] = {
+          ...replyStack[replyStack.length - 1],
+          completed_at: new Date().toISOString(),
+        };
+      }
+      const lastIndex = replyStack.length;
+      await admin
+        .from("debate_threads")
+        .update({
+          bot_state: {
+            ...thread.bot_state,
+            phase: "between_replies",
+            reply_stack: replyStack,
+          },
+        })
+        .eq("id", threadId);
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "reply_completed",
+        event_props: { reply_index: lastIndex },
+        thread_id: thread.id,
+      });
+      return {
+        text: SCRIPTED_PROMPTS.between_replies.text,
+        quick_replies: SCRIPTED_PROMPTS.between_replies.quick_replies,
+      };
+    }
+  }
+
+  // between_replies — Sprint 1.7: fler repliker eller färdig?
+  if (phase === "between_replies") {
+    if (msg === "ja" || msg.startsWith("ja,") || msg.startsWith("ja ") || msg.includes("nästa replik") || msg.includes("nasta replik")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "reply_intake" } })
+        .eq("id", threadId);
+      return {
+        text: SCRIPTED_PROMPTS.reply_intake.text,
+        quick_replies: SCRIPTED_PROMPTS.reply_intake.quick_replies,
+      };
+    }
+    if (msg.includes("nej") || msg === "klart" || msg.includes("var allt") || msg.includes("klar")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "post_speech_completed" } })
+        .eq("id", threadId);
+      const replyStack = (thread.bot_state as Record<string, unknown>)?.reply_stack;
+      const total = Array.isArray(replyStack) ? replyStack.length : 0;
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "post_speech_finished",
+        event_props: { total_replies: total },
+        thread_id: thread.id,
+      });
+      return {
+        text: SCRIPTED_PROMPTS.post_speech_completed.text,
+        quick_replies: SCRIPTED_PROMPTS.post_speech_completed.quick_replies,
+      };
     }
   }
 
@@ -1332,6 +1657,8 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
     "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
     "intake_mode", "intake_speech_length",
     "awaiting_perform", "post_perform_check", "completed", "idle",
+    // Sprint 1.7 — replikkedjan
+    "post_speech_intake", "reply_intake", "awaiting_reply_perform", "between_replies", "post_speech_completed",
   ]);
   if (intakePhases.has(phase)) {
     const p = SCRIPTED_PROMPTS[phase];
@@ -1718,12 +2045,18 @@ Deno.serve(async (req) => {
         user_id: userId,
         role: "assistant",
         content: scripted.text,
-        metadata: { scripted: true, quick_replies: scripted.quick_replies, tools: scripted.tools || [] },
+        metadata: {
+          scripted: true,
+          quick_replies: scripted.quick_replies,
+          tools: scripted.tools || [],
+          ...(scripted.metadata_extra || {}),
+        },
       });
       return json({
         assistant: scripted.text,
         tools: scripted.tools || [],
         quick_replies: scripted.quick_replies,
+        ...(scripted.navigate_to_manuscript ? { navigate_to_manuscript: scripted.navigate_to_manuscript } : {}),
       });
     }
 
