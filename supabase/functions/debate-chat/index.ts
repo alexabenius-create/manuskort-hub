@@ -892,8 +892,30 @@ async function handleScripted(
   threadId: string,
   apiKey: string,
 ): Promise<ScriptedReply | null> {
-  const phase = thread.bot_state?.phase || "intake_issue";
+  // Sprint 1.7 v2: coerce borttagna phases till `completed` så gamla test-threads inte kraschar
+  const phase = coercePhase(thread.bot_state?.phase || "intake_issue");
   const msg = norm(userMessage);
+
+  // Sprint 1.7 v2: Tab-arkitektur — `+ Nytt genmäle`-knappen skickar __NEW_REPLY__.
+  // Bypassa parsning, byt fas till reply_intake, returnera promtet direkt.
+  if (userMessage.trim() === "__NEW_REPLY__") {
+    const replyStackRaw = (thread.bot_state as Record<string, unknown>)?.reply_stack;
+    const currentReplyCount = Array.isArray(replyStackRaw) ? replyStackRaw.length : 0;
+    await admin
+      .from("debate_threads")
+      .update({ bot_state: { ...thread.bot_state, phase: "reply_intake" } })
+      .eq("id", threadId);
+    void logEvent(admin, {
+      user_id: thread.user_id,
+      event_name: "new_reply_initiated",
+      event_props: { current_reply_count: currentReplyCount },
+      thread_id: thread.id,
+    });
+    return {
+      text: SCRIPTED_PROMPTS.reply_intake.text,
+      quick_replies: SCRIPTED_PROMPTS.reply_intake.quick_replies,
+    };
+  }
 
   // Tom första-prompt → visa scripted intro för aktuell fas
   if (!userMessage.trim()) {
@@ -1646,8 +1668,8 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
     "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
     "intake_mode", "intake_speech_length",
     "awaiting_perform", "post_perform_check", "completed", "idle",
-    // Sprint 1.7 — replikkedjan
-    "post_speech_intake", "reply_intake", "awaiting_reply_perform", "between_replies", "post_speech_completed",
+    // Sprint 1.7 v2 — endast reply_intake kvar (chat-driven phases borttagna i tab-pivoten)
+    "reply_intake",
   ]);
   if (intakePhases.has(phase)) {
     const p = SCRIPTED_PROMPTS[phase];
@@ -2708,20 +2730,8 @@ Deno.serve(async (req) => {
         : ["Redigera manuset", "Klar — vad händer nu?"];
     }
 
-    // Plocka ut nytt-manus-id från generate_rebuttal_cards för navigering
-    const rebuttalTool = executedTools.find((t) => t.name === "generate_rebuttal_cards");
-    let navigateToManuscript: string | null = null;
-    if (rebuttalTool) {
-      const { data: t2 } = await admin
-        .from("debate_threads")
-        .select("bot_state")
-        .eq("id", threadId)
-        .maybeSingle();
-      const bs = (t2?.bot_state as Record<string, unknown>) || {};
-      if (typeof bs.last_rebuttal_manuscript_id === "string") {
-        navigateToManuscript = bs.last_rebuttal_manuscript_id;
-      }
-    }
+    // Sprint 1.7 v2: navigate_to_manuscript-mekanismen är borttagen.
+    // Frontend upptäcker nya manuscripts via realtime-subscription och tab-bar.
 
     // Spara assistant-svaret
     await admin.from("debate_chat_messages").insert({
@@ -2732,7 +2742,6 @@ Deno.serve(async (req) => {
       metadata: {
         tools: executedTools,
         quick_replies: quickReplies,
-        ...(navigateToManuscript ? { navigate_to_manuscript: navigateToManuscript } : {}),
       },
     });
 
@@ -2740,7 +2749,6 @@ Deno.serve(async (req) => {
       assistant: assistantText,
       tools: executedTools,
       quick_replies: quickReplies,
-      navigate_to_manuscript: navigateToManuscript,
     });
   } catch (e) {
     console.error("debate-chat error", e);
