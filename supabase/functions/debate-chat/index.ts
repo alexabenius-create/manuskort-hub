@@ -440,6 +440,10 @@ interface ScriptedReply {
   state_updates?: Record<string, unknown>;
   bot_state_patch?: Record<string, unknown>;
   next_phase?: string;
+  /** Extra metadata att merga in på assistant-meddelandet (t.ex. navigate_to_manuscript). */
+  metadata_extra?: Record<string, unknown>;
+  /** Top-level fält att inkludera i JSON-svaret från endpointen. */
+  navigate_to_manuscript?: string;
 }
 
 const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }> = {
