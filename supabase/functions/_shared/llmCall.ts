@@ -209,7 +209,7 @@ export async function callLLM(
         };
       }
       lastError = err;
-      if (attempt < RETRY_ATTEMPTS) {
+      if (attempt < maxAttempts) {
         await new Promise((r) => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt - 1)));
         continue;
       }
