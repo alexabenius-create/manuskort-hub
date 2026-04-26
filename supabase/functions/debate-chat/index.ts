@@ -2003,6 +2003,9 @@ Deno.serve(async (req) => {
     const threadId = String(body.thread_id || "");
     let userMessage = String(body.user_message || "");
     const isRetry = Boolean(body.retry);
+    const clientActiveManuscriptId = body.active_manuscript_id
+      ? String(body.active_manuscript_id)
+      : null;
     if (!threadId) return json({ error: "thread_id required" }, 400);
 
     const { data: threadData, error: threadErr } = await admin
@@ -2013,6 +2016,20 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (threadErr || !threadData) return json({ error: "Thread not found" }, 404);
     let thread = threadData as ThreadRow;
+
+    // Sprint 1.7 v2: synka active_manuscript_id från frontend → bot_state.
+    // Detta gör att editing-fasen routar till rätt flik (inte alltid huvudtalet).
+    if (
+      clientActiveManuscriptId &&
+      (thread.bot_state as Record<string, unknown>)?.active_manuscript_id !== clientActiveManuscriptId
+    ) {
+      const newBotState = { ...thread.bot_state, active_manuscript_id: clientActiveManuscriptId };
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: newBotState })
+        .eq("id", threadId);
+      thread = { ...thread, bot_state: newBotState } as ThreadRow;
+    }
 
     // Retry-flöde: ta bort senaste error-assistant + återanvänd senaste user-msg.
     if (isRetry) {
