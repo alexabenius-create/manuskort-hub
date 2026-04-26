@@ -378,7 +378,7 @@ const TOOLS: Tool[] = [
           },
           new_card_text: {
             type: "string",
-            description: "Hela texten för det nya/omskrivna kortet (för rewrite_card eller add_card). Ren text, inte HTML.",
+            description: "OBLIGATORISK för rewrite_card och add_card. Hela det fullständiga nya kort-innehållet på minst 30 ord — DU måste skriva texten själv från scratch baserat på användarens instruktion (t.ex. 'mer faktabaserat' = du skriver om hela kortet med fler fakta). Ren text, inte HTML. Lämna ALDRIG tomt för rewrite_card/add_card.",
           },
           new_card_title: {
             type: "string",
@@ -1631,18 +1631,32 @@ Deno.serve(async (req) => {
         text_preview: rawAssistantText?.slice(0, 120) ?? null,
       });
 
-      // Fix 2: Smart retry vid hallucination — LLM:n svarar med fri bekräftelse-text utan att kalla edit_manuscript.
-      // Om text matchar bekräftelse-mönster MEN inga tool calls → forcera tool_choice och retry.
-      // Om text INTE matchar mönster (t.ex. "Vilket kort menar du?") → låt det passera som clarifying question.
-      if (toolCalls.length === 0 && rawAssistantText.trim() && EDIT_HALLUCINATION_PATTERN.test(rawAssistantText)) {
-        console.warn("[debate-chat:editing] Hallucination detected — retry with forced tool_choice", {
+      // Fix 2: Smart retry vid hallucination ELLER tom respons.
+      // Tre fall där vi forcerar tool_choice + retry:
+      //   (a) Tom text + tom tool_calls → LLM:n returnerade ingenting alls
+      //   (b) Text matchar bekräftelse-mönster MEN inga tool calls → hallucinerad bekräftelse
+      //   (c) Tool kallades men med tomt new_card_text för rewrite_card/add_card → tool-anrop utan innehåll
+      // Om text INTE matchar mönster och inte är tom (t.ex. "Vilket kort menar du?") → clarifying question, släpp igenom.
+      const isEmpty = toolCalls.length === 0 && !rawAssistantText.trim();
+      const isHallucination = toolCalls.length === 0 && rawAssistantText.trim() && EDIT_HALLUCINATION_PATTERN.test(rawAssistantText);
+      const hasEmptyContentToolCall = toolCalls.length > 0 && toolCalls.some((tc: any) => {
+        if (tc.function?.name !== "edit_manuscript") return false;
+        try {
+          const a = JSON.parse(tc.function?.arguments || "{}");
+          return (a.operation === "rewrite_card" || a.operation === "add_card") && !String(a.new_card_text || "").trim();
+        } catch { return false; }
+      });
+      if (isEmpty || isHallucination || hasEmptyContentToolCall) {
+        const reason = isEmpty ? "empty_response" : isHallucination ? "hallucination" : "empty_tool_args";
+        console.warn("[debate-chat:editing] Retry triggered with forced tool_choice", {
+          reason,
           hallucinated_preview: rawAssistantText.slice(0, 200),
         });
         void logEvent(admin, {
           user_id: thread.user_id,
           event_name: "editing_tool_retry_forced",
           event_props: {
-            hallucinated_text: rawAssistantText.slice(0, 200),
+            reason,
             user_msg: userMessage.slice(0, 200),
           },
           thread_id: thread.id,
@@ -1656,7 +1670,7 @@ Deno.serve(async (req) => {
               ...messages,
               {
                 role: "system",
-                content: "Du MÅSTE anropa verktyget edit_manuscript nu för att utföra ändringen. Returnera inte fri text som hävdar att ändringen redan är gjord — den är inte gjord förrän verktyget har anropats.",
+                content: "Du MÅSTE anropa verktyget edit_manuscript NU. För rewrite_card och add_card MÅSTE du själv skriva ut det fullständiga nya kort-innehållet i fältet new_card_text (minst 30 ord). Lämna ALDRIG new_card_text tomt. Returnera inte fri text som hävdar att ändringen är gjord — den är inte gjord förrän verktyget anropats med komplett innehåll.",
               },
             ],
             tools: toolsForRequest,
