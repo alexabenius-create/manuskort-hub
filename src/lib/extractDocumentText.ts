@@ -3,7 +3,8 @@
 // GDPR: filen sparas aldrig — bara extraherad text skickas vidare och bara
 // kopplas till en specifik debate_thread (försvinner när tråden raderas).
 
-export const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15 MB
+export const LARGE_FILE_WARN_BYTES = 5 * 1024 * 1024; // 5 MB — varning om långsammare generering
 export const ALLOWED_EXTS = [".pdf", ".docx", ".txt"] as const;
 
 export function isAllowedFile(file: File): boolean {
