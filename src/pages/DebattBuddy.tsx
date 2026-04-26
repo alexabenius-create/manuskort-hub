@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, Plus, Sparkles, MessagesSquare, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, Plus, Sparkles, MessagesSquare, Pencil, Check, X, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTier } from "@/hooks/useTier";
 import { useBetaAccess } from "@/hooks/useBetaAccess";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SEO } from "@/components/SEO";
 import { toast } from "@/hooks/use-toast";
+import { SnabbstartModal } from "@/components/debate/SnabbstartModal";
 
 interface ThreadRow {
   id: string;
