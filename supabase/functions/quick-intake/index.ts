@@ -256,6 +256,9 @@ Deno.serve(async (req) => {
       ? `${USER_TEMPLATE(text)}\n\nANVÄNDAREN HAR BIFOGAT FÖLJANDE UNDERLAG (utdrag, max 8 000 ord):\n\n---\n${attachedForLlm}\n---\n\nAnvänd detta som primär kontext för att förstå issue_text, opponent_arguments och topic_area. Citera ALDRIG ordagrant utan analysera och destillera.`
       : USER_TEMPLATE(text);
 
+    // Dynamisk timeout: 30s default, 60s om bifogat underlag är >1000 tecken
+    const intakeTimeoutMs = attachedContextRaw.length > 1000 ? 60_000 : 30_000;
+
     const result = await callLLM({
       model: "google/gemini-2.5-flash",
       messages: [
@@ -266,7 +269,7 @@ Deno.serve(async (req) => {
       temperature: 0.2,
       max_tokens: 600,
     }, LOVABLE_API_KEY, {
-      timeout_ms: 30000,
+      timeout_ms: intakeTimeoutMs,
       function_name: "quick-intake",
       analyticsClient: admin,
       user_id: userId,

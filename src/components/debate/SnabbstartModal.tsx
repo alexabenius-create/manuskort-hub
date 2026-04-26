@@ -35,6 +35,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [readingFile, setReadingFile] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "reading" | "intake" | "drafting">("idle");
   const [file, setFile] = useState<File | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +49,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
       setFile(null);
       setLoading(false);
       setReadingFile(false);
+      setPhase("idle");
     }
   }, [open]);
 
@@ -80,6 +82,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
     setLoading(true);
+    setPhase(file ? "reading" : "intake");
 
     try {
       let attached_context: string | undefined;
@@ -96,6 +99,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
             });
             setLoading(false);
             setReadingFile(false);
+            setPhase("idle");
             return;
           }
           attached_context = cleaned.slice(0, MAX_CONTEXT_CHARS);
@@ -108,9 +112,11 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
           });
           setLoading(false);
           setReadingFile(false);
+          setPhase("idle");
           return;
         }
         setReadingFile(false);
+        setPhase("intake");
       }
 
       const { data, error } = await supabase.functions.invoke("quick-intake", {
@@ -178,6 +184,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
         });
       }
 
+      setPhase("drafting");
       onOpenChange(false);
       navigate(`/manus/${manuscript_id}?debattbuddy=${thread_id}`);
     } catch (e) {
@@ -190,6 +197,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
     } finally {
       setLoading(false);
       setReadingFile(false);
+      setPhase("idle");
     }
   };
 
@@ -306,7 +314,13 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {readingFile ? "Läser dokumentet..." : "Tänker..."}
+                {phase === "reading"
+                  ? "📄 Läser dokumentet..."
+                  : phase === "drafting"
+                  ? "✍️ Skriver utkastet — det här tar lite längre tid med underlag (upp till 3 min)..."
+                  : file
+                  ? "🤔 Tolkar din uppgift..."
+                  : "Tänker..."}
               </>
             ) : (
               <>

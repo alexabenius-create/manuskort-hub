@@ -1047,6 +1047,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Dynamisk timeout: 90s default, 180s om bifogat underlag är >1000 tecken
+    const attachedLen = (thread.issue_document_text || "").length;
+    const chatTimeoutMs = attachedLen > 1000 ? 180_000 : 90_000;
+
     // Anropa Lovable AI Gateway via callLLM-helper (retry + timeout + felklassning).
     const llmResult = await callLLM(
       {
@@ -1057,7 +1061,7 @@ Deno.serve(async (req) => {
       },
       LOVABLE_API_KEY,
       {
-        timeout_ms: 90000,
+        timeout_ms: chatTimeoutMs,
         function_name: "debate-chat",
         analyticsClient: admin,
         user_id: thread.user_id,
