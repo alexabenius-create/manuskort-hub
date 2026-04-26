@@ -27,7 +27,7 @@ interface Props {
   onNotesChange?: (notes: string) => void;
 }
 
-const BASE_SIZE = { sm: 24, md: 30, lg: 38 } as const;
+const BASE_SIZE = { sm: 30, md: 38, lg: 46 } as const;
 
 /**
  * Transformerar Tiptap-HTML så att panelist-spans får:
