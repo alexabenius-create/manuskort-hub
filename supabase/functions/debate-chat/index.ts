@@ -1853,6 +1853,11 @@ Deno.serve(async (req) => {
         : "Okej, då går vi vidare!";
     }
 
+    // Efter ny generering (speech/rebuttal) — erbjud editing-ingång direkt
+    if ((didSpeech || didRebuttal) && quickReplies.length === 0) {
+      quickReplies = ["Redigera manuset", "Klar — vad händer nu?"];
+    }
+
     // Plocka ut nytt-manus-id från generate_rebuttal_cards för navigering
     const rebuttalTool = executedTools.find((t) => t.name === "generate_rebuttal_cards");
     let navigateToManuscript: string | null = null;
