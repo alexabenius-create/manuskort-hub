@@ -139,7 +139,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   }, [html, desiredFontSize, MIN_FONT, card.id]);
 
   const fontSize = fittedFontSize;
-  const lineHeight = fittedFontSize <= desiredFontSize - 4 ? 1.55 : 1.7;
+  const lineHeight = fittedFontSize <= desiredFontSize - 4 ? 1.6 : 1.85;
 
   const [notesOffset, setNotesOffset] = useState(0);
   useEffect(() => {
