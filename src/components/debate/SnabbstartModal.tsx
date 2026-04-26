@@ -314,7 +314,13 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {readingFile ? "Läser dokumentet..." : "Tänker..."}
+                {phase === "reading"
+                  ? "📄 Läser dokumentet..."
+                  : phase === "drafting"
+                  ? "✍️ Skriver utkastet — det här tar lite längre tid med underlag (upp till 3 min)..."
+                  : file
+                  ? "🤔 Tolkar din uppgift..."
+                  : "Tänker..."}
               </>
             ) : (
               <>
