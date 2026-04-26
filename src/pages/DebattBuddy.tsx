@@ -194,14 +194,27 @@ export default function DebattBuddy() {
                 Din AI-coach för anföranden, repliker och genmälen — alltid redo i sidan.
               </p>
             </div>
-            <Button
-              onClick={createThread}
-              disabled={creating}
-              className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all border-0"
-            >
-              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-              Ny debatt
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              {snabbstartEnabled && (
+                <Button
+                  onClick={() => setSnabbstartOpen(true)}
+                  size="lg"
+                  className="rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all border-0 gap-2"
+                >
+                  <Zap className="h-5 w-5" />
+                  Snabbstart
+                </Button>
+              )}
+              <Button
+                onClick={createThread}
+                disabled={creating}
+                variant="outline"
+                className="rounded-full border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-all"
+              >
+                {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Ny debatt
+              </Button>
+            </div>
           </div>
         </div>
 
