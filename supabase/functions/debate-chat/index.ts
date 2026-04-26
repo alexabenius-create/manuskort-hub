@@ -946,7 +946,7 @@ async function handleScripted(
   const intakePhases = new Set([
     "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
     "intake_mode", "intake_speech_length",
-    "awaiting_perform", "post_perform_check", "idle",
+    "awaiting_perform", "post_perform_check", "completed", "idle",
   ]);
   if (intakePhases.has(phase)) {
     const p = SCRIPTED_PROMPTS[phase];
