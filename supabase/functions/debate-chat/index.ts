@@ -744,15 +744,65 @@ async function generateReplyManuscript(
   replyInput: { name: string | null; arguments: string },
   replyIndex: number,
 ): Promise<
-  | { ok: true; manuscript_id: string; cards_count: number }
+  | { ok: true; manuscript_id: string; cards_count: number; prior_manuscripts_count: number }
   | { ok: false; reason: string }
 > {
+  // ====== Sprint 1.7 v2: TRÅD-KOHERENS ======
+  // Hämta alla tidigare manuskript i tråden via debate_turns och bygg ett kort sammanfattnings-
+  // block som matas in i LLM-prompten. Boten ska aldrig säga emot tidigare positioner.
+  const priorManuscriptIds: string[] = [];
+  try {
+    const { data: priorTurns } = await admin
+      .from("debate_turns")
+      .select("manuscript_id, kind, speaker_label, created_at")
+      .eq("thread_id", thread.id)
+      .not("manuscript_id", "is", null)
+      .order("created_at", { ascending: true });
+    for (const t of priorTurns || []) {
+      if (t.manuscript_id && !priorManuscriptIds.includes(t.manuscript_id)) {
+        priorManuscriptIds.push(t.manuscript_id);
+      }
+    }
+  } catch (_e) { /* tom är OK */ }
+
+  let threadContextBlock = "";
+  if (priorManuscriptIds.length > 0) {
+    const { data: priorCards } = await admin
+      .from("cards")
+      .select("manuscript_id, content_html, position")
+      .in("manuscript_id", priorManuscriptIds)
+      .order("position", { ascending: true });
+    const { data: priorManus } = await admin
+      .from("manuscripts")
+      .select("id, title")
+      .in("id", priorManuscriptIds);
+    const titleById = new Map<string, string>();
+    for (const m of priorManus || []) titleById.set(m.id, m.title || "");
+
+    const sections: string[] = [];
+    for (const mid of priorManuscriptIds) {
+      const cards = (priorCards || []).filter((c) => c.manuscript_id === mid);
+      const text = cards
+        .map((c) => String(c.content_html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .join(" ")
+        .slice(0, 400);
+      if (!text) continue;
+      const title = titleById.get(mid) || "Tidigare manus";
+      sections.push(`[${title}]: ${text}`);
+    }
+    if (sections.length > 0) {
+      threadContextBlock = `\n\nVIKTIGT — TRÅD-KOHERENS: Användaren har tidigare sagt följande i samma debatt-tråd. Ditt nya genmäle MÅSTE vara konsistent med dessa positioner — säg INTE emot dig själv, och bygg gärna vidare på tidigare argument där det passar.\n\n${sections.join("\n\n")}`;
+    }
+  }
+
   // 1. Generera genmäle-text via LLM (gemini-2.5-flash, ren textgenerering, inga tools)
   const oppName = replyInput.name || "motdebattören";
   const ownPos = thread.own_position || "(inte angiven)";
   const topic = thread.topic_area || thread.issue_text || "(okänt ämne)";
-  const prompt = `Skriv ett kort, slagkraftigt genmäle (1-3 stycken, totalt 60-180 ord) till följande replik från en motdebattör. Genmälet ska bemöta argumentet konkret och hålla retorisk skärpa. INGA rubriker, INGA förklaringar — bara den färdiga tal-texten. Separera stycken med en tom rad.
+  const prompt = `Skriv ett kort, slagkraftigt genmäle (1-3 stycken, totalt 60-180 ord) till följande replik från en motdebattör. Genmälet ska bemöta argumentet konkret och hålla retorisk skärpa. INGA rubriker, INGA förklaringar — bara den färdiga tal-texten. Separera stycken med en tom rad.${threadContextBlock}
 
+NU SVARAR DU PÅ DENNA NYA REPLIK:
 REPLIKANT: ${oppName}
 REPLIKANTENS ARGUMENT: ${replyInput.arguments}
 
@@ -826,7 +876,12 @@ ANVÄNDARENS URSPRUNGLIGA POSITION: ${ownPos}
     round_number: replyIndex,
   });
 
-  return { ok: true, manuscript_id: manuscriptId, cards_count: cards.length };
+  return {
+    ok: true,
+    manuscript_id: manuscriptId,
+    cards_count: cards.length,
+    prior_manuscripts_count: priorManuscriptIds.length,
+  };
 }
 
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
