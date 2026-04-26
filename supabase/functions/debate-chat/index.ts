@@ -333,11 +333,77 @@ const TOOLS: Tool[] = [
               "intake_opponent_name",
               "intake_opponent_args",
               "generating_rebuttal",
+              "editing",
+              "completed",
               "idle",
             ],
           },
         },
         required: ["next_phase"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "edit_manuscript",
+      description: "Redigera användarens kopplade manus baserat på en naturlig språk-instruktion. Använd ENDAST i editing-fasen. Välj operation utifrån vad användaren bad om. Returnera ALLTID en kort user_friendly_summary på svenska som beskriver vad som ändrades.",
+      parameters: {
+        type: "object",
+        properties: {
+          operation: {
+            type: "string",
+            enum: [
+              "replace_phrase_global",
+              "rewrite_card",
+              "add_card",
+              "delete_card",
+              "reorder_cards",
+              "tweak_tone_global",
+              "edit_specific_text",
+            ],
+          },
+          target_card_position: {
+            type: "integer",
+            description: "1-indexerad kortposition (1, 2, 3...) eller 0 för 'alla kort'. Utelämna om ej tillämpligt.",
+          },
+          old_phrase: {
+            type: "string",
+            description: "Fras som ska ersättas (för replace_phrase_global eller edit_specific_text).",
+          },
+          new_phrase: {
+            type: "string",
+            description: "Ny fras som ersätter old_phrase.",
+          },
+          new_card_text: {
+            type: "string",
+            description: "Hela texten för det nya/omskrivna kortet (för rewrite_card eller add_card). Ren text, inte HTML.",
+          },
+          new_card_title: {
+            type: "string",
+            description: "Valfri titel för det nya/omskrivna kortet.",
+          },
+          insert_position: {
+            type: "string",
+            enum: ["before", "after", "end"],
+            description: "Var det nya kortet ska placeras (för add_card). Default: end.",
+          },
+          reorder_positions: {
+            type: "array",
+            items: { type: "integer" },
+            description: "Ny ordning av befintliga kortpositioner, t.ex. [3,1,2,4] = 'sätt gamla kort 3 först, sedan 1, sedan 2, sedan 4'.",
+          },
+          tone_instruction: {
+            type: "string",
+            description: "Beskrivning av önskad ton: 'mer talspråklig', 'mer formell', 'mer passionerad' osv. (för tweak_tone_global).",
+          },
+          user_friendly_summary: {
+            type: "string",
+            description: "Kort sammanfattning på svenska av vad som ändrades. T.ex. 'Bytt Herr ordförande mot Fru ordförande i 4 kort.'",
+          },
+        },
+        required: ["operation", "user_friendly_summary"],
         additionalProperties: false,
       },
     },
