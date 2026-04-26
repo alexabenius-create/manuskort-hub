@@ -476,7 +476,23 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
   // confirm_draft_start är borttagen — vi går direkt till drafting_speech efter intake_own_position.
   awaiting_perform: {
     text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
-    quick_replies: ["Klar — vad händer nu?"],
+    quick_replies: ["Redigera manuset", "Klar — vad händer nu?"],
+  },
+  editing: {
+    text: `Här är ditt utkast — läs igenom och säg till om du vill ändra något.
+
+Du kan be mig:
+• Byta ord eller fraser ("byt Herr mot Fru ordförande")
+• Skriva om ett kort ("skriv om kort 2 — mer talspråkligt")
+• Lägga till eller ta bort kort
+• Justera tonen i hela manuset
+
+Eller säg "klart" när du är nöjd.`,
+    quick_replies: ["Det ser bra ut, klart", "Jag vill ändra något"],
+  },
+  completed: {
+    text: "Bra! Manuset är klart. Lycka till. 🎤",
+    quick_replies: ["Ny debatt"],
   },
   post_perform_check: {
     text: "Fick du några repliker som du behöver bemöta?",
