@@ -384,21 +384,18 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
     quick_replies: ["Hålla anförande", "Bemöta någon"],
   },
   intake_speech_length: {
-    text: "Hur långt ska anförandet vara?",
-    quick_replies: ["1 minut", "2 minuter", "3 minuter", "5 minuter"],
+    text: "Hur långt anförande behöver du?",
+    quick_replies: ["1 minut", "2 minuter", "5 minuter", "10 minuter"],
   },
   drafting_speech: {
-    text: "Vill du att jag skriver ett utkast åt dig, eller skriver du själv?",
-    quick_replies: ["Skriv utkast åt mig", "Jag skriver själv"],
+    text: "Skriver utkastet nu — ge mig en stund.",
+    quick_replies: [],
   },
   intake_own_position: {
     text: "Vad tycker du själv i frågan? Skriv några rader om för/emot och dina viktigaste argument.",
     quick_replies: [],
   },
-  confirm_draft_start: {
-    text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
-    quick_replies: ["Ja, skriv utkast", "Vänta lite"],
-  },
+  // confirm_draft_start är borttagen — vi går direkt till drafting_speech efter intake_own_position.
   awaiting_perform: {
     text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
     quick_replies: ["Klar — vad händer nu?"],
