@@ -660,6 +660,7 @@ async function handleScripted(
   thread: ThreadRow,
   userMessage: string,
   threadId: string,
+  apiKey: string,
 ): Promise<ScriptedReply | null> {
   const phase = thread.bot_state?.phase || "intake_issue";
   const msg = norm(userMessage);
