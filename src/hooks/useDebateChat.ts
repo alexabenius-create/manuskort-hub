@@ -209,7 +209,10 @@ export function useDebateChat(threadId: string | null) {
 
     // deno-lint-ignore no-explicit-any
     const bs = threadState.bot_state as any;
-    if (bs?.snabbstart_autostarted) return;
+    // pending_generate (satt av quick-intake/backend) tvingar fram initial sendMessage
+    // även om snabbstart_autostarted redan är true. Backend rensar pending_generate efter körning.
+    const pendingGenerate = bs?.pending_generate === true;
+    if (bs?.snabbstart_autostarted && !pendingGenerate) return;
 
     // Inga user-meddelanden ännu? (scripted assistant-msg räknas inte)
     const hasUserMsg = messages.some((m) => m.role === "user");
