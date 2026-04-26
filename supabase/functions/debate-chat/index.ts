@@ -436,6 +436,7 @@ const TOOLS: Tool[] = [
 interface ScriptedReply {
   text: string;
   quick_replies: string[];
+  tools?: Array<{ name: string; result: string }>;
   state_updates?: Record<string, unknown>;
   bot_state_patch?: Record<string, unknown>;
   next_phase?: string;
@@ -514,6 +515,26 @@ Eller säg "klart" när du är nöjd.`,
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
+}
+
+function parseReplaceInstruction(input: string): { old_phrase: string; new_phrase: string } | null {
+  const clean = input.trim().replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[.!?]+$/g, "").trim();
+  const patterns = [
+    /^(.+?)\s+ska\s+(?:ändras|andras|bytas)\s+till\s+(.+)$/i,
+    /^byt\s+(.+?)\s+(?:mot|till)\s+(.+)$/i,
+    /^ändra\s+(.+?)\s+till\s+(.+)$/i,
+    /^andra\s+(.+?)\s+till\s+(.+)$/i,
+    /^ersätt\s+(.+?)\s+med\s+(.+)$/i,
+    /^ersatt\s+(.+?)\s+med\s+(.+)$/i,
+  ];
+  for (const pattern of patterns) {
+    const match = clean.match(pattern);
+    if (!match) continue;
+    const old_phrase = match[1].replace(/^['"]|['"]$/g, "").trim();
+    const new_phrase = match[2].replace(/^['"]|['"]$/g, "").trim();
+    if (old_phrase && new_phrase) return { old_phrase, new_phrase };
+  }
+  return null;
 }
 
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
@@ -845,6 +866,38 @@ async function handleScripted(
       return {
         text: "Säg vad du vill ändra — skriv din instruktion här i chatten.\n\nExempel:\n• \"byt Herr mot Fru ordförande\"\n• \"skriv om kort 2 mer talspråkligt\"\n• \"ta bort sista kortet\"\n• \"gör hela manuset mer passionerat\"",
         quick_replies: [],
+      };
+    }
+    const replacement = parseReplaceInstruction(userMessage);
+    if (replacement && thread.manuscript_id) {
+      const result = await executeEditManuscript(
+        admin,
+        thread.manuscript_id,
+        thread.user_id,
+        { operation: "replace_phrase_global", ...replacement, user_friendly_summary: "" },
+        "",
+      );
+      const prevCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, edits_count: prevCount + 1 } })
+        .eq("id", threadId);
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "manuscript_edited",
+        event_props: {
+          operation: "replace_phrase_global",
+          cards_affected: result.cards_affected,
+          manuscript_id: thread.manuscript_id,
+        },
+        thread_id: thread.id,
+        manuscript_id: thread.manuscript_id,
+      });
+      const summary = result.summary_override || `Bytt "${replacement.old_phrase}" mot "${replacement.new_phrase}" i ${result.cards_affected} kort.`;
+      return {
+        text: `${summary}\n\nVill du ändra något mer?`,
+        quick_replies: ["Klart, det räcker", "Ja, ytterligare en ändring"],
+        tools: [{ name: "edit_manuscript", result: `${result.cards_affected} kort` }, { name: "_cards_updated", result: "1" }],
       };
     }
     // Annars: fall through till LLM som tolkar instruktionen och kallar edit_manuscript.
@@ -1336,11 +1389,11 @@ Deno.serve(async (req) => {
         user_id: userId,
         role: "assistant",
         content: scripted.text,
-        metadata: { scripted: true, quick_replies: scripted.quick_replies },
+        metadata: { scripted: true, quick_replies: scripted.quick_replies, tools: scripted.tools || [] },
       });
       return json({
         assistant: scripted.text,
-        tools: [],
+        tools: scripted.tools || [],
         quick_replies: scripted.quick_replies,
       });
     }
