@@ -245,22 +245,29 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
               disabled={loading}
             />
             {file ? (
-              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border bg-muted/40 text-sm">
-                <span className="truncate">
-                  <span className="mr-1.5">{fileEmoji}</span>
-                  <span className="font-medium">{file.name}</span>
-                  <span className="text-muted-foreground"> · {formatFileSize(file.size)}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={handleRemoveFile}
-                  disabled={loading}
-                  className="shrink-0 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                >
-                  <X className="h-3 w-3" />
-                  Ta bort
-                </button>
-              </div>
+              <>
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border bg-muted/40 text-sm">
+                  <span className="truncate">
+                    <span className="mr-1.5">{fileEmoji}</span>
+                    <span className="font-medium">{file.name}</span>
+                    <span className="text-muted-foreground"> · {formatFileSize(file.size)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    disabled={loading}
+                    className="shrink-0 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <X className="h-3 w-3" />
+                    Ta bort
+                  </button>
+                </div>
+                {file.size > LARGE_FILE_WARN_BYTES && (
+                  <div className="text-[12px] text-amber-600 dark:text-amber-500 px-1 pt-1">
+                    ⚠️ Stor fil ({formatFileSize(file.size)}). Filer över 5 MB kan göra det långsammare att få fram anförandet.
+                  </div>
+                )}
+              </>
             ) : (
               <Button
                 type="button"
@@ -275,7 +282,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
               </Button>
             )}
             <div className="text-[11px] text-muted-foreground px-1">
-              Boten läser dokumentet som bakgrund. Sparas inte permanent. PDF, DOCX eller TXT, max 5 MB.
+              Boten läser dokumentet som bakgrund. Sparas inte permanent. PDF, DOCX eller TXT, max 15 MB.
             </div>
           </div>
 
