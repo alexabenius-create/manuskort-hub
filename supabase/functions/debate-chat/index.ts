@@ -436,6 +436,7 @@ const TOOLS: Tool[] = [
 interface ScriptedReply {
   text: string;
   quick_replies: string[];
+  tools?: Array<{ name: string; result: string }>;
   state_updates?: Record<string, unknown>;
   bot_state_patch?: Record<string, unknown>;
   next_phase?: string;
@@ -514,6 +515,26 @@ Eller säg "klart" när du är nöjd.`,
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
+}
+
+function parseReplaceInstruction(input: string): { old_phrase: string; new_phrase: string } | null {
+  const clean = input.trim().replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[.!?]+$/g, "").trim();
+  const patterns = [
+    /^(.+?)\s+ska\s+(?:ändras|andras|bytas)\s+till\s+(.+)$/i,
+    /^byt\s+(.+?)\s+(?:mot|till)\s+(.+)$/i,
+    /^ändra\s+(.+?)\s+till\s+(.+)$/i,
+    /^andra\s+(.+?)\s+till\s+(.+)$/i,
+    /^ersätt\s+(.+?)\s+med\s+(.+)$/i,
+    /^ersatt\s+(.+?)\s+med\s+(.+)$/i,
+  ];
+  for (const pattern of patterns) {
+    const match = clean.match(pattern);
+    if (!match) continue;
+    const old_phrase = match[1].replace(/^['"]|['"]$/g, "").trim();
+    const new_phrase = match[2].replace(/^['"]|['"]$/g, "").trim();
+    if (old_phrase && new_phrase) return { old_phrase, new_phrase };
+  }
+  return null;
 }
 
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
