@@ -49,6 +49,7 @@ export function SnabbstartModal({ open, onOpenChange }: Props) {
       setFile(null);
       setLoading(false);
       setReadingFile(false);
+      setPhase("idle");
     }
   }, [open]);
 
