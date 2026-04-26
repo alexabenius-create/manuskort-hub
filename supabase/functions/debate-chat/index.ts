@@ -1419,73 +1419,20 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
     }
   }
 
-  // post_perform_check — Sprint 1.7: triggar replikkedjan ovanpå befintlig fas
+  // post_perform_check — Sprint 1.7 v2: chat-driven flow ersatt av tab-arkitektur.
+  // Visa upplysning om + Nytt genmäle och stanna i fasen tills användaren klickar fliken.
   if (phase === "post_perform_check") {
-    if (msg === "ja" || msg.startsWith("ja,") || msg.startsWith("ja ") || msg === "ja, fick repliker" || msg.includes("fick repliker")) {
-      // Initiera reply_stack och gå till reply_intake
-      await admin
-        .from("debate_threads")
-        .update({
-          bot_state: {
-            ...thread.bot_state,
-            phase: "reply_intake",
-            reply_stack: Array.isArray((thread.bot_state as Record<string, unknown>)?.reply_stack)
-              ? (thread.bot_state as Record<string, unknown>).reply_stack
-              : [],
-          },
-        })
-        .eq("id", threadId);
-      void logEvent(admin, {
-        user_id: thread.user_id,
-        event_name: "post_speech_started",
-        thread_id: thread.id,
-      });
-      return {
-        text: SCRIPTED_PROMPTS.reply_intake.text,
-        quick_replies: SCRIPTED_PROMPTS.reply_intake.quick_replies,
-      };
-    }
-    if (msg.includes("nej") || msg === "klart" || msg === "nej, inga repliker" || msg.includes("inga repliker")) {
-      await admin
-        .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "post_speech_completed" } })
-        .eq("id", threadId);
-      const replyStack = (thread.bot_state as Record<string, unknown>)?.reply_stack;
-      const total = Array.isArray(replyStack) ? replyStack.length : 0;
-      void logEvent(admin, {
-        user_id: thread.user_id,
-        event_name: "post_speech_finished",
-        event_props: { total_replies: total },
-        thread_id: thread.id,
-      });
-      return {
-        text: SCRIPTED_PROMPTS.post_speech_completed.text,
-        quick_replies: SCRIPTED_PROMPTS.post_speech_completed.quick_replies,
-      };
-    }
+    return {
+      text: SCRIPTED_PROMPTS.post_perform_check.text,
+      quick_replies: SCRIPTED_PROMPTS.post_perform_check.quick_replies,
+    };
   }
 
-  // reply_intake — Sprint 1.7: användaren beskriver replik → vi genererar genmäle
+  // reply_intake — Sprint 1.7 v2: triggas EXPLICIT av "+ Nytt genmäle"-knappen
+  // (frontend skickar __NEW_REPLY__) eller direkt input från användaren när hen redan är i fasen.
   if (phase === "reply_intake") {
     const trimmed = userMessage.trim();
     const botStateObj = (thread.bot_state as Record<string, unknown>) || {};
-
-    // "Detta är en NY replik" — användaren bekräftar att nästa input är ny, inte duplikat.
-    // Sätt force-flagga och be om input.
-    if (
-      msg === "detta är en ny replik" ||
-      msg === "detta ar en ny replik" ||
-      msg.includes("ny replik") && (msg.startsWith("detta") || msg.startsWith("det är") || msg.startsWith("det ar"))
-    ) {
-      await admin
-        .from("debate_threads")
-        .update({ bot_state: { ...botStateObj, pending_force_new_reply: true } })
-        .eq("id", threadId);
-      return {
-        text: "OK, beskriv den nya repliken (vem och vad).",
-        quick_replies: [],
-      };
-    }
 
     if (trimmed.length < 3) {
       return {
@@ -1498,50 +1445,7 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
     const replyStack: ReplyStackEntry[] = Array.isArray(replyStackRaw) ? (replyStackRaw as ReplyStackEntry[]) : [];
     const replyIndex = replyStack.length + 1;
 
-    // ====== Idempotens-check (Fix 1, runda 4) ======
-    // Skydd mot dubbel-submit: användare klistrar in samma replik 2 ggr när LLM-call tar 7-10s.
-    // Bypass om pending_force_new_reply är satt.
-    const forceNew = !!botStateObj.pending_force_new_reply;
-    const lastEntry = replyStack[replyStack.length - 1];
-    if (!forceNew && lastEntry) {
-      const lastNorm = normalizeReplyArgument(lastEntry.arguments);
-      const currNorm = normalizeReplyArgument(replyInput.arguments);
-      const ageMs = Date.now() - new Date(lastEntry.generated_at).getTime();
-      const isExactDupe = lastNorm === currNorm;
-      const isFuzzyDupe =
-        lastNorm.length > 20 &&
-        currNorm.length > 20 &&
-        (lastNorm.includes(currNorm) || currNorm.includes(lastNorm));
-
-      if ((isExactDupe || isFuzzyDupe) && ageMs < 60_000) {
-        void logEvent(admin, {
-          user_id: thread.user_id,
-          event_name: "reply_dedup_blocked",
-          event_props: {
-            reply_index: lastEntry.index,
-            age_ms: ageMs,
-            match_type: isExactDupe ? "exact" : "fuzzy",
-          },
-          thread_id: thread.id,
-          manuscript_id: lastEntry.manuscript_id,
-        });
-        return {
-          text: `Genmäle ${lastEntry.index} till ${lastEntry.name || "replikanten"} är redan skapat — du har det här ovanför. Vill du hålla det nu, eller är det en NY replik från någon annan?`,
-          quick_replies: [`Klar med replik ${lastEntry.index}`, "Detta är en NY replik"],
-          metadata_extra: { navigate_to_manuscript: lastEntry.manuscript_id },
-          navigate_to_manuscript: lastEntry.manuscript_id,
-        };
-      }
-    }
-
-    // Rensa force-flaggan direkt (en gång)
-    if (forceNew) {
-      botStateObj.pending_force_new_reply = false;
-    }
-
-    // ====== Loading-feedback (Fix 3) ======
-    // Posta interim-meddelande direkt så användaren ser att något händer.
-    // generateReplyManuscript tar 7-10s med gemini-2.5-flash.
+    // Loading-feedback (interim assistant-msg, raderas efter generering)
     const interimName = replyInput.name || "replikanten";
     const { data: interimMsg } = await admin
       .from("debate_chat_messages")
@@ -1558,7 +1462,6 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
 
     const gen = await generateReplyManuscript(admin, apiKey, thread, replyInput, replyIndex);
 
-    // Radera interim-meddelandet (oavsett resultat) så slutsvaret får stå för sig själv.
     if (interimMsgId) {
       await admin.from("debate_chat_messages").delete().eq("id", interimMsgId);
     }
@@ -1580,15 +1483,17 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       completed_at: null,
     };
     const updatedStack = [...replyStack, newEntry];
+    // Sprint 1.7 v2: efter generering går vi tillbaka till `completed`. Användaren ser
+    // genmälet som ny flik (via realtime) och kan editera/byta flik fritt. Inga fler
+    // chat-driven phases som awaiting_reply_perform/between_replies.
     await admin
       .from("debate_threads")
       .update({
         bot_state: {
           ...botStateObj,
-          phase: "awaiting_reply_perform",
+          phase: "completed",
           reply_stack: updatedStack,
-          last_reply_manuscript_id: gen.manuscript_id,
-          pending_force_new_reply: false,
+          active_manuscript_id: gen.manuscript_id,
         },
       })
       .eq("id", threadId);
@@ -1601,95 +1506,19 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
         has_name: !!replyInput.name,
         cards_count: gen.cards_count,
         arguments_length: replyInput.arguments.length,
+        prior_manuscripts_count: gen.prior_manuscripts_count,
+        thread_context_used: gen.prior_manuscripts_count > 0,
       },
       thread_id: thread.id,
       manuscript_id: gen.manuscript_id,
     });
 
     const oppLabel = replyInput.name || "replikanten";
-    // Fix 4 (runda 4): "Skriv om genmälet"-knappen borttagen — visade sig förvirrande i smoke-test.
-    // TODO: Implementera "Skriv om genmälet" via editing-fasen (Sprint 1.6) i framtida sprint.
     return {
-      text: `Här är ditt genmäle till ${oppLabel} — ${gen.cards_count} kort. Du framför det när du är redo.`,
-      quick_replies: [`Klar med replik ${replyIndex}`],
+      text: `Klart! Ditt genmäle till ${oppLabel} ligger som ny flik ovan — ${gen.cards_count} kort.`,
+      quick_replies: [],
       tools: [{ name: "_cards_updated", result: "1" }],
-      metadata_extra: { navigate_to_manuscript: gen.manuscript_id },
-      navigate_to_manuscript: gen.manuscript_id,
     };
-  }
-
-  // awaiting_reply_perform — Sprint 1.7: användaren håller på att framföra → vänta på "klar"
-  if (phase === "awaiting_reply_perform") {
-    if (msg.includes("skriv om") || msg.includes("ändra genmäl") || msg.includes("andra genmal")) {
-      return {
-        text: "Att skriva om ett färdigt genmäle kommer i en senare uppdatering. Säg till när du framfört det, eller om du vill avstå att hålla det.",
-        quick_replies: ["Klar med repliken", "Avstå"],
-      };
-    }
-    if (parseReplyDoneIntent(userMessage) || msg === "avstå" || msg === "avsta") {
-      // Markera senaste reply som klar
-      const replyStackRaw = (thread.bot_state as Record<string, unknown>)?.reply_stack;
-      const replyStack: ReplyStackEntry[] = Array.isArray(replyStackRaw) ? (replyStackRaw as ReplyStackEntry[]) : [];
-      if (replyStack.length > 0) {
-        replyStack[replyStack.length - 1] = {
-          ...replyStack[replyStack.length - 1],
-          completed_at: new Date().toISOString(),
-        };
-      }
-      const lastIndex = replyStack.length;
-      await admin
-        .from("debate_threads")
-        .update({
-          bot_state: {
-            ...thread.bot_state,
-            phase: "between_replies",
-            reply_stack: replyStack,
-          },
-        })
-        .eq("id", threadId);
-      void logEvent(admin, {
-        user_id: thread.user_id,
-        event_name: "reply_completed",
-        event_props: { reply_index: lastIndex },
-        thread_id: thread.id,
-      });
-      return {
-        text: SCRIPTED_PROMPTS.between_replies.text,
-        quick_replies: SCRIPTED_PROMPTS.between_replies.quick_replies,
-      };
-    }
-  }
-
-  // between_replies — Sprint 1.7: fler repliker eller färdig?
-  if (phase === "between_replies") {
-    if (msg === "ja" || msg.startsWith("ja,") || msg.startsWith("ja ") || msg.includes("nästa replik") || msg.includes("nasta replik")) {
-      await admin
-        .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "reply_intake" } })
-        .eq("id", threadId);
-      return {
-        text: SCRIPTED_PROMPTS.reply_intake.text,
-        quick_replies: SCRIPTED_PROMPTS.reply_intake.quick_replies,
-      };
-    }
-    if (msg.includes("nej") || msg === "klart" || msg.includes("var allt") || msg.includes("klar")) {
-      await admin
-        .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "post_speech_completed" } })
-        .eq("id", threadId);
-      const replyStack = (thread.bot_state as Record<string, unknown>)?.reply_stack;
-      const total = Array.isArray(replyStack) ? replyStack.length : 0;
-      void logEvent(admin, {
-        user_id: thread.user_id,
-        event_name: "post_speech_finished",
-        event_props: { total_replies: total },
-        thread_id: thread.id,
-      });
-      return {
-        text: SCRIPTED_PROMPTS.post_speech_completed.text,
-        quick_replies: SCRIPTED_PROMPTS.post_speech_completed.quick_replies,
-      };
-    }
   }
 
   // intake_opponent_name — fritextnamn, en mening
