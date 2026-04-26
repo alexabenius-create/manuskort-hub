@@ -2062,7 +2062,9 @@ Deno.serve(async (req) => {
     }
 
     // Spara användarmeddelandet om det finns (men inte vid retry — då återanvänds raden).
-    if (!isRetry && userMessage.trim()) {
+    // Sprint 1.7 v2: __NEW_REPLY__ är en intern trigger från "+ Nytt genmäle"-knappen,
+    // inte ett riktigt användarmeddelande — skippa insert så det inte syns i chatten.
+    if (!isRetry && userMessage.trim() && userMessage.trim() !== "__NEW_REPLY__") {
       await admin.from("debate_chat_messages").insert({
         thread_id: threadId,
         user_id: userId,
