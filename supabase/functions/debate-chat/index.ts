@@ -1264,10 +1264,10 @@ async function handleScripted(
       };
     }
     const replacement = parseReplaceInstruction(userMessage);
-    if (replacement && thread.manuscript_id) {
+    if (replacement && targetManuscriptId) {
       const result = await executeEditManuscript(
         admin,
-        thread.manuscript_id,
+        targetManuscriptId,
         thread.user_id,
         { operation: "replace_phrase_global", ...replacement, user_friendly_summary: "" },
         "",
@@ -1283,10 +1283,10 @@ async function handleScripted(
         event_props: {
           operation: "replace_phrase_global",
           cards_affected: result.cards_affected,
-          manuscript_id: thread.manuscript_id,
+          manuscript_id: targetManuscriptId,
         },
         thread_id: thread.id,
-        manuscript_id: thread.manuscript_id,
+        manuscript_id: targetManuscriptId,
       });
       const summary = result.summary_override || `Bytt "${replacement.old_phrase}" mot "${replacement.new_phrase}" i ${result.cards_affected} kort.`;
       return {
