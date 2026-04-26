@@ -358,6 +358,7 @@ export default function DebattBuddy() {
           </ul>
         )}
       </main>
+      <SnabbstartModal open={snabbstartOpen} onOpenChange={setSnabbstartOpen} />
     </div>
   );
 }
