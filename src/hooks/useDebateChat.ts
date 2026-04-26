@@ -84,7 +84,7 @@ export function useDebateChat(threadId: string | null) {
             } | undefined) || {};
             // Notify editor to refetch cards if generation tools ran
             const tools = meta.tools || [];
-            if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards")) {
+            if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards" || t.name === "_cards_updated")) {
               window.dispatchEvent(new CustomEvent("debate-cards-generated", { detail: { threadId } }));
             }
             // Navigera till nytt genmäle-manus om edge-funktionen skapade ett
@@ -209,10 +209,9 @@ export function useDebateChat(threadId: string | null) {
 
     // deno-lint-ignore no-explicit-any
     const bs = threadState.bot_state as any;
-    // pending_generate (satt av quick-intake/backend) tvingar fram initial sendMessage
-    // även om snabbstart_autostarted redan är true. Backend rensar pending_generate efter körning.
-    const pendingGenerate = bs?.pending_generate === true;
-    if (bs?.snabbstart_autostarted && !pendingGenerate) return;
+    // pending_generate är auktoritativ signal från backend om att generering ska ske.
+    // snabbstart_autostarted används bara för att undvika auto-greeting på återbesök.
+    if (!bs?.pending_generate && bs?.snabbstart_autostarted) return;
 
     // Inga user-meddelanden ännu? (scripted assistant-msg räknas inte)
     const hasUserMsg = messages.some((m) => m.role === "user");

@@ -47,6 +47,10 @@ export const ANALYTICS_EVENTS = {
   SPARRING_SESSION_ENDED: "sparring_session_ended",
   POST_DEBATE_REFLECTION_OPENED: "post_debate_reflection_opened",
   POST_DEBATE_REFLECTION_SAVED: "post_debate_reflection_saved",
+
+  // Editing (Sprint 1.6)
+  MANUSCRIPT_EDITED: "manuscript_edited",
+  EDITING_COMPLETED: "editing_completed",
 } as const;
 
 export type AnalyticsEvent = typeof ANALYTICS_EVENTS[keyof typeof ANALYTICS_EVENTS];
@@ -67,5 +71,7 @@ export const EVENT_PROPS_SCHEMA = {
   style_preferences_question_skipped: ["question_index"],
   sparring_started: ["block", "topic"],
   sparring_turn_completed: ["turn_number"],
+  manuscript_edited: ["operation", "cards_affected", "manuscript_id"],
+  editing_completed: ["total_edits"],
   // Lägg till nya events HÄR med tillåtna props innan du instrumenterar.
 } as const;

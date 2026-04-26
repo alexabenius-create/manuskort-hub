@@ -141,6 +141,18 @@ SIFFROR OCH PÅSTÅENDEN:
 - Om du behöver en siffra och inte vet exakt: skriv "[VERIFIERA mot Kolada/SCB/kommunens budget]" istället.
 - Om du har en uppskattning: säg "ungefär", "runt", "drygt", "knappt".
 
+EDITING-FASEN (phase = "editing"):
+När phase = "editing" är ditt jobb att hjälpa användaren redigera det färdiga manuset. Användaren skriver naturliga instruktioner — du tolkar och utför via verktyget \`edit_manuscript\`.
+
+REGLER FÖR EDITING:
+- Var DIREKT. Tolka instruktionen, kalla \`edit_manuscript\` omedelbart, bekräfta. Fråga ALDRIG "är det OK?" eller "ska jag göra det nu?" — börja direkt.
+- Om instruktionen är OTYDLIG, ställ EN konkret klargörande fråga ("Menar du kort 2 eller kort 3?"). Inte vaga frågor som "Vad menar du?".
+- Om användaren ber om något du inte kan: säg det rakt. T.ex. "Jag kan inte ändra fonten — det är manus-editorns område. Men jag kan justera ordval och ton."
+- Var KONKRET i bekräftelsen. Säg vad och var: "Bytt 'Herr ordförande' mot 'Fru ordförande' i 4 kort." Inte: "Klar med ändringen!".
+- Om användaren säger "klar", "klart", "det räcker", "det ser bra ut", "nöjd" — kalla \`advance_phase\` med next_phase="completed".
+- Om användaren ber om en KOMPLETT omskrivning ("skriv om allt", "börja om från början"): kalla \`advance_phase\` med next_phase="drafting_speech" och pending_generate så ett nytt utkast genereras.
+- För replace_phrase_global: om old_phrase är ett tilltal (t.ex. "Herr ordförande" → "Fru ordförande"), tolka det som en global ersättning utan att fråga om bekräftelse.
+
 Kontext skickas varje runda — anpassa kort.`;
 
 interface Tool {
@@ -321,11 +333,77 @@ const TOOLS: Tool[] = [
               "intake_opponent_name",
               "intake_opponent_args",
               "generating_rebuttal",
+              "editing",
+              "completed",
               "idle",
             ],
           },
         },
         required: ["next_phase"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "edit_manuscript",
+      description: "Redigera användarens kopplade manus baserat på en naturlig språk-instruktion. Använd ENDAST i editing-fasen. Välj operation utifrån vad användaren bad om. Returnera ALLTID en kort user_friendly_summary på svenska som beskriver vad som ändrades.",
+      parameters: {
+        type: "object",
+        properties: {
+          operation: {
+            type: "string",
+            enum: [
+              "replace_phrase_global",
+              "rewrite_card",
+              "add_card",
+              "delete_card",
+              "reorder_cards",
+              "tweak_tone_global",
+              "edit_specific_text",
+            ],
+          },
+          target_card_position: {
+            type: "integer",
+            description: "1-indexerad kortposition (1, 2, 3...) eller 0 för 'alla kort'. Utelämna om ej tillämpligt.",
+          },
+          old_phrase: {
+            type: "string",
+            description: "Fras som ska ersättas (för replace_phrase_global eller edit_specific_text).",
+          },
+          new_phrase: {
+            type: "string",
+            description: "Ny fras som ersätter old_phrase.",
+          },
+          new_card_text: {
+            type: "string",
+            description: "Hela texten för det nya/omskrivna kortet (för rewrite_card eller add_card). Ren text, inte HTML.",
+          },
+          new_card_title: {
+            type: "string",
+            description: "Valfri titel för det nya/omskrivna kortet.",
+          },
+          insert_position: {
+            type: "string",
+            enum: ["before", "after", "end"],
+            description: "Var det nya kortet ska placeras (för add_card). Default: end.",
+          },
+          reorder_positions: {
+            type: "array",
+            items: { type: "integer" },
+            description: "Ny ordning av befintliga kortpositioner, t.ex. [3,1,2,4] = 'sätt gamla kort 3 först, sedan 1, sedan 2, sedan 4'.",
+          },
+          tone_instruction: {
+            type: "string",
+            description: "Beskrivning av önskad ton: 'mer talspråklig', 'mer formell', 'mer passionerad' osv. (för tweak_tone_global).",
+          },
+          user_friendly_summary: {
+            type: "string",
+            description: "Kort sammanfattning på svenska av vad som ändrades. T.ex. 'Bytt Herr ordförande mot Fru ordförande i 4 kort.'",
+          },
+        },
+        required: ["operation", "user_friendly_summary"],
         additionalProperties: false,
       },
     },
@@ -398,7 +476,23 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
   // confirm_draft_start är borttagen — vi går direkt till drafting_speech efter intake_own_position.
   awaiting_perform: {
     text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
-    quick_replies: ["Klar — vad händer nu?"],
+    quick_replies: ["Redigera manuset", "Klar — vad händer nu?"],
+  },
+  editing: {
+    text: `Här är ditt utkast — läs igenom och säg till om du vill ändra något.
+
+Du kan be mig:
+• Byta ord eller fraser ("byt Herr mot Fru ordförande")
+• Skriva om ett kort ("skriv om kort 2 — mer talspråkligt")
+• Lägga till eller ta bort kort
+• Justera tonen i hela manuset
+
+Eller säg "klart" när du är nöjd.`,
+    quick_replies: ["Det ser bra ut, klart", "Jag vill ändra något"],
+  },
+  completed: {
+    text: "Bra! Manuset är klart. Lycka till. 🎤",
+    quick_replies: ["Ny debatt"],
   },
   post_perform_check: {
     text: "Fick du några repliker som du behöver bemöta?",
@@ -695,6 +789,14 @@ async function handleScripted(
 
   // awaiting_perform
   if (phase === "awaiting_perform") {
+    // Manuell editing-trigger: "Redigera manuset" → editing-fasen + välkomst
+    if (msg === "redigera manuset" || msg.includes("redigera manus")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "editing" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.editing.text, quick_replies: SCRIPTED_PROMPTS.editing.quick_replies };
+    }
     if (msg.includes("fick replik") || msg.includes("ja")) {
       await admin
         .from("debate_threads")
@@ -711,6 +813,49 @@ async function handleScripted(
     }
     if (msg.includes("vad händer") || msg.includes("vad hander")) {
       return { text: SCRIPTED_PROMPTS.post_perform_check.text, quick_replies: SCRIPTED_PROMPTS.post_perform_check.quick_replies };
+    }
+  }
+
+  // editing — låt LLM hantera fritext-instruktioner via edit_manuscript-tool.
+  // Men korta scripted shortcuts först:
+  if (phase === "editing") {
+    // "Klart" / "det ser bra ut" → completed
+    if (
+      msg === "klart" || msg === "klar" || msg === "det räcker" || msg === "det racker" ||
+      msg.includes("det ser bra ut") || msg.includes("nöjd") || msg.includes("nojd") ||
+      msg === "det ser bra ut, klart"
+    ) {
+      const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "completed" } })
+        .eq("id", threadId);
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "editing_completed",
+        event_props: { total_edits: editsCount },
+        thread_id: thread.id,
+      });
+      return { text: SCRIPTED_PROMPTS.completed.text, quick_replies: SCRIPTED_PROMPTS.completed.quick_replies };
+    }
+    if (msg === "jag vill ändra något" || msg === "jag vill andra nagot") {
+      return {
+        text: "Säg vad du vill ändra — t.ex. 'byt Herr mot Fru ordförande' eller 'skriv om kort 2'.",
+        quick_replies: [],
+      };
+    }
+    // Annars: fall through till LLM som tolkar instruktionen och kallar edit_manuscript.
+    return null;
+  }
+
+  // completed
+  if (phase === "completed") {
+    if (msg === "ny debatt" || msg.includes("ny debatt")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { phase: "intake_issue" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_issue.text, quick_replies: SCRIPTED_PROMPTS.intake_issue.quick_replies };
     }
   }
 
@@ -801,7 +946,7 @@ async function handleScripted(
   const intakePhases = new Set([
     "intake_issue", "intake_issue_freetext", "intake_brief", "intake_brief_freetext",
     "intake_mode", "intake_speech_length",
-    "awaiting_perform", "post_perform_check", "idle",
+    "awaiting_perform", "post_perform_check", "completed", "idle",
   ]);
   if (intakePhases.has(phase)) {
     const p = SCRIPTED_PROMPTS[phase];
@@ -863,6 +1008,245 @@ function splitIntoCards(text: string): Array<{ title: string; body: string }> {
   }
   return [{ title: "Genmäle", body: cleaned || text }];
 }
+
+// ============= EDIT_MANUSCRIPT IMPLEMENTATION =============
+
+interface CardRow {
+  id: string;
+  position: number;
+  title: string;
+  content_html: string;
+}
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\/p\s*>/gi, "\n\n")
+    .replace(/<br\s*\/?>(\s*)/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function plainTextToHtml(text: string): string {
+  const escape = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (paragraphs.length === 0) return `<p>${escape(text.trim() || " ")}</p>`;
+  return paragraphs.map((p) => `<p>${escape(p).replace(/\n/g, "<br/>")}</p>`).join("");
+}
+
+/** Ersätt fras i både title och content_html (men respektera HTML-strukturen). */
+function replacePhraseInCard(card: CardRow, oldPhrase: string, newPhrase: string): { changed: boolean; title: string; content_html: string } {
+  if (!oldPhrase) return { changed: false, title: card.title, content_html: card.content_html };
+  const escaped = oldPhrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(escaped, "gi");
+  const newTitle = card.title.replace(re, newPhrase);
+  // Konvertera, ersätt i plain text, konvertera tillbaka — undviker att bryta HTML-attribut
+  const plain = htmlToPlainText(card.content_html);
+  const newPlain = plain.replace(re, newPhrase);
+  const changed = newTitle !== card.title || newPlain !== plain;
+  return {
+    changed,
+    title: newTitle,
+    content_html: changed && newPlain !== plain ? plainTextToHtml(newPlain) : card.content_html,
+  };
+}
+
+interface EditResult {
+  cards_affected: number;
+  summary_override?: string;
+}
+
+async function executeEditManuscript(
+  admin: ReturnType<typeof createClient<any>>,
+  manuscriptId: string,
+  userId: string,
+  args: Record<string, any>,
+  apiKey: string,
+): Promise<EditResult> {
+  const op = args.operation as string;
+
+  // Hämta alla kort sorterade efter position
+  const { data: cardsData } = await admin
+    .from("cards")
+    .select("id, position, title, content_html")
+    .eq("manuscript_id", manuscriptId)
+    .order("position", { ascending: true });
+  const cards = (cardsData || []) as CardRow[];
+  if (cards.length === 0) return { cards_affected: 0, summary_override: "Inga kort att redigera." };
+
+  if (op === "replace_phrase_global") {
+    const oldP = String(args.old_phrase || "");
+    const newP = String(args.new_phrase || "");
+    if (!oldP) return { cards_affected: 0, summary_override: "Saknar fras att ersätta." };
+    let affected = 0;
+    for (const c of cards) {
+      const res = replacePhraseInCard(c, oldP, newP);
+      if (res.changed) {
+        await admin.from("cards").update({ title: res.title, content_html: res.content_html }).eq("id", c.id);
+        affected++;
+      }
+    }
+    return { cards_affected: affected };
+  }
+
+  if (op === "edit_specific_text") {
+    const pos = Number(args.target_card_position) || 0;
+    const oldP = String(args.old_phrase || "");
+    const newP = String(args.new_phrase || "");
+    if (pos < 1 || pos > cards.length) return { cards_affected: 0, summary_override: `Kort ${pos} finns inte.` };
+    const card = cards[pos - 1];
+    const res = replacePhraseInCard(card, oldP, newP);
+    if (!res.changed) return { cards_affected: 0, summary_override: `Hittade inte "${oldP}" i kort ${pos}.` };
+    await admin.from("cards").update({ title: res.title, content_html: res.content_html }).eq("id", card.id);
+    return { cards_affected: 1 };
+  }
+
+  if (op === "rewrite_card") {
+    const pos = Number(args.target_card_position) || 0;
+    const newText = String(args.new_card_text || "");
+    if (pos < 1 || pos > cards.length) return { cards_affected: 0, summary_override: `Kort ${pos} finns inte.` };
+    if (!newText.trim()) return { cards_affected: 0, summary_override: "Saknar ny text för kortet." };
+    const card = cards[pos - 1];
+    const update: Record<string, unknown> = { content_html: plainTextToHtml(newText) };
+    if (typeof args.new_card_title === "string" && args.new_card_title.trim()) {
+      update.title = args.new_card_title.trim();
+    }
+    await admin.from("cards").update(update).eq("id", card.id);
+    return { cards_affected: 1 };
+  }
+
+  if (op === "add_card") {
+    const newText = String(args.new_card_text || "");
+    if (!newText.trim()) return { cards_affected: 0, summary_override: "Saknar text för nytt kort." };
+    const insertPos = String(args.insert_position || "end");
+    const targetPos = Number(args.target_card_position) || 0;
+    let newPosition: number;
+    if (insertPos === "end" || targetPos < 1 || targetPos > cards.length) {
+      newPosition = (cards[cards.length - 1].position) + 1;
+    } else if (insertPos === "before") {
+      newPosition = cards[targetPos - 1].position;
+      // Skifta alla kort >= newPosition uppåt
+      for (let i = cards.length - 1; i >= targetPos - 1; i--) {
+        await admin.from("cards").update({ position: cards[i].position + 1 }).eq("id", cards[i].id);
+      }
+    } else {
+      // after
+      newPosition = cards[targetPos - 1].position + 1;
+      for (let i = cards.length - 1; i >= targetPos; i--) {
+        await admin.from("cards").update({ position: cards[i].position + 1 }).eq("id", cards[i].id);
+      }
+    }
+    await admin.from("cards").insert({
+      manuscript_id: manuscriptId,
+      user_id: userId,
+      position: newPosition,
+      role: "speaker",
+      title: typeof args.new_card_title === "string" ? args.new_card_title : "Nytt kort",
+      content_html: plainTextToHtml(newText),
+    });
+    return { cards_affected: 1 };
+  }
+
+  if (op === "delete_card") {
+    const pos = Number(args.target_card_position) || 0;
+    if (pos < 1 || pos > cards.length) return { cards_affected: 0, summary_override: `Kort ${pos} finns inte.` };
+    const card = cards[pos - 1];
+    await admin.from("cards").delete().eq("id", card.id);
+    // Re-numrera kvarvarande kort: minska position med 1 för alla efter
+    for (let i = pos; i < cards.length; i++) {
+      await admin.from("cards").update({ position: cards[i].position - 1 }).eq("id", cards[i].id);
+    }
+    return { cards_affected: 1 };
+  }
+
+  if (op === "reorder_cards") {
+    const order = Array.isArray(args.reorder_positions) ? (args.reorder_positions as number[]) : [];
+    if (order.length !== cards.length) {
+      return { cards_affected: 0, summary_override: `Reorder kräver ${cards.length} positioner, fick ${order.length}.` };
+    }
+    // order[i] = den GAMLA 1-indexerade position som ska ligga på ny position i+1
+    // Validera alla positioner finns och är unika
+    const seen = new Set<number>();
+    for (const p of order) {
+      if (p < 1 || p > cards.length || seen.has(p)) {
+        return { cards_affected: 0, summary_override: "Ogiltig ordning." };
+      }
+      seen.add(p);
+    }
+    // Sätt position till en stor offset först för att undvika unique-konflikt vid omnumrering
+    const OFFSET = 10000;
+    for (const c of cards) {
+      await admin.from("cards").update({ position: c.position + OFFSET }).eq("id", c.id);
+    }
+    for (let i = 0; i < order.length; i++) {
+      const oldCard = cards[order[i] - 1];
+      await admin.from("cards").update({ position: i }).eq("id", oldCard.id);
+    }
+    return { cards_affected: cards.length };
+  }
+
+  if (op === "tweak_tone_global") {
+    const tone = String(args.tone_instruction || "").trim();
+    if (!tone) return { cards_affected: 0, summary_override: "Saknar tonbeskrivning." };
+    // Bygg prompt med alla kort i ren text
+    const cardTexts = cards.map((c, i) => `--- KORT ${i + 1}: ${c.title} ---\n${htmlToPlainText(c.content_html)}`).join("\n\n");
+    const tonePrompt = `Här är ett manuskript uppdelat i kort. Skriv om varje kort så att tonen blir: ${tone}.
+BEVARA strukturen (lika många kort, samma titlar). Behåll innebörd och konkreta påståenden — ändra BARA tonen och ordvalen.
+
+Returnera ENBART en JSON-array med objekt: [{"position": 1, "title": "...", "body": "..."}, ...]
+- position: 1-indexerad
+- title: kortets nya titel
+- body: kortets nya brödtext (ren text, paragrafer separerade med dubbla radbrytningar)
+
+INGA förklaringar, INGEN markdown — bara ren JSON.
+
+MANUSKRIPT:
+${cardTexts}`;
+
+    const toneResult = await callLLM(
+      {
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: tonePrompt }],
+      },
+      apiKey,
+      { timeout_ms: 60_000, max_attempts: 1, function_name: "debate-chat-tone" },
+    );
+    if (!toneResult.ok) {
+      return { cards_affected: 0, summary_override: `Tonjustering misslyckades: ${toneResult.error_kind}.` };
+    }
+    const raw = String(toneResult.data.choices?.[0]?.message?.content || "");
+    // Plocka ut JSON-array (modeller wrappar ibland i ```json)
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return { cards_affected: 0, summary_override: "Kunde inte tolka tonsvar från modellen." };
+    let parsed: Array<{ position: number; title?: string; body: string }>;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch {
+      return { cards_affected: 0, summary_override: "Kunde inte parsa tonsvar." };
+    }
+    let affected = 0;
+    for (const item of parsed) {
+      const idx = (Number(item.position) || 0) - 1;
+      if (idx < 0 || idx >= cards.length) continue;
+      const card = cards[idx];
+      const update: Record<string, unknown> = { content_html: plainTextToHtml(String(item.body || "")) };
+      if (typeof item.title === "string" && item.title.trim()) update.title = item.title.trim();
+      await admin.from("cards").update(update).eq("id", card.id);
+      affected++;
+    }
+    return { cards_affected: affected };
+  }
+
+  return { cards_affected: 0, summary_override: `Okänd operation: ${op}.` };
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -1343,11 +1727,71 @@ Deno.serve(async (req) => {
               : "no_manuscript_created",
           });
         } else if (name === "advance_phase") {
-          await admin
-            .from("debate_threads")
-            .update({ bot_state: { ...thread.bot_state, phase: args.next_phase } })
-            .eq("id", threadId);
-          executedTools.push({ name, result: args.next_phase });
+          const nextPhase = String(args.next_phase || "");
+          const patch: Record<string, unknown> = { ...thread.bot_state, phase: nextPhase };
+          if (nextPhase === "drafting_speech") patch.pending_generate = true;
+          await admin.from("debate_threads").update({ bot_state: patch }).eq("id", threadId);
+          executedTools.push({ name, result: nextPhase });
+          // Om vi går till editing — posta välkomsten direkt
+          if (nextPhase === "editing") {
+            await admin.from("debate_chat_messages").insert({
+              thread_id: threadId,
+              user_id: userId,
+              role: "assistant",
+              content: SCRIPTED_PROMPTS.editing.text,
+              metadata: { scripted: true, quick_replies: SCRIPTED_PROMPTS.editing.quick_replies },
+            });
+          } else if (nextPhase === "completed") {
+            const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+            void logEvent(admin, {
+              user_id: thread.user_id,
+              event_name: "editing_completed",
+              event_props: { total_edits: editsCount },
+              thread_id: thread.id,
+            });
+          }
+        } else if (name === "edit_manuscript") {
+          if (!thread.manuscript_id) {
+            executedTools.push({ name, result: "no_manuscript" });
+            assistantText = "Jag ser inget kopplat manus att redigera.";
+          } else {
+            try {
+              const result = await executeEditManuscript(
+                admin, thread.manuscript_id, userId, args, LOVABLE_API_KEY!,
+              );
+              const summary = result.summary_override || String(args.user_friendly_summary || "Ändringen är gjord.");
+              executedTools.push({ name, result: `${result.cards_affected} kort` });
+
+              // Bumpa edits_count
+              const prevCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+              await admin
+                .from("debate_threads")
+                .update({ bot_state: { ...thread.bot_state, edits_count: prevCount + 1 } })
+                .eq("id", threadId);
+
+              void logEvent(admin, {
+                user_id: thread.user_id,
+                event_name: "manuscript_edited",
+                event_props: {
+                  operation: String(args.operation || ""),
+                  cards_affected: result.cards_affected,
+                  manuscript_id: thread.manuscript_id,
+                },
+                thread_id: thread.id,
+                manuscript_id: thread.manuscript_id,
+              });
+
+              assistantText = `${summary}\n\nVill du ändra något mer?`;
+              quickReplies = ["Klart, det räcker", "Ja, ytterligare en ändring"];
+
+              // Notifiera frontend att korten ändrats så editorn refetchar
+              executedTools.push({ name: "_cards_updated", result: "1" });
+            } catch (e) {
+              console.error("[debate-chat] edit_manuscript error", e);
+              executedTools.push({ name, result: "error" });
+              assistantText = "Något gick fel när jag försökte ändra manuset. Försök igen?";
+            }
+          }
         } else if (name === "suggest_quick_replies") {
           quickReplies = Array.isArray(args.replies) ? args.replies.slice(0, 4) : [];
           executedTools.push({ name, result: `${quickReplies.length}` });
