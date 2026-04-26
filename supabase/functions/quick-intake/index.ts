@@ -39,13 +39,17 @@ KRITISKT — INTEGRITET:
 
 REGLER:
 - Default mode = "speech" om oklart.
-- Default speech_length_seconds = 120.
+- speech_length_seconds: ENDAST om användaren EXPLICIT angett en längd (t.ex. "2 min", "5 minuter", "30 sekunder", "180 sek"). Annars sätt null.
 - Hitta ALDRIG på info. Om något är osäkert: lägg fältnamnet i missing_info.
+- Om speech_length_seconds = null, lägg till "speech_length" i missing_info.
 - Returnera ENDAST JSON enligt schemat. Ingen text utanför JSON.
 
 EXEMPEL:
 Input: "2 min anförande mot S-budgeten i Lerums fullmäktige om förskola"
 Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot S-budgeten om förskola","speech_length_seconds":120,"own_position":"","opponent_label":"S-budgeten","opponent_arguments":[],"kommun":"Lerum","missing_info":["own_position"]}
+
+Input: "Anförande mot förskolebesparingar i Lerum, jag är emot"
+Output: {"mode":"speech","topic_area":"Förskola","issue_text":"Anförande mot förskolebesparingar","speech_length_seconds":null,"own_position":"emot förskolebesparingar","opponent_label":null,"opponent_arguments":[],"kommun":"Lerum","missing_info":["speech_length"]}
 
 Input: "Replik på Annas kritik av nya cykelbanan på Lillgatan"
 Output: {"mode":"reply","topic_area":"Trafik","issue_text":"Replik om cykelbanan på Lillgatan","speech_length_seconds":60,"own_position":"","opponent_label":"Anna","opponent_arguments":["kritik av nya cykelbanan på Lillgatan"],"kommun":null,"missing_info":["own_position"]}`;
@@ -56,7 +60,8 @@ interface ParsedIntake {
   mode: "speech" | "reply";
   topic_area: string;
   issue_text: string;
-  speech_length_seconds: number;
+  speech_length_seconds: number | null;
+  speech_length_confirmed: boolean;
   own_position: string;
   opponent_label: string | null;
   opponent_arguments: string[];
@@ -70,20 +75,43 @@ function normalizeParsed(raw: unknown): ParsedIntake {
   const mode: "speech" | "reply" = r.mode === "reply" ? "reply" : "speech";
   const topic_area = ALLOWED_TOPICS.includes(r.topic_area) ? r.topic_area : "Annat";
   const issue_text = String(r.issue_text || "").slice(0, 200);
-  const lenRaw = Number(r.speech_length_seconds);
-  const speech_length_seconds = ALLOWED_LENGTHS.includes(lenRaw as 60) ? lenRaw : 120;
+
+  // speech_length_seconds: null om inte angivet, annars validera
+  let speech_length_seconds: number | null = null;
+  let speech_length_confirmed = false;
+  if (r.speech_length_seconds != null && r.speech_length_seconds !== "") {
+    const lenRaw = Number(r.speech_length_seconds);
+    if (Number.isFinite(lenRaw) && lenRaw > 0) {
+      if (ALLOWED_LENGTHS.includes(lenRaw as 60)) {
+        speech_length_seconds = lenRaw;
+      } else if (lenRaw >= 30 && lenRaw <= 1800) {
+        speech_length_seconds = Math.round(lenRaw);
+      }
+      if (speech_length_seconds != null) speech_length_confirmed = true;
+    }
+  }
+
   const own_position = String(r.own_position || "").slice(0, 1000);
   const opponent_label = r.opponent_label ? String(r.opponent_label).slice(0, 80) : null;
   const opponent_arguments = Array.isArray(r.opponent_arguments)
     ? r.opponent_arguments.map((s: unknown) => String(s).slice(0, 300)).slice(0, 10)
     : [];
   const kommun = r.kommun ? String(r.kommun).slice(0, 60) : null;
-  const allowedMissing = ["own_position", "opponent_arguments"];
-  const missing_info = Array.isArray(r.missing_info)
-    ? r.missing_info.filter((m: unknown) => allowedMissing.includes(String(m)))
+  const allowedMissing = ["own_position", "opponent_arguments", "speech_length"];
+  const rawMissing: string[] = Array.isArray(r.missing_info)
+    ? r.missing_info.filter((m: unknown) => allowedMissing.includes(String(m))).map((m: unknown) => String(m))
     : [];
+  // Tvinga in "speech_length" först om vi inte har bekräftad längd
+  const missing_info: string[] = [];
+  if (!speech_length_confirmed) missing_info.push("speech_length");
+  for (const m of rawMissing) {
+    if (m === "speech_length" && !speech_length_confirmed) continue;
+    if (!missing_info.includes(m)) missing_info.push(m);
+  }
+
   return {
-    mode, topic_area, issue_text, speech_length_seconds,
+    mode, topic_area, issue_text,
+    speech_length_seconds, speech_length_confirmed,
     own_position, opponent_label, opponent_arguments, kommun, missing_info,
   };
 }
@@ -95,6 +123,8 @@ function deriveTitle(issueText: string): string {
 }
 
 function decidePhase(parsed: ParsedIntake): string {
+  // Längden måste klaras ut först
+  if (parsed.missing_info[0] === "speech_length") return "intake_speech_length";
   const needsPosition = parsed.missing_info.includes("own_position");
   if (needsPosition) return "intake_own_position";
   return parsed.mode === "speech" ? "drafting_speech" : "generating_rebuttal";
@@ -106,13 +136,19 @@ interface ScriptedConfirm {
 }
 
 function buildScriptedConfirm(parsed: ParsedIntake): ScriptedConfirm {
-  const lenMin = Math.max(1, Math.round(parsed.speech_length_seconds / 60));
   const issue = parsed.issue_text || parsed.topic_area.toLowerCase();
   const opp = parsed.opponent_label || "motdebattören";
   const kommunSuffix = parsed.kommun ? ` Jag anpassar för ${parsed.kommun}.` : "";
 
   // Första missing_info-posten styr (om någon)
   const firstMissing = parsed.missing_info[0];
+
+  if (firstMissing === "speech_length") {
+    return {
+      content: `Tack — då vet jag inriktningen. **Hur långt anförande behöver du?**${kommunSuffix}`,
+      quick_replies: ["1 minut", "2 minuter", "5 minuter", "10 minuter"],
+    };
+  }
 
   if (firstMissing === "own_position") {
     return {
@@ -129,6 +165,7 @@ function buildScriptedConfirm(parsed: ParsedIntake): ScriptedConfirm {
   }
 
   // Inga missing_info → direkt generering
+  const lenMin = Math.max(1, Math.round((parsed.speech_length_seconds ?? 120) / 60));
   if (parsed.mode === "speech") {
     return {
       content: `Då kör vi! Jag skriver ett **${lenMin} min anförande** om _${issue}_. Skriver korten nu — ge mig 30 sek.${kommunSuffix}`,
@@ -303,13 +340,15 @@ Deno.serve(async (req) => {
 
     // ---- Skapa manuscript ----
     const title = deriveTitle(parsed.issue_text);
+    // target_duration_seconds: bara om längd är bekräftad — annars defaultas senare när användaren svarar
+    const effectiveLength = parsed.speech_length_seconds ?? 120;
     const { data: manus, error: manusErr } = await admin
       .from("manuscripts")
       .insert({
         user_id: userId,
         title,
         mode: "debate",
-        target_duration_seconds: parsed.speech_length_seconds,
+        target_duration_seconds: parsed.speech_length_confirmed ? parsed.speech_length_seconds : null,
       })
       .select("id")
       .single();
@@ -320,7 +359,8 @@ Deno.serve(async (req) => {
     const botState: Record<string, unknown> = {
       phase,
       mode: parsed.mode,
-      speech_length_seconds: parsed.speech_length_seconds,
+      speech_length_seconds: effectiveLength,
+      speech_length_confirmed: parsed.speech_length_confirmed,
       opponent_args_buffer: parsed.opponent_arguments,
       rebuttal_count: 0,
       source: "snabbstart",
@@ -365,6 +405,7 @@ Deno.serve(async (req) => {
         has_kommun: Boolean(parsed.kommun),
         has_opponent: Boolean(parsed.opponent_label),
         speech_length_seconds: parsed.speech_length_seconds,
+        speech_length_confirmed: parsed.speech_length_confirmed,
         has_attachment: hasAttachment,
       },
       thread_id: thread.id,

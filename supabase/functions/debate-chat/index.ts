@@ -77,13 +77,17 @@ FLÖDE (driv framåt aggressivt):
 1. **intake_issue**: Fråga kort "Vad ska vi debattera idag?". Snabbsvar: ["Skola", "Vård", "Klimat", "Skriv själv"]. När du fått ärendet → \`set_issue\` → gå till intake_brief.
 2. **intake_brief**: Fråga kort om underlag: "Har du något underlag att dela?" Snabbsvar: ["Ladda upp fil", "Skriv kort", "Hoppa över"]. När underlag mottaget → tacka kort (max 1 mening, t.ex. "Tack, jag har läst underlaget!"). Skriv ALDRIG ut sammanfattning, analys eller poänger från underlaget — det är internt. → \`set_brief\` → intake_mode. Vid "Hoppa över" → \`set_brief\` med tom text.
 3. **intake_mode**: "Anförande eller replik?" Snabbsvar: ["Hålla anförande", "Bemöta någon"]. → \`set_mode\`.
-4. **intake_speech_length** (om mode=speech): Fråga "Hur långt ska anförandet vara?" Snabbsvar: ["1 minut", "2 minuter", "3 minuter", "5 minuter"]. Spara längden i bot_state via \`set_speech_length\` (sekunder). Gå till drafting_speech.
-5. **drafting_speech**: Fråga "Vill du att jag skriver utkast åt dig, eller skriver du själv?" Snabbsvar: ["Skriv utkast åt mig", "Jag skriver själv"]. Vid "Skriv utkast åt mig" och **vi har redan användarens egen ståndpunkt** → använd \`generate_speech_cards\` DIREKT med ~130 ord/minut. Om vi saknar ståndpunkt → gå till intake_own_position.
-5b. **intake_own_position**: Be användaren beskriva sin egen åsikt i frågan (för/emot + viktigaste argument) i några rader. Spara i own_position. → confirm_draft_start.
-5c. **confirm_draft_start**: Fråga "Vill du att jag börjar skriva utkastet nu?" med snabbsvar ["Ja, skriv utkast", "Vänta lite"]. Vid Ja → drafting_speech + generate_speech_cards.
+4. **intake_speech_length** (om mode=speech): Fråga "Hur långt ska anförandet vara?" Snabbsvar: ["1 minut", "2 minuter", "3 minuter", "5 minuter"]. Spara längden i bot_state via \`set_speech_length\` (sekunder). Gå till drafting_speech och starta GENERERINGEN DIREKT — fråga ALDRIG om bekräftelse.
+5. **drafting_speech**: Om vi har användarens ståndpunkt → kör \`generate_speech_cards\` DIREKT med ~130 ord/minut. Om vi saknar ståndpunkt → gå till intake_own_position.
+5b. **intake_own_position**: Be användaren beskriva sin egen åsikt i frågan (för/emot + viktigaste argument) i några rader. Spara i own_position. Gå sedan DIREKT till drafting_speech och kör \`generate_speech_cards\` — fråga ALDRIG "Vill du att jag börjar skriva utkastet nu?".
 6. **post_perform_check**: "Fick du repliker?" Snabbsvar: ["Ja", "Nej, klart"].
 7. **intake_opponent_name** → \`set_opponent\` direkt.
 8. **intake_opponent_args** → be om motdebattörens argument. Användaren kan skicka flera meddelanden — efter varje fråga "Fler argument eller ska jag analysera?" med snabbsvar ["Fler argument", "Analysera nu"]. När "Analysera nu" → kör \`generate_rebuttal_cards\` med alla samlade argument.
+
+KRITISKT — INGA EXTRA BEKRÄFTELSEFRÅGOR:
+- Fråga ALDRIG "Vill du att jag börjar skriva utkastet nu?", "Ska jag börja skriva?", "Är du redo att jag skriver?" eller liknande.
+- Så snart du har: längd, mode, ärende, ståndpunkt → kör \`generate_speech_cards\` direkt.
+- Så snart du har: motdebattör + argument → kör \`generate_rebuttal_cards\` direkt.
 
 REGLER:
 - Anförande → repliker → genmäle (1 per replik) eller avstå.
@@ -380,21 +384,18 @@ const SCRIPTED_PROMPTS: Record<string, { text: string; quick_replies: string[] }
     quick_replies: ["Hålla anförande", "Bemöta någon"],
   },
   intake_speech_length: {
-    text: "Hur långt ska anförandet vara?",
-    quick_replies: ["1 minut", "2 minuter", "3 minuter", "5 minuter"],
+    text: "Hur långt anförande behöver du?",
+    quick_replies: ["1 minut", "2 minuter", "5 minuter", "10 minuter"],
   },
   drafting_speech: {
-    text: "Vill du att jag skriver ett utkast åt dig, eller skriver du själv?",
-    quick_replies: ["Skriv utkast åt mig", "Jag skriver själv"],
+    text: "Skriver utkastet nu — ge mig en stund.",
+    quick_replies: [],
   },
   intake_own_position: {
     text: "Vad tycker du själv i frågan? Skriv några rader om för/emot och dina viktigaste argument.",
     quick_replies: [],
   },
-  confirm_draft_start: {
-    text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
-    quick_replies: ["Ja, skriv utkast", "Vänta lite"],
-  },
+  // confirm_draft_start är borttagen — vi går direkt till drafting_speech efter intake_own_position.
   awaiting_perform: {
     text: "Skriv klart i editorn när du är redo. Jag finns här om du behöver mig!",
     quick_replies: ["Klar — vad händer nu?"],
@@ -574,23 +575,69 @@ async function handleScripted(
     }
   }
 
-  // intake_speech_length
+  // intake_speech_length — robust parser; sätt längden och gå DIREKT till generering.
   if (phase === "intake_speech_length") {
+    let seconds: number | null = null;
+
+    // "1 minut", "2 minuter", "5 min", "10 min"
     const minMatch = msg.match(/(\d+)\s*min/);
-    if (minMatch) {
-      const minutes = parseInt(minMatch[1], 10);
-      const seconds = Math.max(30, Math.min(600, minutes * 60));
+    // "60 sek", "120 sekunder", "300s"
+    const secMatch = msg.match(/(\d+)\s*(?:sek|sekunder|s\b)/);
+    // Bara siffra, t.ex. "5"
+    const bareNumMatch = msg.match(/^\s*(\d+)\s*$/);
+
+    if (secMatch) {
+      seconds = parseInt(secMatch[1], 10);
+    } else if (minMatch) {
+      seconds = parseInt(minMatch[1], 10) * 60;
+    } else if (bareNumMatch) {
+      const n = parseInt(bareNumMatch[1], 10);
+      // <30 → tolka som minuter, >=30 → sekunder
+      seconds = n < 30 ? n * 60 : n;
+    }
+
+    // Om vi inte kunde parsa: fall back till 120s OCH gå vidare ändå (fråga inte igen)
+    if (seconds == null || !Number.isFinite(seconds)) seconds = 120;
+    seconds = Math.max(30, Math.min(1800, Math.round(seconds)));
+
+    // Bestäm nästa fas: om vi har ståndpunkt → drafting_speech (auto-generera).
+    // Annars → intake_own_position.
+    const hasOwnPosition = (thread.own_position || "").trim().length >= 2;
+    const nextPhase = hasOwnPosition ? "drafting_speech" : "intake_own_position";
+
+    const newBotState: Record<string, unknown> = {
+      ...thread.bot_state,
+      phase: nextPhase,
+      speech_length_seconds: seconds,
+      speech_length_confirmed: true,
+      // Tvinga LLM att generera direkt vid nästa anrop när vi går till drafting_speech
+      pending_generate: nextPhase === "drafting_speech",
+      // Reset autostart-flaggan så useDebateChat skickar tomt msg som triggar genereringen
+      snabbstart_autostarted: nextPhase === "drafting_speech" ? false : (thread.bot_state as Record<string, unknown>)?.snabbstart_autostarted,
+    };
+
+    await admin
+      .from("debate_threads")
+      .update({ bot_state: newBotState })
+      .eq("id", threadId);
+
+    // Uppdatera även manus.target_duration_seconds
+    if (thread.manuscript_id) {
       await admin
-        .from("debate_threads")
-        .update({
-          bot_state: { ...thread.bot_state, phase: "drafting_speech", speech_length_seconds: seconds },
-        })
-        .eq("id", threadId);
+        .from("manuscripts")
+        .update({ target_duration_seconds: seconds })
+        .eq("id", thread.manuscript_id);
+    }
+
+    if (nextPhase === "intake_own_position") {
       return {
-        text: `Perfekt — ${minutes} minut${minutes === 1 ? "" : "er"} (~${Math.round((seconds / 60) * 130)} ord). Vill du att jag skriver utkast åt dig, eller skriver du själv?`,
-        quick_replies: SCRIPTED_PROMPTS.drafting_speech.quick_replies,
+        text: SCRIPTED_PROMPTS.intake_own_position.text,
+        quick_replies: SCRIPTED_PROMPTS.intake_own_position.quick_replies,
       };
     }
+
+    // nextPhase === "drafting_speech" → fall genom till LLM-grenen som auto-genererar.
+    return null;
   }
 
   // drafting_speech
@@ -620,7 +667,7 @@ async function handleScripted(
     // Annars (vi har redan ståndpunkt) → fall through till LLM (genererar kort)
   }
 
-  // intake_own_position — användaren beskriver sin ståndpunkt innan utkast skrivs
+  // intake_own_position — efter sparat: gå DIREKT till drafting_speech (auto-generera).
   if (phase === "intake_own_position") {
     const positionText = userMessage.trim().slice(0, 2000);
     if (positionText.length >= 2) {
@@ -628,35 +675,21 @@ async function handleScripted(
         .from("debate_threads")
         .update({
           own_position: positionText,
-          bot_state: { ...thread.bot_state, phase: "confirm_draft_start" },
+          bot_state: { ...thread.bot_state, phase: "drafting_speech", pending_generate: true },
         })
         .eq("id", threadId);
-      return {
-        text: "Tack — då vet jag inriktningen! Vill du att jag börjar skriva utkastet nu?",
-        quick_replies: ["Ja, skriv utkast", "Vänta lite"],
-      };
+      // Fall genom till LLM — generate_speech_cards triggas av pending_generate-flaggan.
+      return null;
     }
   }
 
-  // confirm_draft_start — användaren bekräftar att utkastet ska genereras
+  // confirm_draft_start — DEPRECATED. Vid äldre trådar: hoppa direkt vidare till generering.
   if (phase === "confirm_draft_start") {
-    if (msg.includes("vänta") || msg.includes("vanta") || (msg.startsWith("nej"))) {
-      return {
-        text: "Inga problem — säg till när du är redo!",
-        quick_replies: ["Ja, skriv utkast nu"],
-      };
-    }
-    if (msg.includes("ja") || msg.includes("skriv utkast") || msg.includes("kör") || msg.includes("kor")) {
-      // Sätt tillbaka fasen till drafting_speech så LLM-grenen nedan triggar generering.
-      await admin
-        .from("debate_threads")
-        .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech" } })
-        .eq("id", threadId);
-      // Returnera null → faller genom till LLM. För att tvinga generate_speech_cards
-      // måste userMessage innehålla "skriv utkast". Vi muterar inte userMessage här —
-      // istället hanteras det i LLM-grenen via en bot_state-flagga (se nedan).
-      return null;
-    }
+    await admin
+      .from("debate_threads")
+      .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech", pending_generate: true } })
+      .eq("id", threadId);
+    return null;
   }
 
   // awaiting_perform
@@ -990,17 +1023,27 @@ Deno.serve(async (req) => {
       });
     } else if (currentPhase === "drafting_speech") {
       const lastUser = userMessage.toLowerCase().trim();
+      const pendingGenerate = Boolean((thread.bot_state as Record<string, unknown>)?.pending_generate);
+      const fromSnabbstart = (thread.bot_state as Record<string, unknown>)?.source === "snabbstart";
+      const hasOwnPosition = (thread.own_position || "").trim().length >= 2;
       const isAffirmative = /^(ja|jadå|jada|absolut|kör|kor|gör det|gor det|okej|ok)\b/.test(lastUser)
         || lastUser.includes("skriv utkast")
         || lastUser.includes("utkast åt mig")
         || lastUser.includes("utkast at mig");
-      if (isAffirmative) {
+      // Tvinga generering om: explicit pending_generate, eller Snabbstart med ståndpunkt, eller affirmativt user-svar
+      if (pendingGenerate || isAffirmative || (fromSnabbstart && hasOwnPosition)) {
         toolChoice = { type: "function", function: { name: "generate_speech_cards" } };
         toolsForRequest = TOOLS.filter((t) => t.function.name === "generate_speech_cards");
         messages.push({
           role: "system",
           content: "Du MÅSTE anropa verktyget generate_speech_cards nu. Returnera inte anförandet som vanlig text.",
         });
+        // Rensa pending_generate så vi inte triggar igen
+        if (pendingGenerate) {
+          const bs = { ...(thread.bot_state as Record<string, unknown>) };
+          delete bs.pending_generate;
+          await admin.from("debate_threads").update({ bot_state: bs }).eq("id", threadId);
+        }
       }
     }
 
