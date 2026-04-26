@@ -1228,16 +1228,17 @@ Deno.serve(async (req) => {
           } else {
             executedTools.push({ name, result: "no_manuscript" });
           }
+          const nextBotState: Record<string, unknown> = {
+            ...thread.bot_state,
+            phase: "awaiting_perform",
+            current_section_id: sectionId,
+            rebuttal_count: 0,
+          };
+          delete nextBotState.pending_generate;
+
           await admin
             .from("debate_threads")
-            .update({
-              bot_state: {
-                ...thread.bot_state,
-                phase: "awaiting_perform",
-                current_section_id: sectionId,
-                rebuttal_count: 0,
-              },
-            })
+            .update({ bot_state: nextBotState })
             .eq("id", threadId);
         } else if (name === "set_opponent") {
           await admin
