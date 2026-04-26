@@ -326,17 +326,14 @@ Deno.serve(async (req) => {
     if (threadErr || !thread) return json({ error: "thread_create_failed", details: threadErr?.message }, 500);
 
     // ---- Scripted assistant-meddelande ----
-    const confirmText = buildScriptedConfirm(parsed, phase);
-    const quickReplies = phase === "intake_own_position"
-      ? ["För", "Emot", "Behöver kontext först"]
-      : [];
+    const confirm = buildScriptedConfirm(parsed);
 
     await admin.from("debate_chat_messages").insert({
       thread_id: thread.id,
       user_id: userId,
       role: "assistant",
-      content: confirmText,
-      metadata: { scripted: true, source: "snabbstart", quick_replies: quickReplies },
+      content: confirm.content,
+      metadata: { scripted: true, source: "snabbstart", quick_replies: confirm.quick_replies },
     });
 
     // ---- Analytics ----
