@@ -811,6 +811,14 @@ async function handleScripted(
 
   // awaiting_perform
   if (phase === "awaiting_perform") {
+    // "Försök igen" → tillbaka till drafting_speech med pending_generate
+    if (msg === "försök igen" || msg === "forsok igen" || msg.includes("försök igen") || msg.includes("forsok igen")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "drafting_speech", pending_generate: true } })
+        .eq("id", threadId);
+      return null; // fall through till LLM som genererar igen
+    }
     // Manuell editing-trigger: "Redigera manuset" → editing-fasen + välkomst
     if (msg === "redigera manuset" || msg.includes("redigera manus")) {
       await admin
