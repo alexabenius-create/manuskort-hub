@@ -277,6 +277,8 @@ Deno.serve(async (req) => {
           title: deriveTitle(text),
           issue_text: text.slice(0, 200),
           manuscript_id: manus.id,
+          issue_document_text: attachedContextRaw,
+          issue_document_filename: hasAttachment ? "Bifogat underlag" : null,
           bot_state: { phase: "intake_brief", source: "snabbstart_fallback" },
         })
         .select("id")
