@@ -521,6 +521,7 @@ function parseReplaceInstruction(input: string): { old_phrase: string; new_phras
   const clean = input.trim().replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[.!?]+$/g, "").trim();
   const patterns = [
     /^(.+?)\s+ska\s+(?:ändras|andras|bytas)\s+till\s+(.+)$/i,
+    /^byt\s+ut\s+(.+?)\s+(?:mot|till)\s+(.+)$/i,
     /^byt\s+(.+?)\s+(?:mot|till)\s+(.+)$/i,
     /^ändra\s+(.+?)\s+till\s+(.+)$/i,
     /^andra\s+(.+?)\s+till\s+(.+)$/i,
