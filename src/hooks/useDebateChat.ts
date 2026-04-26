@@ -153,6 +153,7 @@ export function useDebateChat(threadId: string | null) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      await refreshMessages();
     } catch (e) {
       pendingSendStartRef.current = null;
       const msg = e instanceof Error ? e.message : "Något gick fel";
