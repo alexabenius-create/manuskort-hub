@@ -1006,6 +1006,7 @@ function splitIntoCards(text: string): Array<{ title: string; body: string }> {
       { title: "Avslut", body: paragraphs.slice(splitAt).join("\n\n") },
     ].filter((c) => c.body.trim());
   }
+  return [{ title: "Genmäle", body: cleaned || text }];
 }
 
 // ============= EDIT_MANUSCRIPT IMPLEMENTATION =============
