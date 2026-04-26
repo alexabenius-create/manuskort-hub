@@ -789,6 +789,14 @@ async function handleScripted(
 
   // awaiting_perform
   if (phase === "awaiting_perform") {
+    // Manuell editing-trigger: "Redigera manuset" → editing-fasen + välkomst
+    if (msg === "redigera manuset" || msg.includes("redigera manus")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "editing" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.editing.text, quick_replies: SCRIPTED_PROMPTS.editing.quick_replies };
+    }
     if (msg.includes("fick replik") || msg.includes("ja")) {
       await admin
         .from("debate_threads")
@@ -805,6 +813,49 @@ async function handleScripted(
     }
     if (msg.includes("vad händer") || msg.includes("vad hander")) {
       return { text: SCRIPTED_PROMPTS.post_perform_check.text, quick_replies: SCRIPTED_PROMPTS.post_perform_check.quick_replies };
+    }
+  }
+
+  // editing — låt LLM hantera fritext-instruktioner via edit_manuscript-tool.
+  // Men korta scripted shortcuts först:
+  if (phase === "editing") {
+    // "Klart" / "det ser bra ut" → completed
+    if (
+      msg === "klart" || msg === "klar" || msg === "det räcker" || msg === "det racker" ||
+      msg.includes("det ser bra ut") || msg.includes("nöjd") || msg.includes("nojd") ||
+      msg === "det ser bra ut, klart"
+    ) {
+      const editsCount = Number((thread.bot_state as Record<string, unknown>)?.edits_count) || 0;
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...thread.bot_state, phase: "completed" } })
+        .eq("id", threadId);
+      void logEvent(admin, {
+        user_id: thread.user_id,
+        event_name: "editing_completed",
+        event_props: { total_edits: editsCount },
+        thread_id: thread.id,
+      });
+      return { text: SCRIPTED_PROMPTS.completed.text, quick_replies: SCRIPTED_PROMPTS.completed.quick_replies };
+    }
+    if (msg === "jag vill ändra något" || msg === "jag vill andra nagot") {
+      return {
+        text: "Säg vad du vill ändra — t.ex. 'byt Herr mot Fru ordförande' eller 'skriv om kort 2'.",
+        quick_replies: [],
+      };
+    }
+    // Annars: fall through till LLM som tolkar instruktionen och kallar edit_manuscript.
+    return null;
+  }
+
+  // completed
+  if (phase === "completed") {
+    if (msg === "ny debatt" || msg.includes("ny debatt")) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { phase: "intake_issue" } })
+        .eq("id", threadId);
+      return { text: SCRIPTED_PROMPTS.intake_issue.text, quick_replies: SCRIPTED_PROMPTS.intake_issue.quick_replies };
     }
   }
 
