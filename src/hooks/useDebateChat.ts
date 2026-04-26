@@ -44,17 +44,22 @@ export function useDebateChat(threadId: string | null) {
     if (data) setThreadState(data as ThreadState);
   }, [threadId]);
 
+  const refreshMessages = useCallback(async () => {
+    if (!threadId) return;
+    const { data } = await supabase
+      .from("debate_chat_messages")
+      .select("id, role, content, created_at, metadata")
+      .eq("thread_id", threadId)
+      .order("created_at", { ascending: true });
+    setMessages((data || []) as ChatMessage[]);
+    await loadThread();
+  }, [threadId, loadThread]);
+
   useEffect(() => {
     if (!threadId || !user) return;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from("debate_chat_messages")
-        .select("id, role, content, created_at, metadata")
-        .eq("thread_id", threadId)
-        .order("created_at", { ascending: true });
-      setMessages((data || []) as ChatMessage[]);
-      await loadThread();
+      await refreshMessages();
       setLoading(false);
     })();
 
@@ -113,6 +118,11 @@ export function useDebateChat(threadId: string | null) {
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        await refreshMessages();
+        const tools = (data?.tools || []) as Array<{ name: string }>;
+        if (tools.some((t) => t.name === "generate_speech_cards" || t.name === "generate_rebuttal_cards" || t.name === "_cards_updated")) {
+          window.dispatchEvent(new CustomEvent("debate-cards-generated", { detail: { threadId } }));
+        }
       } catch (e) {
         pendingSendStartRef.current = null;
         const msg = e instanceof Error ? e.message : "Något gick fel";
@@ -121,7 +131,7 @@ export function useDebateChat(threadId: string | null) {
         setSending(false);
       }
     },
-    [threadId, sending],
+    [threadId, sending, refreshMessages],
   );
 
   const retryLastAssistant = useCallback(async () => {
@@ -143,6 +153,7 @@ export function useDebateChat(threadId: string | null) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      await refreshMessages();
     } catch (e) {
       pendingSendStartRef.current = null;
       const msg = e instanceof Error ? e.message : "Något gick fel";
@@ -150,7 +161,7 @@ export function useDebateChat(threadId: string | null) {
     } finally {
       setSending(false);
     }
-  }, [threadId, sending]);
+  }, [threadId, sending, refreshMessages]);
 
   const uploadBrief = useCallback(
     async (file: File) => {
