@@ -161,7 +161,7 @@ export function useDebateChat(threadId: string | null) {
     } finally {
       setSending(false);
     }
-  }, [threadId, sending]);
+  }, [threadId, sending, refreshMessages]);
 
   const uploadBrief = useCallback(
     async (file: File) => {
