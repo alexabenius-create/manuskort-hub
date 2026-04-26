@@ -838,9 +838,12 @@ async function handleScripted(
       });
       return { text: SCRIPTED_PROMPTS.completed.text, quick_replies: SCRIPTED_PROMPTS.completed.quick_replies };
     }
-    if (msg === "jag vill ändra något" || msg === "jag vill andra nagot") {
+    if (
+      msg === "jag vill ändra något" || msg === "jag vill andra nagot" ||
+      msg === "redigera manuset" || msg === "redigera"
+    ) {
       return {
-        text: "Säg vad du vill ändra — t.ex. 'byt Herr mot Fru ordförande' eller 'skriv om kort 2'.",
+        text: "Säg vad du vill ändra — skriv din instruktion här i chatten.\n\nExempel:\n• \"byt Herr mot Fru ordförande\"\n• \"skriv om kort 2 mer talspråkligt\"\n• \"ta bort sista kortet\"\n• \"gör hela manuset mer passionerat\"",
         quick_replies: [],
       };
     }
