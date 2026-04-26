@@ -557,6 +557,103 @@ function detectCompletedIntent(rawMsg: string): boolean {
 /** Mönster som indikerar att LLM hallucinerat en utförd edit i fri text utan att anropa edit_manuscript. */
 const EDIT_HALLUCINATION_PATTERN = /\b(bytt|bytte|ändrat|ändrade|andrat|andrade|skrivit\s+om|skrev\s+om|lagt\s+till|la\s+till|tagit\s+bort|tog\s+bort|justerat|justerade|uppdaterat|uppdaterade|omformulerat|omformulerade|gjort\s+(om|mer)|skapat|skapade)\b/i;
 
+// ============= SCRIPTED INTENT PARSERS (Sprint 1.6, Spår B) =============
+// Regex-baserade parsers för vanliga editing-instruktioner. Bypassar LLM-tool-calling
+// för rewrite_card / add_card / tweak_tone_global. Vid match returnerar { operation, params },
+// annars null → faller tillbaka till LLM.
+
+/** Parsar svenska kortreferenser: "kort 2", "första kortet", "sista kortet" → 0-indexerad position (eller -1 för "sista"). */
+function parseCardPosition(s: string): number | null {
+  const trimmed = s.trim().toLowerCase();
+  const numMatch = trimmed.match(/kort\s+(\d+)/);
+  if (numMatch) return parseInt(numMatch[1], 10) - 1;
+  const ordinals: Record<string, number> = {
+    "första kortet": 0, "andra kortet": 1, "tredje kortet": 2,
+    "fjärde kortet": 3, "femte kortet": 4, "sjätte kortet": 5, "sjunde kortet": 6,
+    "forsta kortet": 0, "fjarde kortet": 3, "sjatte kortet": 5,
+    "sista kortet": -1,
+  };
+  if (trimmed in ordinals) return ordinals[trimmed];
+  for (const [key, val] of Object.entries(ordinals)) {
+    if (trimmed.includes(key)) return val;
+  }
+  return null;
+}
+
+function parseRewriteCardInstruction(msg: string): { target_position: number; instruction: string } | null {
+  const verbs = "(?:skriv\\s+om|ändra|andra|omformulera|uppdatera|gör\\s+om|gor\\s+om)";
+  const cardRef = "(kort\\s+\\d+|(?:första|forsta|andra|tredje|fjärde|fjarde|femte|sjätte|sjatte|sjunde|sista)\\s+kortet)";
+  const re = new RegExp(`^${verbs}\\s+${cardRef}\\s*(.*)$`, "i");
+  const m = msg.trim().match(re);
+  if (!m) return null;
+  const pos = parseCardPosition(m[1]);
+  if (pos === null) return null;
+  const instruction = (m[2] || "").trim().replace(/^(så\s+(att\s+)?det\s+blir\s+|sa\s+(att\s+)?det\s+blir\s+|så\s+att\s+|sa\s+att\s+)/i, "").trim() || "skriv om mer engagerat";
+  return { target_position: pos, instruction };
+}
+
+function parseAddCardInstruction(msg: string): { position: "first" | "last" | "after"; after_position?: number; topic: string } | null {
+  const trimmed = msg.trim();
+  const verb = "(?:lägg\\s+till|lagg\\s+till|infoga|skapa)";
+  const cardWord = "(?:ett\\s+)?(?:nytt\\s+)?kort";
+
+  let m = trimmed.match(new RegExp(`^${verb}\\s+${cardWord}\\s+(?:sist|i\\s+slutet|på\\s+slutet|pa\\s+slutet)\\s*(.*)$`, "i"));
+  if (m) return { position: "last", topic: (m[1] || "").replace(/^om\s+/i, "").trim() };
+
+  m = trimmed.match(new RegExp(`^${verb}\\s+${cardWord}\\s+(?:först|forst|i\\s+början|i\\s+borjan|på\\s+början|pa\\s+borjan)\\s*(.*)$`, "i"));
+  if (m) return { position: "first", topic: (m[1] || "").replace(/^om\s+/i, "").trim() };
+
+  m = trimmed.match(new RegExp(`^${verb}\\s+${cardWord}\\s+efter\\s+(kort\\s+\\d+|(?:första|forsta|andra|tredje|fjärde|fjarde|femte|sjätte|sjatte|sjunde)\\s+kortet)\\s*(.*)$`, "i"));
+  if (m) {
+    const after = parseCardPosition(m[1]);
+    if (after === null) return null;
+    return { position: "after", after_position: after, topic: (m[2] || "").replace(/^om\s+/i, "").trim() };
+  }
+  return null;
+}
+
+function parseTweakToneInstruction(msg: string): { tone_descriptor: string } | null {
+  const trimmed = msg.trim();
+  const patterns = [
+    /^gör\s+(?:hela\s+)?(?:manuset|allt|texten|talet|alla\s+kort)\s+(?:lite\s+)?(?:mer\s+)?(.+?)$/i,
+    /^gor\s+(?:hela\s+)?(?:manuset|allt|texten|talet|alla\s+kort)\s+(?:lite\s+)?(?:mer\s+)?(.+?)$/i,
+    /^skriv\s+(?:om\s+)?(?:hela\s+)?(?:manuset|allt|texten|talet|alla\s+kort)\s+(?:lite\s+)?(?:mer\s+)?(.+?)$/i,
+    /^ändra\s+tonen\s+(?:till|på\s+manuset\s+till)\s+(.+?)$/i,
+    /^andra\s+tonen\s+(?:till|pa\s+manuset\s+till)\s+(.+?)$/i,
+    /^justera\s+tonen\s+(?:till|på\s+manuset\s+till|pa\s+manuset\s+till)\s+(.+?)$/i,
+  ];
+  for (const re of patterns) {
+    const m = trimmed.match(re);
+    if (m) {
+      const desc = m[1].trim().replace(/[.!?]+$/, "");
+      if (desc.length > 0 && desc.length < 100) return { tone_descriptor: desc };
+    }
+  }
+  return null;
+}
+
+/** Genererar ny korttext via LLM (gemini-2.5-flash, 60s timeout, 1 attempt) — för scripted rewrite_card / add_card. */
+async function generateCardText(
+  apiKey: string,
+  prompt: string,
+): Promise<{ ok: true; text: string } | { ok: false; reason: string }> {
+  const result = await callLLM(
+    {
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: "Du är en svensk debattcoach. Skriv tal-text som ska läsas högt — kort, konkret, talspråklig. INGEN markdown, INGA rubriker, INGA citationstecken runt svaret. Bara den färdiga texten." },
+        { role: "user", content: prompt },
+      ],
+    },
+    apiKey,
+    { timeout_ms: 60_000, max_attempts: 1, function_name: "debate-chat-scripted-edit" },
+  );
+  if (!result.ok) return { ok: false, reason: result.error_kind };
+  const text = String(result.data?.choices?.[0]?.message?.content || "").trim();
+  if (!text) return { ok: false, reason: "empty" };
+  return { ok: true, text };
+}
+
 /** Returnerar ett scripted svar om användarens input matchar en hårdkodad regel — annars null (då kör LLM). */
 async function handleScripted(
   admin: ReturnType<typeof createClient<any>>,
