@@ -112,6 +112,7 @@ export async function callLLM(
 
       if (response.ok) {
         if (options.stream) {
+          void logDuration("success");
           return {
             ok: true,
             body: response.body!,
@@ -120,11 +121,13 @@ export async function callLLM(
           };
         }
         const data = await response.json();
+        void logDuration("success");
         return { ok: true, data, duration_ms: Date.now() - start, attempts: attempt };
       }
 
       // Status-baserad felklassning
       if (response.status === 401 || response.status === 403) {
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "auth",
@@ -137,6 +140,7 @@ export async function callLLM(
 
       if (response.status === 400) {
         const errBody = await response.text().catch(() => "");
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "bad_request",
@@ -156,6 +160,7 @@ export async function callLLM(
           await new Promise((r) => setTimeout(r, waitMs));
           continue;
         }
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "rate_limit",
@@ -171,6 +176,7 @@ export async function callLLM(
           await new Promise((r) => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt - 1)));
           continue;
         }
+        void logDuration("failed", "api_error");
         return {
           ok: false,
           error_kind: "model_unavailable",
@@ -190,6 +196,7 @@ export async function callLLM(
           await new Promise((r) => setTimeout(r, RETRY_BASE_MS));
           continue;
         }
+        void logDuration("failed", "timeout");
         return {
           ok: false,
           error_kind: "timeout",
@@ -206,6 +213,7 @@ export async function callLLM(
     }
   }
 
+  void logDuration("failed", "other");
   return {
     ok: false,
     error_kind: "unknown",
