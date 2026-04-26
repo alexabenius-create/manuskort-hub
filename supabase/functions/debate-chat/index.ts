@@ -1472,6 +1472,25 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
   // reply_intake — Sprint 1.7: användaren beskriver replik → vi genererar genmäle
   if (phase === "reply_intake") {
     const trimmed = userMessage.trim();
+    const botStateObj = (thread.bot_state as Record<string, unknown>) || {};
+
+    // "Detta är en NY replik" — användaren bekräftar att nästa input är ny, inte duplikat.
+    // Sätt force-flagga och be om input.
+    if (
+      msg === "detta är en ny replik" ||
+      msg === "detta ar en ny replik" ||
+      msg.includes("ny replik") && (msg.startsWith("detta") || msg.startsWith("det är") || msg.startsWith("det ar"))
+    ) {
+      await admin
+        .from("debate_threads")
+        .update({ bot_state: { ...botStateObj, pending_force_new_reply: true } })
+        .eq("id", threadId);
+      return {
+        text: "OK, beskriv den nya repliken (vem och vad).",
+        quick_replies: [],
+      };
+    }
+
     if (trimmed.length < 3) {
       return {
         text: SCRIPTED_PROMPTS.reply_intake.text,
@@ -1479,11 +1498,75 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       };
     }
     const replyInput = parseReplyInput(trimmed);
-    const replyStackRaw = (thread.bot_state as Record<string, unknown>)?.reply_stack;
+    const replyStackRaw = botStateObj.reply_stack;
     const replyStack: ReplyStackEntry[] = Array.isArray(replyStackRaw) ? (replyStackRaw as ReplyStackEntry[]) : [];
     const replyIndex = replyStack.length + 1;
 
+    // ====== Idempotens-check (Fix 1, runda 4) ======
+    // Skydd mot dubbel-submit: användare klistrar in samma replik 2 ggr när LLM-call tar 7-10s.
+    // Bypass om pending_force_new_reply är satt.
+    const forceNew = !!botStateObj.pending_force_new_reply;
+    const lastEntry = replyStack[replyStack.length - 1];
+    if (!forceNew && lastEntry) {
+      const lastNorm = normalizeReplyArgument(lastEntry.arguments);
+      const currNorm = normalizeReplyArgument(replyInput.arguments);
+      const ageMs = Date.now() - new Date(lastEntry.generated_at).getTime();
+      const isExactDupe = lastNorm === currNorm;
+      const isFuzzyDupe =
+        lastNorm.length > 20 &&
+        currNorm.length > 20 &&
+        (lastNorm.includes(currNorm) || currNorm.includes(lastNorm));
+
+      if ((isExactDupe || isFuzzyDupe) && ageMs < 60_000) {
+        void logEvent(admin, {
+          user_id: thread.user_id,
+          event_name: "reply_dedup_blocked",
+          event_props: {
+            reply_index: lastEntry.index,
+            age_ms: ageMs,
+            match_type: isExactDupe ? "exact" : "fuzzy",
+          },
+          thread_id: thread.id,
+          manuscript_id: lastEntry.manuscript_id,
+        });
+        return {
+          text: `Genmäle ${lastEntry.index} till ${lastEntry.name || "replikanten"} är redan skapat — du har det här ovanför. Vill du hålla det nu, eller är det en NY replik från någon annan?`,
+          quick_replies: [`Klar med replik ${lastEntry.index}`, "Detta är en NY replik"],
+          metadata_extra: { navigate_to_manuscript: lastEntry.manuscript_id },
+          navigate_to_manuscript: lastEntry.manuscript_id,
+        };
+      }
+    }
+
+    // Rensa force-flaggan direkt (en gång)
+    if (forceNew) {
+      botStateObj.pending_force_new_reply = false;
+    }
+
+    // ====== Loading-feedback (Fix 3) ======
+    // Posta interim-meddelande direkt så användaren ser att något händer.
+    // generateReplyManuscript tar 7-10s med gemini-2.5-flash.
+    const interimName = replyInput.name || "replikanten";
+    const { data: interimMsg } = await admin
+      .from("debate_chat_messages")
+      .insert({
+        thread_id: thread.id,
+        user_id: thread.user_id,
+        role: "assistant",
+        content: `⏳ Skapar genmäle till ${interimName}...`,
+        metadata: { scripted: true, ephemeral: true, interim_for: "reply_generation" },
+      })
+      .select("id")
+      .maybeSingle();
+    const interimMsgId = interimMsg?.id as string | undefined;
+
     const gen = await generateReplyManuscript(admin, apiKey, thread, replyInput, replyIndex);
+
+    // Radera interim-meddelandet (oavsett resultat) så slutsvaret får stå för sig själv.
+    if (interimMsgId) {
+      await admin.from("debate_chat_messages").delete().eq("id", interimMsgId);
+    }
+
     if (!gen.ok) {
       console.error("[debate-chat:reply] gen failed", gen.reason);
       return {
@@ -1505,10 +1588,11 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
       .from("debate_threads")
       .update({
         bot_state: {
-          ...thread.bot_state,
+          ...botStateObj,
           phase: "awaiting_reply_perform",
           reply_stack: updatedStack,
           last_reply_manuscript_id: gen.manuscript_id,
+          pending_force_new_reply: false,
         },
       })
       .eq("id", threadId);
@@ -1520,15 +1604,18 @@ Skriv bara den färdiga texten — ingen rubrik, inga förklaringar.`;
         reply_index: replyIndex,
         has_name: !!replyInput.name,
         cards_count: gen.cards_count,
+        arguments_length: replyInput.arguments.length,
       },
       thread_id: thread.id,
       manuscript_id: gen.manuscript_id,
     });
 
     const oppLabel = replyInput.name || "replikanten";
+    // Fix 4 (runda 4): "Skriv om genmälet"-knappen borttagen — visade sig förvirrande i smoke-test.
+    // TODO: Implementera "Skriv om genmälet" via editing-fasen (Sprint 1.6) i framtida sprint.
     return {
       text: `Här är ditt genmäle till ${oppLabel} — ${gen.cards_count} kort. Du framför det när du är redo.`,
-      quick_replies: [`Klar med replik ${replyIndex}`, "Skriv om genmälet"],
+      quick_replies: [`Klar med replik ${replyIndex}`],
       tools: [{ name: "_cards_updated", result: "1" }],
       metadata_extra: { navigate_to_manuscript: gen.manuscript_id },
       navigate_to_manuscript: gen.manuscript_id,
