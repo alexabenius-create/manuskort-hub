@@ -509,7 +509,7 @@ export default function LibraryV2() {
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Link
               to="/installningar#affiliate-program"
-              className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+              className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
               title="Bjud in andra och tjäna gratis PRO — gäller även gratisanvändare"
             >
               <Gift className="h-4 w-4 text-v2-violet" />
@@ -520,7 +520,7 @@ export default function LibraryV2() {
               <button
                 type="button"
                 onClick={() => navigate("/debatt-buddy")}
-                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+                className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
                 title="AI-stöd för debattanföranden"
               >
                 <MessagesSquare className="h-4 w-4 text-v2-violet" />
@@ -555,7 +555,7 @@ export default function LibraryV2() {
               <button
                 type="button"
                 onClick={requestImport}
-                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white border border-v2-line gap-1.5 transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+                className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white border border-v2-line gap-1.5 transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
               >
                 <Upload className="h-4 w-4" /> Importera
               </button>
