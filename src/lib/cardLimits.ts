@@ -8,20 +8,16 @@ export type TextSize = keyof typeof MAX_ROWS_BY_SIZE;
  * Vi mäter alltid mot dessa värden, oavsett editorns visuella bredd, så
  * "X/N rader" i editorn alltid stämmer med antal rader i presentationsläget.
  *
- * Bredd: kortets faktiska bredd är min(95ch, container-bredd). I praktiken
- * är container-bredden den begränsande faktorn på desktop med notes-panelen
- * synlig (380px notes + padding) och på mindre skärmar. Vi mäter vid en
- * **konservativ** bredd som motsvarar det smalaste realistiska kortet:
- * ~38ch (≈ 19em för Inter Tight där 1ch ≈ 0.5em). Det ger en säker övre
- * gräns: om mätaren säger 5 rader får kortet aldrig fler — bara färre
- * när det faktiskt visas på en bredare skärm.
+ * Bredd: presentationskortet är max 95ch, medan editorn visar manusytan runt
+ * 75ch. Vi mäter mot 75ch som praktiskt riktvärde i stället för den tidigare
+ * 38ch-nödbredden; annars blir paste-splitten extremt aggressiv på desktop.
  *
  * lineHeight 1.85: ger luftigare kort utan att kännas glest.
  */
 const PRESENTATION_GEOMETRY = {
-  sm: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(38 * 30 * 0.5) },
-  md: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(38 * 38 * 0.5) },
-  lg: { fontSize: 46, lineHeight: 1.85, widthPx: Math.round(38 * 46 * 0.5) },
+  sm: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(75 * 30 * 0.5) },
+  md: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(75 * 38 * 0.5) },
+  lg: { fontSize: 46, lineHeight: 1.85, widthPx: Math.round(75 * 46 * 0.5) },
 } as const;
 
 let presentationMeasurer: HTMLDivElement | null = null;
