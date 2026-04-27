@@ -26,16 +26,26 @@ export default function Settings() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Smooth-scrolla till hash-ankare (t.ex. #affiliate-program från biblioteket)
+  // Smooth-scrolla till hash-ankare (t.ex. #affiliate-program från biblioteket).
+  // Pollar i upp till ~1.5s för att hantera lazy-load och försenad layout.
   useEffect(() => {
     if (!location.hash) return;
     const id = location.hash.slice(1);
-    // Kort timeout för att låta sektioner mountas innan vi mäter position
-    const t = window.setTimeout(() => {
+    let cancelled = false;
+    let attempts = 0;
+    const tryScroll = () => {
+      if (cancelled) return;
       const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
-    return () => window.clearTimeout(t);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (attempts++ < 30) {
+        window.setTimeout(tryScroll, 50);
+      }
+    };
+    tryScroll();
+    return () => { cancelled = true; };
   }, [location.hash]);
 
   // Profil-fält (autofyller manus-platshållare)
