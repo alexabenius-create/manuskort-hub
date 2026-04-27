@@ -346,6 +346,62 @@
 
 @layer components {
   /* Primär CTA med shimmer */
+  /* ---------------------------------------------------------------
+     Shine-sweep utility
+     ---------------------------------------------------------------
+     En diagonal vit "ljusstråle" som glider tvärs över elementet vid
+     hover. Använd additivt på klickbara ytor.
+
+     Krav: elementet måste vara `position: relative` och `overflow: hidden`
+     (ingår automatiskt i klasserna nedan).
+
+       .v2-shine          → stark variant (45% vit, 0.7s) — primära CTA:er
+       .v2-shine-subtle   → mjuk variant (15% vit, 0.6s) — sekundära ytor
+
+     Båda klipper sin egen pseudo-stråle och påverkar inte layout.
+     Reduced-motion stänger av animationen längst ner i filen.
+  --------------------------------------------------------------- */
+  .v2-shine,
+  .v2-shine-subtle {
+    position: relative;
+    overflow: hidden;
+  }
+  .v2-shine::before,
+  .v2-shine-subtle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -120%;
+    width: 80%;
+    transform: skewX(-20deg);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .v2-shine::before {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.45) 50%,
+      transparent 100%
+    );
+    transition: left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .v2-shine-subtle::before {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 100%
+    );
+    transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .v2-shine:hover::before,
+  .v2-shine-subtle:hover::before {
+    left: 130%;
+  }
+
+  /* Primär CTA — använder .v2-shine internt för shimmer-effekten. */
   .v2-btn-primary {
     position: relative;
     display: inline-flex;
