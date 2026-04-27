@@ -49,15 +49,12 @@ function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
 }
 
 /**
- * Normalisera HTML så att tomma rader/block får en synlig line-box vid mätning.
+ * Normalisera HTML för radmätning.
  *
- * Två fall:
- *  1. Tomt <p></p> (eller blockquote/heading/li): har annars scrollHeight = 0
- *     i de flesta browsers. Vi injicerar <br> så blocket bidrar med 1 rad.
- *  2. Konsekutiva <br><br> inuti ett block: browsern renderar det andra <br>
- *     som en "tom rad", men scrollHeight-beräkningen kan vara inkonsekvent.
- *     Vi sätter in en synlig nbsp mellan paren så varje extra <br> säkert
- *     bidrar med en rad. (<br>A<br> → <br>&nbsp;<br>A<br>&nbsp; om A är tom)
+ * Radbudgeten ska mäta textrader, inte luft. Därför räknas inte tomma block
+ * eller extra tomrader från dubbla <br><br> som egna rader vid split/varning.
+ * Det gör paste mindre aggressiv och undviker "för många rader" på kort där
+ * överflödet egentligen bara är tomma rader.
  *
  * Påverkar enbart mätning — sparat innehåll förblir oförändrat.
  */
@@ -70,18 +67,20 @@ function normalizeForMeasurement(html: string): string {
     const text = (el.textContent ?? "").replace(/\u00a0/g, "").trim();
     const onlyBr = el.children.length > 0 && Array.from(el.children).every((c) => c.tagName === "BR");
     if (text === "" && (el.children.length === 0 || onlyBr)) {
-      el.innerHTML = "<br>";
+      el.remove();
       return;
     }
-    // Hantera konsekutiva <br><br> inuti block med text.
-    // Sätt in &nbsp; mellan varje par så den tomma raden får en line-box.
+    // Kollapsa tomrader i följd till en enda hård radbrytning vid mätning.
     const brs = Array.from(el.querySelectorAll("br"));
-    for (const br of brs) {
-      const next = br.nextSibling;
-      if (next && next.nodeType === 1 && (next as HTMLElement).tagName === "BR") {
-        // <br> direkt följt av <br> — sätt nbsp emellan
-        const nbsp = document.createTextNode("\u00a0");
-        br.parentNode?.insertBefore(nbsp, next);
+    for (let i = 0; i < brs.length; i++) {
+      let next = brs[i].nextSibling;
+      while (next && next.nodeType === Node.TEXT_NODE && !next.textContent?.replace(/\u00a0/g, "").trim()) {
+        const remove = next;
+        next = next.nextSibling;
+        remove.parentNode?.removeChild(remove);
+      }
+      if (next && next.nodeType === Node.ELEMENT_NODE && (next as HTMLElement).tagName === "BR") {
+        next.parentNode?.removeChild(next);
       }
     }
   });
@@ -110,19 +109,9 @@ function countRowsInPresentationMeasurer(el: HTMLElement): number {
   const blocks = Array.from(el.children) as HTMLElement[];
   if (blocks.length === 0) return Math.max(1, Math.round(el.scrollHeight / lh));
 
-  return Math.max(1, blocks.reduce((sum, block, index) => {
+  return Math.max(1, blocks.reduce((sum, block) => {
     const blockRows = Math.max(1, Math.round(block.getBoundingClientRect().height / lh));
-    if (index >= blocks.length - 1) return sum + blockRows;
-
-    // scrollHeight/getBoundingClientRect räknar inte kollapsade styckemarginaler.
-    // I presentationen syns de som en tom rad mellan stycken, så de måste ingå
-    // i radbudgeten för att kort som kort 10 inte ska slinka igenom.
-    const next = blocks[index + 1];
-    const mb = parseFloat(getComputedStyle(block).marginBottom) || 0;
-    const mt = parseFloat(getComputedStyle(next).marginTop) || 0;
-    const collapsedGap = Math.max(mb, mt);
-    const gapRows = collapsedGap > lh * 0.2 ? Math.max(1, Math.round(collapsedGap / lh)) : 0;
-    return sum + blockRows + gapRows;
+    return sum + blockRows;
   }, 0));
 }
 
