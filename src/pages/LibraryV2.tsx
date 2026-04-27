@@ -12,7 +12,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X, Inbox, FileText, MessagesSquare, Gift, ArrowRight } from "lucide-react";
+import { MoreHorizontal, Plus, Search, LogOut, Sparkles, Settings as SettingsIcon, Upload, Shield, Sparkle, Trash2, X, Inbox, FileText, MessagesSquare, Gift } from "lucide-react";
 import { useBetaAccess } from "@/hooks/useBetaAccess";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { UnreadBadge } from "@/components/feedback/UnreadBadge";
@@ -507,6 +507,15 @@ export default function LibraryV2() {
             Skapa, redigera och håll flyt — från första hälsning till sista applåd.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            <Link
+              to="/installningar#affiliate-program"
+              className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+              title="Bjud in andra och tjäna gratis PRO — gäller även gratisanvändare"
+            >
+              <Gift className="h-4 w-4 text-v2-violet" />
+              Tjäna gratis PRO
+              <span className="text-v2-muted hidden sm:inline">— bjud in en vän</span>
+            </Link>
             {hasDebateBuddy && (
               <button
                 type="button"
@@ -820,44 +829,6 @@ export default function LibraryV2() {
             </ul>
           </>
         )}
-
-        {/* Affiliate-promo: synlig för alla, leder till affiliate-sektionen i inställningar */}
-        <section
-          className="mt-12 sm:mt-16 v2-reveal rounded-3xl border border-v2-line bg-white/80 backdrop-blur-xl shadow-sm overflow-hidden"
-          aria-labelledby="affiliate-promo-title"
-        >
-          <div className="relative px-6 sm:px-8 py-7 sm:py-8 flex flex-col md:flex-row md:items-center gap-6">
-            <div
-              aria-hidden
-              className="hidden md:block absolute -top-16 -right-16 h-56 w-56 rounded-full opacity-30 blur-3xl"
-              style={{ background: "radial-gradient(circle, #6366f1 0%, transparent 70%)" }}
-            />
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <span className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-v2-violet/10 text-v2-violet shrink-0">
-                <Gift className="h-6 w-6" />
-              </span>
-              <div className="min-w-0">
-                <h3
-                  id="affiliate-promo-title"
-                  className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-v2-ink"
-                >
-                  Tjäna kostnadsfri PRO
-                </h3>
-                <p className="text-v2-muted text-[14px] sm:text-[15px] mt-1.5 max-w-xl">
-                  Bjud in andra till Manuskort och få upp till <strong className="text-v2-ink">3 månaders gratis PRO</strong> per värvad användare.
-                </p>
-              </div>
-            </div>
-            <Link
-              to="/installningar#affiliate-program"
-              className="v2-btn-primary shrink-0 self-start md:self-center"
-              style={{ height: 44, padding: "0 20px", fontSize: 14 }}
-            >
-              Visa min affiliate-länk
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
       </main>
 
       <Dialog open={!!renameId} onOpenChange={(o) => !o && setRenameId(null)}>

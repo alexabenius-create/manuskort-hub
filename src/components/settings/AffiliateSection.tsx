@@ -24,7 +24,8 @@ export function AffiliateSection() {
     <section className="flex flex-col gap-4">
       <h2 className="font-display text-2xl font-semibold tracking-tight">Affiliate-program</h2>
       <p className="text-[14px] text-muted-foreground -mt-2">
-        Bjud in andra till Manuskort och få <strong>kostnadsfri PRO</strong>:
+        Bjud in andra till Manuskort och få <strong>kostnadsfri PRO</strong> — det
+        fungerar även om du själv är gratisanvändare:
         <br />• 1 månad per värvad månadsprenumerant
         <br />• 3 månader per värvad årsprenumerant
       </p>
