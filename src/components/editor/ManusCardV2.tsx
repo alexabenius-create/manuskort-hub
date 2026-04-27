@@ -326,7 +326,7 @@ export function ManusCardV2({
               isOver ? "text-destructive" : "text-[hsl(35_85%_38%)]",
             )}>
               {isOver && <AlertTriangle className="h-3 w-3" />}
-              <span className="tabular-nums">{currentRows} / {maxRows} rader</span>
+              <span className="tabular-nums">{currentRows} / {maxRows} rader i presentationsläget</span>
               {isOver && (
                 <>
                   <span className="opacity-60">·</span>
