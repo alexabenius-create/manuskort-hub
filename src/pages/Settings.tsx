@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
@@ -22,8 +22,21 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const { resetTour } = useTour();
   const { tier, isFree, isPro } = useTier();
+  const location = useLocation();
   const [portalLoading, setPortalLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Smooth-scrolla till hash-ankare (t.ex. #affiliate-program från biblioteket)
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    // Kort timeout för att låta sektioner mountas innan vi mäter position
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
 
   // Profil-fält (autofyller manus-platshållare)
   const [displayName, setDisplayName] = useState("");
@@ -287,8 +300,10 @@ export default function Settings() {
             </p>
           </div>
         </section>
-        {/* Affiliate-program */}
-        <AffiliateSection />
+        {/* Affiliate-program — id används som ankare från biblioteket (#affiliate-program) */}
+        <div id="affiliate-program" className="scroll-mt-24">
+          <AffiliateSection />
+        </div>
 
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>

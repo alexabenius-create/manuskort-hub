@@ -1,58 +1,37 @@
-# Problem
+# Lyft fram affiliate-programmet i biblioteket
 
-Vid maxzoom (`sizeOffset = +2`) i presentationsläget kan långa kort flöda utanför containerns nedre kant. Tre orsaker samverkar:
+Lägga in en säljande promo-banner i biblioteket (`/bibliotek`) med en CTA-knapp som tar användaren direkt till affiliate-sektionen i inställningar via ett ankare.
 
-1. **Auto-fit räknar fel utrymme.** Efter förra ändringen sitter texten med `pt-[18vh]` (≈143px topp-padding). Auto-fit-loopen jämför `article.scrollHeight > container.clientHeight`, men eftersom artikeln ligger inuti containern äts en stor del av höjden upp av top-paddingen — som inte räknas in. Loopen tror att texten ryms och slutar krympa för tidigt.
-2. **Krympspannet är för smalt.** `MIN_FONT = max(14, baseSize - 8)`. Vid `lg` + zoom +2 är önskad 50px och MIN_FONT bara 38px → text kan inte krympas tillräckligt på ett långt kort.
-3. **Ingen "nödventil".** När texten inte får plats även vid MIN_FONT visas bara en mask — texten sticker fortfarande ut.
+## Vad som ändras
 
-# Lösning
+### 1. Promo-banner i biblioteket (`src/pages/LibraryV2.tsx`)
 
-Tre samverkande, små ändringar i `src/components/presentation/PresentationCard.tsx`:
+Lägga in en ny sektion strax innan `</main>` (efter manus-listan, raderingsdialoger ligger utanför `<main>`). Banner syns alltid, oavsett om listan är tom eller full.
 
-### 1. Mät tillgänglig höjd korrekt
+Innehåll:
+- **Rubrik:** "Tjäna kostnadsfri PRO"
+- **Säljande text:** "Bjud in andra till Manuskort och få upp till 3 månaders gratis PRO per värvad användare."
+- **CTA-knapp:** "Visa min affiliate-länk →" som länkar till `/installningar#affiliate-program`
+- Stilen följer V2-designspråket: vit/glas-yta, `rounded-3xl`, `border-v2-line`, lila accent (`v2-violet`), `Gift`-ikon från lucide.
 
-Ersätt `container.clientHeight` med en uträknad **tillgänglig höjd** som drar bort både topp-padding och eventuella cue-pillar-höjder:
+Lägga till `Gift` och `ArrowRight` i lucide-importen på rad 15. Använder befintlig `Link` från `react-router-dom` (redan importerad rad 2).
 
-```ts
-const styles = getComputedStyle(container);
-const padTop = parseFloat(styles.paddingTop) || 0;
-const padBottom = parseFloat(styles.paddingBottom) || 0;
-const available = container.clientHeight - padTop - padBottom;
-while (article.scrollHeight > available && size > MIN_FONT) { ... }
-```
+### 2. Ankare i Settings (`src/pages/Settings.tsx`)
 
-Detta gör att auto-fit börjar krympa när texten *faktiskt* inte ryms från startpositionen och nedåt — inte när den hypotetiskt skulle rymmas i hela containern.
+Wrappa `<AffiliateSection />` på rad 291 i en `<div id="affiliate-program" className="scroll-mt-24">` så att hashen `#affiliate-program` scrollar dit med marginal till sticky-headern.
 
-### 2. Adaptiv topp-padding (nödventil)
+### 3. Smidig scroll vid hash (`src/pages/Settings.tsx`)
 
-Behåll `pt-[18vh]` som *önskad* startposition, men låt auto-fit *minska* topp-paddingen i steg om texten fortfarande inte ryms efter att font nått `MIN_FONT`. Topp-paddingen exponeras som inline `paddingTop` (state-värde) som börjar på `~18vh` och kan minskas ner till en golvnivå (t.ex. 24px) precis som font-loopen.
+Lägga till en liten `useEffect` som lyssnar på `location.hash` och anropar `element.scrollIntoView({ behavior: "smooth", block: "start" })` när hashen finns. `useLocation` importeras från `react-router-dom`. Detta fungerar både vid direktnavigering och vid klick från biblioteket.
 
-```ts
-let pad = idealPadTop;        // ~18vh i px
-let size = desiredFontSize;
-// Steg 1: krymp font till MIN_FONT
-while (overflow && size > MIN_FONT) size--;
-// Steg 2: krymp top-padding mot golv 24px
-while (overflow && pad > 24) pad -= 8;
-```
+### 4. Synlighetsregler
 
-Effekt: korta kort behåller den fina, höga startpositionen vi precis införde. Långa kort vid hög zoom kryper upp så all text ryms — men startar fortfarande "från toppen" snarare än vertikalt centrerat.
+Bannern visas för **alla inloggade användare** enligt önskemålet. Ingen extra logik baserat på tier eller om användaren redan är affiliate — affiliate-programmet är öppet för alla.
 
-### 3. Sänk MIN_FONT-golvet något
+## Tekniska detaljer
 
-Ändra till `MIN_FONT = max(14, baseSize - 12)` (tidigare `-8`). Ger 4 px extra krymputrymme, vilket räcker för de allra flesta kort utan att texten blir oläsligt liten. Mask + adaptiv padding hanterar resten.
-
-# Tekniska detaljer
-
-- Endast `src/components/presentation/PresentationCard.tsx` ändras. Mobilvarianten (`MobileCardContent.tsx`) har redan vertikal centrering och annat layoutmönster — påverkas inte.
-- Inline `paddingTop` ersätter Tailwind-klassen `pt-[18vh]` (klassen tas bort från containern).
-- Order i fit-loopen: först krympa font, sedan padding. Detta bevarar startposition så länge möjligt och offrar den först som sista utväg.
-- `overflowAtMin` triggas bara om både font *och* padding nått sitt golv — då är masken sista skyddet.
-- Inga ändringar i UI/zoom-knappar; samma `SIZE_MIN/MAX` (-2…+2) behålls.
-
-# Resultat
-
-- Vid normal/låg zoom: korta och långa kort ser identiska ut, texten startar på samma höga startposition som idag.
-- Vid maxzoom på långa kort: texten kryper upp mot toppen av kortet vid behov istället för att flöda utanför nedtill.
-- Inget kort kan längre dölja text under viewport-kanten i normala fall.
+- Endast två filer ändras: `src/pages/LibraryV2.tsx` och `src/pages/Settings.tsx`.
+- Inget DB-arbete eller backend-arbete krävs.
+- Bannerns layout: full bredd inom max-w-[1100px] container, marginalavstånd `mt-12 sm:mt-16` från manus-listan, två-kolumnslayout (text vänster, knapp höger) på desktop, staplad på mobil.
+- CTA renderas som `<Link to="/installningar#affiliate-program">` med `v2-btn-primary`-style för konsistens med övriga primär-knappar.
+- `scroll-mt-24` (~96px) räcker för att kompensera för Settings-headern.
