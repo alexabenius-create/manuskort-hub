@@ -233,7 +233,7 @@ export function TiptapDocEditor({
           if (content.size === 0) {
             content = Fragment.from(schema.nodes.paragraph.create());
           }
-          return cardBlockType.create({ cardId: null }, content);
+          return cardBlockType.create({ cardId: null, textSize: size }, content);
         });
 
         if (isEmptyCard) {
