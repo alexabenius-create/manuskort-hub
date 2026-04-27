@@ -9,6 +9,7 @@
  * Returnerar HTML-strängar (en per kort) + räknare för användartoast.
  */
 import { splitSentences } from "./sentenceSplit";
+import { countPresentationRows, MAX_ROWS_BY_SIZE, splitHtmlAtRow, type TextSize } from "./cardLimits";
 
 export interface SplitResult {
   cardsHtml: string[];
@@ -178,13 +179,53 @@ function chunkBlocks(blocks: Block[], maxWords: number): { cards: string[]; leng
   return { cards, lengthSplits };
 }
 
+function chunkBlocksByRows(blocks: Block[], textSize: TextSize): { cards: string[]; lengthSplits: number } {
+  const cards: string[] = [];
+  const maxRows = MAX_ROWS_BY_SIZE[textSize];
+  let lengthSplits = 0;
+  let buf: string[] = [];
+
+  const flush = () => {
+    if (buf.length === 0) return;
+    cards.push(buf.join(""));
+    buf = [];
+  };
+
+  for (const b of blocks) {
+    const candidate = [...buf, b.html].join("");
+    if (countPresentationRows(candidate, textSize) <= maxRows) {
+      buf.push(b.html);
+      continue;
+    }
+
+    flush();
+
+    let remaining = b.html;
+    let safety = 30;
+    while (remaining && remaining.trim() && safety-- > 0) {
+      const [fits, overflow] = splitHtmlAtRow(remaining, maxRows, textSize);
+      if (!overflow || !overflow.trim()) {
+        buf = [fits];
+        break;
+      }
+      cards.push(fits);
+      lengthSplits++;
+      if (overflow === remaining) break;
+      remaining = overflow;
+    }
+  }
+
+  flush();
+  return { cards, lengthSplits };
+}
+
 /**
  * Huvudfunktion. Splittar HTML till kort enligt:
  *   1. H1/H2 → ny sektion
  *   2. Greedy paragraph-klumpning till maxWords
  *   3. Långa stycken splittas på meningsgräns
  */
-export function splitPastedHtml(html: string, maxWords: number): SplitResult {
+export function splitPastedHtml(html: string, maxWords: number, textSize?: TextSize): SplitResult {
   const blocks = parseHtmlBlocks(html);
   const totalWords = blocks.reduce((sum, b) => sum + wordCount(b.text), 0);
 
@@ -204,7 +245,9 @@ export function splitPastedHtml(html: string, maxWords: number): SplitResult {
   const allCards: string[] = [];
   let totalLengthSplits = 0;
   for (const sec of sections) {
-    const { cards, lengthSplits } = chunkBlocks(sec, maxWords);
+    const { cards, lengthSplits } = textSize && typeof document !== "undefined"
+      ? chunkBlocksByRows(sec, textSize)
+      : chunkBlocks(sec, maxWords);
     allCards.push(...cards);
     totalLengthSplits += lengthSplits;
   }
