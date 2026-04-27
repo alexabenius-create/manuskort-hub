@@ -90,11 +90,16 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
   const desiredFontSize = baseSize + sizeOffset * 2;
   const html = useMemo(() => transformHtmlForPresentation(card.content_html ?? "", panelists), [card.content_html, panelists]);
 
-  // Auto-fit: krymper fontSize tills hela artikeln ryms i containern.
+  // Auto-fit: krymper fontSize (och vid behov topp-padding) tills artikeln ryms.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const articleRef = useRef<HTMLElement | null>(null);
-  const MIN_FONT = Math.max(14, baseSize - 8);
+  const MIN_FONT = Math.max(14, baseSize - 12);
+  const IDEAL_PAD_TOP_VH = 0.18;
+  const MIN_PAD_TOP = 24;
   const [fittedFontSize, setFittedFontSize] = useState(desiredFontSize);
+  const [fittedPadTop, setFittedPadTop] = useState<number>(() =>
+    typeof window !== "undefined" ? Math.round(window.innerHeight * IDEAL_PAD_TOP_VH) : 120
+  );
   const [overflowAtMin, setOverflowAtMin] = useState(false);
 
   useLayoutEffect(() => {
@@ -104,24 +109,43 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
 
     let raf = 0;
     const measure = () => {
-      // Starta från önskad storlek varje pass
+      // Starta från önskad storlek + ideal topp-padding varje pass
+      const idealPad = Math.round(window.innerHeight * IDEAL_PAD_TOP_VH);
       let size = desiredFontSize;
+      let pad = idealPad;
       article.style.fontSize = `${size}px`;
       article.style.lineHeight = "1.85";
-      // Krymp tills det ryms eller golv nås
-      // (max ~30 iterationer för säkerhet)
+      container.style.paddingTop = `${pad}px`;
+
+      // Tillgänglig höjd = container minus aktuell topp- och botten-padding
+      const computeAvailable = () => {
+        const styles = getComputedStyle(container);
+        const padBottom = parseFloat(styles.paddingBottom) || 0;
+        return container.clientHeight - pad - padBottom;
+      };
+
+      // Steg 1: krymp font tills den ryms eller golv nås
       let guard = 0;
-      while (article.scrollHeight > container.clientHeight && size > MIN_FONT && guard < 60) {
+      while (article.scrollHeight > computeAvailable() && size > MIN_FONT && guard < 80) {
         size -= 1;
         article.style.fontSize = `${size}px`;
         if (size <= desiredFontSize - 4) {
-          // Tätare radhöjd när vi tvingats krympa märkbart
           article.style.lineHeight = "1.6";
         }
         guard += 1;
       }
-      const stillOverflow = article.scrollHeight > container.clientHeight + 1;
+
+      // Steg 2: om font nått golvet och det fortfarande inte ryms — krymp topp-padding
+      guard = 0;
+      while (article.scrollHeight > computeAvailable() && pad > MIN_PAD_TOP && guard < 60) {
+        pad = Math.max(MIN_PAD_TOP, pad - 8);
+        container.style.paddingTop = `${pad}px`;
+        guard += 1;
+      }
+
+      const stillOverflow = article.scrollHeight > computeAvailable() + 1;
       setFittedFontSize(size);
+      setFittedPadTop(pad);
       setOverflowAtMin(stillOverflow);
     };
 
@@ -217,17 +241,18 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           olika korts startposition är konsekvent mellan sliden. */}
       <div
         ref={containerRef}
-        className="flex-1 min-w-0 flex flex-col items-start justify-start overflow-hidden relative pt-[18vh]"
-        style={
-          overflowAtMin
+        className="flex-1 min-w-0 flex flex-col items-start justify-start overflow-hidden relative"
+        style={{
+          paddingTop: `${fittedPadTop}px`,
+          ...(overflowAtMin
             ? {
                 WebkitMaskImage:
                   "linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)",
                 maskImage:
                   "linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)",
               }
-            : undefined
-        }
+            : {}),
+        }}
       >
         <article
           ref={articleRef}
