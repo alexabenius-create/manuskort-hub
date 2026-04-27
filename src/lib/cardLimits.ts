@@ -99,10 +99,31 @@ function normalizeForMeasurement(html: string): string {
 export function countPresentationRows(html: string, textSize: TextSize): number {
   const el = getPresentationMeasurer(textSize);
   el.innerHTML = normalizeForMeasurement(html);
+  return countRowsInPresentationMeasurer(el);
+}
+
+function countRowsInPresentationMeasurer(el: HTMLElement): number {
   const cs = getComputedStyle(el);
   const lh = parseFloat(cs.lineHeight);
   if (!lh || !isFinite(lh) || lh <= 0) return 0;
-  return Math.max(1, Math.round(el.scrollHeight / lh));
+
+  const blocks = Array.from(el.children) as HTMLElement[];
+  if (blocks.length === 0) return Math.max(1, Math.round(el.scrollHeight / lh));
+
+  return Math.max(1, blocks.reduce((sum, block, index) => {
+    const blockRows = Math.max(1, Math.round(block.getBoundingClientRect().height / lh));
+    if (index >= blocks.length - 1) return sum + blockRows;
+
+    // scrollHeight/getBoundingClientRect räknar inte kollapsade styckemarginaler.
+    // I presentationen syns de som en tom rad mellan stycken, så de måste ingå
+    // i radbudgeten för att kort som kort 10 inte ska slinka igenom.
+    const next = blocks[index + 1];
+    const mb = parseFloat(getComputedStyle(block).marginBottom) || 0;
+    const mt = parseFloat(getComputedStyle(next).marginTop) || 0;
+    const collapsedGap = Math.max(mb, mt);
+    const gapRows = collapsedGap > lh * 0.2 ? Math.max(1, Math.round(collapsedGap / lh)) : 0;
+    return sum + blockRows + gapRows;
+  }, 0));
 }
 
 /**
@@ -145,7 +166,7 @@ export function splitHtmlAtRow(
   // Kontrollera först om allt får plats — använd samma normalisering som
   // countPresentationRows så tomma rader räknas konsekvent.
   measurer.innerHTML = normalizeForMeasurement(html);
-  if (countVisualRows(measurer) <= maxRows) {
+  if (countRowsInPresentationMeasurer(measurer) <= maxRows) {
     return [html, ""];
   }
   // Wrapper try/finally inte längre nödvändig — measurer återanvänds globalt.
@@ -170,7 +191,7 @@ export function splitHtmlAtRow(
     for (let i = 0; i < blocks.length; i++) {
       const candidate = [...fitBlocks, blocks[i]];
       measurer.innerHTML = normalizeForMeasurement(candidate.map((b) => b.outerHTML).join(""));
-      const rows = countVisualRows(measurer);
+      const rows = countRowsInPresentationMeasurer(measurer);
       if (rows <= maxRows) {
         fitBlocks.push(blocks[i]);
       } else {
@@ -218,7 +239,7 @@ export function splitHtmlAtRow(
         partialBlock,
       ].filter(Boolean).join("");
       measurer.innerHTML = normalizeForMeasurement(trial || "<p></p>");
-      const rows = countVisualRows(measurer);
+      const rows = countRowsInPresentationMeasurer(measurer);
       if (rows <= maxRows) {
         bestFit = mid;
         lo = mid + 1;
