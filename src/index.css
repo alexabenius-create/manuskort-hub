@@ -583,7 +583,8 @@
   .v2-pulse-dot,
   .v2-btn-primary::before,
   .v2-shine::before,
-  .v2-shine-subtle::before {
+  .v2-shine-subtle::before,
+  .v2-shine-violet::before {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;
