@@ -735,7 +735,7 @@ export default function LibraryV2() {
                   <li
                     key={m.id}
                     data-tour={isExample ? "library.example-card" : undefined}
-                    className={`group v2-card relative overflow-hidden ${isSelected ? "ring-2 ring-v2-violet" : ""}`}
+                    className={`group v2-card v2-shine-subtle relative overflow-hidden ${isSelected ? "ring-2 ring-v2-violet" : ""}`}
                     style={{ padding: 0 }}
                   >
                     {/* Subtil gradient-accent uppe i kortet */}
