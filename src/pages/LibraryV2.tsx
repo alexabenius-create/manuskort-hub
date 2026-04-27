@@ -555,7 +555,7 @@ export default function LibraryV2() {
               <button
                 type="button"
                 onClick={requestImport}
-                className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white border border-v2-line gap-1.5 transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+                className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white border border-v2-line gap-1.5 transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
               >
                 <Upload className="h-4 w-4" /> Importera
               </button>
