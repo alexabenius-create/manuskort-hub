@@ -241,17 +241,18 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
           olika korts startposition är konsekvent mellan sliden. */}
       <div
         ref={containerRef}
-        className="flex-1 min-w-0 flex flex-col items-start justify-start overflow-hidden relative pt-[18vh]"
-        style={
-          overflowAtMin
+        className="flex-1 min-w-0 flex flex-col items-start justify-start overflow-hidden relative"
+        style={{
+          paddingTop: `${fittedPadTop}px`,
+          ...(overflowAtMin
             ? {
                 WebkitMaskImage:
                   "linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)",
                 maskImage:
                   "linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)",
               }
-            : undefined
-        }
+            : {}),
+        }}
       >
         <article
           ref={articleRef}
