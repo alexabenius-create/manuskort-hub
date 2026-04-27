@@ -212,10 +212,12 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
 
       {/* Fyller default `right` värdet (matchar left-12) när anteckningar är dolda — tidigare hade vi right-12 i klassen. */}
 
-      {/* Manustexten — huvudyta */}
+      {/* Manustexten — huvudyta. Texten börjar alltid i samma startläge (vänsterkant
+          horisontellt, fast topp-padding vertikalt) istället för att centreras, så att
+          olika korts startposition är konsekvent mellan sliden. */}
       <div
         ref={containerRef}
-        className="flex-1 min-w-0 flex flex-col items-center justify-center overflow-hidden relative"
+        className="flex-1 min-w-0 flex flex-col items-start justify-start overflow-hidden relative pt-[18vh]"
         style={
           overflowAtMin
             ? {
@@ -229,7 +231,7 @@ export function PresentationCard({ card, panelists, textSize, sizeOffset, showNo
       >
         <article
           ref={articleRef}
-          className="presentation-prose max-w-[95ch] mx-auto font-display text-zinc-100"
+          className="presentation-prose max-w-[95ch] w-full font-display text-zinc-100"
           style={{ fontSize: `${fontSize}px`, lineHeight }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
