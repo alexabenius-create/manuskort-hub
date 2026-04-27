@@ -365,6 +365,9 @@
   .v2-shine-subtle {
     position: relative;
     overflow: hidden;
+    /* Ny stacking-context — låter ::before sweepa bakom allt eget innehåll
+       utan att vi behöver z-indexa varje barn. */
+    isolation: isolate;
   }
   .v2-shine::before,
   .v2-shine-subtle::before {
@@ -376,7 +379,7 @@
     width: 80%;
     transform: skewX(-20deg);
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
   }
   .v2-shine::before {
     background: linear-gradient(
