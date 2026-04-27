@@ -45,10 +45,15 @@ function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
 }
 
 /**
- * Normalisera HTML så att tomma block får en synlig line-box vid mätning.
- * Tomt <p></p> (eller blockquote/heading/li) har annars scrollHeight = 0 i de
- * flesta browsers — då räknas en blank rad inte som rad. Vi injicerar <br>
- * i alla "tomma" block så de bidrar med exakt en rad var.
+ * Normalisera HTML så att tomma rader/block får en synlig line-box vid mätning.
+ *
+ * Två fall:
+ *  1. Tomt <p></p> (eller blockquote/heading/li): har annars scrollHeight = 0
+ *     i de flesta browsers. Vi injicerar <br> så blocket bidrar med 1 rad.
+ *  2. Konsekutiva <br><br> inuti ett block: browsern renderar det andra <br>
+ *     som en "tom rad", men scrollHeight-beräkningen kan vara inkonsekvent.
+ *     Vi sätter in en synlig nbsp mellan paren så varje extra <br> säkert
+ *     bidrar med en rad. (<br>A<br> → <br>&nbsp;<br>A<br>&nbsp; om A är tom)
  *
  * Påverkar enbart mätning — sparat innehåll förblir oförändrat.
  */
@@ -62,6 +67,18 @@ function normalizeForMeasurement(html: string): string {
     const onlyBr = el.children.length > 0 && Array.from(el.children).every((c) => c.tagName === "BR");
     if (text === "" && (el.children.length === 0 || onlyBr)) {
       el.innerHTML = "<br>";
+      return;
+    }
+    // Hantera konsekutiva <br><br> inuti block med text.
+    // Sätt in &nbsp; mellan varje par så den tomma raden får en line-box.
+    const brs = Array.from(el.querySelectorAll("br"));
+    for (const br of brs) {
+      const next = br.nextSibling;
+      if (next && next.nodeType === 1 && (next as HTMLElement).tagName === "BR") {
+        // <br> direkt följt av <br> — sätt nbsp emellan
+        const nbsp = document.createTextNode("\u00a0");
+        br.parentNode?.insertBefore(nbsp, next);
+      }
     }
   });
   return tmp.innerHTML || "<p><br></p>";
