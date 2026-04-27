@@ -458,11 +458,13 @@ export default function EditorV4() {
         return div.innerHTML;
       };
 
-      const rawComputed = docToCardNodes(ed.state.doc, serializeNode);
-      const textSize = sizes.includes(manuscript.text_size as TextSize)
+      const computed = docToCardNodes(ed.state.doc, serializeNode);
+      // textSize hålls kvar i scope för konsekvens med övrig logik (kan
+      // användas senare om vi behöver den för t.ex. metrics), även om vi
+      // inte längre splittar baserat på den vid save.
+      void (sizes.includes(manuscript.text_size as TextSize)
         ? (manuscript.text_size as TextSize)
-        : "md";
-      const computed = enforceComputedRowLimits(rawComputed, textSize);
+        : "md");
       const plan = planCardSyncFromDoc(computed, cards, {
         manuscriptId: manuscript.id,
         userId: user.id,
