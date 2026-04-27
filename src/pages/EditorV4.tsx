@@ -304,6 +304,7 @@ export default function EditorV4() {
           ...node.attrs,
           cardNumber: i,
           totalCards: total,
+          textSize: manuscript.text_size,
           wpm: manuscript.wpm,
           showNotes: manuscript.show_notes,
           showTimes: manuscript.show_times,
@@ -355,7 +356,7 @@ export default function EditorV4() {
   useEffect(() => {
     if (!editorRef.current || !manuscript || !hydratedRef.current) return;
     hydrateAttrs(editorRef.current);
-  }, [manuscript?.show_notes, manuscript?.show_times, manuscript?.wpm, hydrateAttrs, manuscript]);
+  }, [manuscript?.show_notes, manuscript?.show_times, manuscript?.wpm, manuscript?.text_size, hydrateAttrs, manuscript]);
 
   // Räkna kort när doc ändras + uppdatera cardNumber/totalCards
   useEffect(() => {

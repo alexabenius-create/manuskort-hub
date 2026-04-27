@@ -52,13 +52,13 @@ export function computeMaxWordsPerCard(textSize: TextSize = "md"): number {
     el.style.padding = "0";
     el.style.margin = "0";
 
-    // Samma konservativa geometri-konstanter som cardLimits internt.
+    // Samma geometri-konstanter som cardLimits internt.
     // Viktigt: paste-tröskeln måste matcha presentationsmätningen, annars
-    // blir inklistrade manus uppdelade i för stora kort.
+    // blir inklistrade manus uppdelade för aggressivt eller i för stora kort.
     const PRES_GEOM = {
-      sm: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(38 * 30 * 0.5) },
-      md: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(38 * 38 * 0.5) },
-      lg: { fontSize: 46, lineHeight: 1.85, widthPx: Math.round(38 * 46 * 0.5) },
+      sm: { fontSize: 30, lineHeight: 1.85, widthPx: Math.round(75 * 30 * 0.5) },
+      md: { fontSize: 38, lineHeight: 1.85, widthPx: Math.round(75 * 38 * 0.5) },
+      lg: { fontSize: 46, lineHeight: 1.85, widthPx: Math.round(75 * 46 * 0.5) },
     } as const;
     const g = PRES_GEOM[textSize];
     el.style.width = `${g.widthPx}px`;

@@ -33,6 +33,7 @@ export interface CardBlockAttrs {
   showTimes: boolean;
   sectionId: string | null;
   sectionLabel: string;
+  textSize: "sm" | "md" | "lg";
 }
 
 declare module "@tiptap/core" {
@@ -114,6 +115,7 @@ export const CardBlock = Node.create({
         renderHTML: (attrs) =>
           attrs.sectionLabel ? { "data-section-label": attrs.sectionLabel } : {},
       },
+      textSize: { default: "md" as "sm" | "md" | "lg" },
     };
   },
 

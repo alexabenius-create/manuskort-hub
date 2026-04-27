@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { removeCue, type Cue } from "@/lib/cues";
+import { countPresentationRows, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
 import { CardCuePopover } from "./CardCuePopover";
 import { CardNotesEditor } from "./CardNotesEditor";
 import { CardMoreMenu } from "./CardMoreMenu";
@@ -30,7 +31,8 @@ import {
   moveCardBlockBySteps,
   splitCardBlock,
 } from "@/lib/cardBlockCommands";
-import { ChevronUp, ChevronDown, X, Zap, Play, Users, type LucideIcon } from "lucide-react";
+import { DOMSerializer } from "prosemirror-model";
+import { AlertTriangle, ChevronUp, ChevronDown, X, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { CardBlockErrorBoundary } from "./CardBlockErrorBoundary";
 
 const CUE_ICON: Record<Cue["kind"], LucideIcon> = {
@@ -61,6 +63,7 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
     targetSecondsIsManual: boolean;
     sectionId: string | null;
     sectionLabel: string;
+    textSize: TextSize;
   };
 
   const { id: manuscriptId } = useParams<{ id: string }>();
@@ -73,6 +76,17 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
   const words = wordCount(`<p>${text}</p>`);
   const seconds = estimateSeconds(words, a.wpm || 140);
   const num = String(a.cardNumber).padStart(2, "0");
+  const textSize = a.textSize ?? "md";
+  const maxRows = MAX_ROWS_BY_SIZE[textSize];
+  const currentRows = useMemo(() => {
+    if (typeof document === "undefined") return 0;
+    const serializer = DOMSerializer.fromSchema(editor.schema);
+    const div = document.createElement("div");
+    div.appendChild(serializer.serializeFragment(node.content));
+    return countPresentationRows(div.innerHTML || "<p></p>", textSize);
+  }, [editor.schema, node.content, textSize]);
+  const isOver = currentRows > maxRows;
+  const nearLimit = currentRows >= maxRows - 1;
 
   const cues = Array.isArray(a.cues) ? a.cues : [];
   const showNotes = a.showNotes !== false;
@@ -347,6 +361,19 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
 
       {/* Content (PM:s contentDOM) */}
       <NodeViewContent className="card-content px-5 sm:px-6 py-3" />
+
+      {nearLimit && (
+        <div
+          contentEditable={false}
+          className={`px-5 sm:px-6 pb-2 -mt-1 flex items-center gap-2 text-[11px] font-mono ${
+            isOver ? "text-destructive" : "text-[hsl(35_85%_38%)]"
+          }`}
+        >
+          {isOver && <AlertTriangle className="h-3 w-3" />}
+          <span className="tabular-nums">{currentRows} / {maxRows} rader</span>
+          {isOver && <span className="opacity-70">· kortet är för långt</span>}
+        </div>
+      )}
 
       {/* Footer: cues + notes */}
       {showFooter && (
