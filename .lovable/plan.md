@@ -1,51 +1,72 @@
-# Kompakt affiliate-promo högt upp
+# Shine-sweep till alla klickbara element — införandeplan
 
-Flytta affiliate-CTA från stor banner längst ner till en liten pill i hero-raden, och förtydliga att även gratisanvändare kan tjäna PRO.
+Effekten ("lift + shine sweep") som finns på `.v2-btn-primary` är distinkt och premium. Att applicera den **överallt** skulle bli rörigt — den fungerar bäst på framträdande, ifyllda ytor. Men vi kan ta fram **två varianter** av sweepen (en stark, en subtil) och rulla ut dem stegvis så att appen får en sammanhängande "shimmer-personlighet" utan att kännas hektisk.
 
-## Ändringar (`src/pages/LibraryV2.tsx`)
+## Princip: tre nivåer av interaktion
 
-### 1. Lägg till en kompakt pill högst upp i hero
+| Nivå | Effekt | Används på |
+|---|---|---|
+| **A — Stark sweep** | Lift + vit shine (45% opacitet, 0.7s) | Primära CTA:er, ifyllda färgade knappar |
+| **B — Subtil sweep** | Lift + svagare shine (15% opacitet, 0.6s) | Sekundära knappar, pillar, listkort, navigations-tiles |
+| **C — Bara lift** | Translate-Y + shadow | Ikon-knappar, små kontroller, menyposter |
 
-I hero-radens befintliga pill-rad (där `Debatt-buddy` och `AI-förbättringar`-räknaren ligger) infogas en ny pill **först**, så att affiliate-CTA blir det första användaren möts av efter rubriken:
+Element som inte ska ha någon hover-effekt alls (text-länkar, formulärfält, toggle/checkbox) lämnas orörda.
 
-```tsx
-<Link
-  to="/installningar#affiliate-program"
-  className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium
-             text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm
-             transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
-  title="Bjud in andra och tjäna gratis PRO — gäller även gratisanvändare"
->
-  <Gift className="h-4 w-4 text-v2-violet" />
-  Tjäna gratis PRO
-  <span className="text-v2-muted hidden sm:inline">— bjud in en vän</span>
-</Link>
-```
+## Steg 1 — Bygg utility-klasserna (förutsättning)
 
-Stilen matchar exakt övriga hero-pillar (höjd 44px, samma rounded-full, samma border/shadow), så den smälter in visuellt utan att skrika.
+I `src/index.css` lägga till två nya hjälp-klasser som återanvänder samma `::before`-teknik som `.v2-btn-primary`:
 
-### 2. Ta bort den stora bannern längst ner
+- **`.v2-shine`** — stark variant (samma som idag, men plockas ut till en återanvändbar klass)
+- **`.v2-shine-subtle`** — vit gradient på 15% opacitet, något långsammare, mindre lift
 
-Hela `<section>`-blocket före `</main>` (raderna 824–862) som lades till i föregående steg tas bort. `ArrowRight` kan tas bort från lucide-importen eftersom inget annat använder den; `Gift` behålls (används i den nya pillen).
+Dessa kräver `position: relative` och `overflow: hidden` på elementet. Lägga till en kort dokkommentar i CSS-filen.
 
-### 3. Förtydliga att gratisanvändare också kan tjäna PRO
+Inga befintliga element ändras i detta steg — bara nya klasser görs tillgängliga. `.v2-btn-primary` får inkludera `.v2-shine` internt så vi inte duplicerar koden.
 
-Två platser uppdateras med tydligt "även för gratisanvändare"-budskap:
+## Steg 2 — Sekundära knappar i biblioteket
 
-**a)** Pillens `title`-tooltip + den korta texten "— bjud in en vän" gör det uppenbart att alla kan delta. Kan även byta etiketten till `Tjäna gratis PRO` (befintlig) som signalerar att man får PRO oavsett nuvarande tier.
+Applicera **B (subtil)** på de sekundära CTA-pillarna i `LibraryV2`:
+- "Importera"-knappen
+- "Tjäna gratis PRO"-pill (affiliate)
+- "Debatt-buddy"-pill
+- AI-räknarens pill (om den ska kännas klickbar — annars hoppa över)
 
-**b)** I `src/components/settings/AffiliateSection.tsx` uppdateras intro-texten (rad 26–30) till:
+Dessa har redan rätt struktur (rounded-full, vit/glas-yta) och en lift-hover. Att lägga till subtil shimmer förstärker känslan utan att konkurrera med "+ Nytt manus".
 
-```
-Bjud in andra till Manuskort och få kostnadsfri PRO — det fungerar
-även om du själv är gratisanvändare:
-• 1 månad per värvad månadsprenumerant
-• 3 månader per värvad årsprenumerant
-```
+## Steg 3 — Manuskort-listan
+
+Applicera **B (subtil)** på varje manuskort-rad i biblioteket. Korten är största klickytan på sidan; en mjuk shimmer vid hover signalerar "klickbart" på ett elegant sätt. Utvärdera känslan — om det blir för busy med många kort i listan kan vi istället nöja oss med C (bara lift, vilket de delvis har idag).
+
+## Steg 4 — Navigations-tiles & landingssidor
+
+Applicera **B (subtil)** på:
+- Use-case tiles på `LandingV2`
+- "Snabbstart"-tiles i editorns onboarding
+- Help-/info-kort i sidebars
+
+Detta är ytor där shimmer ger en inbjudande känsla utan att stjäla uppmärksamhet från innehållet.
+
+## Steg 5 — Toolbar- och ikonknappar
+
+Här applicerar vi **endast C (lift)** — ingen shimmer. Toolbar-knappar (header, editor, presentation) är många och små; shimmer på dem skulle bli pillrigt. De får en konsekvent lift + shadow-fördjupning, men ingen sweep.
+
+## Steg 6 — Dropdown-/menyposter
+
+Här gör vi **inget** — shadcn-menyer har redan ett bra hover-mönster (bg-accent). Att lägga shimmer i en menypost skulle se overkill ut.
+
+## Steg 7 — Inställnings- och dialogknappar
+
+Gå igenom `SettingsV2`, `Settings`, dialoger och bekräfta att primära åtgärder använder `.v2-btn-primary` (alltså redan har **A**), och att sekundära får **B** där det passar. Destruktiva knappar (radera, logga ut) får ingen sweep — de ska kännas allvarliga, inte lockande.
+
+---
 
 ## Tekniska detaljer
 
-- Två filer ändras: `src/pages/LibraryV2.tsx` (flytt + ta bort banner) och `src/components/settings/AffiliateSection.tsx` (förtydligad text).
-- Inga route- eller backend-ändringar.
-- Ankaret `#affiliate-program` och smooth-scroll i Settings behålls oförändrat.
-- Pillen syns för alla inloggade användare, oavsett tier.
+- All shimmer-logik centraliseras i två CSS-klasser i `src/index.css`. Inga komponenter får inline-CSS för effekten.
+- Klasser appliceras additivt (`className="... v2-shine-subtle"`), inga befintliga klasser tas bort.
+- Varje steg är isolerat och kan reverteras genom att ta bort en enda klass per komponent.
+- Vi börjar inte detta i detta meddelande — du säger till "kör steg 1" (eller hoppa till valfritt steg) när du är redo.
+
+## Vad du får godkänna nu
+
+Att vi följer denna trappa: först bygga klasserna (steg 1), sen rulla ut steg-för-steg där varje steg är synligt i preview innan vi går vidare. Du kan stoppa, hoppa över eller justera tempot mellan stegen.
