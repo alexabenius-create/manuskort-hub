@@ -1,37 +1,51 @@
-# Lyft fram affiliate-programmet i biblioteket
+# Kompakt affiliate-promo högt upp
 
-Lägga in en säljande promo-banner i biblioteket (`/bibliotek`) med en CTA-knapp som tar användaren direkt till affiliate-sektionen i inställningar via ett ankare.
+Flytta affiliate-CTA från stor banner längst ner till en liten pill i hero-raden, och förtydliga att även gratisanvändare kan tjäna PRO.
 
-## Vad som ändras
+## Ändringar (`src/pages/LibraryV2.tsx`)
 
-### 1. Promo-banner i biblioteket (`src/pages/LibraryV2.tsx`)
+### 1. Lägg till en kompakt pill högst upp i hero
 
-Lägga in en ny sektion strax innan `</main>` (efter manus-listan, raderingsdialoger ligger utanför `<main>`). Banner syns alltid, oavsett om listan är tom eller full.
+I hero-radens befintliga pill-rad (där `Debatt-buddy` och `AI-förbättringar`-räknaren ligger) infogas en ny pill **först**, så att affiliate-CTA blir det första användaren möts av efter rubriken:
 
-Innehåll:
-- **Rubrik:** "Tjäna kostnadsfri PRO"
-- **Säljande text:** "Bjud in andra till Manuskort och få upp till 3 månaders gratis PRO per värvad användare."
-- **CTA-knapp:** "Visa min affiliate-länk →" som länkar till `/installningar#affiliate-program`
-- Stilen följer V2-designspråket: vit/glas-yta, `rounded-3xl`, `border-v2-line`, lila accent (`v2-violet`), `Gift`-ikon från lucide.
+```tsx
+<Link
+  to="/installningar#affiliate-program"
+  className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium
+             text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm
+             transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
+  title="Bjud in andra och tjäna gratis PRO — gäller även gratisanvändare"
+>
+  <Gift className="h-4 w-4 text-v2-violet" />
+  Tjäna gratis PRO
+  <span className="text-v2-muted hidden sm:inline">— bjud in en vän</span>
+</Link>
+```
 
-Lägga till `Gift` och `ArrowRight` i lucide-importen på rad 15. Använder befintlig `Link` från `react-router-dom` (redan importerad rad 2).
+Stilen matchar exakt övriga hero-pillar (höjd 44px, samma rounded-full, samma border/shadow), så den smälter in visuellt utan att skrika.
 
-### 2. Ankare i Settings (`src/pages/Settings.tsx`)
+### 2. Ta bort den stora bannern längst ner
 
-Wrappa `<AffiliateSection />` på rad 291 i en `<div id="affiliate-program" className="scroll-mt-24">` så att hashen `#affiliate-program` scrollar dit med marginal till sticky-headern.
+Hela `<section>`-blocket före `</main>` (raderna 824–862) som lades till i föregående steg tas bort. `ArrowRight` kan tas bort från lucide-importen eftersom inget annat använder den; `Gift` behålls (används i den nya pillen).
 
-### 3. Smidig scroll vid hash (`src/pages/Settings.tsx`)
+### 3. Förtydliga att gratisanvändare också kan tjäna PRO
 
-Lägga till en liten `useEffect` som lyssnar på `location.hash` och anropar `element.scrollIntoView({ behavior: "smooth", block: "start" })` när hashen finns. `useLocation` importeras från `react-router-dom`. Detta fungerar både vid direktnavigering och vid klick från biblioteket.
+Två platser uppdateras med tydligt "även för gratisanvändare"-budskap:
 
-### 4. Synlighetsregler
+**a)** Pillens `title`-tooltip + den korta texten "— bjud in en vän" gör det uppenbart att alla kan delta. Kan även byta etiketten till `Tjäna gratis PRO` (befintlig) som signalerar att man får PRO oavsett nuvarande tier.
 
-Bannern visas för **alla inloggade användare** enligt önskemålet. Ingen extra logik baserat på tier eller om användaren redan är affiliate — affiliate-programmet är öppet för alla.
+**b)** I `src/components/settings/AffiliateSection.tsx` uppdateras intro-texten (rad 26–30) till:
+
+```
+Bjud in andra till Manuskort och få kostnadsfri PRO — det fungerar
+även om du själv är gratisanvändare:
+• 1 månad per värvad månadsprenumerant
+• 3 månader per värvad årsprenumerant
+```
 
 ## Tekniska detaljer
 
-- Endast två filer ändras: `src/pages/LibraryV2.tsx` och `src/pages/Settings.tsx`.
-- Inget DB-arbete eller backend-arbete krävs.
-- Bannerns layout: full bredd inom max-w-[1100px] container, marginalavstånd `mt-12 sm:mt-16` från manus-listan, två-kolumnslayout (text vänster, knapp höger) på desktop, staplad på mobil.
-- CTA renderas som `<Link to="/installningar#affiliate-program">` med `v2-btn-primary`-style för konsistens med övriga primär-knappar.
-- `scroll-mt-24` (~96px) räcker för att kompensera för Settings-headern.
+- Två filer ändras: `src/pages/LibraryV2.tsx` (flytt + ta bort banner) och `src/components/settings/AffiliateSection.tsx` (förtydligad text).
+- Inga route- eller backend-ändringar.
+- Ankaret `#affiliate-program` och smooth-scroll i Settings behålls oförändrat.
+- Pillen syns för alla inloggade användare, oavsett tier.
