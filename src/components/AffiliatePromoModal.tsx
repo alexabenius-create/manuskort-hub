@@ -38,14 +38,14 @@ export function AffiliatePromoModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[440px] p-0 overflow-hidden">
-        <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center">
+      <DialogContent className="max-w-[440px] w-[calc(100vw-2rem)] p-0 overflow-hidden block">
+        <div className="px-6 pt-8 pb-6 flex flex-col items-center text-center min-w-0 w-full">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue mb-4">
             <Gift className="h-6 w-6" />
           </div>
 
-          <DialogHeader className="space-y-3">
-            <DialogTitle className="font-display text-[22px] leading-tight tracking-tight text-center">
+          <DialogHeader className="space-y-3 w-full">
+            <DialogTitle className="font-display text-[22px] leading-tight tracking-tight text-center break-words">
               Bjud in andra — få kostnadsfri PRO
             </DialogTitle>
           </DialogHeader>
