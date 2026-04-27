@@ -47,40 +47,18 @@ function getPresentationMeasurer(textSize: TextSize): HTMLDivElement {
 /**
  * Normalisera HTML för radmätning.
  *
- * Radbudgeten ska mäta textrader, inte luft. Därför räknas inte tomma block
- * eller extra tomrader från dubbla <br><br> som egna rader vid split/varning.
- * Det gör paste mindre aggressiv och undviker "för många rader" på kort där
- * överflödet egentligen bara är tomma rader.
+ * Tomma rader räknas som rader — de tar upp visuell plats i presentations-
+ * läget också. Vi gör därför INGEN borttagning av tomma block eller
+ * kollapsning av <br><br>. Mätningen ska spegla vad användaren ser.
+ *
+ * Det enda vi gör här är att säkerställa att helt tom HTML får ett minsta
+ * block så mätaren returnerar minst 1 rad.
  *
  * Påverkar enbart mätning — sparat innehåll förblir oförändrat.
  */
 function normalizeForMeasurement(html: string): string {
-  if (!html) return "<p><br></p>";
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-  const blocks = tmp.querySelectorAll("p,blockquote,h1,h2,h3,h4,h5,h6,li,div");
-  blocks.forEach((el) => {
-    const text = (el.textContent ?? "").replace(/\u00a0/g, "").trim();
-    const onlyBr = el.children.length > 0 && Array.from(el.children).every((c) => c.tagName === "BR");
-    if (text === "" && (el.children.length === 0 || onlyBr)) {
-      el.remove();
-      return;
-    }
-    // Kollapsa tomrader i följd till en enda hård radbrytning vid mätning.
-    const brs = Array.from(el.querySelectorAll("br"));
-    for (let i = 0; i < brs.length; i++) {
-      let next = brs[i].nextSibling;
-      while (next && next.nodeType === Node.TEXT_NODE && !next.textContent?.replace(/\u00a0/g, "").trim()) {
-        const remove = next;
-        next = next.nextSibling;
-        remove.parentNode?.removeChild(remove);
-      }
-      if (next && next.nodeType === Node.ELEMENT_NODE && (next as HTMLElement).tagName === "BR") {
-        next.parentNode?.removeChild(next);
-      }
-    }
-  });
-  return tmp.innerHTML || "<p><br></p>";
+  if (!html || !html.trim()) return "<p><br></p>";
+  return html;
 }
 
 /**
@@ -88,8 +66,9 @@ function normalizeForMeasurement(html: string): string {
  * Detta är den enda korrekta källan för radantal — editorns egen DOM
  * har annan bredd/font och ger fel resultat.
  *
- * Tomma rader och styckesluft räknas inte som egna budgetrader; budgeten
- * ska fånga faktisk text-wrap, inte visuellt mellanrum.
+ * Tomma rader räknas som rader (en tom <p><br></p> = 1 rad), eftersom
+ * de tar upp visuell plats. Styckesmargin räknas däremot inte (margin
+ * ligger utanför getBoundingClientRect och faller därför bort naturligt).
  */
 export function countPresentationRows(html: string, textSize: TextSize): number {
   const el = getPresentationMeasurer(textSize);
