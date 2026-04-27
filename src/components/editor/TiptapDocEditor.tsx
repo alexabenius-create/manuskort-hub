@@ -18,6 +18,7 @@ import { CardBlock } from "@/lib/cardBlockNode";
 import { joinCardBackward, splitCardBlock, moveCardBlockBySteps } from "@/lib/cardBlockCommands";
 import { computeMaxWordsPerCard } from "@/lib/smartPasteThreshold";
 import { splitPastedHtml, plainTextToHtml } from "@/lib/smartPasteSplit";
+import { splitDocToCards } from "@/lib/docSplit";
 
 interface Props {
   value: string;
@@ -200,9 +201,15 @@ export function TiptapDocEditor({
         probe.innerHTML = sourceHtml;
         const totalWords = (probe.textContent ?? "").trim().split(/\s+/).filter(Boolean).length;
 
-        if (totalWords <= maxWords) return false;
-
-        const split = splitPastedHtml(sourceHtml, maxWords);
+        const baseSplit = splitPastedHtml(sourceHtml, maxWords);
+        const cardsHtml = baseSplit.cardsHtml.flatMap((html) =>
+          splitDocToCards(html, size).filter((part) => part && part.trim()),
+        );
+        const split = {
+          ...baseSplit,
+          cardsHtml,
+          lengthSplitCount: baseSplit.lengthSplitCount + Math.max(0, cardsHtml.length - baseSplit.cardsHtml.length),
+        };
         if (split.cardsHtml.length <= 1) return false;
 
         event.preventDefault();
