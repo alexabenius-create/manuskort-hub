@@ -49,7 +49,7 @@ import {
 } from "@/lib/cardDocSerialize";
 import { PanelistsProvider } from "@/hooks/usePanelists";
 import { wordCount, estimateSeconds } from "@/lib/wordCount";
-import { MAX_ROWS_BY_SIZE, splitHtmlAtRow, type TextSize } from "@/lib/cardLimits";
+import type { TextSize } from "@/lib/cardLimits";
 import type { Database } from "@/integrations/supabase/types";
 import type { Editor as TiptapEditorType } from "@tiptap/react";
 import { DOMSerializer } from "prosemirror-model";
@@ -57,39 +57,16 @@ import { TextSelection } from "prosemirror-state";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
-type CardDocNode = ReturnType<typeof docToCardNodes>[number];
-
 const sizes: Array<"sm" | "md" | "lg"> = ["sm", "md", "lg"];
 
-function enforceComputedRowLimits(nodes: CardDocNode[], textSize: TextSize): CardDocNode[] {
-  const maxRows = MAX_ROWS_BY_SIZE[textSize];
-  const out: CardDocNode[] = [];
-
-  for (const node of nodes) {
-    let remaining = node.contentHtml;
-    let part = 0;
-    let safety = 50;
-
-    while (remaining && remaining.trim() && safety-- > 0) {
-      const [fits, overflow] = splitHtmlAtRow(remaining, maxRows, textSize);
-      out.push({
-        ...node,
-        cardId: part === 0 ? node.cardId : null,
-        contentHtml: fits,
-        notes: part === 0 ? node.notes : "",
-        cues: part === 0 ? node.cues : [],
-        targetSeconds: part === 0 ? node.targetSeconds : null,
-        targetSecondsIsManual: part === 0 ? node.targetSecondsIsManual : false,
-        position: out.length,
-      });
-      if (!overflow || !overflow.trim() || overflow === remaining) break;
-      remaining = overflow;
-      part += 1;
-    }
-  }
-
-  return out.map((node, position) => ({ ...node, position }));
-}
+// (Tidigare fanns här en `enforceComputedRowLimits` som auto-splittade
+// överfulla kort vid varje save. Den togs bort medvetet — auto-splittning
+// sker nu **bara** vid paste (System 1 i smartPasteSplit). Kort som blir
+// för långa när användaren skriver flaggas visuellt i ManusCardV2 (röd
+// "X / N rader"-räknare + "Dela automatiskt"-knapp), men splittas inte
+// utan användarens samtycke. Detta gör beteendet förutsägbart och stoppar
+// den oönskade dubbel-splittnings-loopen där ett pastat manus växte från
+// 15 → 22 → 30 kort på efterföljande sparningar.)
 
 function ViewSection({
   label,
@@ -481,11 +458,13 @@ export default function EditorV4() {
         return div.innerHTML;
       };
 
-      const rawComputed = docToCardNodes(ed.state.doc, serializeNode);
-      const textSize = sizes.includes(manuscript.text_size as TextSize)
+      const computed = docToCardNodes(ed.state.doc, serializeNode);
+      // textSize hålls kvar i scope för konsekvens med övrig logik (kan
+      // användas senare om vi behöver den för t.ex. metrics), även om vi
+      // inte längre splittar baserat på den vid save.
+      void (sizes.includes(manuscript.text_size as TextSize)
         ? (manuscript.text_size as TextSize)
-        : "md";
-      const computed = enforceComputedRowLimits(rawComputed, textSize);
+        : "md");
       const plan = planCardSyncFromDoc(computed, cards, {
         manuscriptId: manuscript.id,
         userId: user.id,
