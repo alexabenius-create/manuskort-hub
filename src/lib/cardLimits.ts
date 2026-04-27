@@ -66,8 +66,9 @@ function normalizeForMeasurement(html: string): string {
  * Detta är den enda korrekta källan för radantal — editorns egen DOM
  * har annan bredd/font och ger fel resultat.
  *
- * Tomma rader och styckesluft räknas inte som egna budgetrader; budgeten
- * ska fånga faktisk text-wrap, inte visuellt mellanrum.
+ * Tomma rader räknas som rader (en tom <p><br></p> = 1 rad), eftersom
+ * de tar upp visuell plats. Styckesmargin räknas däremot inte (margin
+ * ligger utanför getBoundingClientRect och faller därför bort naturligt).
  */
 export function countPresentationRows(html: string, textSize: TextSize): number {
   const el = getPresentationMeasurer(textSize);
