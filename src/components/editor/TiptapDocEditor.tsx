@@ -200,9 +200,7 @@ export function TiptapDocEditor({
         probe.innerHTML = sourceHtml;
         const totalWords = (probe.textContent ?? "").trim().split(/\s+/).filter(Boolean).length;
 
-        if (totalWords <= maxWords) return false;
-
-        const split = splitPastedHtml(sourceHtml, maxWords);
+        const split = splitPastedHtml(sourceHtml, maxWords, size);
         if (split.cardsHtml.length <= 1) return false;
 
         event.preventDefault();

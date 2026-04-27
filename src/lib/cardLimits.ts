@@ -217,6 +217,29 @@ export function splitHtmlAtRow(
     const overflowBlock = blocks[overflowBlockIdx];
     const remainingBlocks = blocks.slice(overflowBlockIdx + 1);
 
+    if (overflowBlock.querySelector("br")) {
+      const tagName = overflowBlock.tagName.toLowerCase();
+      const tokens = overflowBlock.innerHTML.split(/(<br\s*\/?\s*>)/i).filter((part) => part !== "");
+      let bestFit = 0;
+      for (let i = 1; i <= tokens.length; i++) {
+        const partialBlock = `<${tagName}>${tokens.slice(0, i).join("")}</${tagName}>`;
+        measurer.innerHTML = normalizeForMeasurement([
+          ...fitBlocks.map((b) => b.outerHTML),
+          partialBlock,
+        ].join(""));
+        if (countRowsInPresentationMeasurer(measurer) <= maxRows) bestFit = i;
+        else break;
+      }
+
+      const firstInner = tokens.slice(0, bestFit).join("").replace(/(<br\s*\/?\s*>\s*)+$/i, "");
+      const secondInner = tokens.slice(bestFit).join("").replace(/^(\s*<br\s*\/?\s*>)+/i, "");
+      if (firstInner && secondInner) {
+        const fitsHtml = [...fitBlocks.map((b) => b.outerHTML), `<${tagName}>${firstInner}</${tagName}>`].join("");
+        const overflowHtml = [`<${tagName}>${secondInner}</${tagName}>`, ...remainingBlocks.map((b) => b.outerHTML)].join("");
+        return [fitsHtml, trimEmptyBlocksHtml(overflowHtml)];
+      }
+    }
+
     // Steg 2: splitta inuti overflowBlock vid ord/meningsgräns
     const tagName = overflowBlock.tagName.toLowerCase();
     // Använd textContent för stabil ordvis splitting (tappar inline-formatering, men håller flödet)
