@@ -22,8 +22,21 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const { resetTour } = useTour();
   const { tier, isFree, isPro } = useTier();
+  const location = useLocation();
   const [portalLoading, setPortalLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Smooth-scrolla till hash-ankare (t.ex. #affiliate-program från biblioteket)
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    // Kort timeout för att låta sektioner mountas innan vi mäter position
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
 
   // Profil-fält (autofyller manus-platshållare)
   const [displayName, setDisplayName] = useState("");
