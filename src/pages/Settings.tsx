@@ -300,8 +300,10 @@ export default function Settings() {
             </p>
           </div>
         </section>
-        {/* Affiliate-program */}
-        <AffiliateSection />
+        {/* Affiliate-program — id används som ankare från biblioteket (#affiliate-program) */}
+        <div id="affiliate-program" className="scroll-mt-24">
+          <AffiliateSection />
+        </div>
 
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-2xl font-semibold tracking-tight">Rundturer</h2>
