@@ -209,7 +209,7 @@ export default function LandingV2() {
                   <ArrowRight className="h-4 w-4" />
                 </span>
               </Link>
-              <Link to="/priser" className="v2-btn-ghost v2-btn-lg">
+              <Link to="/priser" className="v2-btn-ghost v2-btn-lg v2-shine-violet">
                 Se priser
               </Link>
             </div>

@@ -400,8 +400,35 @@
     transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .v2-shine:hover::before,
-  .v2-shine-subtle:hover::before {
+  .v2-shine-subtle:hover::before,
+  .v2-shine-violet:hover::before {
     left: 130%;
+  }
+
+  /* Pilot — lila strimma för vita ytor där .v2-shine-subtle (vit) inte
+     kontrasterar. Använder appens accent-lila på ~14% opacitet. */
+  .v2-shine-violet {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .v2-shine-violet::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -120%;
+    width: 80%;
+    transform: skewX(-20deg);
+    pointer-events: none;
+    z-index: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(99, 102, 241, 0.14) 50%,
+      transparent 100%
+    );
+    transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* Primär CTA — använder .v2-shine internt för shimmer-effekten. */
@@ -556,7 +583,8 @@
   .v2-pulse-dot,
   .v2-btn-primary::before,
   .v2-shine::before,
-  .v2-shine-subtle::before {
+  .v2-shine-subtle::before,
+  .v2-shine-violet::before {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;
