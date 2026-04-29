@@ -938,8 +938,10 @@ export default function EditorV4() {
               </Tooltip>
 
               <FeedbackButton source="editor" manuscriptId={id ?? null} className="hidden md:inline-flex" />
-              <LanguageSwitcher className="hidden md:inline-flex" />
-              <TranslationEditModeToggle className="hidden md:inline-flex" />
+              <div className="hidden md:inline-flex items-center gap-1">
+                <LanguageSwitcher />
+                <TranslationEditModeToggle />
+              </div>
               <HelpButton />
 
               {/* Sparindikator + kortantal (desktop, längst till höger) */}
