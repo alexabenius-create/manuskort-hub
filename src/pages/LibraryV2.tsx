@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -37,11 +38,14 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { WelcomeAfterSignupModal } from "@/components/WelcomeAfterSignupModal";
 import { OwnerSupportBanner } from "@/components/SupportModeBanner";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 
 export default function LibraryV2() {
   const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
   const { tier } = useTier();
   const { usage: aiUsage } = useAiUsage();
   const { hasAccess: hasDebateBuddy } = useBetaAccess("debate_buddy");
