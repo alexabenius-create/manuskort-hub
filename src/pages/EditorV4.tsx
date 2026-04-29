@@ -133,6 +133,7 @@ function V4SegBtn({
  * (ljus mesh-bakgrund, glas-topbar, violett/blå gradients, font-display).
  */
 export default function EditorV4() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -178,12 +179,12 @@ export default function EditorV4() {
     if (!isSupportMode) return;
     if (supportStatus && supportStatus !== "granted") {
       toast({
-        title: "Delningen är avslutad",
-        description: "Användaren har avslutat delningen.",
+        title: t("editor.support_share_ended_title"),
+        description: t("editor.support_share_ended_desc"),
       });
       navigate("/admin?tab=feedback", { replace: true });
     }
-  }, [isSupportMode, supportStatus, navigate]);
+  }, [isSupportMode, supportStatus, navigate, t]);
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -211,7 +212,7 @@ export default function EditorV4() {
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
-  const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
+  const [targetSaveLabel, setTargetSaveLabel] = useState<string>(t("editor.target_save_label"));
   const [chainBreakOpen, setChainBreakOpen] = useState(false);
   const [missingTargetCards, setMissingTargetCards] = useState<number[]>([]);
 
@@ -239,7 +240,7 @@ export default function EditorV4() {
       supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
     ]);
     if (mRes.error || !mRes.data) {
-      toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
+      toast({ title: t("editor.load_failed_title"), description: mRes.error?.message, variant: "destructive" });
       navigate("/bibliotek");
       return;
     }
@@ -250,7 +251,7 @@ export default function EditorV4() {
     setDocHtml(cardsToDocHtml(rows));
     setCardCount(Math.max(1, rows.length));
     setLoading(false);
-  }, [id, navigate]);
+  }, [id, navigate, t]);
 
   useEffect(() => {
     void loadManuscript();
@@ -273,10 +274,10 @@ export default function EditorV4() {
         .update(patch as never)
         .eq("id", manuscript.id);
       if (error) {
-        toast({ title: "Kunde inte spara inställning", description: error.message, variant: "destructive" });
+        toast({ title: t("editor.save_setting_failed"), description: error.message, variant: "destructive" });
       }
     },
-    [manuscript],
+    [manuscript, t],
   );
 
   /** Hydrera attrs efter att Tiptap mountat dokumentet. */
@@ -516,12 +517,12 @@ export default function EditorV4() {
       console.error("[EditorV3] persist error", e);
       setSaving("error");
       toast({
-        title: "Kunde inte spara",
-        description: e instanceof Error ? e.message : "Okänt fel",
+        title: t("editor.save_failed_title"),
+        description: e instanceof Error ? e.message : t("editor.save_failed_unknown"),
         variant: "destructive",
       });
     }
-  }, [cards, manuscript, user]);
+  }, [cards, manuscript, user, t]);
 
   // (Tidigare global "Nytt kort"-knapp togs bort — användaren skapar kort
   // via permanenta +-pillar mellan/runt korten i CardBlockView.)
@@ -565,16 +566,16 @@ export default function EditorV4() {
   if (loading || !manuscript) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-v2-bg">
-        <p className="font-display text-[14px] text-v2-muted tracking-tight">Laddar editor…</p>
+        <p className="font-display text-[14px] text-v2-muted tracking-tight">{t("editor.loading")}</p>
       </div>
     );
   }
 
   const saveLabel = {
-    idle: "Sparat",
-    saving: "Sparar…",
-    saved: "Sparat ✓",
-    error: "Fel — försök igen",
+    idle: t("editor.save_idle"),
+    saving: t("editor.save_saving"),
+    saved: t("editor.save_saved"),
+    error: t("editor.save_error"),
   }[saving];
 
   // Måltidsdiff
@@ -593,13 +594,13 @@ export default function EditorV4() {
         })();
   const targetTip =
     targetDurationSeconds !== null
-      ? `Måltid: ${formatTargetDuration(targetDurationSeconds)}${diffText ? ` (${diffText})` : ""}`
-      : "Måltid ej satt — klicka för att ange";
+      ? t("editor.target_tip_set", { target: formatTargetDuration(targetDurationSeconds), diff: diffText ? ` (${diffText})` : "" })
+      : t("editor.target_tip_unset");
 
   const startPresentation = (skipChainCheck = false) => {
     if (targetDurationSeconds === null) {
-      setTargetDialogIntro("Ange måltid för att starta presentationen.");
-      setTargetSaveLabel("Spara och starta");
+      setTargetDialogIntro(t("editor.target_dialog_intro_required"));
+      setTargetSaveLabel(t("editor.target_save_and_start"));
       setTargetDialogOpen(true);
       return;
     }
