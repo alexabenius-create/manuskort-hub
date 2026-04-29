@@ -344,7 +344,7 @@ export default function ImportV2() {
   };
 
   const cancel = () => {
-    if (store.dirty && !confirm("Avbryta importen? Dina val går förlorade.")) return;
+    if (store.dirty && !confirm(t("import.cancel_confirm"))) return;
     store.reset();
     navigate("/bibliotek-v2");
   };
