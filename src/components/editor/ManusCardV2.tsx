@@ -101,7 +101,7 @@ export function ManusCardV2({
     if (selection.activePanelistId === p.id) {
       editor.chain().focus().unsetPanelist().run();
     } else {
-      editor.chain().focus().setPanelist({ panelistId: p.id, color: p.color, name: p.name || "Namnlös" }).run();
+      editor.chain().focus().setPanelist({ panelistId: p.id, color: p.color, name: p.name || t("editor.card.cue_unnamed") }).run();
     }
   };
 
