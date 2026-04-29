@@ -7,12 +7,17 @@ import { toast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { registerPendingReferral } from "@/hooks/useAffiliate";
 import manuskortLogo from "@/assets/manuskort-logo.png";
+import { T, useT } from "@/i18n/T";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
+import { translateAuthError } from "@/i18n/authErrors";
 
 type Mode = "magic" | "password" | "signup" | "forgot";
 
 export default function AuthV2() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const t = useT();
   const initialMode: Mode = searchParams.get("mode") === "signup" ? "signup" : "magic";
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
@@ -35,7 +40,7 @@ export default function AuthV2() {
           options: { emailRedirectTo: `${window.location.origin}/bibliotek-v2` },
         });
         if (error) throw error;
-        toast({ title: "Kolla din e-post", description: "Vi har skickat en magisk länk." });
+        toast({ title: t("auth.magic_sent_title"), description: t("auth.magic_sent_desc") });
       } else if (mode === "password") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -45,11 +50,11 @@ export default function AuthV2() {
           redirectTo: `${window.location.origin}/aterstall-losenord-v2`,
         });
         if (error) throw error;
-        toast({ title: "Kolla din e-post", description: "Vi har skickat en länk för att återställa ditt lösenord." });
+        toast({ title: t("auth.reset_sent_title"), description: t("auth.reset_sent_desc") });
       } else {
         const trimmedFirst = firstName.trim();
         const trimmedLast = lastName.trim();
-        if (!trimmedFirst) throw new Error("Förnamn krävs.");
+        if (!trimmedFirst) throw new Error(t("auth.first_name_required") as string);
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -82,7 +87,7 @@ export default function AuthV2() {
         } else {
           const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
           if (signInErr) {
-            toast({ title: "Konto skapat", description: "Logga in för att fortsätta." });
+            toast({ title: t("auth.account_created_title"), description: t("auth.account_created_desc") });
             setMode("password");
           } else {
             await registerPendingReferral();
@@ -91,21 +96,31 @@ export default function AuthV2() {
         }
       }
     } catch (err: any) {
-      toast({ title: "Något gick fel", description: err?.message ?? String(err), variant: "destructive" });
+      toast({
+        title: t("auth.generic_error_title") as string,
+        description: translateAuthError(t, err),
+        variant: "destructive",
+      });
     } finally {
       setBusy(false);
     }
   };
 
   const tabs: [Mode, string][] = [
-    ["magic", "Magisk länk"],
-    ["password", "Logga in"],
-    ["signup", "Skapa konto"],
+    ["magic", t("auth.tab_magic") as string],
+    ["password", t("auth.tab_password") as string],
+    ["signup", t("auth.tab_signup") as string],
   ];
 
   return (
     <div className="min-h-screen bg-v2-bg text-v2-ink relative overflow-hidden flex items-center justify-center px-6 py-12">
-      <SEO title="Logga in – Manuskort" description="Logga in eller skapa konto." noindex />
+      <SEO title={t("auth.seo_title") as string} description={t("auth.seo_description") as string} noindex />
+
+      {/* Top-right language + edit toggles */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <TranslationEditModeToggle />
+        <LanguageSwitcher />
+      </div>
 
       {/* Mesh-glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -120,7 +135,7 @@ export default function AuthV2() {
       <div className="relative w-full max-w-[440px]">
         <div className="mb-6">
           <Link to="/v2" className="inline-flex items-center gap-2 text-[13px] text-v2-muted hover:text-v2-ink transition-colors">
-            ← Till startsidan
+            <T k="auth.back_to_home" />
           </Link>
         </div>
 
@@ -134,13 +149,13 @@ export default function AuthV2() {
             </span>
           </h1>
           <p className="text-v2-muted mt-3 text-[15px]">
-            Manus i kortformat. För talare och moderatorer.
+            <T k="auth.tagline" />
           </p>
         </header>
 
         {hasAffiliatePending && mode === "signup" && (
           <div className="mb-5 px-4 py-3 rounded-xl bg-v2-violet/10 text-v2-violet text-[13px] text-center border border-v2-violet/20">
-            🎁 Du har blivit inbjuden — skapa konto för att aktivera inbjudan.
+            <T k="auth.affiliate_invite" />
           </div>
         )}
 
@@ -168,7 +183,9 @@ export default function AuthV2() {
             {mode === "signup" && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="first-name" className="text-[13px] text-v2-muted font-medium">Förnamn</Label>
+                  <Label htmlFor="first-name" className="text-[13px] text-v2-muted font-medium">
+                    <T k="auth.first_name" />
+                  </Label>
                   <Input
                     id="first-name"
                     required
@@ -180,7 +197,9 @@ export default function AuthV2() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="last-name" className="text-[13px] text-v2-muted font-medium">Efternamn</Label>
+                  <Label htmlFor="last-name" className="text-[13px] text-v2-muted font-medium">
+                    <T k="auth.last_name" />
+                  </Label>
                   <Input
                     id="last-name"
                     autoComplete="family-name"
@@ -194,7 +213,9 @@ export default function AuthV2() {
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[13px] text-v2-muted font-medium">E-post</Label>
+              <Label htmlFor="email" className="text-[13px] text-v2-muted font-medium">
+                <T k="auth.email" />
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -202,14 +223,16 @@ export default function AuthV2() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="du@exempel.se"
+                placeholder={t("auth.email_placeholder") as string}
                 className="h-11 rounded-xl bg-white border border-v2-line text-[15px] focus-visible:ring-2 focus-visible:ring-v2-violet"
               />
             </div>
 
             {(mode === "password" || mode === "signup") && (
               <div className="space-y-1.5">
-                <Label htmlFor="pwd" className="text-[13px] text-v2-muted font-medium">Lösenord</Label>
+                <Label htmlFor="pwd" className="text-[13px] text-v2-muted font-medium">
+                  <T k="auth.password" />
+                </Label>
                 <Input
                   id="pwd"
                   type="password"
@@ -230,14 +253,14 @@ export default function AuthV2() {
             >
               <span className="relative z-10">
                 {busy
-                  ? "Skickar…"
+                  ? (t("auth.submit_sending") as string)
                   : mode === "magic"
-                  ? "Skicka länk"
+                  ? (t("auth.submit_magic") as string)
                   : mode === "password"
-                  ? "Logga in"
+                  ? (t("auth.submit_password") as string)
                   : mode === "forgot"
-                  ? "Skicka återställningslänk"
-                  : "Skapa konto"}
+                  ? (t("auth.submit_forgot") as string)
+                  : (t("auth.submit_signup") as string)}
               </span>
             </button>
           </form>
@@ -248,7 +271,7 @@ export default function AuthV2() {
               onClick={() => setMode("forgot")}
               className="block mx-auto mt-5 text-[13px] text-v2-muted hover:text-v2-ink transition-colors"
             >
-              Glömt lösenord?
+              <T k="auth.forgot_link" />
             </button>
           )}
 
@@ -258,19 +281,19 @@ export default function AuthV2() {
               onClick={() => setMode("password")}
               className="block mx-auto mt-5 text-[13px] text-v2-muted hover:text-v2-ink transition-colors"
             >
-              ← Tillbaka till logga in
+              <T k="auth.back_to_login" />
             </button>
           )}
 
           {mode === "signup" && (
             <p className="text-[13px] text-v2-muted mt-6 leading-relaxed">
-              Dina manus sparas i molnet och är endast synliga för dig. Du kan när som helst radera ditt konto och all data.
+              <T k="auth.signup_privacy" />
             </p>
           )}
         </div>
 
         <p className="text-[12px] text-v2-muted text-center mt-8">
-          Du förblir inloggad i 30 dagar
+          <T k="auth.stay_logged_in" />
         </p>
       </div>
     </div>
