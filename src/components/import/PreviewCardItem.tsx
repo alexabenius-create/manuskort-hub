@@ -149,14 +149,14 @@ export function PreviewCardItem({
             <p className="text-[13px] text-muted-foreground line-clamp-1">{preview}</p>
           )}
           <div className="flex items-center gap-3 text-[12px] text-muted-foreground flex-wrap">
-            <span>{card.wordCount} ord</span>
+            <span>{t("import.preview.words", { count: card.wordCount })}</span>
             <span>·</span>
             <span>{formatDuration(seconds)}</span>
             <span>·</span>
-            <span className={rowColor} title={`Mätt mot presentationslägets bredd för ${textSize}`}>
-              {rows}/{maxRows} rader
-              {rowState === "over" && " — över gränsen"}
-              {rowState === "near" && " — nästan fullt"}
+            <span className={rowColor} title={t("import.preview.rows_size_title", { size: textSize })}>
+              {t("import.preview.rows_label", { rows, max: maxRows })}
+              {rowState === "over" && t("import.preview.rows_over")}
+              {rowState === "near" && t("import.preview.rows_near")}
             </span>
             {card.speakerName && (
               <>
