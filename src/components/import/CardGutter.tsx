@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge }: Props) {
+  const { t } = useTranslation();
   const [hover, setHover] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
