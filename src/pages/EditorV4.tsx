@@ -54,6 +54,9 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Editor as TiptapEditorType } from "@tiptap/react";
 import { DOMSerializer } from "prosemirror-model";
 import { TextSelection } from "prosemirror-state";
+import { useT } from "@/i18n/T";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
