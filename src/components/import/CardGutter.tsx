@@ -59,20 +59,20 @@ export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge
             type="button"
             onClick={onMerge}
             className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-surface text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-2 shadow-card border border-border"
-            title="Slå ihop med föregående kort"
+            title={t("import.gutter.merge_title")}
           >
             <Merge className="h-3 w-3" />
-            Slå ihop
+            {t("import.gutter.merge")}
           </button>
         )}
         <button
           type="button"
           onClick={onInsertEmpty}
           className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-surface text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-2 shadow-card border border-border"
-          title="Lägg in ett tomt kort här"
+          title={t("import.gutter.new_card_title")}
         >
           <Plus className="h-3 w-3" />
-          Nytt kort
+          {t("import.gutter.new_card")}
         </button>
       </div>
       {/* Drop-indikator-text */}
