@@ -78,6 +78,7 @@ const LegacyEditorRedirect = () => {
 
 const PresenceTracker = () => {
   usePresence();
+  useTranslationOverrides();
   return null;
 };
 
@@ -91,7 +92,9 @@ const App = () => (
           <PresenceTracker />
           <TourProvider>
             <TierProvider>
-              <Suspense fallback={<RouteFallback />}>
+              <TranslationEditModeProvider>
+                <TranslationEditModeOverlay />
+                <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/v2" element={<LandingV2 />} />
@@ -128,6 +131,7 @@ const App = () => (
                   <Route path="/admin-v2" element={<RequireAuth><AdminV2 /></RequireAuth>} />
                   <Route path="/admin/flags" element={<RequireAuth><AdminFeatureFlags /></RequireAuth>} />
                   <Route path="/admin/analytics" element={<RequireAuth><AdminAnalytics /></RequireAuth>} />
+                  <Route path="/admin/translations" element={<RequireAuth><AdminTranslations /></RequireAuth>} />
                   <Route path="/installningar-v2" element={<RequireAuth><SettingsV2 /></RequireAuth>} />
                   <Route path="/meddelanden" element={<RequireAuth><Messages /></RequireAuth>} />
                   <Route path="/meddelanden-v2" element={<RequireAuth><MessagesV2 /></RequireAuth>} />
@@ -138,6 +142,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              </TranslationEditModeProvider>
             </TierProvider>
           </TourProvider>
         </AuthProvider>
