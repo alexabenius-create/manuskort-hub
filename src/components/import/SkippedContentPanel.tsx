@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, Image as ImageIcon, Table as TableIcon, FileText } from "lucide-react";
 import type { SkippedItem } from "@/lib/import/parseDocument";
 
