@@ -794,43 +794,43 @@ function CardDemo() {
 
 function V2BenefitCard({
   icon,
-  title,
-  text,
+  titleKey,
+  textKey,
 }: {
   icon: React.ReactNode;
-  title: string;
-  text: string;
+  titleKey: string;
+  textKey: string;
 }) {
   return (
     <div className="v2-card group">
       <div className="v2-card-icon">{icon}</div>
-      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight">{title}</h3>
-      <p className="text-[14.5px] text-v2-muted leading-relaxed">{text}</p>
+      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight"><T k={titleKey} /></h3>
+      <p className="text-[14.5px] text-v2-muted leading-relaxed"><T k={textKey} /></p>
     </div>
   );
 }
 
 function V2UseCaseCard({
   icon,
-  title,
-  text,
+  titleKey,
+  textKey,
   to,
 }: {
   icon: React.ReactNode;
-  title: string;
-  text: string;
+  titleKey: string;
+  textKey: string;
   to?: string;
 }) {
   const inner = (
     <>
       <div className="v2-card-icon">{icon}</div>
       <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight group-hover:text-v2-violet transition-colors">
-        {title}
+        <T k={titleKey} />
       </h3>
-      <p className="text-[14.5px] text-v2-muted leading-relaxed">{text}</p>
+      <p className="text-[14.5px] text-v2-muted leading-relaxed"><T k={textKey} /></p>
       {to && (
         <span className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-v2-violet">
-          Läs mer
+          <T k="landing.audience.read_more" />
           <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </span>
       )}
@@ -846,7 +846,7 @@ function V2UseCaseCard({
   return <div className="v2-card">{inner}</div>;
 }
 
-function V2Step({ n, title, text }: { n: number; title: string; text: string }) {
+function V2Step({ n, titleKey, textKey }: { n: number; titleKey: string; textKey: string }) {
   return (
     <div className="group">
       <div className="relative mb-5 inline-flex">
@@ -855,13 +855,13 @@ function V2Step({ n, title, text }: { n: number; title: string; text: string }) 
           {n}
         </span>
       </div>
-      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight">{title}</h3>
-      <p className="text-[14.5px] text-v2-muted leading-relaxed max-w-sm">{text}</p>
+      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight"><T k={titleKey} /></h3>
+      <p className="text-[14.5px] text-v2-muted leading-relaxed max-w-sm"><T k={textKey} /></p>
     </div>
   );
 }
 
-function V2FrictionCard({ title, text }: { title: string; text: string }) {
+function V2FrictionCard({ titleKey, textKey }: { titleKey: string; textKey: string }) {
   return (
     <div className="v2-card text-left">
       <div className="flex items-start gap-3">
@@ -869,21 +869,21 @@ function V2FrictionCard({ title, text }: { title: string; text: string }) {
           <Check className="h-4 w-4 text-v2-violet" />
         </div>
         <div>
-          <h3 className="font-display text-[16px] font-semibold mb-1 tracking-tight">{title}</h3>
-          <p className="text-[14px] text-v2-muted leading-relaxed">{text}</p>
+          <h3 className="font-display text-[16px] font-semibold mb-1 tracking-tight"><T k={titleKey} /></h3>
+          <p className="text-[14px] text-v2-muted leading-relaxed"><T k={textKey} /></p>
         </div>
       </div>
     </div>
   );
 }
 
-function V2Quote({ text, author }: { text: string; author: string }) {
+function V2Quote({ textKey, authorKey }: { textKey: string; authorKey: string }) {
   return (
     <figure className="v2-card">
       <blockquote className="font-display text-[18px] leading-[1.5] text-v2-ink">
-        "{text}"
+        "<T k={textKey} />"
       </blockquote>
-      <figcaption className="mt-4 text-[13px] text-v2-muted">— {author}</figcaption>
+      <figcaption className="mt-4 text-[13px] text-v2-muted">— <T k={authorKey} /></figcaption>
     </figure>
   );
 }
