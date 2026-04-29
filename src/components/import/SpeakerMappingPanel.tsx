@@ -26,10 +26,10 @@ export function SpeakerMappingPanel({ existing }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-display text-[15px] font-semibold leading-tight">
-            {speakers.length} talare upptäckta
+            {t("import.speakers.detected_count", { count: speakers.length })}
           </h3>
           <p className="text-[12px] text-muted-foreground">
-            Justera namn eller välj vad som ska hända med varje
+            {t("import.speakers.detected_hint")}
           </p>
         </div>
       </div>
