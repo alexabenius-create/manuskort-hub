@@ -55,42 +55,42 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
   const buttons: ToolButton[] = [
     {
       key: "bold",
-      label: "Fetstil",
+      label: t("editor.card.format_bold"),
       icon: Bold,
       isActive: () => editor.isActive("bold"),
       onClick: () => editor.chain().focus().toggleBold().run(),
     },
     {
       key: "italic",
-      label: "Kursiv",
+      label: t("editor.card.format_italic"),
       icon: Italic,
       isActive: () => editor.isActive("italic"),
       onClick: () => editor.chain().focus().toggleItalic().run(),
     },
     {
       key: "underline",
-      label: "Understrykning",
+      label: t("editor.card.format_underline"),
       icon: UnderlineIcon,
       isActive: () => editor.isActive("underline"),
       onClick: () => editor.chain().focus().toggleUnderline().run(),
     },
     {
       key: "highlight",
-      label: "Gulmarkering",
+      label: t("editor.card.format_highlight"),
       icon: Highlighter,
       isActive: () => editor.isActive("highlight"),
       onClick: () => editor.chain().focus().toggleHighlight().run(),
     },
     {
       key: "pause",
-      label: "Lägg in paus vid markören",
+      label: t("editor.card.format_pause"),
       icon: Pause,
       isActive: () => false,
       onClick: () => editor.chain().focus().insertPause().run(),
     },
     {
       key: "split",
-      label: "Dela kort här (⌘+Enter)",
+      label: t("editor.card.format_split", { shortcut: splitShortcut }),
       icon: SplitSquareVertical,
       isActive: () => false,
       onClick: () => {
@@ -105,8 +105,14 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
     buttons.push({
       key: "merge-prev",
       label: fits
-        ? `Slå ihop med föregående kort (${mergeCheck.selectionRows}/${mergeCheck.availableRows} rader lediga)`
-        : `Får inte plats i föregående kort (behöver ${mergeCheck.selectionRows} rader, ${mergeCheck.availableRows} lediga)`,
+        ? t("editor.card.format_merge_prev_fits", {
+            used: mergeCheck.selectionRows,
+            available: mergeCheck.availableRows,
+          })
+        : t("editor.card.format_merge_prev_too_big", {
+            used: mergeCheck.selectionRows,
+            available: mergeCheck.availableRows,
+          }),
       icon: ArrowUpToLine,
       isActive: () => false,
       onClick: () => {
@@ -116,6 +122,7 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
       },
     });
   }
+
 
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
