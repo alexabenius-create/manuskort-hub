@@ -86,7 +86,7 @@ export default function LandingV2() {
   }, []);
 
   const primaryCtaTo = session ? "/bibliotek" : "/auth";
-  const primaryCtaLabel = session ? "Till biblioteket" : "Testa gratis nu";
+  const primaryCtaKey = session ? "landing.nav.cta_logged_in" : "landing.nav.cta_guest";
 
   return (
     <div className="min-h-screen bg-v2-bg text-v2-ink overflow-x-hidden antialiased">
