@@ -212,10 +212,13 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
               <LinkIcon className="h-5 w-5 text-accent-blue" />
             </div>
             <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-[14px] font-medium">Importera från Google Docs</p>
+              <p className="text-[14px] font-medium">{t("import.upload.google_heading")}</p>
               <p className="text-[12px] text-muted-foreground leading-snug">
-                Öppna dokumentet → klicka <span className="font-medium">Dela</span> → välj{" "}
-                <span className="font-medium">"Alla med länken kan visa"</span>. Klistra sedan in URL:en nedan.
+                {t("import.upload.google_instructions_prefix")}{" "}
+                <span className="font-medium">{t("import.upload.google_instructions_share")}</span>{" "}
+                {t("import.upload.google_instructions_choose")}{" "}
+                <span className="font-medium">{t("import.upload.google_instructions_visibility")}</span>
+                {t("import.upload.google_instructions_suffix")}
               </p>
             </div>
           </div>
