@@ -171,7 +171,7 @@ export function PreviewCardItem({
           size="icon"
           className="rounded-full h-8 w-8"
           onClick={() => setExpanded(!expanded)}
-          aria-label={expanded ? "Stäng" : "Visa innehåll"}
+          aria-label={expanded ? t("import.preview.collapse") : t("import.preview.expand")}
         >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
