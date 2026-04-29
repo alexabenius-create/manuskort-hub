@@ -64,6 +64,7 @@ export function ManusCardV2({
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
   onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow, onPullBack,
 }: Props) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
   const [editor, setEditor] = useState<Editor | null>(null);
