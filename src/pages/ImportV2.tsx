@@ -415,24 +415,24 @@ export default function ImportV2() {
   if (step === 0) {
     return (
       <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-        <SEO title="Importera – Manuskort" noindex nofollow />
+        <SEO title={t("import.page_title")} noindex nofollow />
         <MeshBg />
         <Topbar
           left={
             <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek-v2")} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-              <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back")}
             </Button>
           }
-          title="Importera manus"
+          title={t("import.header_title")}
           right={<HelpButton />}
         />
         <main className="relative max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
           <div className="mb-8 v2-reveal">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-v2-ink">
-              Vad ska du genomföra?
+              {t("import.step0_heading")}
             </h2>
             <p className="text-v2-muted text-[15px] mt-2">
-              Vi anpassar importen efter typ av tillfälle. Valet bestämmer hur vi hanterar talare och frågor i texten.
+              {t("import.step0_desc")}
             </p>
           </div>
 
@@ -443,7 +443,7 @@ export default function ImportV2() {
 
           <div className="flex justify-end gap-3 mt-10">
             <Button variant="ghost" onClick={cancel} className="rounded-full text-v2-muted hover:text-v2-ink">
-              Avbryt
+              {t("import.cancel")}
             </Button>
           </div>
         </main>
