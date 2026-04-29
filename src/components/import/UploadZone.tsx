@@ -199,9 +199,9 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
             <Upload className="h-6 w-6 text-muted-foreground" />
           </div>
           <div className="text-center">
-            <p className="text-[15px] font-medium">Släpp en fil här eller klicka för att välja</p>
+            <p className="text-[15px] font-medium">{t("import.upload.drop_or_click")}</p>
             <p className="text-[13px] text-muted-foreground mt-1">
-              .docx eller .txt — max 5 MB
+              {t("import.upload.drop_hint")}
             </p>
           </div>
         </button>
