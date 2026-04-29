@@ -73,7 +73,7 @@ export function PreviewBubbleMenu({ editor, speakers }: Props) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="rounded-xl">
             {usable.length === 0 ? (
-              <DropdownMenuItem disabled>Inga panelister ännu</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t("import.bubble.no_panelists")}</DropdownMenuItem>
             ) : (
               usable.map((s) => (
                 <DropdownMenuItem
