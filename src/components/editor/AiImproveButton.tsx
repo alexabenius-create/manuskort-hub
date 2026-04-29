@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -9,6 +9,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   editor: Editor;
@@ -20,6 +21,7 @@ interface Suggestion {
 }
 
 export function AiImproveButton({ editor }: Props) {
+  const { t } = useTranslation();
   const { isFree, isPro, isAdmin } = useTier();
   const { usage, refresh } = useAiUsage();
   const [open, setOpen] = useState(false);
@@ -33,7 +35,10 @@ export function AiImproveButton({ editor }: Props) {
     const { from, to } = editor.state.selection;
     const text = editor.state.doc.textBetween(from, to, " ").trim();
     if (!text || text.length < 2) {
-      toast({ title: "Markera text först", description: "Välj en mening att förbättra." });
+      toast({
+        title: t("editor.card.ai_select_first_title"),
+        description: t("editor.card.ai_select_first_desc"),
+      });
       return;
     }
 
@@ -44,8 +49,8 @@ export function AiImproveButton({ editor }: Props) {
 
     if (isPro && usage && usage.remaining <= 0) {
       toast({
-        title: "AI-kvot slut",
-        description: `Du har använt månadens 200 AI-förbättringar. Återställs nästa månad.`,
+        title: t("editor.card.ai_quota_title"),
+        description: t("editor.card.ai_quota_desc"),
         variant: "destructive",
       });
       return;
@@ -63,17 +68,16 @@ export function AiImproveButton({ editor }: Props) {
       });
 
       if (fnError) {
-        // Try to read structured error from response
         const ctx = (fnError as { context?: { error?: string } }).context;
         const code = ctx?.error;
         if (code === "monthly_limit_reached") {
-          setError("Du har nått månadens AI-kvot (200/200).");
+          setError(t("editor.card.ai_error_monthly_limit"));
         } else if (code === "ai_credits_exhausted") {
-          setError("AI-tjänsten är slut på kredit. Kontakta support.");
+          setError(t("editor.card.ai_error_credits"));
         } else if (code === "ai_rate_limited") {
-          setError("För många förfrågningar just nu. Försök igen om en stund.");
+          setError(t("editor.card.ai_error_rate_limit"));
         } else {
-          setError(fnError.message || "Något gick fel.");
+          setError(fnError.message || t("editor.card.ai_error_unknown"));
         }
         return;
       }
@@ -86,7 +90,7 @@ export function AiImproveButton({ editor }: Props) {
       setSuggestions(data?.suggestions ?? []);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Något gick fel.");
+      setError(e instanceof Error ? e.message : t("editor.card.ai_error_unknown"));
     } finally {
       setLoading(false);
     }
@@ -100,18 +104,20 @@ export function AiImproveButton({ editor }: Props) {
   const remaining = usage?.remaining ?? 0;
   const limit = usage?.limit ?? 0;
 
+  const titleAttr = isFree
+    ? t("editor.card.ai_improve_tip_free")
+    : usage
+      ? t("editor.card.ai_improve_tip_pro_with_quota", { remaining, limit })
+      : t("editor.card.ai_improve_tip_pro");
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label="Förbättra med AI"
-            title={
-              isFree
-                ? "Förbättra med AI (kräver PRO)"
-                : `Förbättra med AI${usage ? ` — ${remaining}/${limit} kvar` : ""}`
-            }
+            aria-label={t("editor.card.ai_improve_aria")}
+            title={titleAttr}
             onClick={handleClick}
             className={cn(
               "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
@@ -133,7 +139,7 @@ export function AiImproveButton({ editor }: Props) {
           <div className="p-3 border-b">
             <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
               <Sparkles className="h-3 w-3" />
-              Förbättra med AI
+              {t("editor.card.ai_panel_title")}
             </div>
             <div className="text-sm text-foreground line-clamp-3 italic">
               "{selectedText}"
@@ -144,7 +150,7 @@ export function AiImproveButton({ editor }: Props) {
             {loading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Genererar förslag…
+                {t("editor.card.ai_loading")}
               </div>
             )}
 
@@ -171,7 +177,7 @@ export function AiImproveButton({ editor }: Props) {
                     onClick={() => applySuggestion(s.text)}
                     className="h-7 rounded-full text-xs"
                   >
-                    Använd
+                    {t("editor.card.ai_apply")}
                   </Button>
                 </div>
               ))}
@@ -179,7 +185,7 @@ export function AiImproveButton({ editor }: Props) {
 
           {!isAdmin && usage && (
             <div className="border-t px-3 py-2 text-xs text-muted-foreground">
-              {remaining} av {limit} AI-förbättringar kvar denna månad
+              {t("editor.card.ai_quota_remaining", { remaining, limit })}
             </div>
           )}
         </PopoverContent>
@@ -188,8 +194,8 @@ export function AiImproveButton({ editor }: Props) {
       <UpgradeModal
         open={showUpgrade}
         onOpenChange={setShowUpgrade}
-        title="AI-förbättring kräver PRO"
-        description="Få AI-hjälp med att skriva tydligare, kortare och mer talvänliga meningar. Ingår i PRO."
+        title={t("editor.card.ai_upgrade_title")}
+        description={t("editor.card.ai_upgrade_desc")}
       />
     </>
   );
