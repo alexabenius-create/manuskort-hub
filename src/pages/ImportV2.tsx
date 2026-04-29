@@ -127,11 +127,11 @@ export default function ImportV2() {
 
   const goToPreview = () => {
     if (!store.file || store.rawBlocks.length === 0) {
-      toast({ title: "Ladda upp en fil först", variant: "destructive" });
+      toast({ title: t("import.toast_upload_first"), variant: "destructive" });
       return;
     }
     if (!store.title.trim()) {
-      toast({ title: "Ange en titel", variant: "destructive" });
+      toast({ title: t("import.toast_title_required"), variant: "destructive" });
       return;
     }
 
