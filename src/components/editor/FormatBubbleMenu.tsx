@@ -205,24 +205,24 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
             {panelists.map((p) => {
               const isActiveHere = activePanelistId === p.id;
               const initial = (p.name?.trim() || "?").charAt(0).toUpperCase();
+              const displayName = p.name?.trim() || t("editor.card.cue_unnamed");
               return (
                 <button
                   key={p.id}
                   type="button"
-                  aria-label={`Knyt till ${p.name || "panelist"}`}
+                  aria-label={t("editor.card.panelist_chip_aria", { name: displayName })}
                   aria-pressed={isActiveHere}
-                  title={`Panelist: ${p.name || "Namnlös"}`}
+                  title={t("editor.card.panelist_chip_title", { name: displayName })}
                   onClick={() => applyPanelist(p)}
                   className={cn(
                     "inline-flex items-center justify-center rounded-full font-medium leading-none transition-all ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
-                    // Mobil: rund 28px-knapp med initial. Desktop: full pill med namn.
                     "h-7 w-7 text-[12px] md:w-auto md:max-w-[140px] md:px-2.5",
                     isActiveHere && "ring-2 ring-foreground/60 scale-105",
                   )}
                   style={{ backgroundColor: p.color, color: hexToDarkText(p.color) }}
                 >
                   <span className="md:hidden">{initial}</span>
-                  <span className="hidden md:inline truncate">{p.name?.trim() || "Namnlös"}</span>
+                  <span className="hidden md:inline truncate">{displayName}</span>
                 </button>
               );
             })}
@@ -230,8 +230,8 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
             {activePanelistId && (
               <button
                 type="button"
-                aria-label="Ta bort markering"
-                title="Ta bort markering"
+                aria-label={t("editor.card.panelist_remove_mark_aria")}
+                title={t("editor.card.panelist_remove_mark_aria")}
                 onClick={() => editor.chain().focus().unsetPanelist().run()}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors text-foreground/60 hover:bg-muted hover:text-foreground"
               >
