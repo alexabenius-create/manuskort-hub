@@ -1,0 +1,43 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or"
+  },
+  "lang": {
+    "switch_to_sv": "Visa på svenska",
+    "switch_to_en": "View in English",
+    "current_sv": "Svenska",
+    "current_en": "English"
+  },
+  "translation_edit": {
+    "toggle_label": "Translation mode",
+    "active_banner": "Translation mode active — click the pencil next to any text to edit it.",
+    "popover_title": "Edit translation",
+    "source_label": "Swedish source",
+    "ai_label": "AI translation",
+    "manual_label": "Your version",
+    "save": "Save",
+    "reset_to_ai": "Reset to AI",
+    "cancel": "Cancel",
+    "saved": "Translation saved",
+    "save_error": "Could not save translation",
+    "key_label": "Key"
+  },
+  "landing": {
+    "hero": {
+      "title": "Stay on time. Every time.",
+      "subtitle": "Card-based scripts for presentations, speeches and panel discussions. Write, rehearse, perform — without losing your thread or your timing.",
+      "cta_primary": "Get started free",
+      "cta_secondary": "See pricing"
+    }
+  }
+}

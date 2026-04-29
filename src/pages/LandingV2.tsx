@@ -28,6 +28,9 @@ import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { supabase } from "@/integrations/supabase/client";
+import { T } from "@/i18n/T";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 
 /**
@@ -119,6 +122,8 @@ export default function LandingV2() {
                 Priser
               </Link>
               <FeedbackButton source="landing" withLabel className="!h-9" />
+              <LanguageSwitcher />
+              <TranslationEditModeToggle />
               {!session && (
                 <Link
                   to="/auth"
@@ -191,15 +196,12 @@ export default function LandingV2() {
               Manuskort för proffsiga presentationer
             </div>
             <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[72px] leading-[1.0] font-semibold tracking-[-0.035em]">
-              Tala tryggt.
-              <br />
               <span className="bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink bg-clip-text text-transparent">
-                Håll tiden. Varje&nbsp;gång.
+                <T k="landing.hero.title" />
               </span>
             </h1>
             <p className="mt-7 text-[18px] sm:text-[19px] text-v2-muted leading-relaxed max-w-[540px]">
-              Manuskort är det enklaste sättet att förbereda ett anförande eller panelsamtal. Skriv
-              ditt manus, dela upp det i kort med tider och cues — och leverera med ro.
+              <T k="landing.hero.subtitle" />
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -210,7 +212,7 @@ export default function LandingV2() {
                 </span>
               </Link>
               <Link to="/priser" className="v2-btn-ghost v2-btn-lg">
-                Se priser
+                <T k="landing.hero.cta_secondary" />
               </Link>
             </div>
 

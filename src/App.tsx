@@ -9,6 +9,9 @@ import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
 import { usePresence } from "@/hooks/usePresence";
+import { TranslationEditModeProvider } from "@/i18n/TranslationEditModeContext";
+import { TranslationEditModeOverlay } from "@/i18n/TranslationEditModeToggle";
+import { useTranslationOverrides } from "@/i18n/overrides";
 import NotFound from "./pages/NotFound";
 
 // V2 är default sedan 2026-04-24. v1-sidor ligger kvar som alias (-v1-suffix saknas;
@@ -26,6 +29,7 @@ const DebattBuddyThread = lazy(() => import("./pages/DebattBuddyThread"));
 const Admin = lazy(() => import("./pages/AdminV2"));
 const AdminFeatureFlags = lazy(() => import("./pages/AdminFeatureFlags"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const AdminTranslations = lazy(() => import("./pages/AdminTranslations"));
 const Messages = lazy(() => import("./pages/MessagesV2"));
 const Moderator = lazy(() => import("./pages/usecase/ModeratorV2"));
 const Talare = lazy(() => import("./pages/usecase/TalareV2"));
@@ -74,6 +78,7 @@ const LegacyEditorRedirect = () => {
 
 const PresenceTracker = () => {
   usePresence();
+  useTranslationOverrides();
   return null;
 };
 
@@ -87,7 +92,9 @@ const App = () => (
           <PresenceTracker />
           <TourProvider>
             <TierProvider>
-              <Suspense fallback={<RouteFallback />}>
+              <TranslationEditModeProvider>
+                <TranslationEditModeOverlay />
+                <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/v2" element={<LandingV2 />} />
@@ -124,6 +131,7 @@ const App = () => (
                   <Route path="/admin-v2" element={<RequireAuth><AdminV2 /></RequireAuth>} />
                   <Route path="/admin/flags" element={<RequireAuth><AdminFeatureFlags /></RequireAuth>} />
                   <Route path="/admin/analytics" element={<RequireAuth><AdminAnalytics /></RequireAuth>} />
+                  <Route path="/admin/translations" element={<RequireAuth><AdminTranslations /></RequireAuth>} />
                   <Route path="/installningar-v2" element={<RequireAuth><SettingsV2 /></RequireAuth>} />
                   <Route path="/meddelanden" element={<RequireAuth><Messages /></RequireAuth>} />
                   <Route path="/meddelanden-v2" element={<RequireAuth><MessagesV2 /></RequireAuth>} />
@@ -134,6 +142,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              </TranslationEditModeProvider>
             </TierProvider>
           </TourProvider>
         </AuthProvider>
