@@ -8,6 +8,7 @@ interface Props {
 }
 
 export function SkippedContentPanel({ items }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
 
