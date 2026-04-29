@@ -521,11 +521,11 @@ export default function ImportV2() {
 
   return (
     <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-      <SEO title="Importera – Manuskort" noindex nofollow />
+      <SEO title={t("import.page_title")} noindex nofollow />
       <MeshBg />
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 border-b border-v2-line px-6 sm:px-10 h-14 flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-          <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka
+          <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back")}
         </Button>
         <input
           value={store.title}
@@ -543,13 +543,13 @@ export default function ImportV2() {
                 data-active={store.strategy === s}
                 className="seg-btn disabled:opacity-40"
               >
-                {s === "headings" ? "Rubriker" : s === "wordcount" ? "Ordantal" : "Stycke"}
+                {s === "headings" ? t("import.strategy_headings") : s === "wordcount" ? t("import.strategy_wordcount") : t("import.strategy_paragraph")}
               </button>
             );
           })}
         </div>
         <Button variant="ghost" onClick={cancel} className="rounded-full text-v2-muted hover:text-v2-ink">
-          Avbryt
+          {t("import.cancel")}
         </Button>
         <button
           onClick={commit}
@@ -558,7 +558,7 @@ export default function ImportV2() {
         >
           <span className="relative z-10 inline-flex items-center gap-1">
             {committing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Skapa manus
+            {t("import.create_manuscript")}
           </span>
         </button>
         <HelpButton />
