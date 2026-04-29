@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
