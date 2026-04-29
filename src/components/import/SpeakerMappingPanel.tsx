@@ -52,7 +52,7 @@ export function SpeakerMappingPanel({ existing }: Props) {
                 updateSpeaker(s.tempId, { detectedName: e.target.value })
               }
               className="flex-1 min-w-0 bg-transparent text-[14px] font-medium outline-none focus:ring-1 focus:ring-accent-blue rounded px-1 py-0.5"
-              aria-label="Talarens namn"
+              aria-label={t("import.speakers.speaker_name_label")}
             />
             <select
               value={s.action === "existing" ? `e:${s.existingPanelistId}` : s.action}
