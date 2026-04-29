@@ -1017,7 +1017,7 @@ export default function EditorV4() {
                 .update({ content_html: u.html })
                 .eq("id", u.id);
               if (error) {
-                toast({ title: "Kunde inte uppdatera kort", description: error.message, variant: "destructive" });
+                toast({ title: t("editor.card_update_failed"), description: error.message, variant: "destructive" });
                 return;
               }
             }
@@ -1041,7 +1041,7 @@ export default function EditorV4() {
           saveLabel={targetSaveLabel}
           onSave={(seconds) => {
             void updateMeta({ target_duration_seconds: seconds } as Partial<Manuscript>);
-            if (targetSaveLabel === "Spara och starta" && seconds !== null) {
+            if (targetSaveLabel === t("editor.target_save_and_start") && seconds !== null) {
               const suffix = debateBuddyThreadId ? `?debattbuddy=${debateBuddyThreadId}` : "";
               navigate(`/manus/${manuscript.id}/presentera${suffix}`);
             }
@@ -1051,26 +1051,26 @@ export default function EditorV4() {
         <AlertDialog open={chainBreakOpen} onOpenChange={setChainBreakOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Måltid saknas på vissa kort</AlertDialogTitle>
+              <AlertDialogTitle>{t("editor.chain_break_title")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Följande kort saknar manuell måltid och bryter den ackumulerade tidskedjan:{" "}
+                {t("editor.chain_break_desc_pre")}
                 <strong>
                   {missingTargetCards
-                    .map((n) => `Kort ${String(n).padStart(2, "0")}`)
+                    .map((n) => t("editor.chain_break_card", { number: String(n).padStart(2, "0") }))
                     .join(", ")}
                 </strong>
                 .
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Gå tillbaka och redigera</AlertDialogCancel>
+              <AlertDialogCancel>{t("editor.chain_break_back")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
                   setChainBreakOpen(false);
                   startPresentation(true);
                 }}
               >
-                Starta ändå
+                {t("editor.chain_break_force")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
