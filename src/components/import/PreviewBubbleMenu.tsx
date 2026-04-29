@@ -23,6 +23,7 @@ interface Props {
  * En enda mark-typ — ingen distinktion mellan "talare" och "fråga till".
  */
 export function PreviewBubbleMenu({ editor, speakers }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   if (!editor) return null;
 
