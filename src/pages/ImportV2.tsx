@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -31,6 +32,7 @@ import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wor
  * Inre import-komponenter (UploadZone, SettingsForm, PreviewCardItem etc.) återanvänds som de är.
  */
 export default function ImportV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -108,8 +110,8 @@ export default function ImportV2() {
       store.setWordsPerCard(WORDS_PER_CARD_DEFAULT[store.textSize]);
     } catch (e) {
       toast({
-        title: "Filen kunde inte läsas",
-        description: e instanceof Error ? e.message : "Försök spara om från Word.",
+        title: t("import.toast_file_failed_title"),
+        description: e instanceof Error ? e.message : t("import.toast_file_failed_desc"),
         variant: "destructive",
       });
       store.setFile(null);
@@ -125,11 +127,11 @@ export default function ImportV2() {
 
   const goToPreview = () => {
     if (!store.file || store.rawBlocks.length === 0) {
-      toast({ title: "Ladda upp en fil först", variant: "destructive" });
+      toast({ title: t("import.toast_upload_first"), variant: "destructive" });
       return;
     }
     if (!store.title.trim()) {
-      toast({ title: "Ange en titel", variant: "destructive" });
+      toast({ title: t("import.toast_title_required"), variant: "destructive" });
       return;
     }
 
@@ -166,7 +168,7 @@ export default function ImportV2() {
 
   const rebuildCards = () => {
     if (store.dirty) {
-      if (!confirm("Att byta strategi rensar dina manuella ändringar. Fortsätt?")) return;
+      if (!confirm(t("import.rebuild_confirm"))) return;
     }
     const tempIds = new Map<string, string>();
     const speakerColors = new Map<string, string>();
@@ -232,7 +234,7 @@ export default function ImportV2() {
     if (firstParas.length === 0 || restParas.length === 0) return;
     const firstHtml = firstParas.join("");
     const restHtml = restParas.join("");
-    const titleFromText = (h: string) => stripHtml(h).split(/[.!?…]/)[0].slice(0, 60).trim() || "Kort";
+    const titleFromText = (h: string) => stripHtml(h).split(/[.!?…]/)[0].slice(0, 60).trim() || t("import.default_card_title");
     const a: PreviewCard = { ...c, contentHtml: firstHtml, paragraphsHtml: firstParas, wordCount: wordCount(firstHtml) };
     const b: PreviewCard = {
       id: `${c.id}_b`,
@@ -251,7 +253,7 @@ export default function ImportV2() {
   const insertEmptyAt = (idx: number) => {
     const empty: PreviewCard = {
       id: `pc_empty_${Date.now().toString(36)}`,
-      title: "Nytt kort",
+      title: t("import.new_empty_card"),
       contentHtml: "<p></p>",
       paragraphsHtml: ["<p></p>"],
       wordCount: 0,
@@ -314,7 +316,7 @@ export default function ImportV2() {
     }));
 
     const manuscriptPayload = {
-      title: store.title.trim() || "Importerat manus",
+      title: store.title.trim() || t("import.default_title"),
       mode: store.mode ?? "speaker",
       text_size: store.textSize,
       target_duration_seconds: store.targetSeconds || null,
@@ -331,18 +333,18 @@ export default function ImportV2() {
     setCommitting(false);
 
     if (error) {
-      toast({ title: "Importen misslyckades", description: error.message, variant: "destructive" });
+      toast({ title: t("import.toast_import_failed"), description: error.message, variant: "destructive" });
       return;
     }
 
     const newId = data as unknown as string;
-    toast({ title: "Manus importerat", description: `${cards.length} kort skapade` });
+    toast({ title: t("import.toast_imported_title"), description: t("import.toast_imported_desc", { count: cards.length }) });
     store.reset();
     navigate(`/manus/${newId}/v4`);
   };
 
   const cancel = () => {
-    if (store.dirty && !confirm("Avbryta importen? Dina val går förlorade.")) return;
+    if (store.dirty && !confirm(t("import.cancel_confirm"))) return;
     store.reset();
     navigate("/bibliotek-v2");
   };
@@ -373,15 +375,15 @@ export default function ImportV2() {
   if (importBlocked) {
     return (
       <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-        <SEO title="Importera – Manuskort" noindex nofollow />
+        <SEO title={t("import.page_title")} noindex nofollow />
         <MeshBg />
         <Topbar
           left={
             <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek-v2")} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-              <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back")}
             </Button>
           }
-          title="Importera manus"
+          title={t("import.header_title")}
         />
         <main className="relative max-w-[560px] mx-auto px-6 sm:px-10 pt-24 pb-20 text-center flex flex-col gap-6 items-center v2-reveal">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.5)]"
@@ -390,18 +392,18 @@ export default function ImportV2() {
           </div>
           <div className="flex flex-col gap-2">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-v2-ink">
-              Import är en PRO-funktion
+              {t("import.pro_gate_title")}
             </h2>
             <p className="text-[15px] text-v2-muted">
-              .docx-import ingår inte i Gratis. Uppgradera till PRO för att importera dokument och spara timmar av manuell skrivning.
+              {t("import.pro_gate_desc")}
             </p>
           </div>
           <div className="flex gap-3">
             <Link to="/bibliotek-v2" className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-white transition-colors">
-              Tillbaka
+              {t("import.back")}
             </Link>
             <Link to="/priser-v2" className="v2-btn-primary">
-              <span className="relative z-10">Se PRO</span>
+              <span className="relative z-10">{t("import.pro_gate_cta")}</span>
             </Link>
           </div>
         </main>
@@ -413,24 +415,24 @@ export default function ImportV2() {
   if (step === 0) {
     return (
       <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-        <SEO title="Importera – Manuskort" noindex nofollow />
+        <SEO title={t("import.page_title")} noindex nofollow />
         <MeshBg />
         <Topbar
           left={
             <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek-v2")} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-              <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back")}
             </Button>
           }
-          title="Importera manus"
+          title={t("import.header_title")}
           right={<HelpButton />}
         />
         <main className="relative max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
           <div className="mb-8 v2-reveal">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-v2-ink">
-              Vad ska du genomföra?
+              {t("import.step0_heading")}
             </h2>
             <p className="text-v2-muted text-[15px] mt-2">
-              Vi anpassar importen efter typ av tillfälle. Valet bestämmer hur vi hanterar talare och frågor i texten.
+              {t("import.step0_desc")}
             </p>
           </div>
 
@@ -441,7 +443,7 @@ export default function ImportV2() {
 
           <div className="flex justify-end gap-3 mt-10">
             <Button variant="ghost" onClick={cancel} className="rounded-full text-v2-muted hover:text-v2-ink">
-              Avbryt
+              {t("import.cancel")}
             </Button>
           </div>
         </main>
@@ -453,25 +455,25 @@ export default function ImportV2() {
   if (step === 1) {
     return (
       <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-        <SEO title="Importera – Manuskort" noindex nofollow />
+        <SEO title={t("import.page_title")} noindex nofollow />
         <MeshBg />
         <Topbar
           left={
             <Button variant="ghost" size="sm" onClick={() => setStep(0)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-              <ArrowLeft className="h-3.5 w-3.5" /> Byt typ
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back_change_type")}
             </Button>
           }
-          title={`Importera manus · ${store.mode === "moderator" ? "Panelsamtal" : "Tal"}`}
+          title={t("import.header_title_with_mode", { mode: store.mode === "moderator" ? t("import.mode_moderator") : t("import.mode_speaker") })}
           right={<HelpButton />}
         />
 
         <main className="relative max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
           <div className="mb-8 v2-reveal">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-v2-ink">
-              Ladda upp ett dokument
+              {t("import.step1_heading")}
             </h2>
             <p className="text-v2-muted text-[15px] mt-2">
-              Vi delar in det åt dig och du justerar i nästa steg.
+              {t("import.step1_desc")}
             </p>
           </div>
 
@@ -485,7 +487,7 @@ export default function ImportV2() {
 
             {parsing && (
               <div className="flex items-center gap-2 text-v2-muted text-[14px]">
-                <Loader2 className="h-4 w-4 animate-spin" /> Läser dokumentet…
+                <Loader2 className="h-4 w-4 animate-spin" /> {t("import.parsing")}
               </div>
             )}
 
@@ -496,14 +498,14 @@ export default function ImportV2() {
 
           <div className="flex justify-end gap-3 mt-8">
             <Button variant="ghost" onClick={cancel} className="rounded-full text-v2-muted hover:text-v2-ink">
-              Avbryt
+              {t("import.cancel")}
             </Button>
             <button
               onClick={goToPreview}
               disabled={!store.file || parsing || store.rawBlocks.length === 0}
               className="v2-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="relative z-10">Fortsätt till förhandsvisning</span>
+              <span className="relative z-10">{t("import.continue_to_preview")}</span>
             </button>
           </div>
         </main>
@@ -519,11 +521,11 @@ export default function ImportV2() {
 
   return (
     <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-      <SEO title="Importera – Manuskort" noindex nofollow />
+      <SEO title={t("import.page_title")} noindex nofollow />
       <MeshBg />
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 border-b border-v2-line px-6 sm:px-10 h-14 flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-          <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka
+          <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back")}
         </Button>
         <input
           value={store.title}
@@ -541,13 +543,13 @@ export default function ImportV2() {
                 data-active={store.strategy === s}
                 className="seg-btn disabled:opacity-40"
               >
-                {s === "headings" ? "Rubriker" : s === "wordcount" ? "Ordantal" : "Stycke"}
+                {s === "headings" ? t("import.strategy_headings") : s === "wordcount" ? t("import.strategy_wordcount") : t("import.strategy_paragraph")}
               </button>
             );
           })}
         </div>
         <Button variant="ghost" onClick={cancel} className="rounded-full text-v2-muted hover:text-v2-ink">
-          Avbryt
+          {t("import.cancel")}
         </Button>
         <button
           onClick={commit}
@@ -556,7 +558,7 @@ export default function ImportV2() {
         >
           <span className="relative z-10 inline-flex items-center gap-1">
             {committing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Skapa manus
+            {t("import.create_manuscript")}
           </span>
         </button>
         <HelpButton />
@@ -617,13 +619,13 @@ export default function ImportV2() {
         <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-v2-line p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-[13px] text-v2-muted">Totalt</p>
+              <p className="text-[13px] text-v2-muted">{t("import.totals_label")}</p>
               <p className="font-display text-[17px] font-semibold text-v2-ink">
-                {store.cards.length} kort · {totalWords} ord · {formatDuration(estTotalSec)}
+                {t("import.totals_summary", { count: store.cards.length, words: totalWords, duration: formatDuration(estTotalSec) })}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[13px] text-v2-muted">Måltid</p>
+              <p className="text-[13px] text-v2-muted">{t("import.target_label")}</p>
               <p className="font-display text-[17px] font-semibold text-v2-ink">
                 {formatDuration(store.targetSeconds)}
                 {Math.abs(targetDiff) > 60 && (
@@ -636,7 +638,7 @@ export default function ImportV2() {
           </div>
           {hasOverflowCards && (
             <p className="text-[12px] text-[hsl(var(--cue-amber))] mt-2">
-              Vissa kort kan vara för långa för vald textstorlek — du kan splitta dem ovan.
+              {t("import.overflow_warning")}
             </p>
           )}
         </div>
