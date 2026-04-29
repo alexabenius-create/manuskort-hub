@@ -165,7 +165,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           className="seg-btn"
           disabled={disabled}
         >
-          <Upload className="h-3.5 w-3.5" /> Fil
+          <Upload className="h-3.5 w-3.5" /> {t("import.upload.tab_file")}
         </button>
         <button
           type="button"
@@ -174,7 +174,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           className="seg-btn"
           disabled={disabled}
         >
-          <LinkIcon className="h-3.5 w-3.5" /> Google Docs-länk
+          <LinkIcon className="h-3.5 w-3.5" /> {t("import.upload.tab_google")}
         </button>
       </div>
 
