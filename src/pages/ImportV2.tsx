@@ -234,7 +234,7 @@ export default function ImportV2() {
     if (firstParas.length === 0 || restParas.length === 0) return;
     const firstHtml = firstParas.join("");
     const restHtml = restParas.join("");
-    const titleFromText = (h: string) => stripHtml(h).split(/[.!?…]/)[0].slice(0, 60).trim() || "Kort";
+    const titleFromText = (h: string) => stripHtml(h).split(/[.!?…]/)[0].slice(0, 60).trim() || t("import.default_card_title");
     const a: PreviewCard = { ...c, contentHtml: firstHtml, paragraphsHtml: firstParas, wordCount: wordCount(firstHtml) };
     const b: PreviewCard = {
       id: `${c.id}_b`,
