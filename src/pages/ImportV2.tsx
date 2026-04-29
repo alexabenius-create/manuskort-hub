@@ -168,7 +168,7 @@ export default function ImportV2() {
 
   const rebuildCards = () => {
     if (store.dirty) {
-      if (!confirm("Att byta strategi rensar dina manuella ändringar. Fortsätt?")) return;
+      if (!confirm(t("import.rebuild_confirm"))) return;
     }
     const tempIds = new Map<string, string>();
     const speakerColors = new Map<string, string>();
