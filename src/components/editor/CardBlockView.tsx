@@ -277,8 +277,8 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
               }}
               disabled={isFirst}
               className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-              aria-label="Flytta kort uppåt"
-              title="Flytta uppåt"
+              aria-label={t("editor.card.menu_move_up_aria")}
+              title={t("editor.card.menu_move_up_title")}
             >
               <ChevronUp className="h-3.5 w-3.5" />
             </button>
@@ -291,8 +291,8 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
               }}
               disabled={isLast}
               className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-              aria-label="Flytta kort nedåt"
-              title="Flytta nedåt"
+              aria-label={t("editor.card.menu_move_down_aria")}
+              title={t("editor.card.menu_move_down_title")}
             >
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
