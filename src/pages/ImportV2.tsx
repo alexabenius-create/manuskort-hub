@@ -32,6 +32,7 @@ import { wordCount, estimateSeconds, formatDuration, stripHtml } from "@/lib/wor
  * Inre import-komponenter (UploadZone, SettingsForm, PreviewCardItem etc.) återanvänds som de är.
  */
 export default function ImportV2() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
