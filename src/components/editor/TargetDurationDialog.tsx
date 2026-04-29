@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/i18n";
 
 interface Props {
   open: boolean;
@@ -34,7 +35,6 @@ function formatMmSs(totalSeconds: number): string {
 function parseMmSs(input: string): number | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
-  // Tillåt "10", "10:00", "10:30"
   if (/^\d+$/.test(trimmed)) {
     const m = parseInt(trimmed, 10);
     return m * 60;
@@ -47,11 +47,11 @@ function parseMmSs(input: string): number | null {
   return m * 60 + s;
 }
 
-export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro, saveLabel = "Spara", chainEndSeconds = null }: Props) {
+export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro, saveLabel, chainEndSeconds = null }: Props) {
+  const t = useT();
   const [customInput, setCustomInput] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // Synka inputen med inkommande värde när dialogen öppnas
   useEffect(() => {
     if (open) {
       setCustomInput(value !== null ? formatMmSs(value) : "");
@@ -84,8 +84,8 @@ export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro,
 
   const helperMessage = (() => {
     if (!touched && !customInput) return null;
-    if (isInvalidFormat) return "Ange tid som mm:ss eller bara minuter (t.ex. 10 eller 12:30).";
-    if (isTooShort) return "Måltiden måste vara minst 30 sekunder.";
+    if (isInvalidFormat) return t("editor.target_format_error");
+    if (isTooShort) return t("editor.target_too_short");
     return null;
   })();
 
@@ -93,15 +93,15 @@ export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Måltid för manuset</DialogTitle>
+          <DialogTitle>{t("editor.target_dialog_title")}</DialogTitle>
           <DialogDescription>
-            {intro ?? "Hur lång ska presentationen vara totalt? Tiden används av presentationsläget för att räkna ner och varna när tiden är på väg att ta slut."}
+            {intro ?? t("editor.target_dialog_desc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label className="text-[12px] text-muted-foreground">Snabba val</Label>
+            <Label className="text-[12px] text-muted-foreground">{t("editor.target_quick")}</Label>
             <div className="flex gap-2 flex-wrap">
               {QUICK_OPTIONS.map((m) => (
                 <button
@@ -110,7 +110,7 @@ export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro,
                   onClick={() => handleQuick(m)}
                   className="px-3 py-1.5 rounded-full text-[13px] font-medium bg-surface-2 hover:bg-accent-blue/10 hover:text-accent-blue transition-colors"
                 >
-                  {m} min
+                  {t("editor.target_quick_min", { minutes: m })}
                 </button>
               ))}
             </div>
@@ -119,22 +119,22 @@ export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro,
                 type="button"
                 onClick={() => { onSave(chainEndSeconds); onOpenChange(false); }}
                 className="self-start mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium border border-accent-blue/30 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/15 transition-colors"
-                title="Sätter måltiden till samma värde som sista kortets sluttid i kedjan"
+                title={t("editor.target_use_chain_tip")}
               >
-                Använd sluttid från kedjan ({formatMmSs(chainEndSeconds)})
+                {t("editor.target_use_chain", { time: formatMmSs(chainEndSeconds) })}
               </button>
             )}
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="target-duration-custom" className="text-[12px] text-muted-foreground">
-              Egen tid (mm:ss eller bara minuter)
+              {t("editor.target_custom_label")}
             </Label>
             <Input
               id="target-duration-custom"
               value={customInput}
               onChange={(e) => { setCustomInput(e.target.value); setTouched(true); }}
-              placeholder="t.ex. 12:30"
+              placeholder={t("editor.target_custom_placeholder")}
               inputMode="numeric"
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
@@ -152,14 +152,14 @@ export function TargetDurationDialog({ open, onOpenChange, value, onSave, intro,
         <DialogFooter className="gap-2 sm:gap-2">
           {value !== null && (
             <Button variant="ghost" onClick={handleRemove} className="text-muted-foreground hover:text-destructive">
-              Ta bort måltid
+              {t("editor.target_remove")}
             </Button>
           )}
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Avbryt
+            {t("editor.target_cancel")}
           </Button>
           <Button onClick={handleSave} disabled={!canSave} className="bg-accent-blue hover:bg-accent-blue/90 text-white">
-            {saveLabel}
+            {saveLabel ?? t("editor.target_save_label")}
           </Button>
         </DialogFooter>
       </DialogContent>

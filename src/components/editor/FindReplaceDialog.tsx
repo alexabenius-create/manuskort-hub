@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { replaceInHtml, scanCardsForPlaceholders } from "@/lib/profilePlaceholders";
+import { useT } from "@/i18n";
 
 interface CardLite {
   id: string;
