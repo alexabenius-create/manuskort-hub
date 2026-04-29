@@ -59,7 +59,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
   const importFromGoogle = async () => {
     const url = googleUrl.trim();
     if (!url) {
-      setError("Klistra in en Google Docs-länk först.");
+      setError(t("import.upload.google_url_required"));
       return;
     }
     setError(null);
