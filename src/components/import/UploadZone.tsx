@@ -1,5 +1,6 @@
 import { useRef, useState, DragEvent } from "react";
 import { Upload, FileText, X, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { detectFileKind, MAX_FILE_BYTES } from "@/lib/import/parseDocument";
