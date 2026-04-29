@@ -89,8 +89,8 @@ export default function LibraryV2() {
   const requestNew = () => {
     if (atManuscriptLimit) {
       setUpgradeReason({
-        title: "Du har nått gränsen för Gratis",
-        description: `Gratis tillåter ${limits.manuscripts} manus. Uppgradera till PRO för obegränsat.`,
+        title: t("library.limits.manuscripts_title"),
+        description: t("library.limits.manuscripts_desc", { count: limits.manuscripts }),
       });
       setUpgradeOpen(true);
       return;
@@ -101,8 +101,8 @@ export default function LibraryV2() {
   const requestImport = () => {
     if (!limits.docxImport) {
       setUpgradeReason({
-        title: "Import är en PRO-funktion",
-        description: ".docx-import ingår inte i Gratis. Uppgradera till PRO för att importera dokument.",
+        title: t("library.limits.import_title"),
+        description: t("library.limits.import_desc"),
       });
       setUpgradeOpen(true);
       return;
@@ -116,7 +116,7 @@ export default function LibraryV2() {
       .from("manuscripts")
       .select("*")
       .order("updated_at", { ascending: false });
-    if (error) toast({ title: "Kunde inte ladda", description: error.message, variant: "destructive" });
+    if (error) toast({ title: t("library.toast.load_failed"), description: error.message, variant: "destructive" });
     const list = data ?? [];
 
     if (user && list.length === 0 && !hasBeenSeeded(user.id)) {
@@ -173,14 +173,14 @@ export default function LibraryV2() {
 
   const createNew = async () => {
     if (!user) return;
-    const title = newTitle.trim() || "Nytt manus";
+    const title = newTitle.trim() || (t("library.untitled") as string);
     const { data, error } = await supabase
       .from("manuscripts")
       .insert({ user_id: user.id, title, mode: newMode })
       .select()
       .single();
     if (error || !data) {
-      toast({ title: "Kunde inte skapa", description: error?.message, variant: "destructive" });
+      toast({ title: t("library.toast.create_failed"), description: error?.message, variant: "destructive" });
       return;
     }
     await supabase.from("cards").insert({
@@ -200,7 +200,7 @@ export default function LibraryV2() {
       .from("manuscripts")
       .insert({
         user_id: user.id,
-        title: m.title + " (kopia)",
+        title: m.title + (t("library.copy_suffix") as string),
         mode: m.mode,
         tags: m.tags,
         text_size: m.text_size,
@@ -210,7 +210,7 @@ export default function LibraryV2() {
       })
       .select()
       .single();
-    if (error || !dup) { toast({ title: "Misslyckades", description: error?.message, variant: "destructive" }); return; }
+    if (error || !dup) { toast({ title: t("library.toast.duplicate_failed"), description: error?.message, variant: "destructive" }); return; }
     const { data: cards } = await supabase.from("cards").select("*").eq("manuscript_id", m.id).order("position");
     if (cards && cards.length) {
       await supabase.from("cards").insert(
@@ -234,9 +234,9 @@ export default function LibraryV2() {
   };
 
   const remove = async (m: Manuscript) => {
-    if (!confirm(`Radera "${m.title}"? Detta går inte att ångra.`)) return;
+    if (!confirm(t("library.toast.delete_confirm", { title: m.title }) as string)) return;
     const { error } = await supabase.from("manuscripts").delete().eq("id", m.id);
-    if (error) { toast({ title: "Misslyckades", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t("library.toast.delete_failed"), description: error.message, variant: "destructive" }); return; }
     setItems((prev) => prev.filter((x) => x.id !== m.id));
     setSelectedIds((prev) => {
       if (!prev.has(m.id)) return prev;
@@ -267,29 +267,29 @@ export default function LibraryV2() {
     const { error } = await supabase.from("manuscripts").delete().in("id", ids);
     setBulkDeleting(false);
     if (error) {
-      toast({ title: "Misslyckades", description: error.message, variant: "destructive" });
+      toast({ title: t("library.toast.delete_failed"), description: error.message, variant: "destructive" });
       return;
     }
     setItems((prev) => prev.filter((x) => !selectedIds.has(x.id)));
     setSelectedIds(new Set());
     setBulkDeleteOpen(false);
-    toast({ title: `${ids.length} manus raderade` });
+    toast({ title: t("library.toast.deleted_count", { count: ids.length }) as string });
   };
 
   const renameSubmit = async () => {
     if (!renameId) return;
     const title = renameValue.trim() || "Untitled";
     const { error } = await supabase.from("manuscripts").update({ title }).eq("id", renameId);
-    if (error) { toast({ title: "Misslyckades", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t("library.toast.rename_failed"), description: error.message, variant: "destructive" }); return; }
     setItems((prev) => prev.map((x) => (x.id === renameId ? { ...x, title } : x)));
     setRenameId(null);
   };
 
   const filters: ["all" | "moderator" | "speaker" | "debate", string][] = [
-    ["all", "Alla"],
-    ["moderator", "Moderator"],
-    ["speaker", "Talare"],
-    ["debate", "Debatt"],
+    ["all", t("library.filter_all") as string],
+    ["moderator", t("library.filter_moderator") as string],
+    ["speaker", t("library.filter_speaker") as string],
+    ["debate", t("library.filter_debate") as string],
   ];
 
   const dragCounter = { current: 0 };
@@ -316,8 +316,8 @@ export default function LibraryV2() {
     if (!file) return;
     if (!limits.docxImport) {
       setUpgradeReason({
-        title: "Import är en PRO-funktion",
-        description: ".docx-import ingår inte i Gratis. Uppgradera till PRO för att importera dokument.",
+        title: t("library.limits.import_title"),
+        description: t("library.limits.import_desc"),
       });
       setUpgradeOpen(true);
       return;
