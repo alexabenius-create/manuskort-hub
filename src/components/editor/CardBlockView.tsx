@@ -7,6 +7,7 @@
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { removeCue, type Cue } from "@/lib/cues";
 import { countPresentationRows, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
