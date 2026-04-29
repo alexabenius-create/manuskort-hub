@@ -372,8 +372,8 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
           }`}
         >
           {isOver && <AlertTriangle className="h-3 w-3" />}
-          <span className="tabular-nums">{currentRows} / {maxRows} rader i presentationsläget</span>
-          {isOver && <span className="opacity-70">· kortet är för långt</span>}
+          <span className="tabular-nums">{t("editor.card.row_status", { current: currentRows, max: maxRows })}</span>
+          {isOver && <span className="opacity-70">· {t("editor.card.rows_too_long")}</span>}
         </div>
       )}
 
