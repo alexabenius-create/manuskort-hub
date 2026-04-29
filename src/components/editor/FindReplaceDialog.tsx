@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { replaceInHtml, scanCardsForPlaceholders } from "@/lib/profilePlaceholders";
+import { useT } from "@/i18n/T";
 
 interface CardLite {
   id: string;
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function FindReplaceDialog({ open, onOpenChange, cards, onApply, initialSearch }: Props) {
+  const t = useT();
   const [search, setSearch] = useState("");
   const [replace, setReplace] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,7 +39,6 @@ export function FindReplaceDialog({ open, onOpenChange, cards, onApply, initialS
 
   const placeholders = useMemo(() => scanCardsForPlaceholders(cards), [cards]);
 
-  // Räkna preview-träffar utan att modifiera
   const previewCount = useMemo(() => {
     if (!search.trim()) return 0;
     let total = 0;
@@ -73,23 +74,23 @@ export function FindReplaceDialog({ open, onOpenChange, cards, onApply, initialS
       <DialogContent className="rounded-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-semibold flex items-center gap-2">
-            <Search className="h-5 w-5" /> Hitta & ersätt
+            <Search className="h-5 w-5" /> {t("editor.find_title")}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Söker i hela manuset. Skiftlägeskänslighet ignoreras.
+            {t("editor.find_desc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label htmlFor="find-search" className="text-[13px] text-muted-foreground font-medium">
-              Hitta
+              {t("editor.find_label")}
             </Label>
             <Input
               id="find-search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="t.ex. [ditt namn]"
+              placeholder={t("editor.find_placeholder")}
               className="h-11 rounded-xl bg-surface-2 border-0 focus-visible:ring-2 focus-visible:ring-accent-blue"
               autoFocus
             />
@@ -97,13 +98,13 @@ export function FindReplaceDialog({ open, onOpenChange, cards, onApply, initialS
 
           <div className="space-y-2">
             <Label htmlFor="find-replace" className="text-[13px] text-muted-foreground font-medium">
-              Ersätt med
+              {t("editor.find_replace_label")}
             </Label>
             <Input
               id="find-replace"
               value={replace}
               onChange={(e) => setReplace(e.target.value)}
-              placeholder="lämna tomt för att ta bort"
+              placeholder={t("editor.find_replace_placeholder")}
               className="h-11 rounded-xl bg-surface-2 border-0 focus-visible:ring-2 focus-visible:ring-accent-blue"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -117,7 +118,7 @@ export function FindReplaceDialog({ open, onOpenChange, cards, onApply, initialS
           {placeholders.length > 0 && (
             <div className="space-y-2">
               <Label className="text-[13px] text-muted-foreground font-medium">
-                Platshållare i manuset
+                {t("editor.find_placeholders_label")}
               </Label>
               <div className="flex flex-wrap gap-1.5">
                 {placeholders.map((p) => (
@@ -137,22 +138,22 @@ export function FindReplaceDialog({ open, onOpenChange, cards, onApply, initialS
           <div className="text-[13px] text-muted-foreground">
             {search.trim()
               ? previewCount > 0
-                ? `${previewCount} träff${previewCount === 1 ? "" : "ar"} hittad${previewCount === 1 ? "" : "e"}.`
-                : "Inga träffar."
-              : "Skriv något att leta efter."}
+                ? t(previewCount === 1 ? "editor.find_hits_one" : "editor.find_hits_other", { count: previewCount })
+                : t("editor.find_no_hits")
+              : t("editor.find_empty")}
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-full">
-            Avbryt
+            {t("editor.find_cancel")}
           </Button>
           <Button
             onClick={handleApply}
             disabled={busy || previewCount === 0}
             className="rounded-full bg-accent-blue hover:bg-accent-blue/90 text-white"
           >
-            Ersätt alla
+            {t("editor.find_apply")}
           </Button>
         </DialogFooter>
       </DialogContent>

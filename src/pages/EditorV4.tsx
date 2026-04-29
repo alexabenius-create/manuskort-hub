@@ -54,6 +54,9 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Editor as TiptapEditorType } from "@tiptap/react";
 import { DOMSerializer } from "prosemirror-model";
 import { TextSelection } from "prosemirror-state";
+import { useT } from "@/i18n/T";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
 type Manuscript = Database["public"]["Tables"]["manuscripts"]["Row"];
 type Card = Database["public"]["Tables"]["cards"]["Row"];
@@ -130,6 +133,7 @@ function V4SegBtn({
  * (ljus mesh-bakgrund, glas-topbar, violett/blå gradients, font-display).
  */
 export default function EditorV4() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -175,12 +179,12 @@ export default function EditorV4() {
     if (!isSupportMode) return;
     if (supportStatus && supportStatus !== "granted") {
       toast({
-        title: "Delningen är avslutad",
-        description: "Användaren har avslutat delningen.",
+        title: t("editor.support_share_ended_title"),
+        description: t("editor.support_share_ended_desc"),
       });
       navigate("/admin?tab=feedback", { replace: true });
     }
-  }, [isSupportMode, supportStatus, navigate]);
+  }, [isSupportMode, supportStatus, navigate, t]);
 
   const [manuscript, setManuscript] = useState<Manuscript | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -208,7 +212,7 @@ export default function EditorV4() {
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [targetDialogOpen, setTargetDialogOpen] = useState(false);
   const [targetDialogIntro, setTargetDialogIntro] = useState<string | undefined>(undefined);
-  const [targetSaveLabel, setTargetSaveLabel] = useState<string>("Spara");
+  const [targetSaveLabel, setTargetSaveLabel] = useState<string>(t("editor.target_save_label"));
   const [chainBreakOpen, setChainBreakOpen] = useState(false);
   const [missingTargetCards, setMissingTargetCards] = useState<number[]>([]);
 
@@ -236,7 +240,7 @@ export default function EditorV4() {
       supabase.from("cards").select("*").eq("manuscript_id", id).order("position"),
     ]);
     if (mRes.error || !mRes.data) {
-      toast({ title: "Hittade inte manuset", description: mRes.error?.message, variant: "destructive" });
+      toast({ title: t("editor.load_failed_title"), description: mRes.error?.message, variant: "destructive" });
       navigate("/bibliotek");
       return;
     }
@@ -247,7 +251,7 @@ export default function EditorV4() {
     setDocHtml(cardsToDocHtml(rows));
     setCardCount(Math.max(1, rows.length));
     setLoading(false);
-  }, [id, navigate]);
+  }, [id, navigate, t]);
 
   useEffect(() => {
     void loadManuscript();
@@ -270,10 +274,10 @@ export default function EditorV4() {
         .update(patch as never)
         .eq("id", manuscript.id);
       if (error) {
-        toast({ title: "Kunde inte spara inställning", description: error.message, variant: "destructive" });
+        toast({ title: t("editor.save_setting_failed"), description: error.message, variant: "destructive" });
       }
     },
-    [manuscript],
+    [manuscript, t],
   );
 
   /** Hydrera attrs efter att Tiptap mountat dokumentet. */
@@ -513,12 +517,12 @@ export default function EditorV4() {
       console.error("[EditorV3] persist error", e);
       setSaving("error");
       toast({
-        title: "Kunde inte spara",
-        description: e instanceof Error ? e.message : "Okänt fel",
+        title: t("editor.save_failed_title"),
+        description: e instanceof Error ? e.message : t("editor.save_failed_unknown"),
         variant: "destructive",
       });
     }
-  }, [cards, manuscript, user]);
+  }, [cards, manuscript, user, t]);
 
   // (Tidigare global "Nytt kort"-knapp togs bort — användaren skapar kort
   // via permanenta +-pillar mellan/runt korten i CardBlockView.)
@@ -562,16 +566,16 @@ export default function EditorV4() {
   if (loading || !manuscript) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-v2-bg">
-        <p className="font-display text-[14px] text-v2-muted tracking-tight">Laddar editor…</p>
+        <p className="font-display text-[14px] text-v2-muted tracking-tight">{t("editor.loading")}</p>
       </div>
     );
   }
 
   const saveLabel = {
-    idle: "Sparat",
-    saving: "Sparar…",
-    saved: "Sparat ✓",
-    error: "Fel — försök igen",
+    idle: t("editor.save_idle"),
+    saving: t("editor.save_saving"),
+    saved: t("editor.save_saved"),
+    error: t("editor.save_error"),
   }[saving];
 
   // Måltidsdiff
@@ -590,13 +594,13 @@ export default function EditorV4() {
         })();
   const targetTip =
     targetDurationSeconds !== null
-      ? `Måltid: ${formatTargetDuration(targetDurationSeconds)}${diffText ? ` (${diffText})` : ""}`
-      : "Måltid ej satt — klicka för att ange";
+      ? t("editor.target_tip_set", { target: formatTargetDuration(targetDurationSeconds), diff: diffText ? ` (${diffText})` : "" })
+      : t("editor.target_tip_unset");
 
   const startPresentation = (skipChainCheck = false) => {
     if (targetDurationSeconds === null) {
-      setTargetDialogIntro("Ange måltid för att starta presentationen.");
-      setTargetSaveLabel("Spara och starta");
+      setTargetDialogIntro(t("editor.target_dialog_intro_required"));
+      setTargetSaveLabel(t("editor.target_save_and_start"));
       setTargetDialogOpen(true);
       return;
     }
@@ -632,7 +636,7 @@ export default function EditorV4() {
 
   return (
     <PanelistsProvider manuscriptId={manuscript.id}>
-      <SEO title={`${manuscript.title} – Editor`} />
+      <SEO title={`${manuscript.title} – ${t("editor.seo_title_suffix")}`} />
 
       <div className="min-h-screen bg-v2-bg text-v2-ink flex flex-col relative overflow-x-hidden">
         {/* Mesh-glow bakgrund */}
@@ -656,10 +660,10 @@ export default function EditorV4() {
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
             {/* Rad 1 */}
             <div className="flex items-center gap-2 min-w-0 md:flex-1">
-              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface">
+              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface" aria-label={t("editor.back_to_library_aria")}>
                 <Link to="/bibliotek">
                   <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Bibliotek</span>
+                  <span className="hidden sm:inline">{t("editor.back_to_library")}</span>
                 </Link>
               </Button>
 
@@ -680,11 +684,11 @@ export default function EditorV4() {
                   border: `1px solid ${manuscript.mode === "moderator" ? "rgba(99,102,241,0.22)" : manuscript.mode === "debate" ? "rgba(168,85,247,0.22)" : "rgba(59,130,246,0.22)"}`,
                 }}
               >
-                {manuscript.mode === "moderator" ? "Moderator" : manuscript.mode === "debate" ? "Debatt" : "Talare"}
+                {manuscript.mode === "moderator" ? t("editor.mode_moderator") : manuscript.mode === "debate" ? t("editor.mode_debate") : t("editor.mode_speaker")}
               </span>
 
               <span className="md:hidden text-[11px] text-v2-muted font-mono whitespace-nowrap ml-auto">
-                {cardCount} kort
+                {t("editor.card_count", { count: cardCount })}
               </span>
               <span
                 className={`md:hidden text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
@@ -692,7 +696,7 @@ export default function EditorV4() {
                 }`}
               >
                 <Save className="h-3 w-3" />
-                {saving === "saving" ? "…" : saving === "error" ? "fel" : "✓"}
+                {saving === "saving" ? t("editor.save_short_saving") : saving === "error" ? t("editor.save_short_error") : t("editor.save_short_ok")}
               </span>
             </div>
 
@@ -709,7 +713,7 @@ export default function EditorV4() {
                           .from("debate_threads")
                           .insert({
                             user_id: manuscript.user_id,
-                            title: manuscript.title || "Debatt från manus",
+                            title: manuscript.title || t("editor.default_debate_title"),
                           })
                           .select("id")
                           .single();
@@ -720,10 +724,10 @@ export default function EditorV4() {
                       style={{ backgroundImage: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      Starta debatt
+                      {t("editor.start_debate")}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Starta en ny debatt-tråd kopplad till detta manus</TooltipContent>
+                  <TooltipContent>{t("editor.start_debate_tip")}</TooltipContent>
                 </Tooltip>
               )}
               {/* Måltid */}
@@ -733,7 +737,7 @@ export default function EditorV4() {
                     type="button"
                     onClick={() => {
                       setTargetDialogIntro(undefined);
-                      setTargetSaveLabel("Spara");
+                      setTargetSaveLabel(t("editor.target_save_label"));
                       setTargetDialogOpen(true);
                     }}
                     aria-label={targetTip}
@@ -760,7 +764,7 @@ export default function EditorV4() {
                     <PopoverTrigger asChild>
                       <button
                         type="button"
-                        aria-label="Vy-inställningar"
+                        aria-label={t("editor.view_settings")}
                         className="inline-flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface transition-colors data-[state=open]:bg-v2-surface data-[state=open]:text-v2-violet flex-shrink-0"
                       >
                         <Settings2 className="h-4 w-4" />
@@ -768,21 +772,21 @@ export default function EditorV4() {
                     </PopoverTrigger>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-                    Vy-inställningar
+                    {t("editor.view_settings")}
                   </TooltipContent>
                   <PopoverContent
                     align="end"
                     className="w-[300px] p-5 rounded-2xl border border-v2-line bg-white shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]"
                   >
                     <div className="flex flex-col gap-4">
-                      <ViewSection label="Textstorlek">
+                      <ViewSection label={t("editor.view_text_size")}>
                         <V4Seg>
                           {sizes.map((s) => (
                             <V4SegBtn
                               key={s}
                               active={manuscript.text_size === s}
                               onClick={() => updateMeta({ text_size: s })}
-                              title={`Textstorlek: ${s.toUpperCase()}`}
+                              title={t("editor.view_text_size_tip", { size: s.toUpperCase() })}
                             >
                               {s.toUpperCase()}
                             </V4SegBtn>
@@ -790,50 +794,50 @@ export default function EditorV4() {
                         </V4Seg>
                       </ViewSection>
 
-                      <ViewSection label="Anteckningar">
+                      <ViewSection label={t("editor.view_notes")}>
                         <V4Seg>
                           <V4SegBtn
                             active={!!manuscript.show_notes}
                             onClick={() => updateMeta({ show_notes: true })}
                           >
-                            Visa
+                            {t("editor.view_notes_show")}
                           </V4SegBtn>
                           <V4SegBtn
                             active={!manuscript.show_notes}
                             onClick={() => updateMeta({ show_notes: false })}
                           >
-                            Dölj
+                            {t("editor.view_notes_hide")}
                           </V4SegBtn>
                         </V4Seg>
                       </ViewSection>
 
-                      <ViewSection label="Tider">
+                      <ViewSection label={t("editor.view_times")}>
                         <V4Seg>
                           <V4SegBtn
                             active={!!manuscript.show_times}
                             onClick={() => updateMeta({ show_times: !manuscript.show_times })}
                           >
-                            {manuscript.show_times ? "Visa tider" : "Dölj tider"}
+                            {manuscript.show_times ? t("editor.view_times_show") : t("editor.view_times_hide")}
                           </V4SegBtn>
                         </V4Seg>
                       </ViewSection>
 
                       {manuscript.show_times && (
-                        <ViewSection label="Tidsformat">
+                        <ViewSection label={t("editor.view_time_format")}>
                           <V4Seg>
                             <V4SegBtn
                               active={timeFormat === "clock"}
                               onClick={() => updateMeta({ time_format: "clock" })}
-                              title="Klockslag på dygnet (HH:MM)"
+                              title={t("editor.view_time_format_clock_tip")}
                             >
-                              Klockslag
+                              {t("editor.view_time_format_clock")}
                             </V4SegBtn>
                             <V4SegBtn
                               active={timeFormat === "elapsed"}
                               onClick={() => updateMeta({ time_format: "elapsed" })}
-                              title="Förfluten tid från programmets start (MM:SS)"
+                              title={t("editor.view_time_format_elapsed_tip")}
                             >
-                              Förfluten
+                              {t("editor.view_time_format_elapsed")}
                             </V4SegBtn>
                           </V4Seg>
                         </ViewSection>
@@ -850,14 +854,14 @@ export default function EditorV4() {
                     <button
                       type="button"
                       onClick={() => setPanelistSidebarOpen(true)}
-                      aria-label="Deltagare"
+                      aria-label={t("editor.participants")}
                       className="hidden md:inline-flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface transition-colors flex-shrink-0"
                     >
                       <Users className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-                    Deltagare
+                    {t("editor.participants")}
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -868,14 +872,14 @@ export default function EditorV4() {
                   <button
                     type="button"
                     onClick={() => navigate(`/manus/${id}/utskrift`)}
-                    aria-label="Skriv ut manus"
+                    aria-label={t("editor.print_aria")}
                     className="hidden md:inline-flex relative items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface transition-colors flex-shrink-0"
                   >
                     <Printer className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-                  Skriv ut manus
+                  {t("editor.print_tip")}
                 </TooltipContent>
               </Tooltip>
 
@@ -892,10 +896,10 @@ export default function EditorV4() {
                     style={{ height: 36, padding: "0 16px", fontSize: 13 }}
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
-                    <span className="hidden sm:inline">Starta</span>
+                    <span className="hidden sm:inline">{t("editor.start")}</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{`Starta presentationsläge (${shortcutLabel})`}</TooltipContent>
+                <TooltipContent>{t("editor.start_tip", { shortcut: shortcutLabel })}</TooltipContent>
               </Tooltip>
 
               {/* Paneldeltagare — mobil position (höger om Starta) */}
@@ -905,14 +909,14 @@ export default function EditorV4() {
                     <button
                       type="button"
                       onClick={() => setPanelistSidebarOpen(true)}
-                      aria-label="Deltagare"
+                      aria-label={t("editor.participants")}
                       className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface transition-colors flex-shrink-0"
                     >
                       <Users className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-                    Deltagare
+                    {t("editor.participants")}
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -925,21 +929,25 @@ export default function EditorV4() {
                     size="icon"
                     onClick={() => setFindReplaceOpen(true)}
                     className="hidden md:inline-flex h-9 w-9 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface flex-shrink-0"
-                    aria-label="Hitta & ersätt"
+                    aria-label={t("editor.find_replace_aria")}
                   >
                     <Search className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Hitta &amp; ersätt</TooltipContent>
+                <TooltipContent>{t("editor.find_replace")}</TooltipContent>
               </Tooltip>
 
               <FeedbackButton source="editor" manuscriptId={id ?? null} className="hidden md:inline-flex" />
+              <div className="hidden md:inline-flex items-center gap-1">
+                <LanguageSwitcher />
+                <TranslationEditModeToggle />
+              </div>
               <HelpButton />
 
               {/* Sparindikator + kortantal (desktop, längst till höger) */}
               <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-v2-line">
                 <span className="text-[11px] text-v2-muted font-mono whitespace-nowrap">
-                  {cardCount} kort
+                  {t("editor.card_count", { count: cardCount })}
                 </span>
                 <span
                   className={`text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
@@ -1009,7 +1017,7 @@ export default function EditorV4() {
                 .update({ content_html: u.html })
                 .eq("id", u.id);
               if (error) {
-                toast({ title: "Kunde inte uppdatera kort", description: error.message, variant: "destructive" });
+                toast({ title: t("editor.card_update_failed"), description: error.message, variant: "destructive" });
                 return;
               }
             }
@@ -1033,7 +1041,7 @@ export default function EditorV4() {
           saveLabel={targetSaveLabel}
           onSave={(seconds) => {
             void updateMeta({ target_duration_seconds: seconds } as Partial<Manuscript>);
-            if (targetSaveLabel === "Spara och starta" && seconds !== null) {
+            if (targetSaveLabel === t("editor.target_save_and_start") && seconds !== null) {
               const suffix = debateBuddyThreadId ? `?debattbuddy=${debateBuddyThreadId}` : "";
               navigate(`/manus/${manuscript.id}/presentera${suffix}`);
             }
@@ -1043,26 +1051,26 @@ export default function EditorV4() {
         <AlertDialog open={chainBreakOpen} onOpenChange={setChainBreakOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Måltid saknas på vissa kort</AlertDialogTitle>
+              <AlertDialogTitle>{t("editor.chain_break_title")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Följande kort saknar manuell måltid och bryter den ackumulerade tidskedjan:{" "}
+                {t("editor.chain_break_desc_pre")}
                 <strong>
                   {missingTargetCards
-                    .map((n) => `Kort ${String(n).padStart(2, "0")}`)
+                    .map((n) => t("editor.chain_break_card", { number: String(n).padStart(2, "0") }))
                     .join(", ")}
                 </strong>
                 .
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Gå tillbaka och redigera</AlertDialogCancel>
+              <AlertDialogCancel>{t("editor.chain_break_back")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
                   setChainBreakOpen(false);
                   startPresentation(true);
                 }}
               >
-                Starta ändå
+                {t("editor.chain_break_force")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
