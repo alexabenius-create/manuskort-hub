@@ -148,7 +148,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           onClick={onClear}
           disabled={disabled}
         >
-          <X className="h-4 w-4" /> Byt fil
+          <X className="h-4 w-4" /> {t("import.upload.change_file")}
         </Button>
       </div>
     );
