@@ -225,7 +225,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           <div className="flex gap-2">
             <Input
               type="url"
-              placeholder="https://docs.google.com/document/d/…"
+              placeholder={t("import.upload.google_url_placeholder")}
               value={googleUrl}
               onChange={(e) => setGoogleUrl(e.target.value)}
               onKeyDown={(e) => {
