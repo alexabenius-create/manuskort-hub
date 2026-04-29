@@ -333,12 +333,12 @@ export default function ImportV2() {
     setCommitting(false);
 
     if (error) {
-      toast({ title: "Importen misslyckades", description: error.message, variant: "destructive" });
+      toast({ title: t("import.toast_import_failed"), description: error.message, variant: "destructive" });
       return;
     }
 
     const newId = data as unknown as string;
-    toast({ title: "Manus importerat", description: `${cards.length} kort skapade` });
+    toast({ title: t("import.toast_imported_title"), description: t("import.toast_imported_desc", { count: cards.length }) });
     store.reset();
     navigate(`/manus/${newId}/v4`);
   };
