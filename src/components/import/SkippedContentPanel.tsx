@@ -26,10 +26,14 @@ export function SkippedContentPanel({ items }: Props) {
     bySection.set(item.section, arr);
   }
 
+  const pluralize = (kind: "image" | "table" | "footnote", n: number) =>
+    n > 0
+      ? t(`import.skipped.${kind}_${n === 1 ? "one" : "other"}`, { count: n })
+      : null;
   const summary = [
-    counts.image && `${counts.image} bild${counts.image > 1 ? "er" : ""}`,
-    counts.table && `${counts.table} tabell${counts.table > 1 ? "er" : ""}`,
-    counts.footnote && `${counts.footnote} fotnot${counts.footnote > 1 ? "er" : ""}`,
+    pluralize("image", counts.image),
+    pluralize("table", counts.table),
+    pluralize("footnote", counts.footnote),
   ]
     .filter(Boolean)
     .join(", ");
