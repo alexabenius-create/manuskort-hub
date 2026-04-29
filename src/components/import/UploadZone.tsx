@@ -100,7 +100,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
       }
 
       // Plocka ut filnamn från X-Filename eller Content-Disposition
-      let filename = "Google-dokument.docx";
+      let filename = t("import.upload.google_default_filename");
       const xName = res.headers.get("x-filename");
       if (xName) {
         try { filename = decodeURIComponent(xName); } catch { filename = xName; }
@@ -118,11 +118,11 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
       handleFile(f);
       setGoogleUrl("");
       toast({
-        title: "Hämtade från Google Docs",
+        title: t("import.upload.google_toast_title"),
         description: filename,
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Okänt fel vid hämtning.";
+      const msg = e instanceof Error ? e.message : t("import.upload.google_unknown_error");
       setError(msg);
     } finally {
       setFetchingGoogle(false);
