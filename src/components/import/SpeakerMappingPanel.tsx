@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useImportStore } from "@/lib/import/importStore";
 import { Users } from "lucide-react";
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function SpeakerMappingPanel({ existing }: Props) {
+  const { t } = useTranslation();
   const { speakers, updateSpeaker } = useImportStore();
 
   if (speakers.length === 0) return null;
@@ -24,10 +26,10 @@ export function SpeakerMappingPanel({ existing }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-display text-[15px] font-semibold leading-tight">
-            {speakers.length} talare upptäckta
+            {t("import.speakers.detected_count", { count: speakers.length })}
           </h3>
           <p className="text-[12px] text-muted-foreground">
-            Justera namn eller välj vad som ska hända med varje
+            {t("import.speakers.detected_hint")}
           </p>
         </div>
       </div>
@@ -50,7 +52,7 @@ export function SpeakerMappingPanel({ existing }: Props) {
                 updateSpeaker(s.tempId, { detectedName: e.target.value })
               }
               className="flex-1 min-w-0 bg-transparent text-[14px] font-medium outline-none focus:ring-1 focus:ring-accent-blue rounded px-1 py-0.5"
-              aria-label="Talarens namn"
+              aria-label={t("import.speakers.speaker_name_label")}
             />
             <select
               value={s.action === "existing" ? `e:${s.existingPanelistId}` : s.action}
@@ -74,13 +76,13 @@ export function SpeakerMappingPanel({ existing }: Props) {
               }}
               className="h-9 rounded-lg bg-background border border-border text-[13px] px-3"
             >
-              <option value="new">Skapa som ny deltagare</option>
+              <option value="new">{t("import.speakers.create_new")}</option>
               {existing.map((p) => (
                 <option key={p.id} value={`e:${p.id}`}>
-                  Koppla till {p.name || "(namnlös)"}
+                  {t("import.speakers.link_to", { name: p.name || t("import.speakers.unnamed") })}
                 </option>
               ))}
-              <option value="ignore">Ignorera (inte en talare)</option>
+              <option value="ignore">{t("import.speakers.ignore")}</option>
             </select>
           </div>
         ))}

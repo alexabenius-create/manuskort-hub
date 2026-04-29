@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Merge, Plus } from "lucide-react";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge }: Props) {
+  const { t } = useTranslation();
   const [hover, setHover] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -38,7 +40,7 @@ export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge
         if (!isNaN(src)) onDropCard(src);
       }}
       className="relative h-6 -my-1 group"
-      aria-label={`Gap mellan kort ${index} och ${index + 1}`}
+      aria-label={t("import.gutter.gap_aria", { a: index, b: index + 1 })}
     >
       {/* Tunn linje i vila */}
       <div
@@ -57,26 +59,26 @@ export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge
             type="button"
             onClick={onMerge}
             className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-surface text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-2 shadow-card border border-border"
-            title="Slå ihop med föregående kort"
+            title={t("import.gutter.merge_title")}
           >
             <Merge className="h-3 w-3" />
-            Slå ihop
+            {t("import.gutter.merge")}
           </button>
         )}
         <button
           type="button"
           onClick={onInsertEmpty}
           className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-surface text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-2 shadow-card border border-border"
-          title="Lägg in ett tomt kort här"
+          title={t("import.gutter.new_card_title")}
         >
           <Plus className="h-3 w-3" />
-          Nytt kort
+          {t("import.gutter.new_card")}
         </button>
       </div>
       {/* Drop-indikator-text */}
       {dragOver && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-mono uppercase tracking-wider text-accent-blue bg-surface px-2 py-0.5 rounded-full border border-accent-blue/40">
-          Släpp för att flytta hit
+          {t("import.gutter.drop_here")}
         </div>
       )}
     </div>

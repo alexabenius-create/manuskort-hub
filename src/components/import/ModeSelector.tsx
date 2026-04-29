@@ -1,4 +1,5 @@
 import { Mic, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { ImportMode } from "@/lib/import/importStore";
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function ModeSelector({ value, onChange }: Props) {
+  const { t } = useTranslation();
   const options: {
     key: ImportMode;
     icon: React.ComponentType<{ className?: string }>;
@@ -18,16 +20,16 @@ export function ModeSelector({ value, onChange }: Props) {
     {
       key: "speaker",
       icon: Mic,
-      title: "Tal eller föreläsning",
-      subtitle: "Jag är talaren",
-      desc: "En person pratar — ditt manus från start till slut. Ingen detektering av andra talare.",
+      title: t("import.mode.speaker_title"),
+      subtitle: t("import.mode.speaker_subtitle"),
+      desc: t("import.mode.speaker_desc"),
     },
     {
       key: "moderator",
       icon: Users,
-      title: "Panelsamtal",
-      subtitle: "Jag är moderator",
-      desc: "Du leder samtalet och ställer frågor till panelister. Vi markerar talare och frågor till dem.",
+      title: t("import.mode.moderator_title"),
+      subtitle: t("import.mode.moderator_subtitle"),
+      desc: t("import.mode.moderator_desc"),
     },
   ];
 

@@ -1,5 +1,6 @@
 import { useRef, useState, DragEvent } from "react";
 import { Upload, FileText, X, Link as LinkIcon, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { detectFileKind, MAX_FILE_BYTES } from "@/lib/import/parseDocument";
@@ -16,6 +17,7 @@ interface Props {
 type Source = "file" | "google";
 
 export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,13 +28,13 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
   const validate = (f: File): string | null => {
     const kind = detectFileKind(f);
     if (kind === "doc") {
-      return "Filformatet .doc stöds inte. Öppna filen i Word och spara om den som .docx (Arkiv → Spara som → Word-dokument). Försök sedan igen.";
+      return t("import.upload.validate_doc");
     }
     if (kind === "unsupported") {
-      return "Vi stödjer .docx och .txt i nuläget.";
+      return t("import.upload.validate_unsupported");
     }
     if (f.size > MAX_FILE_BYTES) {
-      return "Filen är för stor. Dela upp den i mindre delar eller kontakta oss.";
+      return t("import.upload.validate_too_large");
     }
     return null;
   };
@@ -57,7 +59,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
   const importFromGoogle = async () => {
     const url = googleUrl.trim();
     if (!url) {
-      setError("Klistra in en Google Docs-länk först.");
+      setError(t("import.upload.google_url_required"));
       return;
     }
     setError(null);
@@ -82,7 +84,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
       });
 
       if (!res.ok) {
-        let msg = `Kunde inte hämta dokumentet (HTTP ${res.status}).`;
+        let msg = t("import.upload.google_http_error", { status: res.status });
         try {
           const parsed = await res.json();
           if (parsed?.error) msg = parsed.error;
@@ -93,12 +95,12 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
 
       const buf = await res.arrayBuffer();
       if (!buf || buf.byteLength < 100) {
-        setError("Tomt eller ofullständigt svar från servern.");
+        setError(t("import.upload.google_empty_response"));
         return;
       }
 
       // Plocka ut filnamn från X-Filename eller Content-Disposition
-      let filename = "Google-dokument.docx";
+      let filename = t("import.upload.google_default_filename");
       const xName = res.headers.get("x-filename");
       if (xName) {
         try { filename = decodeURIComponent(xName); } catch { filename = xName; }
@@ -116,11 +118,11 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
       handleFile(f);
       setGoogleUrl("");
       toast({
-        title: "Hämtade från Google Docs",
+        title: t("import.upload.google_toast_title"),
         description: filename,
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Okänt fel vid hämtning.";
+      const msg = e instanceof Error ? e.message : t("import.upload.google_unknown_error");
       setError(msg);
     } finally {
       setFetchingGoogle(false);
@@ -146,7 +148,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           onClick={onClear}
           disabled={disabled}
         >
-          <X className="h-4 w-4" /> Byt fil
+          <X className="h-4 w-4" /> {t("import.upload.change_file")}
         </Button>
       </div>
     );
@@ -163,7 +165,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           className="seg-btn"
           disabled={disabled}
         >
-          <Upload className="h-3.5 w-3.5" /> Fil
+          <Upload className="h-3.5 w-3.5" /> {t("import.upload.tab_file")}
         </button>
         <button
           type="button"
@@ -172,7 +174,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
           className="seg-btn"
           disabled={disabled}
         >
-          <LinkIcon className="h-3.5 w-3.5" /> Google Docs-länk
+          <LinkIcon className="h-3.5 w-3.5" /> {t("import.upload.tab_google")}
         </button>
       </div>
 
@@ -197,9 +199,9 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
             <Upload className="h-6 w-6 text-muted-foreground" />
           </div>
           <div className="text-center">
-            <p className="text-[15px] font-medium">Släpp en fil här eller klicka för att välja</p>
+            <p className="text-[15px] font-medium">{t("import.upload.drop_or_click")}</p>
             <p className="text-[13px] text-muted-foreground mt-1">
-              .docx eller .txt — max 5 MB
+              {t("import.upload.drop_hint")}
             </p>
           </div>
         </button>
@@ -210,17 +212,20 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
               <LinkIcon className="h-5 w-5 text-accent-blue" />
             </div>
             <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-[14px] font-medium">Importera från Google Docs</p>
+              <p className="text-[14px] font-medium">{t("import.upload.google_heading")}</p>
               <p className="text-[12px] text-muted-foreground leading-snug">
-                Öppna dokumentet → klicka <span className="font-medium">Dela</span> → välj{" "}
-                <span className="font-medium">"Alla med länken kan visa"</span>. Klistra sedan in URL:en nedan.
+                {t("import.upload.google_instructions_prefix")}{" "}
+                <span className="font-medium">{t("import.upload.google_instructions_share")}</span>{" "}
+                {t("import.upload.google_instructions_choose")}{" "}
+                <span className="font-medium">{t("import.upload.google_instructions_visibility")}</span>
+                {t("import.upload.google_instructions_suffix")}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Input
               type="url"
-              placeholder="https://docs.google.com/document/d/…"
+              placeholder={t("import.upload.google_url_placeholder")}
               value={googleUrl}
               onChange={(e) => setGoogleUrl(e.target.value)}
               onKeyDown={(e) => {
@@ -242,15 +247,15 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
             >
               {fetchingGoogle ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Hämtar
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t("import.upload.google_fetching")}
                 </>
               ) : (
-                "Hämta"
+                t("import.upload.google_fetch")
               )}
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Vi konverterar dokumentet till .docx och kör samma import-flöde som vid uppladdning.
+            {t("import.upload.google_footer")}
           </p>
         </div>
       )}

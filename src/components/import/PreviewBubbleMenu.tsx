@@ -2,6 +2,7 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/react";
 import { ChevronDown, Eraser, User } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ interface Props {
  * En enda mark-typ — ingen distinktion mellan "talare" och "fråga till".
  */
 export function PreviewBubbleMenu({ editor, speakers }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   if (!editor) return null;
 
@@ -65,13 +67,13 @@ export function PreviewBubbleMenu({ editor, speakers }: Props) {
               )}
             >
               <User className="h-3.5 w-3.5" />
-              Panelist
+              {t("import.bubble.panelist")}
               <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="rounded-xl">
             {usable.length === 0 ? (
-              <DropdownMenuItem disabled>Inga panelister ännu</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t("import.bubble.no_panelists")}</DropdownMenuItem>
             ) : (
               usable.map((s) => (
                 <DropdownMenuItem
@@ -94,8 +96,8 @@ export function PreviewBubbleMenu({ editor, speakers }: Props) {
         <button
           type="button"
           onClick={clear}
-          aria-label="Rensa markering"
-          title="Rensa markering"
+          aria-label={t("import.bubble.clear_mark")}
+          title={t("import.bubble.clear_mark")}
           className="inline-flex items-center justify-center h-8 w-8 rounded-full text-foreground/70 hover:bg-muted hover:text-foreground transition-colors"
         >
           <Eraser className="h-3.5 w-3.5" />

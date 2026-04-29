@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, MoreHorizontal, Trash2, ArrowUp, ArrowDown, Merge, GripVertical, Scissors } from "lucide-react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -63,6 +64,7 @@ export function PreviewCardItem({
   onDropCard,
   onDragOverCard,
 }: Props) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const seconds = estimateSeconds(card.wordCount, 140);
   const preview = stripHtml(card.contentHtml).slice(0, 140);
@@ -128,8 +130,8 @@ export function PreviewCardItem({
           }}
           onDragEnd={onDragEnd}
           className="hidden md:flex items-center justify-center pt-1 w-6 h-9 shrink-0 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-          title="Dra för att flytta eller släppa på annat kort för att slå ihop"
-          aria-label="Dra kort"
+          title={t("import.preview.drag_card_title")}
+          aria-label={t("import.preview.drag_card_aria")}
         >
           <GripVertical className="h-4 w-4" />
         </div>
@@ -147,14 +149,14 @@ export function PreviewCardItem({
             <p className="text-[13px] text-muted-foreground line-clamp-1">{preview}</p>
           )}
           <div className="flex items-center gap-3 text-[12px] text-muted-foreground flex-wrap">
-            <span>{card.wordCount} ord</span>
+            <span>{t("import.preview.words", { count: card.wordCount })}</span>
             <span>·</span>
             <span>{formatDuration(seconds)}</span>
             <span>·</span>
-            <span className={rowColor} title={`Mätt mot presentationslägets bredd för ${textSize}`}>
-              {rows}/{maxRows} rader
-              {rowState === "over" && " — över gränsen"}
-              {rowState === "near" && " — nästan fullt"}
+            <span className={rowColor} title={t("import.preview.rows_size_title", { size: textSize })}>
+              {t("import.preview.rows_label", { rows, max: maxRows })}
+              {rowState === "over" && t("import.preview.rows_over")}
+              {rowState === "near" && t("import.preview.rows_near")}
             </span>
             {card.speakerName && (
               <>
@@ -169,7 +171,7 @@ export function PreviewCardItem({
           size="icon"
           className="rounded-full h-8 w-8"
           onClick={() => setExpanded(!expanded)}
-          aria-label={expanded ? "Stäng" : "Visa innehåll"}
+          aria-label={expanded ? t("import.preview.collapse") : t("import.preview.expand")}
         >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
@@ -181,19 +183,19 @@ export function PreviewCardItem({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl">
             <DropdownMenuItem onClick={onMoveUp} disabled={index === 0}>
-              <ArrowUp className="h-4 w-4" /> Flytta upp
+              <ArrowUp className="h-4 w-4" /> {t("import.preview.move_up")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onMoveDown} disabled={index === total - 1}>
-              <ArrowDown className="h-4 w-4" /> Flytta ned
+              <ArrowDown className="h-4 w-4" /> {t("import.preview.move_down")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onMergePrev} disabled={index === 0}>
-              <Merge className="h-4 w-4" /> Slå ihop med föregående
+              <Merge className="h-4 w-4" /> {t("import.preview.merge_prev")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onMergeNext} disabled={index === total - 1}>
-              <Merge className="h-4 w-4" /> Slå ihop med nästa
+              <Merge className="h-4 w-4" /> {t("import.preview.merge_next")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRemove} className="text-destructive">
-              <Trash2 className="h-4 w-4" /> Ta bort
+              <Trash2 className="h-4 w-4" /> {t("import.preview.remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -209,7 +211,7 @@ export function PreviewCardItem({
           {card.paragraphsHtml.length > 1 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[11px] uppercase tracking-wider font-mono text-muted-foreground">
-                Dela vid stycke:
+                {t("import.preview.split_at")}
               </span>
               {card.paragraphsHtml.slice(1).map((_, i) => (
                 <button
@@ -217,7 +219,7 @@ export function PreviewCardItem({
                   type="button"
                   onClick={() => onSplitAt(i + 1)}
                   className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-surface-2 hover:bg-accent-blue hover:text-white text-[11px] text-muted-foreground transition-colors"
-                  title={`Dela kortet vid stycke ${i + 2}`}
+                  title={t("import.preview.split_at_n", { n: i + 2 })}
                 >
                   <Scissors className="h-3 w-3" />
                   {i + 2}
@@ -226,7 +228,7 @@ export function PreviewCardItem({
             </div>
           )}
           <p className="text-[11px] text-muted-foreground">
-            Markera text för att tilldela talare eller markera som fråga.
+            {t("import.preview.select_to_assign")}
           </p>
         </div>
       )}

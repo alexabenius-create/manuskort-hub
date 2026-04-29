@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, Image as ImageIcon, Table as TableIcon, FileText } from "lucide-react";
 import type { SkippedItem } from "@/lib/import/parseDocument";
 
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function SkippedContentPanel({ items }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
 
@@ -24,10 +26,14 @@ export function SkippedContentPanel({ items }: Props) {
     bySection.set(item.section, arr);
   }
 
+  const pluralize = (kind: "image" | "table" | "footnote", n: number) =>
+    n > 0
+      ? t(`import.skipped.${kind}_${n === 1 ? "one" : "other"}`, { count: n })
+      : null;
   const summary = [
-    counts.image && `${counts.image} bild${counts.image > 1 ? "er" : ""}`,
-    counts.table && `${counts.table} tabell${counts.table > 1 ? "er" : ""}`,
-    counts.footnote && `${counts.footnote} fotnot${counts.footnote > 1 ? "er" : ""}`,
+    pluralize("image", counts.image),
+    pluralize("table", counts.table),
+    pluralize("footnote", counts.footnote),
   ]
     .filter(Boolean)
     .join(", ");
@@ -44,10 +50,10 @@ export function SkippedContentPanel({ items }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium">
-            {items.length} element kunde inte importeras
+            {t("import.skipped.summary_title", { count: items.length })}
           </p>
           <p className="text-[12px] text-muted-foreground truncate">
-            {summary} — lägg till manuellt i redigeringsläget om du behöver dem
+            {t("import.skipped.summary_hint", { summary })}
           </p>
         </div>
         <ChevronDown
