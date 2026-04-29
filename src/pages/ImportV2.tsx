@@ -110,8 +110,8 @@ export default function ImportV2() {
       store.setWordsPerCard(WORDS_PER_CARD_DEFAULT[store.textSize]);
     } catch (e) {
       toast({
-        title: "Filen kunde inte läsas",
-        description: e instanceof Error ? e.message : "Försök spara om från Word.",
+        title: t("import.toast_file_failed_title"),
+        description: e instanceof Error ? e.message : t("import.toast_file_failed_desc"),
         variant: "destructive",
       });
       store.setFile(null);
