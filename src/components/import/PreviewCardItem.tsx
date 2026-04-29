@@ -64,6 +64,7 @@ export function PreviewCardItem({
   onDropCard,
   onDragOverCard,
 }: Props) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const seconds = estimateSeconds(card.wordCount, 140);
   const preview = stripHtml(card.contentHtml).slice(0, 140);
