@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Menu } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Sheet,
   SheetContent,
@@ -21,15 +22,17 @@ interface Props {
  * MobileNavSheet — hamburger-trigger + höger-Sheet med navigering.
  * Endast synlig på mobil (md:hidden). Stänger automatiskt vid klick på länk.
  */
-export function MobileNavSheet({ children, title = "Meny", className }: Props) {
+export function MobileNavSheet({ children, title, className }: Props) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
+  const sheetTitle = title ?? t("nav.menu");
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
           type="button"
-          aria-label="Öppna meny"
+          aria-label={t("nav.open_menu")}
           className={
             "md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-surface-2 transition-colors " +
             (className ?? "")
@@ -41,7 +44,7 @@ export function MobileNavSheet({ children, title = "Meny", className }: Props) {
       <SheetContent side="right" className="w-[82%] max-w-sm flex flex-col gap-6 pt-14">
         <SheetHeader>
           <SheetTitle className="font-display text-[20px] font-semibold tracking-tight text-left">
-            {title}
+            {sheetTitle}
           </SheetTitle>
         </SheetHeader>
         <nav
