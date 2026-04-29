@@ -67,7 +67,7 @@ export function PreviewBubbleMenu({ editor, speakers }: Props) {
               )}
             >
               <User className="h-3.5 w-3.5" />
-              Panelist
+              {t("import.bubble.panelist")}
               <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
           </DropdownMenuTrigger>
