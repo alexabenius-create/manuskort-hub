@@ -300,14 +300,14 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
         )}
         <span className="px-1 tracking-wide">
           <span className="md:hidden">{num}/{a.totalCards}</span>
-          <span className="hidden md:inline">Kort {num} / {a.totalCards}</span>
+          <span className="hidden md:inline">{t("editor.card.label_card_with_total", { num, total: a.totalCards })}</span>
         </span>
         <span className="opacity-40 hidden md:inline">·</span>
         <span className="hidden md:inline-flex">
           <CardRolePopover role={a.role ?? "speaker"} onChange={handleRoleChange} />
         </span>
         <span className="opacity-40">·</span>
-        <span className="tabular-nums">{words} ord</span>
+        <span className="tabular-nums">{words} {t("editor.card.words_unit")}</span>
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{formatDuration(seconds)}</span>
         <CardTargetTimePopover
@@ -322,7 +322,7 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
         {a.isPanic && (
           <>
             <span className="opacity-40">·</span>
-            <span className="text-[11px] uppercase tracking-wider text-[hsl(35_85%_38%)]">panik</span>
+            <span className="text-[11px] uppercase tracking-wider text-[hsl(35_85%_38%)]">{t("editor.card.panic_label")}</span>
           </>
         )}
         <div className="ml-auto flex items-center gap-1">
