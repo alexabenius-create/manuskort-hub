@@ -619,13 +619,13 @@ export default function ImportV2() {
         <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-v2-line p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-[13px] text-v2-muted">Totalt</p>
+              <p className="text-[13px] text-v2-muted">{t("import.totals_label")}</p>
               <p className="font-display text-[17px] font-semibold text-v2-ink">
-                {store.cards.length} kort · {totalWords} ord · {formatDuration(estTotalSec)}
+                {t("import.totals_summary", { count: store.cards.length, words: totalWords, duration: formatDuration(estTotalSec) })}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[13px] text-v2-muted">Måltid</p>
+              <p className="text-[13px] text-v2-muted">{t("import.target_label")}</p>
               <p className="font-display text-[17px] font-semibold text-v2-ink">
                 {formatDuration(store.targetSeconds)}
                 {Math.abs(targetDiff) > 60 && (
@@ -638,7 +638,7 @@ export default function ImportV2() {
           </div>
           {hasOverflowCards && (
             <p className="text-[12px] text-[hsl(var(--cue-amber))] mt-2">
-              Vissa kort kan vara för långa för vald textstorlek — du kan splitta dem ovan.
+              {t("import.overflow_warning")}
             </p>
           )}
         </div>
