@@ -78,7 +78,7 @@ export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge
       {/* Drop-indikator-text */}
       {dragOver && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-mono uppercase tracking-wider text-accent-blue bg-surface px-2 py-0.5 rounded-full border border-accent-blue/40">
-          Släpp för att flytta hit
+          {t("import.gutter.drop_here")}
         </div>
       )}
     </div>
