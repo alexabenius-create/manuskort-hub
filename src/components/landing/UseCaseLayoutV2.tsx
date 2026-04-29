@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import {
@@ -10,8 +11,11 @@ import {
 } from "@/components/ui/accordion";
 import { ArrowRight, Check } from "lucide-react";
 import type { UseCase } from "@/lib/useCases";
-import { useCases } from "@/lib/useCases";
+import { useCases, localizeUseCase } from "@/lib/useCases";
 import { MobileNavSheet } from "@/components/MobileNavSheet";
+import { T } from "@/i18n/T";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 
 interface Props {
@@ -19,11 +23,15 @@ interface Props {
 }
 
 /**
- * UseCaseLayout v2 — Landing v2-designspråk för use-case-sidor (moderator, talare, panelsamtal, föreläsning).
- * Innehållstexter är identiska med v1 — endast presentation/interaktion ny.
+ * UseCaseLayout v2 — landing-sidor för use cases.
+ * Innehållet (problem/features/faqs) hämtas från sv eller en beroende på i18n.language.
+ * Chrome (header, CTA, footer) är översatt via <T />.
  */
 export function UseCaseLayoutV2({ useCase }: Props) {
   const { session } = useAuth();
+  const { i18n } = useTranslation();
+  const lang: "sv" | "en" = i18n.language === "en" ? "en" : "sv";
+  const content = localizeUseCase(useCase, lang);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -33,7 +41,6 @@ export function UseCaseLayoutV2({ useCase }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Scroll-reveal
   useEffect(() => {
     if (typeof window === "undefined") return;
     const targets = document.querySelectorAll(".v2-reveal-onscroll, .v2-stagger-parent");
@@ -54,7 +61,7 @@ export function UseCaseLayoutV2({ useCase }: Props) {
   }, []);
 
   const primaryCtaTo = session ? "/bibliotek-v2" : "/auth-v2";
-  const primaryCtaLabel = session ? "Till biblioteket" : "Skapa konto gratis";
+  const primaryCtaKey = session ? "usecase.nav.cta_logged_in" : "usecase.nav.cta_guest";
   const canonicalPath = `/${useCase.slug}-v2`;
   const canonicalUrl = `https://manuskort.se${canonicalPath}`;
 
@@ -63,24 +70,24 @@ export function UseCaseLayoutV2({ useCase }: Props) {
   return (
     <div className="min-h-screen bg-v2-bg text-v2-ink overflow-x-hidden antialiased">
       <SEO
-        title={useCase.seoTitle}
-        description={useCase.seoDescription}
+        title={content.seoTitle}
+        description={content.seoDescription}
         canonical={canonicalPath}
         jsonLd={[
           {
             "@context": "https://schema.org",
             "@type": "WebPage",
-            name: useCase.h1,
-            description: useCase.seoDescription,
+            name: content.h1,
+            description: content.seoDescription,
             url: canonicalUrl,
-            inLanguage: "sv-SE",
+            inLanguage: lang === "en" ? "en" : "sv-SE",
             isPartOf: { "@type": "WebSite", name: "Manuskort", url: "https://manuskort.se/" },
-            about: { "@type": "Thing", name: useCase.label },
+            about: { "@type": "Thing", name: content.label },
           },
           {
             "@context": "https://schema.org",
             "@type": "FAQPage",
-            mainEntity: useCase.faqs.map((f) => ({
+            mainEntity: content.faqs.map((f) => ({
               "@type": "Question",
               name: f.q,
               acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -105,32 +112,34 @@ export function UseCaseLayoutV2({ useCase }: Props) {
           <nav className="flex items-center gap-1 sm:gap-2">
             <div className="hidden md:flex items-center gap-1 sm:gap-2">
               <Link to="/priser-v2" className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface transition-colors">
-                Priser
+                <T k="usecase.nav.pricing" />
               </Link>
+              <LanguageSwitcher />
+              <TranslationEditModeToggle />
               {!session && (
                 <Link to="/auth-v2" className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface transition-colors">
-                  Logga in
+                  <T k="usecase.nav.login" />
                 </Link>
               )}
               <Link to={primaryCtaTo} className="v2-btn-primary ml-1">
-                <span className="relative z-10">{primaryCtaLabel}</span>
+                <span className="relative z-10"><T k={primaryCtaKey} /></span>
               </Link>
             </div>
 
             <MobileNavSheet title="Manuskort">
               <Link to="/priser-v2" className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors">
-                Priser
+                <T k="usecase.nav.pricing" />
               </Link>
               {!session && (
                 <Link to="/auth-v2" className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors">
-                  Logga in
+                  <T k="usecase.nav.login" />
                 </Link>
               )}
               <Link
                 to={primaryCtaTo}
                 className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-r from-v2-violet to-v2-blue text-white text-[15px] font-medium px-5 shadow-[0_8px_20px_-4px_rgba(99,102,241,0.4)]"
               >
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
               </Link>
             </MobileNavSheet>
           </nav>
@@ -156,23 +165,23 @@ export function UseCaseLayoutV2({ useCase }: Props) {
 
         <div className="max-w-4xl mx-auto text-center flex flex-col gap-6 v2-reveal">
           <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet">
-            {useCase.kicker}
+            {content.kicker}
           </p>
           <h1 className="font-display text-[40px] sm:text-[60px] lg:text-[68px] leading-[1.05] font-semibold tracking-[-0.03em]">
-            {useCase.h1}
+            {content.h1}
           </h1>
           <p className="text-[17px] sm:text-[19px] text-v2-muted leading-relaxed max-w-2xl mx-auto">
-            {useCase.heroLead}
+            {content.heroLead}
           </p>
           <div className="flex flex-wrap gap-3 justify-center mt-2">
             <Link to={primaryCtaTo} className="v2-btn-primary v2-btn-lg">
               <span className="relative z-10 flex items-center gap-2">
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
             <Link to="/priser-v2" className="v2-btn-ghost v2-btn-lg">
-              Se priser
+              <T k="usecase.nav.see_pricing" />
             </Link>
           </div>
         </div>
@@ -182,10 +191,10 @@ export function UseCaseLayoutV2({ useCase }: Props) {
       <section className="px-6 sm:px-10 py-20 sm:py-24 border-t border-v2-line">
         <div className="max-w-3xl mx-auto v2-reveal-onscroll">
           <h2 className="font-display text-[28px] sm:text-[40px] leading-[1.1] font-semibold tracking-[-0.025em] mb-6 text-v2-ink">
-            {useCase.problemTitle}
+            {content.problemTitle}
           </h2>
           <div className="space-y-5 text-[16.5px] text-v2-muted leading-relaxed">
-            {useCase.problemBody.map((p, i) => (<p key={i}>{p}</p>))}
+            {content.problemBody.map((p, i) => (<p key={i}>{p}</p>))}
           </div>
         </div>
       </section>
@@ -198,14 +207,14 @@ export function UseCaseLayoutV2({ useCase }: Props) {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-14 v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-3">
-              Det här får du
+              <T k="usecase.features_eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-[-0.03em] text-v2-ink">
-              Verktyg som matchar uppdraget.
+              <T k="usecase.features_title" />
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-5 v2-stagger-parent">
-            {useCase.features.map((f) => {
+            {content.features.map((f) => {
               const Icon = f.icon;
               return (
                 <article key={f.title} className="v2-card flex flex-col gap-4 p-7">
@@ -228,14 +237,14 @@ export function UseCaseLayoutV2({ useCase }: Props) {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-14 v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-3">
-              Så fungerar det
+              <T k="usecase.how_eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[44px] leading-[1.05] font-semibold tracking-[-0.03em] text-v2-ink">
-              Tre steg från idé till leverans.
+              <T k="usecase.how_title" />
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-10 md:gap-8 v2-stagger-parent">
-            {useCase.steps.map((s, i) => (
+            {content.steps.map((s, i) => (
               <div key={s.title} className="flex flex-col gap-3">
                 <div className="font-display text-[44px] font-semibold tracking-tight bg-gradient-to-br from-v2-violet to-v2-blue bg-clip-text text-transparent leading-none">
                   {i + 1}
@@ -255,14 +264,14 @@ export function UseCaseLayoutV2({ useCase }: Props) {
         <div className="max-w-3xl mx-auto flex flex-col gap-8">
           <div className="flex flex-col gap-2 text-center v2-reveal-onscroll">
             <h2 className="font-display text-[28px] sm:text-[40px] leading-[1.1] font-semibold tracking-[-0.025em] text-v2-ink">
-              Vanliga frågor
+              <T k="usecase.faq_title" />
             </h2>
             <p className="text-[15px] text-v2-muted">
-              Hittar du inte svaret? Hör av dig så hjälper vi dig.
+              <T k="usecase.faq_lead" />
             </p>
           </div>
           <Accordion type="single" collapsible className="bg-white/80 backdrop-blur-xl rounded-2xl border border-v2-line shadow-sm px-2 sm:px-4">
-            {useCase.faqs.map((f, i) => (
+            {content.faqs.map((f, i) => (
               <AccordionItem key={f.q} value={`item-${i}`} className="border-b border-v2-line last:border-b-0">
                 <AccordionTrigger className="text-left text-[15px] font-medium hover:no-underline px-3 sm:px-4 text-v2-ink">
                   {f.q}
@@ -283,28 +292,28 @@ export function UseCaseLayoutV2({ useCase }: Props) {
         </div>
         <div className="max-w-3xl mx-auto text-center flex flex-col gap-6 v2-reveal-onscroll">
           <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em] text-v2-ink">
-            Redo att börja?
+            <T k="usecase.cta_title" />
           </h2>
           <p className="text-[16.5px] text-v2-muted leading-relaxed">
-            Skapa konto på under en minut. Inga kreditkort, inga installationer — bara igång.
+            <T k="usecase.cta_lead" />
           </p>
           <div className="flex flex-wrap gap-3 justify-center mt-2">
             <Link to={primaryCtaTo} className="v2-btn-primary v2-btn-lg">
               <span className="relative z-10 flex items-center gap-2">
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
           </div>
           <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[13px] text-v2-muted mt-2">
             <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-v2-violet" /> Gratis att testa
+              <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="usecase.bullet_free" />
             </li>
             <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-v2-violet" /> Inget kreditkort
+              <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="usecase.bullet_no_card" />
             </li>
             <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-v2-violet" /> Klart på en minut
+              <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="usecase.bullet_quick" />
             </li>
           </ul>
         </div>
@@ -314,21 +323,24 @@ export function UseCaseLayoutV2({ useCase }: Props) {
       <section className="px-6 sm:px-10 py-20 border-t border-v2-line">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-display text-[20px] font-semibold tracking-tight mb-6 text-center text-v2-ink">
-            Manuskort används också av:
+            <T k="usecase.also_used_by" />
           </h2>
           <div className="grid sm:grid-cols-3 gap-4">
-            {otherUseCases.map((u) => (
-              <Link
-                key={u.slug}
-                to={`/${u.slug}-v2`}
-                className="group v2-card flex items-center justify-between gap-3 p-5"
-              >
-                <span className="font-display text-[15px] font-semibold tracking-tight text-v2-ink">
-                  {u.label}
-                </span>
-                <ArrowRight className="h-4 w-4 text-v2-muted group-hover:text-v2-violet group-hover:translate-x-0.5 transition-all" />
-              </Link>
-            ))}
+            {otherUseCases.map((u) => {
+              const otherLabel = localizeUseCase(u, lang).label;
+              return (
+                <Link
+                  key={u.slug}
+                  to={`/${u.slug}-v2`}
+                  className="group v2-card flex items-center justify-between gap-3 p-5"
+                >
+                  <span className="font-display text-[15px] font-semibold tracking-tight text-v2-ink">
+                    {otherLabel}
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-v2-muted group-hover:text-v2-violet group-hover:translate-x-0.5 transition-all" />
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -340,9 +352,9 @@ export function UseCaseLayoutV2({ useCase }: Props) {
             Manuskort
           </Link>
           <nav className="flex items-center gap-5">
-            <Link to="/v2" className="hover:text-v2-ink">Hem</Link>
-            <Link to="/priser-v2" className="hover:text-v2-ink">Priser</Link>
-            <Link to="/auth-v2" className="hover:text-v2-ink">Logga in</Link>
+            <Link to="/v2" className="hover:text-v2-ink"><T k="usecase.footer_home" /></Link>
+            <Link to="/priser-v2" className="hover:text-v2-ink"><T k="usecase.footer_pricing" /></Link>
+            <Link to="/auth-v2" className="hover:text-v2-ink"><T k="usecase.footer_login" /></Link>
           </nav>
         </div>
       </footer>
