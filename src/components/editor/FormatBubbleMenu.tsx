@@ -8,6 +8,7 @@ import { hexToDarkText } from "@/lib/panelistColors";
 import { splitCardBlock, mergeSelectionWithPrev, canMergeSelectionWithPrev } from "@/lib/cardBlockCommands";
 import type { TextSize } from "@/lib/cardLimits";
 import { AiImproveButton } from "./AiImproveButton";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   editor: Editor | null;
