@@ -375,15 +375,15 @@ export default function ImportV2() {
   if (importBlocked) {
     return (
       <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-        <SEO title="Importera – Manuskort" noindex nofollow />
+        <SEO title={t("import.page_title")} noindex nofollow />
         <MeshBg />
         <Topbar
           left={
             <Button variant="ghost" size="sm" onClick={() => navigate("/bibliotek-v2")} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-              <ArrowLeft className="h-3.5 w-3.5" /> Tillbaka
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back")}
             </Button>
           }
-          title="Importera manus"
+          title={t("import.header_title")}
         />
         <main className="relative max-w-[560px] mx-auto px-6 sm:px-10 pt-24 pb-20 text-center flex flex-col gap-6 items-center v2-reveal">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.5)]"
@@ -392,18 +392,18 @@ export default function ImportV2() {
           </div>
           <div className="flex flex-col gap-2">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-v2-ink">
-              Import är en PRO-funktion
+              {t("import.pro_gate_title")}
             </h2>
             <p className="text-[15px] text-v2-muted">
-              .docx-import ingår inte i Gratis. Uppgradera till PRO för att importera dokument och spara timmar av manuell skrivning.
+              {t("import.pro_gate_desc")}
             </p>
           </div>
           <div className="flex gap-3">
             <Link to="/bibliotek-v2" className="inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-white transition-colors">
-              Tillbaka
+              {t("import.back")}
             </Link>
             <Link to="/priser-v2" className="v2-btn-primary">
-              <span className="relative z-10">Se PRO</span>
+              <span className="relative z-10">{t("import.pro_gate_cta")}</span>
             </Link>
           </div>
         </main>
