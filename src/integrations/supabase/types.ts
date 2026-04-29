@@ -907,6 +907,78 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_override_history: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          key: string
+          language: string
+          new_value: string | null
+          old_value: string | null
+          source_text: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          key: string
+          language: string
+          new_value?: string | null
+          old_value?: string | null
+          source_text?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          key?: string
+          language?: string
+          new_value?: string | null
+          old_value?: string | null
+          source_text?: string | null
+        }
+        Relationships: []
+      }
+      translation_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          language: string
+          source_text: string
+          source_text_at_override: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          language: string
+          source_text?: string
+          source_text_at_override?: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          language?: string
+          source_text?: string
+          source_text_at_override?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
