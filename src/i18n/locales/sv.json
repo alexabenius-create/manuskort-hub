@@ -1,0 +1,43 @@
+{
+  "common": {
+    "loading": "Laddar…",
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "close": "Stäng",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "back": "Tillbaka",
+    "next": "Nästa",
+    "yes": "Ja",
+    "no": "Nej",
+    "or": "eller"
+  },
+  "lang": {
+    "switch_to_sv": "Visa på svenska",
+    "switch_to_en": "View in English",
+    "current_sv": "Svenska",
+    "current_en": "English"
+  },
+  "translation_edit": {
+    "toggle_label": "Översättningsläge",
+    "active_banner": "Översättningsläge aktivt — klicka på pennan bredvid valfri text för att redigera.",
+    "popover_title": "Redigera översättning",
+    "source_label": "Svensk källtext",
+    "ai_label": "AI-översättning",
+    "manual_label": "Din version",
+    "save": "Spara",
+    "reset_to_ai": "Återställ till AI",
+    "cancel": "Avbryt",
+    "saved": "Översättning sparad",
+    "save_error": "Kunde inte spara översättningen",
+    "key_label": "Nyckel"
+  },
+  "landing": {
+    "hero": {
+      "title": "Håll tiden. Varje gång.",
+      "subtitle": "Manus i kortformat för presentationer, anföranden och panelsamtal. Skriv, öva, presentera — utan att tappa tråden eller tiden.",
+      "cta_primary": "Kom igång gratis",
+      "cta_secondary": "Se priser"
+    }
+  }
+}
