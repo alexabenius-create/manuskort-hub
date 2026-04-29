@@ -253,7 +253,7 @@ export default function ImportV2() {
   const insertEmptyAt = (idx: number) => {
     const empty: PreviewCard = {
       id: `pc_empty_${Date.now().toString(36)}`,
-      title: "Nytt kort",
+      title: t("import.new_empty_card"),
       contentHtml: "<p></p>",
       paragraphsHtml: ["<p></p>"],
       wordCount: 0,
