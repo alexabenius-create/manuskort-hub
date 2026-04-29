@@ -681,6 +681,7 @@ function NotesField({
   allowClose: boolean;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1">
       <textarea
@@ -699,7 +700,7 @@ function NotesField({
           onClick={onClose}
           className="self-start text-[11px] text-faint hover:text-muted-foreground inline-flex items-center gap-1"
         >
-          <X className="h-3 w-3" /> Avbryt
+          <X className="h-3 w-3" /> {t("editor.card.notes_cancel")}
         </button>
       )}
     </div>
