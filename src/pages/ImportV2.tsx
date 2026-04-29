@@ -455,25 +455,25 @@ export default function ImportV2() {
   if (step === 1) {
     return (
       <div className="bg-v2-bg min-h-screen relative overflow-hidden text-v2-ink">
-        <SEO title="Importera – Manuskort" noindex nofollow />
+        <SEO title={t("import.page_title")} noindex nofollow />
         <MeshBg />
         <Topbar
           left={
             <Button variant="ghost" size="sm" onClick={() => setStep(0)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-white h-8 -ml-2">
-              <ArrowLeft className="h-3.5 w-3.5" /> Byt typ
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("import.back_change_type")}
             </Button>
           }
-          title={`Importera manus · ${store.mode === "moderator" ? "Panelsamtal" : "Tal"}`}
+          title={t("import.header_title_with_mode", { mode: store.mode === "moderator" ? t("import.mode_moderator") : t("import.mode_speaker") })}
           right={<HelpButton />}
         />
 
         <main className="relative max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20">
           <div className="mb-8 v2-reveal">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-v2-ink">
-              Ladda upp ett dokument
+              {t("import.step1_heading")}
             </h2>
             <p className="text-v2-muted text-[15px] mt-2">
-              Vi delar in det åt dig och du justerar i nästa steg.
+              {t("import.step1_desc")}
             </p>
           </div>
 
@@ -487,7 +487,7 @@ export default function ImportV2() {
 
             {parsing && (
               <div className="flex items-center gap-2 text-v2-muted text-[14px]">
-                <Loader2 className="h-4 w-4 animate-spin" /> Läser dokumentet…
+                <Loader2 className="h-4 w-4 animate-spin" /> {t("import.parsing")}
               </div>
             )}
 
@@ -498,14 +498,14 @@ export default function ImportV2() {
 
           <div className="flex justify-end gap-3 mt-8">
             <Button variant="ghost" onClick={cancel} className="rounded-full text-v2-muted hover:text-v2-ink">
-              Avbryt
+              {t("import.cancel")}
             </Button>
             <button
               onClick={goToPreview}
               disabled={!store.file || parsing || store.rawBlocks.length === 0}
               className="v2-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="relative z-10">Fortsätt till förhandsvisning</span>
+              <span className="relative z-10">{t("import.continue_to_preview")}</span>
             </button>
           </div>
         </main>
