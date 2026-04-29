@@ -211,7 +211,7 @@ export function PreviewCardItem({
           {card.paragraphsHtml.length > 1 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[11px] uppercase tracking-wider font-mono text-muted-foreground">
-                Dela vid stycke:
+                {t("import.preview.split_at")}
               </span>
               {card.paragraphsHtml.slice(1).map((_, i) => (
                 <button
@@ -219,7 +219,7 @@ export function PreviewCardItem({
                   type="button"
                   onClick={() => onSplitAt(i + 1)}
                   className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-surface-2 hover:bg-accent-blue hover:text-white text-[11px] text-muted-foreground transition-colors"
-                  title={`Dela kortet vid stycke ${i + 2}`}
+                  title={t("import.preview.split_at_n", { n: i + 2 })}
                 >
                   <Scissors className="h-3 w-3" />
                   {i + 2}
@@ -228,7 +228,7 @@ export function PreviewCardItem({
             </div>
           )}
           <p className="text-[11px] text-muted-foreground">
-            Markera text för att tilldela talare eller markera som fråga.
+            {t("import.preview.select_to_assign")}
           </p>
         </div>
       )}
