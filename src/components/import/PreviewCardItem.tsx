@@ -130,8 +130,8 @@ export function PreviewCardItem({
           }}
           onDragEnd={onDragEnd}
           className="hidden md:flex items-center justify-center pt-1 w-6 h-9 shrink-0 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-          title="Dra för att flytta eller släppa på annat kort för att slå ihop"
-          aria-label="Dra kort"
+          title={t("import.preview.drag_card_title")}
+          aria-label={t("import.preview.drag_card_aria")}
         >
           <GripVertical className="h-4 w-4" />
         </div>
