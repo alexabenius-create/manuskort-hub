@@ -9,6 +9,9 @@ import { TourProvider } from "@/hooks/useTour";
 import { TierProvider } from "@/hooks/useTier";
 import { RequireAuth } from "@/components/RequireAuth";
 import { usePresence } from "@/hooks/usePresence";
+import { TranslationEditModeProvider } from "@/i18n/TranslationEditModeContext";
+import { TranslationEditModeOverlay } from "@/i18n/TranslationEditModeToggle";
+import { useTranslationOverrides } from "@/i18n/overrides";
 import NotFound from "./pages/NotFound";
 
 // V2 är default sedan 2026-04-24. v1-sidor ligger kvar som alias (-v1-suffix saknas;
