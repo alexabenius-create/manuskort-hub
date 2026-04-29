@@ -1,20 +1,16 @@
 /**
  * CardTargetTimePopover — chip i header som visar mål-tid eller "+ Sätt mål".
- *
- * Klick öppnar inline popover med min/sek-fält + Auto/Spara.
- *  - Manual: targetSeconds=X, targetSecondsIsManual=true → fast accent-chip
- *  - Auto:   targetSeconds=null, targetSecondsIsManual=false → dim "+ Sätt mål"
  */
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Target, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   targetSeconds: number | null;
   isManual: boolean;
-  /** Estimerade sekunder från ord-räkning, används som default i input om inget mål satts */
   estimatedSeconds: number;
   onSave: (next: { targetSeconds: number | null; isManual: boolean }) => void;
 }
@@ -35,12 +31,12 @@ export function CardTargetTimePopover({
   estimatedSeconds,
   onSave,
 }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const seed = isManual && targetSeconds != null ? targetSeconds : estimatedSeconds;
   const [min, setMin] = useState(Math.floor(seed / 60));
   const [sec, setSec] = useState(seed % 60);
 
-  // När popover öppnas, seed:a om från senaste värde
   useEffect(() => {
     if (open) {
       const s = isManual && targetSeconds != null ? targetSeconds : estimatedSeconds;
@@ -64,7 +60,7 @@ export function CardTargetTimePopover({
   };
 
   const showLabel = isManual && targetSeconds != null;
-  const label = showLabel ? fmt(targetSeconds!) : "Sätt mål";
+  const label = showLabel ? fmt(targetSeconds!) : t("editor.card.target_set");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -77,7 +73,9 @@ export function CardTargetTimePopover({
               ? "bg-accent-blue/10 text-accent-blue border-accent-blue/30 hover:bg-accent-blue/15"
               : "bg-surface-2 text-muted-foreground border-dashed border-border/50 hover:text-foreground hover:border-border"
           }`}
-          aria-label={showLabel ? `Mål-tid ${label}` : "Sätt mål-tid"}
+          aria-label={showLabel
+            ? t("editor.card.target_chip_aria_set", { label })
+            : t("editor.card.target_chip_aria_unset")}
         >
           <Target className="h-3 w-3" />
           <span className="tabular-nums">{label}</span>
@@ -92,7 +90,7 @@ export function CardTargetTimePopover({
         <div className="space-y-3">
           <div>
             <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-              Mål-tid för kortet
+              {t("editor.card.target_label")}
             </p>
             <div className="flex items-center gap-2">
               <Input
@@ -103,7 +101,7 @@ export function CardTargetTimePopover({
                 onChange={(e) => setMin(clamp(parseInt(e.target.value) || 0, 0, 99))}
                 onKeyDown={(e) => e.key === "Enter" && save()}
                 className="h-9 w-16 text-center tabular-nums"
-                aria-label="Minuter"
+                aria-label={t("editor.card.target_input_minutes_aria")}
               />
               <span className="text-muted-foreground font-mono">:</span>
               <Input
@@ -114,16 +112,16 @@ export function CardTargetTimePopover({
                 onChange={(e) => setSec(clamp(parseInt(e.target.value) || 0, 0, 59))}
                 onKeyDown={(e) => e.key === "Enter" && save()}
                 className="h-9 w-16 text-center tabular-nums"
-                aria-label="Sekunder"
+                aria-label={t("editor.card.target_input_seconds_aria")}
               />
               <span className="text-[11px] text-muted-foreground ml-1">
-                est. {fmt(estimatedSeconds)}
+                {t("editor.card.target_estimate_short", { time: fmt(estimatedSeconds) })}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={save} className="flex-1">
-              Spara
+              {t("editor.card.target_save")}
             </Button>
             <Button
               size="sm"
@@ -131,10 +129,10 @@ export function CardTargetTimePopover({
               onClick={auto}
               disabled={!isManual}
               className="gap-1"
-              title="Använd estimerad tid"
+              title={t("editor.card.target_auto_tip")}
             >
               <RotateCcw className="h-3 w-3" />
-              Auto
+              {t("editor.card.target_auto")}
             </Button>
           </div>
         </div>

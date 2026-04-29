@@ -1,18 +1,17 @@
 /**
- * CardDragHandle — vänster drag-handle i kort-headern. Aktiverar HTML5 native
- * drag och skriver kort-pos till dataTransfer som "application/x-cardblock-pos".
+ * CardDragHandle — vänster drag-handle i kort-headern.
  */
 import { GripVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
-  /** Absolut PM-pos för cardBlock-noden. */
   cardPos: number;
-  /** Anropas när drag startar (för att signalera "drag pågår" till syskon). */
   onDragStart: (cardPos: number) => void;
   onDragEnd: () => void;
 }
 
 export function CardDragHandle({ cardPos, onDragStart, onDragEnd }: Props) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -21,14 +20,13 @@ export function CardDragHandle({ cardPos, onDragStart, onDragEnd }: Props) {
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("application/x-cardblock-pos", String(cardPos));
-        // Tom payload som text/plain så browsers inte injicerar default-text
         e.dataTransfer.setData("text/plain", "");
         onDragStart(cardPos);
       }}
       onDragEnd={() => onDragEnd()}
       className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 cursor-grab active:cursor-grabbing transition-colors"
-      aria-label="Dra för att flytta kort"
-      title="Dra för att flytta"
+      aria-label={t("editor.card.menu_drag_aria")}
+      title={t("editor.card.menu_drag_title")}
     >
       <GripVertical className="h-3.5 w-3.5" />
     </button>
@@ -36,14 +34,10 @@ export function CardDragHandle({ cardPos, onDragStart, onDragEnd }: Props) {
 }
 
 interface DropZoneProps {
-  /** Pos där kortet ska sättas in (top-level boundary). */
   insertPos: number;
-  /** Pos-intervall för kortet som tillhör denna zon (för att blockera drop på sig själv). */
   ownCardPos: number | null;
   ownCardEnd: number | null;
-  /** Är det aktivt drag pågång? Styr synlighet. */
   isActive: boolean;
-  /** Pos för det kort som dras (för att inaktivera närmsta zoner). */
   draggingPos: number | null;
   onDrop: (fromPos: number, toPos: number) => void;
 }
@@ -56,7 +50,6 @@ export function CardDropZone({
   draggingPos,
   onDrop,
 }: DropZoneProps) {
-  // Drop på pos som matchar dragna kortets gränser = no-op
   const isSelfBoundary =
     draggingPos != null &&
     (insertPos === draggingPos || insertPos === ownCardEnd && ownCardPos === draggingPos);

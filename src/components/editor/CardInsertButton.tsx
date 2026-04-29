@@ -1,14 +1,9 @@
 /**
- * CardInsertButton — "+"-pill mellan kort. Permanent synlig så användaren
- * direkt ser var nya kort kan infogas.
- *
- * Touch-target: minst 44×44 CSS-px (WCAG / Apple HIG) — vi lägger en osynlig
- * "padding-hitbox" runt själva knappen så den är lika lättklickad på iPad
- * oavsett zoom/orientering. Visuell storlek skalar inte med pixel-zoom
- * eftersom vi använder rem/px-baserade Tailwind-tokens.
+ * CardInsertButton — "+"-pill mellan kort.
  */
 import { Plus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   position: "above" | "below";
@@ -16,21 +11,20 @@ interface Props {
 }
 
 export function CardInsertButton({ position, onClick }: Props) {
+  const { t } = useTranslation();
   return (
     <div
       contentEditable={false}
       className={`group/insert relative h-3 -my-1 z-10 ${position === "above" ? "mt-2" : ""}`}
     >
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
-        {/* Subtil linje över hela bredden — accentueras vid hover */}
         <div className="absolute inset-x-6 sm:inset-x-10 top-1/2 -translate-y-1/2 h-px bg-border/40 group-hover/insert:bg-accent-blue/40 transition-colors pointer-events-none" />
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <button
               type="button"
               onClick={onClick}
-              aria-label="Lägg till kort här"
-              // Hitbox: minst 44×44 CSS-px för touch. Visuell knapp ligger inuti.
+              aria-label={t("editor.card.insert_above_aria")}
               className="pointer-events-auto relative inline-flex items-center justify-center h-11 w-11 -my-4 bg-transparent group/btn touch-manipulation"
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
@@ -43,7 +37,7 @@ export function CardInsertButton({ position, onClick }: Props) {
             </button>
           </TooltipTrigger>
           <TooltipContent side="top" className="text-[12px] rounded-lg">
-            Lägg till kort här
+            {t("editor.card.insert_tip")}
           </TooltipContent>
         </Tooltip>
       </div>

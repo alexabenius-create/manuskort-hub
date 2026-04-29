@@ -1,11 +1,10 @@
 /**
  * CardChainTimeChip — visar ackumulerad tids-range (start–slut) för ett kort
  * baserat på kedjan av manuella måltider.
- *
- * Disabled/icke-klickbar; visuellt likt CardTargetTimePopover men neutral/dim.
  */
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function fmt(s: number): string {
   const m = Math.floor(s / 60);
@@ -19,6 +18,7 @@ interface Props {
 }
 
 export function CardChainTimeChip({ startSeconds, endSeconds }: Props) {
+  const { t } = useTranslation();
   const label = `${fmt(startSeconds)}–${fmt(endSeconds)}`;
   return (
     <Tooltip delayDuration={200}>
@@ -33,7 +33,7 @@ export function CardChainTimeChip({ startSeconds, endSeconds }: Props) {
         </span>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="text-[12px] rounded-lg">
-        Ackumulerad tid baserat på måltider
+        {t("editor.card.chain_chip_tip")}
       </TooltipContent>
     </Tooltip>
   );

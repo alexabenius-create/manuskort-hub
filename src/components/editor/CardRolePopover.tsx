@@ -1,12 +1,10 @@
 /**
  * CardRolePopover — väljare i kort-headern för moderator/talare-roll.
- *
- * Visar en chip med ikon + label. Klick öppnar popover med två val.
- * Moderator får subtil accent-färg för att skilja från talare.
  */
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Mic, Headphones, Check } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type Role = "speaker" | "moderator";
 
@@ -16,11 +14,12 @@ interface Props {
 }
 
 export function CardRolePopover({ role, onChange }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const isModerator = role === "moderator";
   const Icon = isModerator ? Headphones : Mic;
-  const label = isModerator ? "Moderator" : "Talare";
+  const label = isModerator ? t("editor.card.role_moderator") : t("editor.card.role_speaker");
 
   const select = (next: Role) => {
     if (next !== role) onChange(next);
@@ -38,7 +37,7 @@ export function CardRolePopover({ role, onChange }: Props) {
               ? "bg-accent-blue/10 text-accent-blue border-accent-blue/30 hover:bg-accent-blue/15"
               : "bg-surface-2 text-muted-foreground border-border/40 hover:text-foreground hover:border-border"
           }`}
-          aria-label={`Roll: ${label}. Klicka för att ändra.`}
+          aria-label={t("editor.card.role_aria", { role: label })}
         >
           <Icon className="h-3 w-3" />
           <span>{label}</span>
@@ -56,7 +55,7 @@ export function CardRolePopover({ role, onChange }: Props) {
           className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-muted transition-colors text-left"
         >
           <Mic className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="flex-1">Talare</span>
+          <span className="flex-1">{t("editor.card.role_speaker")}</span>
           {role === "speaker" && <Check className="h-3.5 w-3.5 text-accent-blue" />}
         </button>
         <button
@@ -65,7 +64,7 @@ export function CardRolePopover({ role, onChange }: Props) {
           className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] hover:bg-muted transition-colors text-left"
         >
           <Headphones className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="flex-1">Moderator</span>
+          <span className="flex-1">{t("editor.card.role_moderator")}</span>
           {role === "moderator" && <Check className="h-3.5 w-3.5 text-accent-blue" />}
         </button>
       </PopoverContent>
