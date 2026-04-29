@@ -8,6 +8,7 @@ import {
 import { useTier } from "@/hooks/useTier";
 import { LIMITS } from "@/lib/tierLimits";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { useT } from "@/i18n/T";
 
 interface Props {
   open: boolean;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function PanelistSidebar({ open, onClose }: Props) {
+  const t = useT();
   const { panelists, add, rename, recolor, remove } = usePanelists();
   const { tier } = useTier();
   const limits = LIMITS[tier];
@@ -30,7 +32,6 @@ export function PanelistSidebar({ open, onClose }: Props) {
 
   return (
     <>
-      {/* Overlay */}
       {open && (
         <div
           onClick={onClose}
@@ -48,12 +49,12 @@ export function PanelistSidebar({ open, onClose }: Props) {
         <header className="px-5 py-4 flex items-center justify-between border-b-hair">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
-            <h2 className="font-display text-[16px] font-semibold">Paneldeltagare</h2>
+            <h2 className="font-display text-[16px] font-semibold">{t("editor.panelist_sidebar_title")}</h2>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
-            aria-label="Stäng"
+            aria-label={t("editor.panelist_sidebar_close")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -62,7 +63,7 @@ export function PanelistSidebar({ open, onClose }: Props) {
         <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-1.5">
           {panelists.length === 0 && (
             <p className="text-[13px] text-muted-foreground px-3 py-6 text-center leading-[1.5]">
-              Inga deltagare än. Lägg till dem du vill kunna rikta frågor till under sändning.
+              {t("editor.panelist_sidebar_empty")}
             </p>
           )}
 
@@ -84,7 +85,7 @@ export function PanelistSidebar({ open, onClose }: Props) {
             onClick={handleAdd}
             className="w-full flex items-center justify-center gap-1.5 h-9 rounded-full bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/15 text-[13px] font-medium transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" /> Lägg till deltagare
+            <Plus className="h-3.5 w-3.5" /> {t("editor.panelist_add")}
           </button>
         </footer>
       </aside>
@@ -92,8 +93,8 @@ export function PanelistSidebar({ open, onClose }: Props) {
       <UpgradeModal
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
-        title="Du har nått deltagar-gränsen för Gratis"
-        description={`Gratis tillåter ${limits.panelistsPerManuscript} paneldeltagare per manus. Uppgradera till PRO för obegränsat.`}
+        title={t("editor.panelist_limit_title")}
+        description={t("editor.panelist_limit_desc", { count: limits.panelistsPerManuscript })}
       />
     </>
   );
@@ -109,6 +110,7 @@ function PanelistRow({
   onRecolor: (v: string) => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   const [val, setVal] = useState(name);
   return (
     <div className="group flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-surface-2 transition-colors">
@@ -117,7 +119,7 @@ function PanelistRow({
           <button
             className="h-6 w-6 rounded-full flex-shrink-0 ring-1 ring-foreground/5 hover:ring-foreground/15 transition-all"
             style={{ backgroundColor: color }}
-            aria-label="Byt färg"
+            aria-label={t("editor.panelist_color_change")}
           />
         </PopoverTrigger>
         <PopoverContent className="w-auto p-2 rounded-xl" align="start">
@@ -130,7 +132,7 @@ function PanelistRow({
                   c === color ? "ring-2 ring-foreground/40" : "ring-1 ring-foreground/5"
                 }`}
                 style={{ backgroundColor: c }}
-                aria-label={`Färg ${c}`}
+                aria-label={t("editor.panelist_color_label", { color: c })}
               />
             ))}
           </div>
@@ -139,13 +141,13 @@ function PanelistRow({
       <input
         value={val}
         onChange={(e) => { setVal(e.target.value); onRename(e.target.value); }}
-        placeholder="Namn"
+        placeholder={t("editor.panelist_name_placeholder")}
         className="flex-1 bg-transparent border-0 outline-none text-[14px] placeholder:text-faint min-w-0"
       />
       <button
         onClick={onRemove}
         className="p-1.5 rounded-full text-faint hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Ta bort"
+        aria-label={t("editor.panelist_remove")}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
