@@ -397,7 +397,7 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
                     type="button"
                     onClick={() => handleRemoveCue(c.id)}
                     className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-foreground/10 transition-colors"
-                    aria-label="Ta bort cue"
+                    aria-label={t("editor.card.cue_remove_aria")}
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
