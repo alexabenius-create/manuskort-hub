@@ -636,7 +636,7 @@ export default function EditorV4() {
 
   return (
     <PanelistsProvider manuscriptId={manuscript.id}>
-      <SEO title={`${manuscript.title} – Editor`} />
+      <SEO title={`${manuscript.title} – ${t("editor.seo_title_suffix")}`} />
 
       <div className="min-h-screen bg-v2-bg text-v2-ink flex flex-col relative overflow-x-hidden">
         {/* Mesh-glow bakgrund */}
@@ -660,10 +660,10 @@ export default function EditorV4() {
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3">
             {/* Rad 1 */}
             <div className="flex items-center gap-2 min-w-0 md:flex-1">
-              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface">
+              <Button asChild variant="ghost" size="sm" className="gap-2 flex-shrink-0 px-2 sm:px-3 rounded-full text-v2-muted hover:text-v2-violet hover:bg-v2-surface" aria-label={t("editor.back_to_library_aria")}>
                 <Link to="/bibliotek">
                   <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Bibliotek</span>
+                  <span className="hidden sm:inline">{t("editor.back_to_library")}</span>
                 </Link>
               </Button>
 
@@ -684,11 +684,11 @@ export default function EditorV4() {
                   border: `1px solid ${manuscript.mode === "moderator" ? "rgba(99,102,241,0.22)" : manuscript.mode === "debate" ? "rgba(168,85,247,0.22)" : "rgba(59,130,246,0.22)"}`,
                 }}
               >
-                {manuscript.mode === "moderator" ? "Moderator" : manuscript.mode === "debate" ? "Debatt" : "Talare"}
+                {manuscript.mode === "moderator" ? t("editor.mode_moderator") : manuscript.mode === "debate" ? t("editor.mode_debate") : t("editor.mode_speaker")}
               </span>
 
               <span className="md:hidden text-[11px] text-v2-muted font-mono whitespace-nowrap ml-auto">
-                {cardCount} kort
+                {t("editor.card_count", { count: cardCount })}
               </span>
               <span
                 className={`md:hidden text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
@@ -696,7 +696,7 @@ export default function EditorV4() {
                 }`}
               >
                 <Save className="h-3 w-3" />
-                {saving === "saving" ? "…" : saving === "error" ? "fel" : "✓"}
+                {saving === "saving" ? t("editor.save_short_saving") : saving === "error" ? t("editor.save_short_error") : t("editor.save_short_ok")}
               </span>
             </div>
 
