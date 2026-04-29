@@ -14,57 +14,50 @@ import {
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { T, useT } from "@/i18n/T";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
-type Feature = { label: string; included: boolean };
 type Billing = "month" | "year";
 
-const faqs: { q: string; a: string }[] = [
-  { q: "Kan jag prova gratis innan jag uppgraderar?", a: "Ja. Gratisplanen är gratis för alltid och kräver inget betalkort. Du kan skapa upp till 2 manus med max 15 kort och 5 paneldeltagare per manus, och testa presentationsläget fullt ut." },
-  { q: "Vad händer med mina manus om jag säger upp PRO?", a: "Inget försvinner. Dina manus, kort och paneldeltagare ligger kvar. Du återgår till gratisplanens gränser, men allt befintligt innehåll behålls och kan läsas och presenteras." },
-  { q: "Kan jag byta mellan månads- och årsbetalning?", a: "Ja. Du kan när som helst växla plan från inställningarna. Vid byte till årsbetalning sparar du cirka 25 % jämfört med månadspris." },
-  { q: "Hur fungerar .docx-importen?", a: "Du laddar upp ett Word-dokument och Manuskort delar automatiskt upp texten i kort, identifierar talare och föreslår tider. Du får förhandsgranska och justera innan importen sparas." },
-  { q: "Är priserna inklusive moms?", a: "Ja, alla priser visas inklusive svensk moms (25 %). Företag kan ange organisationsnummer i kassan för korrekt fakturaunderlag." },
-  { q: "Vilka betalsätt accepteras?", a: "Vi använder Stripe för säkra betalningar. Du kan betala med Visa, Mastercard, American Express samt Apple Pay och Google Pay där det stöds." },
-  { q: "Kan jag säga upp prenumerationen när som helst?", a: "Ja. Du säger enkelt upp i inställningarna. PRO är aktivt fram till slutet av nuvarande betalperiod, sedan övergår kontot automatiskt till gratisplanen." },
+const FREE_KEYS: { key: string; included: boolean }[] = [
+  { key: "pricing.features.free_1", included: true },
+  { key: "pricing.features.free_2", included: true },
+  { key: "pricing.features.free_3", included: true },
+  { key: "pricing.features.free_4", included: true },
+  { key: "pricing.features.free_5", included: false },
+  { key: "pricing.features.free_6", included: false },
+  { key: "pricing.features.free_7", included: false },
+  { key: "pricing.features.free_8", included: false },
 ];
 
-const freeFeatures: Feature[] = [
-  { label: "Upp till 2 manus", included: true },
-  { label: "Max 15 kort per manus", included: true },
-  { label: "Max 5 paneldeltagare per manus", included: true },
-  { label: "Presentationsläge med cue-färger", included: true },
-  { label: ".docx-import", included: false },
-  { label: "AI-förbättring av meningar", included: false },
-  { label: "Obegränsade manus, kort och deltagare", included: false },
-  { label: "Prioriterad support", included: false },
+const PRO_KEYS: { key: string; included: boolean }[] = [
+  { key: "pricing.features.pro_1", included: true },
+  { key: "pricing.features.pro_2", included: true },
+  { key: "pricing.features.pro_3", included: true },
+  { key: "pricing.features.pro_4", included: true },
+  { key: "pricing.features.pro_5", included: true },
+  { key: "pricing.features.pro_6", included: true },
+  { key: "pricing.features.pro_7", included: true },
+  { key: "pricing.features.pro_8", included: true },
 ];
 
-const proFeatures: Feature[] = [
-  { label: "Obegränsade manus", included: true },
-  { label: "Obegränsade kort per manus", included: true },
-  { label: "Obegränsade paneldeltagare", included: true },
-  { label: ".docx-import", included: true },
-  { label: "AI-förbättring av meningar (200 meningar/månad)", included: true },
-  { label: "Presentationsläge med cue-färger", included: true },
-  { label: "Alla framtida features", included: true },
-  { label: "Prioriterad support", included: true },
-];
+const FAQ_KEYS = ["q1", "q2", "q3", "q4", "q5", "q6", "q7"] as const;
 
-
-function FeatureRow({ feature }: { feature: Feature }) {
+function FeatureRow({ tKey, included }: { tKey: string; included: boolean }) {
   return (
     <li className="flex items-start gap-3 text-[14px]">
       <span
         className={
-          feature.included
+          included
             ? "mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-v2-violet/10 text-v2-violet shrink-0"
             : "mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-v2-surface text-v2-muted shrink-0"
         }
       >
-        {feature.included ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+        {included ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
       </span>
-      <span className={feature.included ? "text-v2-ink" : "text-v2-muted line-through"}>
-        {feature.label}
+      <span className={included ? "text-v2-ink" : "text-v2-muted line-through"}>
+        <T k={tKey} />
       </span>
     </li>
   );
@@ -73,6 +66,7 @@ function FeatureRow({ feature }: { feature: Feature }) {
 export default function PricingV2() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const t = useT();
   const startHref = user ? "/" : "/auth-v2";
   const [billing, setBilling] = useState<Billing>("year");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -111,12 +105,16 @@ export default function PricingV2() {
         <Link
           to="/v2"
           className="flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-ink hover:bg-white transition-colors"
-          aria-label="Tillbaka"
+          aria-label={t("pricing.back_aria") as string}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="font-display text-[17px] font-semibold tracking-tight text-v2-ink">Priser</h1>
-        <div className="ml-auto">
+        <h1 className="font-display text-[17px] font-semibold tracking-tight text-v2-ink">
+          <T k="pricing.header_title" />
+        </h1>
+        <div className="ml-auto flex items-center gap-1">
+          <LanguageSwitcher />
+          <TranslationEditModeToggle />
           <FeedbackButton source="landing" withLabel className="!h-9" />
         </div>
       </header>
@@ -124,10 +122,10 @@ export default function PricingV2() {
       <main className="relative max-w-[960px] mx-auto px-6 sm:px-10 pt-12 pb-20 flex flex-col gap-10">
         <section className="flex flex-col gap-3 text-center max-w-[560px] mx-auto v2-reveal">
           <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-v2-ink">
-            Välj plan
+            <T k="pricing.title" />
           </h2>
           <p className="text-[15px] text-v2-muted">
-            Börja gratis. Uppgradera när du behöver mer.
+            <T k="pricing.subtitle" />
           </p>
         </section>
 
@@ -144,18 +142,18 @@ export default function PricingV2() {
               className="rounded-full px-4 h-8 text-[13px] text-v2-muted data-[state=on]:text-white"
               style={billing === "month" ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
             >
-              Månad
+              <T k="pricing.billing_month" />
             </ToggleGroupItem>
             <ToggleGroupItem
               value="year"
               className="rounded-full px-4 h-8 text-[13px] text-v2-muted data-[state=on]:text-white"
               style={billing === "year" ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
             >
-              År
+              <T k="pricing.billing_year" />
             </ToggleGroupItem>
           </ToggleGroup>
           <span className="inline-flex items-center rounded-full bg-v2-violet/10 text-v2-violet px-2.5 py-1 text-[11px] font-semibold tracking-wide">
-            Spara ~25%
+            <T k="pricing.save_badge" />
           </span>
         </div>
 
@@ -163,24 +161,26 @@ export default function PricingV2() {
           {/* Gratis */}
           <article className="bg-white/80 backdrop-blur-xl rounded-2xl border border-v2-line shadow-sm p-7 flex flex-col gap-6">
             <header className="flex flex-col gap-2">
-              <h3 className="font-display text-xl font-semibold tracking-tight text-v2-ink">Gratis</h3>
-              <p className="text-[13px] text-v2-muted">För att komma igång och prova verktyget.</p>
+              <h3 className="font-display text-xl font-semibold tracking-tight text-v2-ink">
+                <T k="pricing.free_title" />
+              </h3>
+              <p className="text-[13px] text-v2-muted"><T k="pricing.free_lead" /></p>
               <div className="flex items-baseline gap-1.5 mt-2">
                 <span className="font-display text-4xl font-semibold tracking-tight text-v2-ink">0</span>
-                <span className="text-[14px] text-v2-muted">kr/mån</span>
+                <span className="text-[14px] text-v2-muted"><T k="pricing.free_unit" /></span>
               </div>
               <div className="h-4" />
             </header>
 
             <ul className="flex flex-col gap-3">
-              {freeFeatures.map((f) => (<FeatureRow key={f.label} feature={f} />))}
+              {FREE_KEYS.map((f) => (<FeatureRow key={f.key} tKey={f.key} included={f.included} />))}
             </ul>
 
             <Link
               to={startHref}
               className="mt-auto inline-flex items-center justify-center rounded-full border border-v2-line text-[14px] h-11 px-5 text-v2-ink hover:bg-v2-surface transition-colors"
             >
-              Kom igång
+              <T k="pricing.free_cta" />
             </Link>
           </article>
 
@@ -190,39 +190,43 @@ export default function PricingV2() {
               className="absolute -top-3 left-7 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold text-white tracking-wide"
               style={{ backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" }}
             >
-              Rekommenderas
+              <T k="pricing.pro_recommended" />
             </span>
             <header className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <h3 className="font-display text-xl font-semibold tracking-tight text-v2-ink">PRO</h3>
+                <h3 className="font-display text-xl font-semibold tracking-tight text-v2-ink">
+                  <T k="pricing.pro_title" />
+                </h3>
                 {billing === "year" && (
                   <span className="inline-flex items-center rounded-full bg-v2-violet/10 text-v2-violet px-2 py-0.5 text-[10px] font-semibold tracking-wide">
-                    Bäst värde
+                    <T k="pricing.pro_best_value" />
                   </span>
                 )}
               </div>
-              <p className="text-[13px] text-v2-muted">För dig som använder verktyget på riktigt.</p>
+              <p className="text-[13px] text-v2-muted"><T k="pricing.pro_lead" /></p>
               <div className="flex items-baseline gap-1.5 mt-2">
                 <span className="font-display text-4xl font-semibold tracking-tight bg-gradient-to-r from-v2-violet to-v2-blue bg-clip-text text-transparent">
                   {proPrice}
                 </span>
-                <span className="text-[14px] text-v2-muted">kr/mån</span>
+                <span className="text-[14px] text-v2-muted"><T k="pricing.pro_unit" /></span>
               </div>
               <div className="h-4 text-[12px] text-v2-muted">
-                {billing === "year" ? "890 kr faktureras årligen, inkl. moms" : "Inkl. moms"}
+                {billing === "year"
+                  ? <T k="pricing.pro_year_billed" />
+                  : <T k="pricing.pro_month_billed" />}
               </div>
               <p className="text-[13px] text-v2-ink/80 mt-3 flex items-center gap-1.5">
                 <span aria-hidden>🍕</span>
-                <span>Mindre än priset på en pizza i månaden</span>
+                <span><T k="pricing.pro_pizza" /></span>
               </p>
             </header>
 
             <ul className="flex flex-col gap-3">
-              {proFeatures.map((f) => (<FeatureRow key={f.label} feature={f} />))}
+              {PRO_KEYS.map((f) => (<FeatureRow key={f.key} tKey={f.key} included={f.included} />))}
             </ul>
 
             <button onClick={handleUpgrade} className="v2-btn-primary mt-auto w-full justify-center">
-              <span className="relative z-10">Uppgradera</span>
+              <span className="relative z-10"><T k="pricing.pro_cta" /></span>
             </button>
           </article>
         </section>
@@ -230,9 +234,11 @@ export default function PricingV2() {
         {/* Value bar */}
         <section className="bg-white/80 backdrop-blur-xl rounded-2xl border border-v2-line shadow-sm px-6 py-8 sm:py-10 text-center v2-reveal-onscroll">
           <p className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-v2-ink">
-            Förbered ett anförande på{" "}
-            <span className="bg-gradient-to-r from-v2-violet to-v2-blue bg-clip-text text-transparent">20 minuter</span>{" "}
-            istället för 2 timmar <span aria-hidden>⏳</span>
+            <T k="pricing.value_bar_pre" />{" "}
+            <span className="bg-gradient-to-r from-v2-violet to-v2-blue bg-clip-text text-transparent">
+              <T k="pricing.value_bar_highlight" />
+            </span>{" "}
+            <T k="pricing.value_bar_post" /> <span aria-hidden>⏳</span>
           </p>
         </section>
 
@@ -240,20 +246,20 @@ export default function PricingV2() {
         <section className="flex flex-col gap-6 max-w-[720px] mx-auto w-full pt-4">
           <header className="flex flex-col gap-2 text-center">
             <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-v2-ink">
-              Vanliga frågor
+              <T k="pricing.faq_title" />
             </h2>
             <p className="text-[14px] text-v2-muted">
-              Hittar du inte svaret? Hör av dig så hjälper vi dig.
+              <T k="pricing.faq_lead" />
             </p>
           </header>
           <Accordion type="single" collapsible className="bg-white/80 backdrop-blur-xl rounded-2xl border border-v2-line shadow-sm px-2 sm:px-4">
-            {faqs.map((f, i) => (
-              <AccordionItem key={f.q} value={`item-${i}`} className="border-b border-v2-line last:border-b-0">
+            {FAQ_KEYS.map((q, i) => (
+              <AccordionItem key={q} value={`item-${i}`} className="border-b border-v2-line last:border-b-0">
                 <AccordionTrigger className="text-left text-[15px] font-medium hover:no-underline px-3 sm:px-4 text-v2-ink">
-                  {f.q}
+                  <T k={`pricing.faqs.${q}_q`} />
                 </AccordionTrigger>
                 <AccordionContent className="text-[14px] text-v2-muted px-3 sm:px-4 pb-4 leading-relaxed">
-                  {f.a}
+                  <T k={`pricing.faqs.${q}_a`} />
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -265,7 +271,7 @@ export default function PricingV2() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Manuskort PRO – {billing === "year" ? "Årsplan" : "Månadsplan"}
+              <T k={billing === "year" ? "pricing.checkout_year" : "pricing.checkout_month"} />
             </DialogTitle>
           </DialogHeader>
           {checkoutOpen && (
