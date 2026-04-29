@@ -25,6 +25,9 @@ interface ToolButton {
 }
 
 export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
+  const { t } = useTranslation();
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  const splitShortcut = isMac ? "⌘+Enter" : "Ctrl+Enter";
   let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
   try {
     panelists = usePanelists().panelists;
