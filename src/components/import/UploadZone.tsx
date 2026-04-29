@@ -17,6 +17,7 @@ interface Props {
 type Source = "file" | "google";
 
 export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,13 +28,13 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
   const validate = (f: File): string | null => {
     const kind = detectFileKind(f);
     if (kind === "doc") {
-      return "Filformatet .doc stöds inte. Öppna filen i Word och spara om den som .docx (Arkiv → Spara som → Word-dokument). Försök sedan igen.";
+      return t("import.upload.validate_doc");
     }
     if (kind === "unsupported") {
-      return "Vi stödjer .docx och .txt i nuläget.";
+      return t("import.upload.validate_unsupported");
     }
     if (f.size > MAX_FILE_BYTES) {
-      return "Filen är för stor. Dela upp den i mindre delar eller kontakta oss.";
+      return t("import.upload.validate_too_large");
     }
     return null;
   };
