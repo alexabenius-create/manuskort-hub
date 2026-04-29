@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function SpeakerMappingPanel({ existing }: Props) {
+  const { t } = useTranslation();
   const { speakers, updateSpeaker } = useImportStore();
 
   if (speakers.length === 0) return null;
