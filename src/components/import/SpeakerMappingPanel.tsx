@@ -76,13 +76,13 @@ export function SpeakerMappingPanel({ existing }: Props) {
               }}
               className="h-9 rounded-lg bg-background border border-border text-[13px] px-3"
             >
-              <option value="new">Skapa som ny deltagare</option>
+              <option value="new">{t("import.speakers.create_new")}</option>
               {existing.map((p) => (
                 <option key={p.id} value={`e:${p.id}`}>
-                  Koppla till {p.name || "(namnlös)"}
+                  {t("import.speakers.link_to", { name: p.name || t("import.speakers.unnamed") })}
                 </option>
               ))}
-              <option value="ignore">Ignorera (inte en talare)</option>
+              <option value="ignore">{t("import.speakers.ignore")}</option>
             </select>
           </div>
         ))}
