@@ -119,7 +119,7 @@ export default function LandingV2() {
                 to="/priser"
                 className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface transition-colors"
               >
-                Priser
+                <T k="landing.nav.pricing" />
               </Link>
               <FeedbackButton source="landing" withLabel className="!h-9" />
               <LanguageSwitcher />
@@ -129,14 +129,14 @@ export default function LandingV2() {
                   to="/auth"
                   className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface transition-colors"
                 >
-                  Logga in
+                  <T k="landing.nav.login" />
                 </Link>
               )}
               <Link
                 to={primaryCtaTo}
                 className="v2-btn-primary ml-1"
               >
-                <span className="relative z-10">{primaryCtaLabel}</span>
+                <span className="relative z-10"><T k={primaryCtaKey} /></span>
               </Link>
             </div>
 
@@ -145,7 +145,7 @@ export default function LandingV2() {
                 to="/priser"
                 className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors"
               >
-                Priser
+                <T k="landing.nav.pricing" />
               </Link>
               <FeedbackButton source="landing" withLabel className="!justify-start !h-11 !px-3 !rounded-xl !text-[15px]" />
               {!session && (
@@ -153,14 +153,14 @@ export default function LandingV2() {
                   to="/auth"
                   className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors"
                 >
-                  Logga in
+                  <T k="landing.nav.login" />
                 </Link>
               )}
               <Link
                 to={primaryCtaTo}
                 className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-r from-v2-violet to-v2-blue text-white text-[15px] font-medium px-5 shadow-[0_8px_20px_-4px_rgba(99,102,241,0.4)]"
               >
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
               </Link>
             </MobileNavSheet>
           </nav>
@@ -193,7 +193,7 @@ export default function LandingV2() {
                 <span className="absolute inline-flex h-full w-full rounded-full bg-v2-violet opacity-70 v2-pulse-dot" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-v2-violet" />
               </span>
-              Manuskort för proffsiga presentationer
+              <T k="landing.hero.badge" />
             </div>
             <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[72px] leading-[1.0] font-semibold tracking-[-0.035em]">
               <span className="bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink bg-clip-text text-transparent">
@@ -207,7 +207,7 @@ export default function LandingV2() {
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link to={primaryCtaTo} className="v2-btn-primary v2-btn-lg">
                 <span className="relative z-10 flex items-center gap-2">
-                  {primaryCtaLabel}
+                  <T k={primaryCtaKey} />
                   <ArrowRight className="h-4 w-4" />
                 </span>
               </Link>
@@ -218,15 +218,15 @@ export default function LandingV2() {
 
             <ul className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1 sm:gap-x-2 text-[13px] text-v2-muted">
               <li className="whitespace-nowrap inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-v2-violet" /> Gratis att testa
+                <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="landing.hero.bullet_free" />
               </li>
               <li aria-hidden className="hidden sm:inline">·</li>
               <li className="whitespace-nowrap inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-v2-violet" /> Inget kreditkort
+                <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="landing.hero.bullet_no_card" />
               </li>
               <li aria-hidden className="hidden sm:inline">·</li>
               <li className="whitespace-nowrap inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-v2-violet" /> Igång på under en minut
+                <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="landing.hero.bullet_quick" />
               </li>
             </ul>
           </div>
@@ -242,25 +242,12 @@ export default function LandingV2() {
       <section className="relative px-6 sm:px-10 py-20 sm:py-24 border-t border-v2-line">
         <div className="max-w-3xl mx-auto v2-reveal-onscroll">
           <h2 className="font-display text-[28px] sm:text-[40px] leading-[1.1] font-semibold tracking-[-0.025em] mb-6">
-            Vad är manuskort — och varför fungerar det?
+            <T k="landing.intro.title" />
           </h2>
           <div className="space-y-5 text-[16.5px] text-v2-muted leading-relaxed">
-            <p>
-              Manuskort är korta, strukturerade kort som hjälper dig att hålla röd tråd när du talar
-              inför publik. Istället för att läsa innantill från ett långt manus får du
-              överblickbara avsnitt med stödord, tider och påminnelser — exakt det du behöver för
-              att låta naturlig och säker.
-            </p>
-            <p>
-              Bra presentationsteknik handlar lika mycket om förberedelse som om framförandet. Med
-              ett manus uppdelat i kort kan du repetera mer effektivt, anpassa längden på stående
-              fot och hantera oväntade frågor utan att tappa tråden.
-            </p>
-            <p>
-              Verktyget ger dig stöd vid presentation hela vägen — från första utkastet till själva
-              talarstolen. Skriv direkt i webbläsaren eller importera ett befintligt manus, och
-              presentera sedan med inbyggd teleprompter på valfri skärm.
-            </p>
+            <T as="p" k="landing.intro.p1" />
+            <T as="p" k="landing.intro.p2" />
+            <T as="p" k="landing.intro.p3" />
           </div>
         </div>
       </section>
