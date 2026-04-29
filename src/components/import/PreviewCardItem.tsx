@@ -183,19 +183,19 @@ export function PreviewCardItem({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl">
             <DropdownMenuItem onClick={onMoveUp} disabled={index === 0}>
-              <ArrowUp className="h-4 w-4" /> Flytta upp
+              <ArrowUp className="h-4 w-4" /> {t("import.preview.move_up")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onMoveDown} disabled={index === total - 1}>
-              <ArrowDown className="h-4 w-4" /> Flytta ned
+              <ArrowDown className="h-4 w-4" /> {t("import.preview.move_down")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onMergePrev} disabled={index === 0}>
-              <Merge className="h-4 w-4" /> Slå ihop med föregående
+              <Merge className="h-4 w-4" /> {t("import.preview.merge_prev")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onMergeNext} disabled={index === total - 1}>
-              <Merge className="h-4 w-4" /> Slå ihop med nästa
+              <Merge className="h-4 w-4" /> {t("import.preview.merge_next")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRemove} className="text-destructive">
-              <Trash2 className="h-4 w-4" /> Ta bort
+              <Trash2 className="h-4 w-4" /> {t("import.preview.remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
