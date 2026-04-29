@@ -316,7 +316,7 @@ export default function ImportV2() {
     }));
 
     const manuscriptPayload = {
-      title: store.title.trim() || "Importerat manus",
+      title: store.title.trim() || t("import.default_title"),
       mode: store.mode ?? "speaker",
       text_size: store.textSize,
       target_duration_seconds: store.targetSeconds || null,
