@@ -29,6 +29,7 @@ const DebattBuddyThread = lazy(() => import("./pages/DebattBuddyThread"));
 const Admin = lazy(() => import("./pages/AdminV2"));
 const AdminFeatureFlags = lazy(() => import("./pages/AdminFeatureFlags"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const AdminTranslations = lazy(() => import("./pages/AdminTranslations"));
 const Messages = lazy(() => import("./pages/MessagesV2"));
 const Moderator = lazy(() => import("./pages/usecase/ModeratorV2"));
 const Talare = lazy(() => import("./pages/usecase/TalareV2"));
