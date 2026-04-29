@@ -50,10 +50,10 @@ export function SkippedContentPanel({ items }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium">
-            {items.length} element kunde inte importeras
+            {t("import.skipped.summary_title", { count: items.length })}
           </p>
           <p className="text-[12px] text-muted-foreground truncate">
-            {summary} — lägg till manuellt i redigeringsläget om du behöver dem
+            {t("import.skipped.summary_hint", { summary })}
           </p>
         </div>
         <ChevronDown
