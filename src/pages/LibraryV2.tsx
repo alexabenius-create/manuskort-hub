@@ -327,7 +327,7 @@ export default function LibraryV2() {
 
   return (
     <>
-    <SEO title="Bibliotek – Manuskort" noindex nofollow />
+    <SEO title={t("library.seo_title") as string} noindex nofollow />
     <div
       className="bg-v2-bg text-v2-ink min-h-screen relative overflow-x-hidden"
       onDragEnter={onDragEnter}
@@ -352,8 +352,8 @@ export default function LibraryV2() {
             <div className="v2-card-icon mx-auto" style={{ marginBottom: 12 }}>
               <Upload className="h-5 w-5" />
             </div>
-            <p className="font-display text-[20px] font-semibold text-v2-ink tracking-tight">Släpp för att importera</p>
-            <p className="text-[13px] text-v2-muted mt-1">.docx eller .txt</p>
+            <p className="font-display text-[20px] font-semibold text-v2-ink tracking-tight">{t("library.drop_title")}</p>
+            <p className="text-[13px] text-v2-muted mt-1">{t("library.drop_subtitle")}</p>
           </div>
         </div>
       )}
@@ -362,7 +362,7 @@ export default function LibraryV2() {
 
       {/* Topbar */}
       <header className="sticky top-0 z-50 border-b border-v2-line bg-white/70 backdrop-blur-xl px-6 sm:px-10 h-14 flex items-center gap-6">
-        <Link to="/" className="font-display text-[17px] font-semibold tracking-tight text-v2-ink hover:opacity-70 transition-opacity" aria-label="Till startsidan">
+        <Link to="/" className="font-display text-[17px] font-semibold tracking-tight text-v2-ink hover:opacity-70 transition-opacity" aria-label={t("nav.home") as string}>
           <h1>Manuskort</h1>
         </Link>
         <div className="ml-auto flex items-center gap-2">
@@ -384,7 +384,7 @@ export default function LibraryV2() {
             </span>
             {tier === "free" && (
               <Link to="/priser" className="v2-btn-primary" style={{ height: 34, padding: "0 14px", fontSize: 13 }}>
-                <Sparkle className="h-3.5 w-3.5" /> Uppgradera
+                <Sparkle className="h-3.5 w-3.5" /> {t("nav.upgrade")}
               </Link>
             )}
             {tier === "admin" && (
@@ -395,7 +395,7 @@ export default function LibraryV2() {
                 className="rounded-full text-[13px] text-v2-muted hover:text-v2-violet hover:bg-v2-surface h-8 relative"
               >
                 <a href="/admin?tab=feedback">
-                  <Shield className="h-3.5 w-3.5" /> Admin
+                  <Shield className="h-3.5 w-3.5" /> {t("nav.admin")}
                   <UnreadBadge count={adminUnread} />
                 </a>
               </Button>
@@ -406,7 +406,7 @@ export default function LibraryV2() {
               size="sm"
               className="rounded-full text-[13px] text-v2-muted hover:text-v2-violet hover:bg-v2-surface h-8"
             >
-              <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> Inställningar</a>
+              <a href="/installningar"><SettingsIcon className="h-3.5 w-3.5" /> {t("nav.settings")}</a>
             </Button>
             <Button
               asChild
@@ -414,8 +414,8 @@ export default function LibraryV2() {
               size="sm"
               className="rounded-full text-[13px] text-v2-muted hover:text-v2-violet hover:bg-v2-surface h-8 relative"
             >
-              <a href="/meddelanden" aria-label="Mina meddelanden">
-                <Inbox className="h-3.5 w-3.5" /> Meddelanden
+              <a href="/meddelanden" aria-label={t("nav.messages_mine") as string}>
+                <Inbox className="h-3.5 w-3.5" /> {t("nav.messages")}
                 <UnreadBadge count={unreadMessages} />
               </a>
             </Button>
@@ -426,14 +426,18 @@ export default function LibraryV2() {
               onClick={signOut}
               className="rounded-full text-[13px] text-v2-muted hover:text-v2-violet hover:bg-v2-surface h-8"
             >
-              <LogOut className="h-3.5 w-3.5" /> Logga ut
+              <LogOut className="h-3.5 w-3.5" /> {t("nav.logout")}
             </Button>
+            <LanguageSwitcher compact />
+            <TranslationEditModeToggle />
             <HelpButton />
           </div>
 
           <div className="flex md:hidden items-center gap-1">
+            <LanguageSwitcher compact />
+            <TranslationEditModeToggle />
             <HelpButton />
-            <MobileNavSheet title="Konto">
+            <MobileNavSheet title={t("nav.account") as string}>
               <span className="px-3 pb-2 text-[12px] text-v2-muted break-all">
                 {user?.email}
                 {(tier === "pro" || tier === "admin") && (
@@ -454,7 +458,7 @@ export default function LibraryV2() {
                   to="/priser"
                   className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-v2-violet hover:bg-v2-surface transition-colors"
                 >
-                  <Sparkle className="h-4 w-4" /> Uppgradera
+                  <Sparkle className="h-4 w-4" /> {t("nav.upgrade")}
                 </Link>
               )}
               {tier === "admin" && (
@@ -462,20 +466,20 @@ export default function LibraryV2() {
                   href="/admin"
                   className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors"
                 >
-                  <Shield className="h-4 w-4" /> Admin
+                  <Shield className="h-4 w-4" /> {t("nav.admin")}
                 </a>
               )}
               <a
                 href="/installningar"
                 className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors"
               >
-                <SettingsIcon className="h-4 w-4" /> Inställningar
+                <SettingsIcon className="h-4 w-4" /> {t("nav.settings")}
               </a>
               <a
                 href="/meddelanden"
                 className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors relative"
               >
-                <Inbox className="h-4 w-4" /> Mina meddelanden
+                <Inbox className="h-4 w-4" /> {t("nav.messages_mine")}
                 {unreadMessages > 0 && (
                   <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
                     {unreadMessages}
@@ -488,7 +492,7 @@ export default function LibraryV2() {
                 onClick={signOut}
                 className="inline-flex h-11 items-center gap-2 px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors text-left"
               >
-                <LogOut className="h-4 w-4" /> Logga ut
+                <LogOut className="h-4 w-4" /> {t("nav.logout")}
               </button>
             </MobileNavSheet>
           </div>
@@ -499,37 +503,37 @@ export default function LibraryV2() {
         {/* Hero */}
         <div className="mb-12 sm:mb-16 v2-reveal">
           <h2 className="font-display text-5xl sm:text-6xl font-semibold tracking-tight text-v2-ink leading-[1.05]">
-            Dina{" "}
+            {t("library.hero_pre")}
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 60%, #ec4899 100%)" }}
             >
-              manus
+              {t("library.hero_highlight")}
             </span>
           </h2>
           <p className="text-v2-muted text-[17px] sm:text-[18px] mt-4 max-w-xl">
-            Skapa, redigera och håll flyt — från första hälsning till sista applåd.
+            {t("library.hero_subtitle")}
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Link
               to="/installningar#affiliate-program"
               className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
-              title="Bjud in andra och tjäna gratis PRO — gäller även gratisanvändare"
+              title={t("library.earn_pro_title") as string}
             >
               <Gift className="h-4 w-4 text-v2-violet" />
-              Tjäna gratis PRO
-              <span className="text-v2-muted hidden sm:inline">— bjud in en vän</span>
+              {t("library.earn_pro")}
+              <span className="text-v2-muted hidden sm:inline">{t("library.earn_pro_invite")}</span>
             </Link>
             {hasDebateBuddy && (
               <button
                 type="button"
                 onClick={() => navigate("/debatt-buddy")}
                 className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white/80 backdrop-blur border border-v2-line gap-1.5 shadow-sm transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
-                title="AI-stöd för debattanföranden"
+                title={t("library.debate_buddy_title") as string}
               >
                 <MessagesSquare className="h-4 w-4 text-v2-violet" />
-                Debatt-buddy
-                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-v2-violet/10 text-v2-violet">Beta</span>
+                {t("library.debate_buddy")}
+                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-v2-violet/10 text-v2-violet">{t("library.beta")}</span>
               </button>
             )}
             {(tier === "pro" || tier === "admin") && aiUsage && aiUsage.limit > 0 && (
@@ -537,7 +541,7 @@ export default function LibraryV2() {
                 <Sparkles className="h-4 w-4 text-v2-violet shrink-0" />
                 <span>
                   <span className="font-semibold text-v2-ink">{aiUsage.remaining}</span>
-                  <span className="text-v2-muted"> / {aiUsage.limit} AI-förbättringar kvar denna månad</span>
+                  <span className="text-v2-muted">{t("library.ai_remaining_suffix", { limit: aiUsage.limit })}</span>
                 </span>
               </div>
             )}
@@ -554,25 +558,25 @@ export default function LibraryV2() {
                 className="v2-btn-primary"
                 style={{ height: 44, padding: "0 20px", fontSize: 14 }}
               >
-                <Plus className="h-4 w-4" /> Nytt manus
+                <Plus className="h-4 w-4" /> {t("library.new_manuscript")}
               </button>
               <button
                 type="button"
                 onClick={requestImport}
                 className="v2-shine-subtle inline-flex items-center justify-center h-11 px-5 rounded-full text-[14px] font-medium text-v2-ink bg-white border border-v2-line gap-1.5 transition-all hover:-translate-y-px hover:border-v2-violet/40 hover:shadow-md"
               >
-                <Upload className="h-4 w-4" /> Importera
+                <Upload className="h-4 w-4" /> {t("library.import")}
               </button>
               <DialogContent className="rounded-3xl border-v2-line">
                 <DialogHeader>
-                  <DialogTitle className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Nytt manus</DialogTitle>
+                  <DialogTitle className="font-display text-2xl font-semibold tracking-tight text-v2-ink">{t("library.new_dialog_title")}</DialogTitle>
                   <DialogDescription className="text-v2-muted">
-                    Välj läge och ge manuset en titel.
+                    {t("library.new_dialog_desc")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-5 pt-2">
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-v2-muted font-medium">Läge</Label>
+                    <Label className="text-[13px] text-v2-muted font-medium">{t("library.mode_label")}</Label>
                     <div className="inline-flex w-full p-1 gap-1 rounded-full bg-v2-surface">
                       {(["speaker", "moderator"] as const).map((v) => {
                         const active = newMode === v;
@@ -585,26 +589,26 @@ export default function LibraryV2() {
                               active ? "bg-white text-v2-ink shadow-sm" : "text-v2-muted hover:text-v2-ink"
                             }`}
                           >
-                            {v === "speaker" ? "Talare" : "Moderator"}
+                            {v === "speaker" ? t("library.mode_speaker") : t("library.mode_moderator")}
                           </button>
                         );
                       })}
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="t" className="text-[13px] text-v2-muted font-medium">Titel</Label>
+                    <Label htmlFor="t" className="text-[13px] text-v2-muted font-medium">{t("library.title_label")}</Label>
                     <Input
                       id="t"
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="t.ex. Keynote — Stockholm 25 nov"
+                      placeholder={t("library.title_placeholder") as string}
                       className="h-11 rounded-xl bg-white border border-v2-line focus-visible:ring-2 focus-visible:ring-v2-violet"
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="ghost" onClick={() => setOpenNew(false)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-v2-surface">Avbryt</Button>
-                  <button type="button" onClick={createNew} className="v2-btn-primary" style={{ height: 40 }}>Skapa</button>
+                  <Button variant="ghost" onClick={() => setOpenNew(false)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-v2-surface">{t("library.cancel")}</Button>
+                  <button type="button" onClick={createNew} className="v2-btn-primary" style={{ height: 40 }}>{t("library.create")}</button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -615,7 +619,7 @@ export default function LibraryV2() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Sök titel eller tagg"
+              placeholder={t("library.search_placeholder") as string}
               className="pl-11 h-11 rounded-full bg-white border border-v2-line text-[14px] focus-visible:ring-2 focus-visible:ring-v2-violet placeholder:text-v2-muted"
             />
           </div>
@@ -641,7 +645,7 @@ export default function LibraryV2() {
         </div>
 
         {loading ? (
-          <p className="text-center text-v2-muted py-20">Laddar dina manus…</p>
+          <p className="text-center text-v2-muted py-20">{t("library.loading")}</p>
         ) : filtered.length === 0 ? (
           <div className="text-center py-24">
             {items.length === 0 ? (
@@ -649,19 +653,19 @@ export default function LibraryV2() {
                 <div className="v2-card-icon mx-auto" style={{ width: 56, height: 56, borderRadius: 16, marginBottom: 20 }}>
                   <Sparkles className="h-6 w-6" />
                 </div>
-                <p className="font-display text-[22px] font-semibold tracking-tight text-v2-ink mb-2">Du har inga manus än</p>
-                <p className="text-[15px] text-v2-muted mb-6">Skapa ditt första manus för att komma igång.</p>
+                <p className="font-display text-[22px] font-semibold tracking-tight text-v2-ink mb-2">{t("library.empty_title")}</p>
+                <p className="text-[15px] text-v2-muted mb-6">{t("library.empty_subtitle")}</p>
                 <button
                   type="button"
                   className="v2-btn-primary"
                   onClick={() => setOpenNew(true)}
                   style={{ height: 44, padding: "0 22px" }}
                 >
-                  <Plus className="h-4 w-4" /> Skapa ditt första
+                  <Plus className="h-4 w-4" /> {t("library.create_first")}
                 </button>
               </>
             ) : (
-              <p className="text-v2-muted text-[15px]">Inga manus matchar din sökning.</p>
+              <p className="text-v2-muted text-[15px]">{t("library.no_match")}</p>
             )}
           </div>
         ) : (
@@ -676,9 +680,11 @@ export default function LibraryV2() {
                   >
                     {selectedIds.size}
                   </span>
-                  <span className="md:hidden">valda</span>
+                  <span className="md:hidden">{t("library.selected_short")}</span>
                   <span className="hidden md:inline">
-                    {selectedIds.size} markerad{selectedIds.size === 1 ? "" : "e"}
+                    {selectedIds.size === 1
+                      ? t("library.selected_one", { count: selectedIds.size })
+                      : t("library.selected_other", { count: selectedIds.size })}
                   </span>
                 </span>
                 <button
@@ -686,27 +692,27 @@ export default function LibraryV2() {
                   onClick={selectAllVisible}
                   className="text-[13px] text-v2-violet hover:underline flex-shrink-0"
                 >
-                  <span className="md:hidden">Alla</span>
-                  <span className="hidden md:inline">Markera alla synliga ({filtered.length})</span>
+                  <span className="md:hidden">{t("library.select_all_short")}</span>
+                  <span className="hidden md:inline">{t("library.select_all_visible", { count: filtered.length })}</span>
                 </button>
                 <button
                   type="button"
                   onClick={clearSelection}
-                  aria-label="Avmarkera"
+                  aria-label={t("library.deselect_aria") as string}
                   className="text-[13px] text-v2-muted hover:text-v2-ink inline-flex items-center justify-center gap-1 flex-shrink-0 h-9 w-9 md:w-auto md:h-auto rounded-full md:rounded-none border border-v2-line md:border-0"
                 >
                   <X className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                  <span className="hidden md:inline">Avmarkera</span>
+                  <span className="hidden md:inline">{t("library.deselect")}</span>
                 </button>
                 <Button
                   size="icon"
                   variant="destructive"
                   onClick={() => setBulkDeleteOpen(true)}
-                  aria-label="Radera markerade"
+                  aria-label={t("library.delete_selected_aria") as string}
                   className="ml-auto rounded-full h-9 w-9 md:w-auto md:px-4 md:gap-1.5 flex-shrink-0"
                 >
                   <Trash2 className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                  <span className="hidden md:inline text-[13px]">Radera markerade</span>
+                  <span className="hidden md:inline text-[13px]">{t("library.delete_selected")}</span>
                 </Button>
               </div>
             )}
@@ -718,7 +724,7 @@ export default function LibraryV2() {
                 const selectionMode = selectedIds.size > 0;
                 const isModerator = m.mode === "moderator";
                 const isDebate = m.mode === "debate";
-                const modeLabel = isDebate ? "Debatt" : isModerator ? "Moderator" : "Talare";
+                const modeLabel = isDebate ? t("library.mode_debate") : isModerator ? t("library.mode_moderator") : t("library.mode_speaker");
                 const modeColorClass = isDebate
                   ? "text-v2-pink"
                   : isModerator
@@ -772,7 +778,7 @@ export default function LibraryV2() {
                           </span>
                           {isExample && (
                             <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-full bg-[hsl(var(--cue-amber))]/12 text-[hsl(var(--cue-amber))] ring-1 ring-[hsl(var(--cue-amber))]/35 uppercase tracking-wide">
-                              <Sparkles className="h-3 w-3" /> Exempel
+                              <Sparkles className="h-3 w-3" /> {t("library.example_badge")}
                             </span>
                           )}
                         </div>
@@ -780,7 +786,7 @@ export default function LibraryV2() {
                           {m.title}
                         </h3>
                         <p className="text-[13px] text-v2-muted mt-2">
-                          Uppdaterad {new Date(m.updated_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
+                          {t("library.updated_prefix")}{new Date(m.updated_at).toLocaleDateString(i18n.language === "en" ? "en-GB" : "sv-SE", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </button>
                       <div className="flex flex-col items-center justify-between py-3 pr-3 gap-2">
@@ -795,9 +801,9 @@ export default function LibraryV2() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-xl border-v2-line">
-                            <DropdownMenuItem onClick={() => duplicate(m)}>Duplicera</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setRenameId(m.id); setRenameValue(m.title); }}>Byt namn</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">Radera</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => duplicate(m)}>{t("library.duplicate")}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setRenameId(m.id); setRenameValue(m.title); }}>{t("library.rename")}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => remove(m)} className="text-destructive">{t("library.delete")}</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <div
@@ -811,7 +817,7 @@ export default function LibraryV2() {
                               toggleSelect(m.id);
                             }
                           }}
-                          aria-label={isSelected ? "Avmarkera manus" : "Markera manus"}
+                          aria-label={isSelected ? (t("library.deselect_card_aria") as string) : (t("library.select_aria") as string)}
                           className={`flex items-center justify-center h-9 w-9 rounded-full cursor-pointer transition-opacity ${
                             selectionMode || isSelected
                               ? "opacity-100"
@@ -838,7 +844,7 @@ export default function LibraryV2() {
       <Dialog open={!!renameId} onOpenChange={(o) => !o && setRenameId(null)}>
         <DialogContent className="rounded-3xl border-v2-line">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Byt namn</DialogTitle>
+            <DialogTitle className="font-display text-2xl font-semibold tracking-tight text-v2-ink">{t("library.rename_dialog_title")}</DialogTitle>
           </DialogHeader>
           <Input
             value={renameValue}
@@ -847,8 +853,8 @@ export default function LibraryV2() {
             autoFocus
           />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRenameId(null)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-v2-surface">Avbryt</Button>
-            <button type="button" onClick={renameSubmit} className="v2-btn-primary" style={{ height: 40 }}>Spara</button>
+            <Button variant="ghost" onClick={() => setRenameId(null)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-v2-surface">{t("library.cancel")}</Button>
+            <button type="button" onClick={renameSubmit} className="v2-btn-primary" style={{ height: 40 }}>{t("library.save")}</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -857,22 +863,22 @@ export default function LibraryV2() {
         <AlertDialogContent className="rounded-3xl border-v2-line">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-2xl font-semibold tracking-tight text-v2-ink">
-              Radera {selectedIds.size} manus?
+              {t("library.bulk_delete_title", { count: selectedIds.size })}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-v2-muted">
-              Detta tar bort de markerade manuset och alla deras kort permanent. Det går inte att ångra.
+              {t("library.bulk_delete_desc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full" disabled={bulkDeleting}>
-              Avbryt
+              {t("library.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); void bulkDelete(); }}
               disabled={bulkDeleting}
               className="rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {bulkDeleting ? "Raderar…" : "Radera"}
+              {bulkDeleting ? t("library.deleting") : t("library.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
