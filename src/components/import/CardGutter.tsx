@@ -40,7 +40,7 @@ export function CardGutter({ index, onMerge, onInsertEmpty, onDropCard, canMerge
         if (!isNaN(src)) onDropCard(src);
       }}
       className="relative h-6 -my-1 group"
-      aria-label={`Gap mellan kort ${index} och ${index + 1}`}
+      aria-label={t("import.gutter.gap_aria", { a: index, b: index + 1 })}
     >
       {/* Tunn linje i vila */}
       <div
