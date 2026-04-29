@@ -247,15 +247,15 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
             >
               {fetchingGoogle ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Hämtar
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t("import.upload.google_fetching")}
                 </>
               ) : (
-                "Hämta"
+                t("import.upload.google_fetch")
               )}
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Vi konverterar dokumentet till .docx och kör samma import-flöde som vid uppladdning.
+            {t("import.upload.google_footer")}
           </p>
         </div>
       )}
