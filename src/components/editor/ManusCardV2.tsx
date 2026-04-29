@@ -241,7 +241,7 @@ export function ManusCardV2({
           {/* + Signal — bara om ingen cue finns ännu */}
           {!hasAnyCue && (
             <MetaIconButton
-              label="Lägg till signal"
+              label={t("editor.card.cue_add_aria")}
               onClick={() => setShowCues(true)}
             >
               <Flag className="h-3.5 w-3.5" />
@@ -251,7 +251,7 @@ export function ManusCardV2({
           {/* + Anteckning — bara i auto-läge när panelen kollapsats (ingen text + inte öppen) */}
           {showAddNoteButton && (
             <MetaIconButton
-              label="Lägg till anteckning"
+              label={t("editor.card.notes_add")}
               onClick={() => setNotesOpen(true)}
             >
               <StickyNote className="h-3.5 w-3.5" />
@@ -300,7 +300,7 @@ export function ManusCardV2({
         data-tour="card.title"
         value={titleVal}
         onChange={(e) => { setTitleVal(e.target.value); onLocalChange({ title: e.target.value }); }}
-        placeholder="Korttitel"
+        placeholder={t("editor.card.title_placeholder")}
         className="font-display text-[20px] font-semibold tracking-tight bg-transparent border-0 outline-none w-full placeholder:text-faint placeholder:font-normal -mt-1"
       />
 
@@ -490,7 +490,7 @@ export function ManusCardV2({
                     style={{ backgroundColor: p.color, color: "hsl(240 6% 18%)" }}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
-                    {p.name || "Namnlös"}
+                    {p.name || t("editor.card.cue_unnamed")}
                   </button>
                 );
               })}
@@ -686,7 +686,7 @@ function NotesField({
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Egna noter, inte för uppläsning"
+        placeholder={t("editor.card.notes_placeholder")}
         autoFocus
         className={cn(
           "w-full bg-transparent border-0 outline-none resize-none text-foreground placeholder:text-faint",
