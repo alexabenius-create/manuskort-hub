@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useTour } from "@/hooks/useTour";
 import { useTier } from "@/hooks/useTier";
@@ -16,11 +17,14 @@ import { HelpButton } from "@/components/HelpButton";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { AffiliateSection } from "@/components/settings/AffiliateSection";
 import { AffiliatePromoModal } from "@/components/AffiliatePromoModal";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
+import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
 export default function SettingsV2() {
   const { user, signOut } = useAuth();
   const { resetTour } = useTour();
   const { tier, isFree, isPro } = useTier();
+  const { t } = useTranslation();
   const [portalLoading, setPortalLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -53,7 +57,7 @@ export default function SettingsV2() {
 
   useEffect(() => {
     if (!user || !profileLoaded) return;
-    const t = setTimeout(async () => {
+    const tm = setTimeout(async () => {
       setProfileSaving(true);
       const safeWpm = Math.max(60, Math.min(260, Math.round(wpm || 140)));
       const { error } = await supabase
@@ -67,21 +71,21 @@ export default function SettingsV2() {
         .eq("user_id", user.id);
       setProfileSaving(false);
       if (error) {
-        toast.error("Kunde inte spara profilen", { description: error.message });
+        toast.error(t("settings.profile_save_error") as string, { description: error.message });
       } else {
         setProfileSavedAt(Date.now());
       }
     }, 600);
-    return () => clearTimeout(t);
-  }, [displayName, displayTitle, displayOrg, wpm, user, profileLoaded]);
+    return () => clearTimeout(tm);
+  }, [displayName, displayTitle, displayOrg, wpm, user, profileLoaded, t]);
 
   const onResetBibliotek = async () => {
     await resetTour("bibliotek");
-    toast.success("Rundturen körs nästa gång du besöker biblioteket");
+    toast.success(t("settings.tour_library_replay_toast") as string);
   };
   const onResetManus = async () => {
     await resetTour("manus");
-    toast.success("Rundturen körs nästa gång du öppnar exempelmanuset");
+    toast.success(t("settings.tour_manus_replay_toast") as string);
   };
 
   const onManageSubscription = async () => {
@@ -94,11 +98,11 @@ export default function SettingsV2() {
         },
       });
       if (error) throw error;
-      if (!data?.url) throw new Error("Ingen portal-URL");
+      if (!data?.url) throw new Error(t("settings.portal_no_url") as string);
       window.open(data.url, "_blank", "noopener,noreferrer");
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Kunde inte öppna prenumerationsportalen");
+      toast.error(err instanceof Error ? err.message : (t("settings.portal_error") as string));
     } finally {
       setPortalLoading(false);
     }
@@ -111,7 +115,7 @@ export default function SettingsV2() {
 
   return (
     <div className="bg-v2-bg min-h-screen relative overflow-hidden">
-      <SEO title="Inställningar – Manuskort" noindex nofollow />
+      <SEO title={t("settings.seo_title") as string} noindex nofollow />
 
       {/* Mesh-glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -127,12 +131,14 @@ export default function SettingsV2() {
         <Link
           to="/bibliotek-v2"
           className="flex items-center justify-center h-9 w-9 rounded-full text-v2-muted hover:text-v2-ink hover:bg-white transition-colors"
-          aria-label="Tillbaka till bibliotek"
+          aria-label={t("settings.back_aria") as string}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="font-display text-[17px] font-semibold tracking-tight text-v2-ink">Inställningar</h1>
-        <div className="ml-auto">
+        <h1 className="font-display text-[17px] font-semibold tracking-tight text-v2-ink">{t("settings.title")}</h1>
+        <div className="ml-auto flex items-center gap-1">
+          <LanguageSwitcher compact />
+          <TranslationEditModeToggle />
           <HelpButton />
         </div>
       </header>
@@ -140,10 +146,10 @@ export default function SettingsV2() {
       <main className="relative max-w-[720px] mx-auto px-6 sm:px-10 pt-12 pb-20 flex flex-col gap-10">
         {/* Konto */}
         <section className="flex flex-col gap-4 v2-reveal">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Konto</h2>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">{t("settings.section_account")}</h2>
           <div className={`${cardCls} flex items-center justify-between gap-4`}>
             <div className="min-w-0">
-              <p className="text-[12px] text-v2-muted">Inloggad som</p>
+              <p className="text-[12px] text-v2-muted">{t("settings.logged_in_as")}</p>
               <p className="text-[15px] font-medium truncate text-v2-ink">{user?.email ?? "—"}</p>
             </div>
             <Button
@@ -151,17 +157,17 @@ export default function SettingsV2() {
               onClick={signOut}
               className="rounded-full text-[13px] text-v2-muted hover:text-v2-ink hover:bg-white gap-1.5"
             >
-              <LogOut className="h-3.5 w-3.5" /> Logga ut
+              <LogOut className="h-3.5 w-3.5" /> {t("settings.logout")}
             </Button>
           </div>
           <div className={`${cardCls} flex items-center justify-between gap-4 py-4`}>
             <div className="min-w-0">
-              <p className="text-[12px] text-v2-muted">Plan</p>
+              <p className="text-[12px] text-v2-muted">{t("settings.plan")}</p>
               <p className="text-[15px] font-medium text-v2-ink">{TIER_LABEL[tier]}</p>
             </div>
             {isFree ? (
               <Button asChild variant="ghost" className="rounded-full text-[13px] text-v2-violet hover:text-v2-violet hover:bg-v2-violet/10">
-                <Link to="/priser">Uppgradera</Link>
+                <Link to="/priser">{t("settings.upgrade")}</Link>
               </Button>
             ) : isPro ? (
               <Button
@@ -175,11 +181,11 @@ export default function SettingsV2() {
                 ) : (
                   <SettingsIcon className="h-3.5 w-3.5" />
                 )}
-                Hantera prenumeration
+                {t("settings.manage_subscription")}
               </Button>
             ) : (
               <Button asChild variant="ghost" className="rounded-full text-[13px] text-v2-muted hover:text-v2-ink">
-                <Link to="/priser">Se planer</Link>
+                <Link to="/priser">{t("settings.see_plans")}</Link>
               </Button>
             )}
           </div>
@@ -188,55 +194,53 @@ export default function SettingsV2() {
         {/* Profil */}
         <section className="flex flex-col gap-4 v2-reveal">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Profil</h2>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">{t("settings.section_profile")}</h2>
             <span className="text-[12px] text-v2-muted inline-flex items-center gap-1.5 min-h-[18px]">
               {profileSaving ? (
-                <><Loader2 className="h-3 w-3 animate-spin" /> Sparar…</>
+                <><Loader2 className="h-3 w-3 animate-spin" /> {t("settings.saving")}</>
               ) : recentlySaved ? (
-                <><Check className="h-3 w-3 text-emerald-500" /> Sparat</>
+                <><Check className="h-3 w-3 text-emerald-500" /> {t("settings.saved")}</>
               ) : null}
             </span>
           </div>
           <p className="text-[14px] text-v2-muted -mt-2">
-            Används för att autofylla platshållare i manus, t.ex. <span className="font-mono text-v2-ink">[ditt namn]</span>.
-            Lämna tomt om du vill att platshållaren ska stå kvar.
+            {t("settings.profile_lead_pre")}<span className="font-mono text-v2-ink">[ditt namn]</span>{t("settings.profile_lead_post")}
           </p>
           <div className={`${cardCls} flex flex-col gap-4`}>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="display_name" className="text-[13px] text-v2-muted font-medium">
-                Ditt namn <span className="font-mono text-[11px]">[ditt namn]</span>
+                {t("settings.your_name")} <span className="font-mono text-[11px]">[ditt namn]</span>
               </Label>
-              <Input id="display_name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="t.ex. Anna Lindgren" className={inputCls} />
+              <Input id="display_name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t("settings.your_name_placeholder") as string} className={inputCls} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="display_title" className="text-[13px] text-v2-muted font-medium">
-                Din titel <span className="font-mono text-[11px]">[din titel]</span>
+                {t("settings.your_title")} <span className="font-mono text-[11px]">[din titel]</span>
               </Label>
-              <Input id="display_title" value={displayTitle} onChange={(e) => setDisplayTitle(e.target.value)} placeholder="t.ex. Moderator" className={inputCls} />
+              <Input id="display_title" value={displayTitle} onChange={(e) => setDisplayTitle(e.target.value)} placeholder={t("settings.your_title_placeholder") as string} className={inputCls} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="display_org" className="text-[13px] text-v2-muted font-medium">
-                Din organisation <span className="font-mono text-[11px]">[din organisation]</span>
+                {t("settings.your_org")} <span className="font-mono text-[11px]">[din organisation]</span>
               </Label>
-              <Input id="display_org" value={displayOrg} onChange={(e) => setDisplayOrg(e.target.value)} placeholder="t.ex. Bolaget AB" className={inputCls} />
+              <Input id="display_org" value={displayOrg} onChange={(e) => setDisplayOrg(e.target.value)} placeholder={t("settings.your_org_placeholder") as string} className={inputCls} />
             </div>
             <p className="text-[12px] text-v2-muted inline-flex items-center gap-1.5">
               <UserIcon className="h-3 w-3" />
-              Befintliga manus uppdateras inte automatiskt — använd Hitta &amp; ersätt i editorn.
+              {t("settings.profile_note")}
             </p>
           </div>
         </section>
 
         {/* Talartid */}
         <section className="flex flex-col gap-4 v2-reveal">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Talartid</h2>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">{t("settings.section_speech_time")}</h2>
           <p className="text-[14px] text-v2-muted -mt-2">
-            Används för att uppskatta hur lång tid varje kort tar att läsa upp.
-            Default är 140 ord/min — en normal svensk talartakt.
+            {t("settings.speech_time_lead")}
           </p>
           <div className={`${cardCls} flex flex-col gap-4`}>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="wpm" className="text-[13px] text-v2-muted font-medium">Ord per minut</Label>
+              <Label htmlFor="wpm" className="text-[13px] text-v2-muted font-medium">{t("settings.wpm_label")}</Label>
               <div className="flex items-center gap-3">
                 <Input
                   id="wpm" type="number" min={60} max={260} step={5} value={wpm}
@@ -265,8 +269,7 @@ export default function SettingsV2() {
               </div>
             </div>
             <p className="text-[12px] text-v2-muted">
-              Långsam talare: ~120. Snabb talare: ~160. Tips — testa att läsa upp ett kort
-              och se om uppskattningen stämmer; justera vid behov.
+              {t("settings.wpm_hint")}
             </p>
           </div>
         </section>
@@ -274,8 +277,8 @@ export default function SettingsV2() {
         <AffiliateSection />
 
         <section className="flex flex-col gap-4 v2-reveal">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Rundturer</h2>
-          <p className="text-[14px] text-v2-muted -mt-2">Återställ rundturerna om du vill se dem igen.</p>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">{t("settings.section_tours")}</h2>
+          <p className="text-[14px] text-v2-muted -mt-2">{t("settings.tours_lead")}</p>
           <div className="flex flex-col gap-3">
             <button
               type="button" onClick={onResetBibliotek}
@@ -285,8 +288,8 @@ export default function SettingsV2() {
                 <RotateCcw className="h-4 w-4" />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-[15px] text-v2-ink">Visa rundturen i biblioteket igen</p>
-                <p className="text-[12px] text-v2-muted">2 korta steg</p>
+                <p className="font-medium text-[15px] text-v2-ink">{t("settings.tour_library_title")}</p>
+                <p className="text-[12px] text-v2-muted">{t("settings.tour_library_steps")}</p>
               </div>
             </button>
             <button
@@ -297,26 +300,23 @@ export default function SettingsV2() {
                 <Sparkles className="h-4 w-4" />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-[15px] text-v2-ink">Visa rundturen på manussidan igen</p>
-                <p className="text-[12px] text-v2-muted">4 korta steg, körs nästa gång du öppnar exempelmanuset</p>
+                <p className="font-medium text-[15px] text-v2-ink">{t("settings.tour_manus_title")}</p>
+                <p className="text-[12px] text-v2-muted">{t("settings.tour_manus_steps")}</p>
               </div>
             </button>
           </div>
         </section>
 
         <section className="flex flex-col gap-4 pt-4 border-t border-v2-line v2-reveal">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-rose-600">Radera konto</h2>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-rose-600">{t("settings.section_delete")}</h2>
           <p className="text-[14px] text-v2-muted -mt-2">
-            Radering tar bort alla dina manus, kort, paneldeltagare och din profil för alltid.
-            Åtgärden kan inte ångras.
+            {t("settings.delete_lead")}
           </p>
           <div className={`${cardCls} flex items-center justify-between gap-4`}>
             <div className="min-w-0">
-              <p className="font-medium text-[15px] text-v2-ink">Radera konto</p>
+              <p className="font-medium text-[15px] text-v2-ink">{t("settings.delete_title")}</p>
               <p className="text-[12px] text-v2-muted">
-                {isPro
-                  ? "Du har en aktiv PRO-prenumeration. Avsluta den först."
-                  : "All din data raderas permanent."}
+                {isPro ? t("settings.delete_pro_warning") : t("settings.delete_normal_warning")}
               </p>
             </div>
             <Button
@@ -324,7 +324,7 @@ export default function SettingsV2() {
               onClick={() => setDeleteOpen(true)}
               className="rounded-full text-[13px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 gap-1.5 shrink-0"
             >
-              <Trash2 className="h-3.5 w-3.5" /> Radera konto
+              <Trash2 className="h-3.5 w-3.5" /> {t("settings.delete_title")}
             </Button>
           </div>
         </section>

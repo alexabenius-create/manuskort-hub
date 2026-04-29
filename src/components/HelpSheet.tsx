@@ -1,4 +1,5 @@
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
@@ -15,6 +16,7 @@ export function HelpSheet({ open, onOpenChange }: Props) {
   const { pathname } = useLocation();
   const entry = getHelpForRoute(pathname);
   const { resetTour } = useTour();
+  const { t } = useTranslation();
 
   if (!entry) return null;
 
@@ -22,7 +24,7 @@ export function HelpSheet({ open, onOpenChange }: Props) {
     if (!entry.tourId) return;
     await resetTour(entry.tourId);
     onOpenChange(false);
-    toast.success("Rundturen körs nästa gång du laddar om sidan");
+    toast.success(t("help.tour_will_replay"));
   };
 
   return (
@@ -63,7 +65,7 @@ export function HelpSheet({ open, onOpenChange }: Props) {
               className="rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-surface-2 gap-1.5 w-full justify-start"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Visa rundturen igen
+              {t("help.replay_tour")}
             </Button>
           </div>
         )}

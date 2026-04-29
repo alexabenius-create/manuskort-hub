@@ -1,5 +1,6 @@
 import { useSaveStatus } from "@/lib/saveStatus";
 import { Check, Loader2, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
@@ -9,12 +10,13 @@ interface Props {
 
 export function SaveIndicator({ compact = false }: Props) {
   const status = useSaveStatus();
+  const { t } = useTranslation();
 
   if (compact) {
     const label =
-      status === "saving" ? "Sparar ändringar…" :
-      status === "error" ? "Kunde inte spara — försöker igen" :
-      "Alla ändringar sparade";
+      status === "saving" ? (t("save_indicator.saving") as string) :
+      status === "error" ? (t("save_indicator.error") as string) :
+      (t("save_indicator.saved") as string);
     const dot =
       status === "saving" ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> :
       status === "error" ? <AlertCircle className="h-3.5 w-3.5 text-destructive" /> :
@@ -35,15 +37,15 @@ export function SaveIndicator({ compact = false }: Props) {
     );
   }
 
-  if (status === "idle") return <span aria-live="polite" className="sr-only">Sparat</span>;
+  if (status === "idle") return <span aria-live="polite" className="sr-only">{t("save_indicator.saved_aria")}</span>;
   return (
     <span
       aria-live="polite"
       className="text-[12px] text-muted-foreground inline-flex items-center gap-1.5"
     >
-      {status === "saving" && (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Sparar…</>)}
-      {status === "saved" && (<><Check className="h-3.5 w-3.5" /> Sparat</>)}
-      {status === "error" && (<><AlertCircle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">Försöker igen…</span></>)}
+      {status === "saving" && (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("save_indicator.saving_short")}</>)}
+      {status === "saved" && (<><Check className="h-3.5 w-3.5" /> {t("save_indicator.saved_short")}</>)}
+      {status === "error" && (<><AlertCircle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">{t("save_indicator.error_short")}</span></>)}
     </span>
   );
 }
