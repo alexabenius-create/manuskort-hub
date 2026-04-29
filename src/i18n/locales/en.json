@@ -33,11 +33,104 @@
     "key_label": "Key"
   },
   "landing": {
+    "nav": {
+      "pricing": "Pricing",
+      "login": "Log in",
+      "cta_logged_in": "Go to library",
+      "cta_guest": "Try it free"
+    },
     "hero": {
+      "badge": "Manuscript cards for polished presentations",
       "title": "Stay on time. Every time.",
       "subtitle": "Card-based scripts for presentations, speeches and panel discussions. Write, rehearse, perform — without losing your thread or your timing.",
       "cta_primary": "Get started free",
-      "cta_secondary": "See pricing"
+      "cta_secondary": "See pricing",
+      "bullet_free": "Free to try",
+      "bullet_no_card": "No credit card",
+      "bullet_quick": "Up and running in under a minute"
+    },
+    "intro": {
+      "title": "What are manuscript cards — and why do they work?",
+      "p1": "Manuscript cards are short, structured cards that help you keep a clear thread when speaking to an audience. Instead of reading from a long continuous script, you get scannable sections with key points, timings and reminders — exactly what you need to sound natural and confident.",
+      "p2": "Great presentation craft is as much about preparation as performance. With a script broken into cards you can rehearse more effectively, adjust the length on the fly and handle unexpected questions without losing the thread.",
+      "p3": "The tool supports you all the way — from the first draft to the lectern itself. Write directly in your browser or import an existing script, then present with the built-in teleprompter on any screen."
+    },
+    "value": {
+      "eyebrow": "What you get out of it",
+      "title_1": "Less stress.",
+      "title_2": "Clearer message.",
+      "title_3": "Better timing.",
+      "card_time_title": "Save time in preparation",
+      "card_time_text": "Write once, rehearse smart. A time budget per card calculates the total for you — no more guessing whether you’re on track.",
+      "card_clear_title": "Be clearer on stage",
+      "card_clear_text": "Short sections, cue colors for pauses, pace and emphasis. You deliver a message that lands — not a recited script.",
+      "card_safe_title": "Feel confident when it counts",
+      "card_safe_text": "Large readable text, dark theme and a screen that stays awake. You always know where you are — even if a question takes a detour."
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "From draft to stage — in three steps.",
+      "step1_title": "Write or import",
+      "step1_text": "Start from a blank script or drop in a .docx. Speakers and paragraphs are recognized automatically.",
+      "step2_title": "Split into cards",
+      "step2_text": "Break the text into manageable sections. Set timings and cue colors wherever you need extra focus.",
+      "step3_title": "Present",
+      "step3_text": "Open presentation mode on any screen. The time helper and teleprompter take care of the rest."
+    },
+    "audience": {
+      "eyebrow": "For speakers like you",
+      "title": "Built for people who often take the stage.",
+      "lead": "Consultants, salespeople, executives, moderators, politicians and lecturers — anyone who needs reliable presentation support without getting stuck in PowerPoint.",
+      "moderator_title": "The moderator",
+      "moderator_text": "Lead panel discussions with several voices. Tag contributions per participant and track total time in real time.",
+      "speaker_title": "The speaker",
+      "speaker_text": "A talk at a congress, kickoff or customer event. Hit exactly the right minute, every time.",
+      "lecturer_title": "The lecturer",
+      "lecturer_text": "Longer sessions with key points, notes and timings per section — for trainers and course leaders.",
+      "read_more": "Read more"
+    },
+    "friction": {
+      "title_1": "No hurdles.",
+      "title_2": "Just go.",
+      "lead": "You don’t need any settings, plug-ins or credit card. Create an account, paste in your script and go.",
+      "card1_title": "Free to try",
+      "card1_text": "Use the core features with no time limit.",
+      "card2_title": "No credit card",
+      "card2_text": "Sign up with your email — no payment required.",
+      "card3_title": "Ready in a minute",
+      "card3_text": "Import or start writing right away."
+    },
+    "social": {
+      "eyebrow": "What users say",
+      "title": "Speakers who trust their preparation.",
+      "quote1_text": "The first time I didn’t have to stress about time during a panel. The cards let me be present instead.",
+      "quote1_author": "Moderator, industry conference",
+      "quote2_text": "I now use Manuskort before every major talk. It’s like having a calm I can lean on.",
+      "quote2_author": "Lecturer and consultant"
+    },
+    "faq": {
+      "eyebrow": "Frequently asked questions",
+      "title_1": "Everything you’re wondering",
+      "title_2": "— briefly explained.",
+      "q1_q": "What are manuscript cards?",
+      "q1_a": "Manuscript cards are short, structured sections of your script — with key points, timings and cues. They make it easier to keep a clear thread when speaking to an audience, compared to reading a long continuous manuscript.",
+      "q2_q": "How do manuscript cards help during a presentation?",
+      "q2_a": "You get an overview, control over time and clear support during the presentation — without locking yourself into word-for-word text. Cue colors and time budgets help you find the right pace, hold pauses and adjust the length if something unexpected happens.",
+      "q3_q": "Is it free to use?",
+      "q3_a": "Yes. You can get started entirely for free, no credit card. The free plan is enough for most individual presentations. For unlimited scripts and cards, plus .docx import, there’s a PRO plan.",
+      "q4_q": "Does it work at the lectern and on stage?",
+      "q4_a": "Yes. Presentation mode is built for real stages: large readable text, dark theme, fullscreen and a wake-lock that keeps the screen on. It works in the browser on laptop, tablet and phone.",
+      "q5_q": "Can I import an existing script?",
+      "q5_a": "Yes. With the PRO plan you can import a .docx script. The tool recognizes speakers and breaks the text into pieces automatically — you just fine-tune."
+    },
+    "final": {
+      "title_1": "Your next presentation",
+      "title_2": "starts here.",
+      "lead": "Create your first script in under a minute. Free to try, no credit card."
+    },
+    "footer": {
+      "pricing": "Pricing",
+      "login": "Log in"
     }
   }
 }

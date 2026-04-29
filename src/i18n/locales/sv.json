@@ -33,11 +33,104 @@
     "key_label": "Nyckel"
   },
   "landing": {
+    "nav": {
+      "pricing": "Priser",
+      "login": "Logga in",
+      "cta_logged_in": "Till biblioteket",
+      "cta_guest": "Testa gratis nu"
+    },
     "hero": {
+      "badge": "Manuskort för proffsiga presentationer",
       "title": "Håll tiden. Varje gång.",
       "subtitle": "Manus i kortformat för presentationer, anföranden och panelsamtal. Skriv, öva, presentera — utan att tappa tråden eller tiden.",
       "cta_primary": "Kom igång gratis",
-      "cta_secondary": "Se priser"
+      "cta_secondary": "Se priser",
+      "bullet_free": "Gratis att testa",
+      "bullet_no_card": "Inget kreditkort",
+      "bullet_quick": "Igång på under en minut"
+    },
+    "intro": {
+      "title": "Vad är manuskort — och varför fungerar det?",
+      "p1": "Manuskort är korta, strukturerade kort som hjälper dig att hålla röd tråd när du talar inför publik. Istället för att läsa innantill från ett långt manus får du överblickbara avsnitt med stödord, tider och påminnelser — exakt det du behöver för att låta naturlig och säker.",
+      "p2": "Bra presentationsteknik handlar lika mycket om förberedelse som om framförandet. Med ett manus uppdelat i kort kan du repetera mer effektivt, anpassa längden på stående fot och hantera oväntade frågor utan att tappa tråden.",
+      "p3": "Verktyget ger dig stöd vid presentation hela vägen — från första utkastet till själva talarstolen. Skriv direkt i webbläsaren eller importera ett befintligt manus, och presentera sedan med inbyggd teleprompter på valfri skärm."
+    },
+    "value": {
+      "eyebrow": "Vad du får ut",
+      "title_1": "Mindre stress.",
+      "title_2": "Tydligare budskap.",
+      "title_3": "Bättre tajming.",
+      "card_time_title": "Spara tid i förberedelsen",
+      "card_time_text": "Skriv en gång, repetera smart. Tidsbudget per kort räknar ut totaltiden åt dig — du slipper gissa om du ligger rätt.",
+      "card_clear_title": "Bli tydligare på scen",
+      "card_clear_text": "Korta avsnitt, cue-färger för paus, tempo och betoning. Du levererar ett budskap som landar — inte ett uppläst manus.",
+      "card_safe_title": "Känn dig trygg när det gäller",
+      "card_safe_text": "Stor läsbar text, mörkt tema och skärm som hålls vaken. Du vet alltid var du är — även om en fråga drar iväg."
+    },
+    "how": {
+      "eyebrow": "Så fungerar det",
+      "title": "Från utkast till scen — i tre steg.",
+      "step1_title": "Skriv eller importera",
+      "step1_text": "Börja från ett tomt manus eller dra in en .docx. Talare och stycken känns igen automatiskt.",
+      "step2_title": "Dela upp i kort",
+      "step2_text": "Bryt ner texten i hanterbara avsnitt. Sätt tider och cue-färger där du vill ha extra fokus.",
+      "step3_title": "Presentera",
+      "step3_text": "Öppna presentationsläget på valfri skärm. Tidshjälpare och teleprompter gör resten."
+    },
+    "audience": {
+      "eyebrow": "För dig som talar",
+      "title": "Byggt för dig som ofta står på scen.",
+      "lead": "Konsulter, säljare, chefer, moderatorer, politiker och föreläsare — alla som behöver ett pålitligt stöd vid presentation utan att fastna i PowerPoint.",
+      "moderator_title": "Moderatorn",
+      "moderator_text": "Led panelsamtal med flera röster. Tagga inlägg per deltagare och håll totaltiden i realtid.",
+      "speaker_title": "Talaren",
+      "speaker_text": "Anförande på kongress, kickoff eller kundevent. Träffa exakt rätt minut, varje gång.",
+      "lecturer_title": "Föreläsaren",
+      "lecturer_text": "Längre pass med stödord, anteckningar och tider per avsnitt — för utbildare och kursledare.",
+      "read_more": "Läs mer"
+    },
+    "friction": {
+      "title_1": "Inga hinder.",
+      "title_2": "Bara att köra.",
+      "lead": "Du behöver inga inställningar, inga plug-ins och inget kort. Skapa ett konto, klistra in ditt manus och kör.",
+      "card1_title": "Gratis att testa",
+      "card1_text": "Använd kärnfunktionerna utan tidsgräns.",
+      "card2_title": "Inget kreditkort",
+      "card2_text": "Skapa konto med e-post — ingen betalning krävs.",
+      "card3_title": "Klart på en minut",
+      "card3_text": "Importera eller börja skriva direkt."
+    },
+    "social": {
+      "eyebrow": "Vad användare säger",
+      "title": "Talare som litar på sin förberedelse.",
+      "quote1_text": "Första gången jag inte behövde stressa över tiden under ett panelsamtal. Korten gjorde att jag kunde vara närvarande istället.",
+      "quote1_author": "Moderator, branschkonferens",
+      "quote2_text": "Jag använder Manuskort inför varje större tal nu. Det är som att ha ett lugn jag kan luta mig mot.",
+      "quote2_author": "Föreläsare och konsult"
+    },
+    "faq": {
+      "eyebrow": "Vanliga frågor",
+      "title_1": "Allt du undrar",
+      "title_2": "— kort förklarat.",
+      "q1_q": "Vad är manuskort?",
+      "q1_a": "Manuskort är korta, strukturerade avsnitt av ditt manus — med stödord, tider och cues. De gör det lättare att hålla röd tråd när du talar inför publik, jämfört med att läsa från ett långt löpande manus.",
+      "q2_q": "Hur hjälper manuskort vid en presentation?",
+      "q2_a": "Du får överblick, kontroll på tiden och ett tydligt stöd vid presentationen — utan att låsa dig vid ordagrann text. Cue-färger och tidsbudgetar hjälper dig att hitta rätt tempo, hålla pauser och anpassa längden om något oväntat händer.",
+      "q3_q": "Är det gratis att använda?",
+      "q3_a": "Ja. Du kommer igång helt gratis utan kreditkort. Gratisplanen räcker för de flesta enskilda presentationer. För obegränsat antal manus och kort, samt import från .docx, finns en PRO-plan.",
+      "q4_q": "Fungerar det i talarstolen och på scen?",
+      "q4_a": "Ja. Presentationsläget är byggt för riktiga scener: stor läsbar text, mörkt tema, fullskärm och wake-lock som håller skärmen vaken. Det fungerar i webbläsaren på laptop, surfplatta och telefon.",
+      "q5_q": "Kan jag importera ett befintligt manus?",
+      "q5_a": "Ja. Med PRO-planen kan du importera ett .docx-manus. Verktyget känner igen talare och styckar upp texten automatiskt — du behöver bara finjustera."
+    },
+    "final": {
+      "title_1": "Nästa presentation",
+      "title_2": "börjar här.",
+      "lead": "Skapa ditt första manus på under en minut. Gratis att testa, inget kreditkort."
+    },
+    "footer": {
+      "pricing": "Priser",
+      "login": "Logga in"
     }
   }
 }

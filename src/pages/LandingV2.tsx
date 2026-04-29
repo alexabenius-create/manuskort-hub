@@ -86,7 +86,7 @@ export default function LandingV2() {
   }, []);
 
   const primaryCtaTo = session ? "/bibliotek" : "/auth";
-  const primaryCtaLabel = session ? "Till biblioteket" : "Testa gratis nu";
+  const primaryCtaKey = session ? "landing.nav.cta_logged_in" : "landing.nav.cta_guest";
 
   return (
     <div className="min-h-screen bg-v2-bg text-v2-ink overflow-x-hidden antialiased">
@@ -119,7 +119,7 @@ export default function LandingV2() {
                 to="/priser"
                 className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface transition-colors"
               >
-                Priser
+                <T k="landing.nav.pricing" />
               </Link>
               <FeedbackButton source="landing" withLabel className="!h-9" />
               <LanguageSwitcher />
@@ -129,14 +129,14 @@ export default function LandingV2() {
                   to="/auth"
                   className="inline-flex h-9 items-center px-3 rounded-full text-[14px] text-v2-muted hover:text-v2-ink hover:bg-v2-surface transition-colors"
                 >
-                  Logga in
+                  <T k="landing.nav.login" />
                 </Link>
               )}
               <Link
                 to={primaryCtaTo}
                 className="v2-btn-primary ml-1"
               >
-                <span className="relative z-10">{primaryCtaLabel}</span>
+                <span className="relative z-10"><T k={primaryCtaKey} /></span>
               </Link>
             </div>
 
@@ -145,7 +145,7 @@ export default function LandingV2() {
                 to="/priser"
                 className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors"
               >
-                Priser
+                <T k="landing.nav.pricing" />
               </Link>
               <FeedbackButton source="landing" withLabel className="!justify-start !h-11 !px-3 !rounded-xl !text-[15px]" />
               {!session && (
@@ -153,14 +153,14 @@ export default function LandingV2() {
                   to="/auth"
                   className="inline-flex h-11 items-center px-3 rounded-xl text-[15px] text-v2-ink hover:bg-v2-surface transition-colors"
                 >
-                  Logga in
+                  <T k="landing.nav.login" />
                 </Link>
               )}
               <Link
                 to={primaryCtaTo}
                 className="mt-3 inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-r from-v2-violet to-v2-blue text-white text-[15px] font-medium px-5 shadow-[0_8px_20px_-4px_rgba(99,102,241,0.4)]"
               >
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
               </Link>
             </MobileNavSheet>
           </nav>
@@ -193,7 +193,7 @@ export default function LandingV2() {
                 <span className="absolute inline-flex h-full w-full rounded-full bg-v2-violet opacity-70 v2-pulse-dot" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-v2-violet" />
               </span>
-              Manuskort för proffsiga presentationer
+              <T k="landing.hero.badge" />
             </div>
             <h1 className="font-display text-[44px] sm:text-[60px] lg:text-[72px] leading-[1.0] font-semibold tracking-[-0.035em]">
               <span className="bg-gradient-to-r from-v2-violet via-v2-blue to-v2-pink bg-clip-text text-transparent">
@@ -207,7 +207,7 @@ export default function LandingV2() {
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link to={primaryCtaTo} className="v2-btn-primary v2-btn-lg">
                 <span className="relative z-10 flex items-center gap-2">
-                  {primaryCtaLabel}
+                  <T k={primaryCtaKey} />
                   <ArrowRight className="h-4 w-4" />
                 </span>
               </Link>
@@ -218,15 +218,15 @@ export default function LandingV2() {
 
             <ul className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-1 sm:gap-x-2 text-[13px] text-v2-muted">
               <li className="whitespace-nowrap inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-v2-violet" /> Gratis att testa
+                <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="landing.hero.bullet_free" />
               </li>
               <li aria-hidden className="hidden sm:inline">·</li>
               <li className="whitespace-nowrap inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-v2-violet" /> Inget kreditkort
+                <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="landing.hero.bullet_no_card" />
               </li>
               <li aria-hidden className="hidden sm:inline">·</li>
               <li className="whitespace-nowrap inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-v2-violet" /> Igång på under en minut
+                <Check className="h-3.5 w-3.5 text-v2-violet" /> <T k="landing.hero.bullet_quick" />
               </li>
             </ul>
           </div>
@@ -242,25 +242,12 @@ export default function LandingV2() {
       <section className="relative px-6 sm:px-10 py-20 sm:py-24 border-t border-v2-line">
         <div className="max-w-3xl mx-auto v2-reveal-onscroll">
           <h2 className="font-display text-[28px] sm:text-[40px] leading-[1.1] font-semibold tracking-[-0.025em] mb-6">
-            Vad är manuskort — och varför fungerar det?
+            <T k="landing.intro.title" />
           </h2>
           <div className="space-y-5 text-[16.5px] text-v2-muted leading-relaxed">
-            <p>
-              Manuskort är korta, strukturerade kort som hjälper dig att hålla röd tråd när du talar
-              inför publik. Istället för att läsa innantill från ett långt manus får du
-              överblickbara avsnitt med stödord, tider och påminnelser — exakt det du behöver för
-              att låta naturlig och säker.
-            </p>
-            <p>
-              Bra presentationsteknik handlar lika mycket om förberedelse som om framförandet. Med
-              ett manus uppdelat i kort kan du repetera mer effektivt, anpassa längden på stående
-              fot och hantera oväntade frågor utan att tappa tråden.
-            </p>
-            <p>
-              Verktyget ger dig stöd vid presentation hela vägen — från första utkastet till själva
-              talarstolen. Skriv direkt i webbläsaren eller importera ett befintligt manus, och
-              presentera sedan med inbyggd teleprompter på valfri skärm.
-            </p>
+            <T as="p" k="landing.intro.p1" />
+            <T as="p" k="landing.intro.p2" />
+            <T as="p" k="landing.intro.p3" />
           </div>
         </div>
       </section>
@@ -273,13 +260,13 @@ export default function LandingV2() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-16 v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-4">
-              Vad du får ut
+              <T k="landing.value.eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em]">
-              Mindre stress.{" "}
-              <span className="text-v2-muted">Tydligare budskap.</span>{" "}
+              <T k="landing.value.title_1" />{" "}
+              <span className="text-v2-muted"><T k="landing.value.title_2" /></span>{" "}
               <span className="bg-gradient-to-r from-v2-violet to-v2-blue bg-clip-text text-transparent">
-                Bättre tajming.
+                <T k="landing.value.title_3" />
               </span>
             </h2>
           </div>
@@ -287,18 +274,18 @@ export default function LandingV2() {
           <div className="grid md:grid-cols-3 gap-5 v2-stagger-parent">
             <V2BenefitCard
               icon={<Timer className="h-5 w-5" />}
-              title="Spara tid i förberedelsen"
-              text="Skriv en gång, repetera smart. Tidsbudget per kort räknar ut totaltiden åt dig — du slipper gissa om du ligger rätt."
+              titleKey="landing.value.card_time_title"
+              textKey="landing.value.card_time_text"
             />
             <V2BenefitCard
               icon={<Sparkles className="h-5 w-5" />}
-              title="Bli tydligare på scen"
-              text="Korta avsnitt, cue-färger för paus, tempo och betoning. Du levererar ett budskap som landar — inte ett uppläst manus."
+              titleKey="landing.value.card_clear_title"
+              textKey="landing.value.card_clear_text"
             />
             <V2BenefitCard
               icon={<ShieldCheck className="h-5 w-5" />}
-              title="Känn dig trygg när det gäller"
-              text="Stor läsbar text, mörkt tema och skärm som hålls vaken. Du vet alltid var du är — även om en fråga drar iväg."
+              titleKey="landing.value.card_safe_title"
+              textKey="landing.value.card_safe_text"
             />
           </div>
         </div>
@@ -309,29 +296,17 @@ export default function LandingV2() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-16 v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-4">
-              Så fungerar det
+              <T k="landing.how.eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em]">
-              Från utkast till scen — i tre steg.
+              <T k="landing.how.title" />
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-10 md:gap-8 v2-stagger-parent">
-            <V2Step
-              n={1}
-              title="Skriv eller importera"
-              text="Börja från ett tomt manus eller dra in en .docx. Talare och stycken känns igen automatiskt."
-            />
-            <V2Step
-              n={2}
-              title="Dela upp i kort"
-              text="Bryt ner texten i hanterbara avsnitt. Sätt tider och cue-färger där du vill ha extra fokus."
-            />
-            <V2Step
-              n={3}
-              title="Presentera"
-              text="Öppna presentationsläget på valfri skärm. Tidshjälpare och teleprompter gör resten."
-            />
+            <V2Step n={1} titleKey="landing.how.step1_title" textKey="landing.how.step1_text" />
+            <V2Step n={2} titleKey="landing.how.step2_title" textKey="landing.how.step2_text" />
+            <V2Step n={3} titleKey="landing.how.step3_title" textKey="landing.how.step3_text" />
           </div>
         </div>
       </section>
@@ -341,34 +316,33 @@ export default function LandingV2() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-16 v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-4">
-              För dig som talar
+              <T k="landing.audience.eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em]">
-              Byggt för dig som ofta står på scen.
+              <T k="landing.audience.title" />
             </h2>
             <p className="mt-5 text-[16.5px] text-v2-muted leading-relaxed">
-              Konsulter, säljare, chefer, moderatorer, politiker och föreläsare — alla som behöver
-              ett pålitligt stöd vid presentation utan att fastna i PowerPoint.
+              <T k="landing.audience.lead" />
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-5 v2-stagger-parent">
             <V2UseCaseCard
               icon={<Users className="h-5 w-5" />}
-              title="Moderatorn"
-              text="Led panelsamtal med flera röster. Tagga inlägg per deltagare och håll totaltiden i realtid."
+              titleKey="landing.audience.moderator_title"
+              textKey="landing.audience.moderator_text"
               to="/moderator"
             />
             <V2UseCaseCard
               icon={<Mic2 className="h-5 w-5" />}
-              title="Talaren"
-              text="Anförande på kongress, kickoff eller kundevent. Träffa exakt rätt minut, varje gång."
+              titleKey="landing.audience.speaker_title"
+              textKey="landing.audience.speaker_text"
               to="/talare"
             />
             <V2UseCaseCard
               icon={<GraduationCap className="h-5 w-5" />}
-              title="Föreläsaren"
-              text="Längre pass med stödord, anteckningar och tider per avsnitt — för utbildare och kursledare."
+              titleKey="landing.audience.lecturer_title"
+              textKey="landing.audience.lecturer_text"
               to="/forelasning"
             />
           </div>
@@ -379,29 +353,25 @@ export default function LandingV2() {
       <section className="px-6 sm:px-10 py-24 sm:py-28">
         <div className="max-w-4xl mx-auto text-center v2-reveal-onscroll">
           <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em] mb-6 text-balance">
-            <span className="whitespace-nowrap">Inga hinder.</span>{" "}
+            <span className="whitespace-nowrap"><T k="landing.friction.title_1" /></span>{" "}
             <span className="whitespace-nowrap bg-gradient-to-r from-v2-violet to-v2-blue bg-clip-text text-transparent">
-              Bara att köra.
+              <T k="landing.friction.title_2" />
             </span>
           </h2>
           <p className="text-[16.5px] text-v2-muted leading-relaxed max-w-2xl mx-auto">
-            Du behöver inga inställningar, inga plug-ins och inget kort. Skapa ett konto, klistra in
-            ditt manus och kör.
+            <T k="landing.friction.lead" />
           </p>
 
           <div className="mt-12 grid sm:grid-cols-3 gap-5 v2-stagger-parent">
-            <V2FrictionCard title="Gratis att testa" text="Använd kärnfunktionerna utan tidsgräns." />
-            <V2FrictionCard
-              title="Inget kreditkort"
-              text="Skapa konto med e-post — ingen betalning krävs."
-            />
-            <V2FrictionCard title="Klart på en minut" text="Importera eller börja skriva direkt." />
+            <V2FrictionCard titleKey="landing.friction.card1_title" textKey="landing.friction.card1_text" />
+            <V2FrictionCard titleKey="landing.friction.card2_title" textKey="landing.friction.card2_text" />
+            <V2FrictionCard titleKey="landing.friction.card3_title" textKey="landing.friction.card3_text" />
           </div>
 
           <div className="mt-12">
             <Link to={primaryCtaTo} className="v2-btn-primary v2-btn-lg">
               <span className="relative z-10 flex items-center gap-2">
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -414,22 +384,16 @@ export default function LandingV2() {
         <div className="max-w-5xl mx-auto">
           <div className="max-w-2xl mb-14 v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-4">
-              Vad användare säger
+              <T k="landing.social.eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em]">
-              Talare som litar på sin förberedelse.
+              <T k="landing.social.title" />
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5 v2-stagger-parent">
-            <V2Quote
-              text="Första gången jag inte behövde stressa över tiden under ett panelsamtal. Korten gjorde att jag kunde vara närvarande istället."
-              author="Moderator, branschkonferens"
-            />
-            <V2Quote
-              text="Jag använder Manuskort inför varje större tal nu. Det är som att ha ett lugn jag kan luta mig mot."
-              author="Föreläsare och konsult"
-            />
+            <V2Quote textKey="landing.social.quote1_text" authorKey="landing.social.quote1_author" />
+            <V2Quote textKey="landing.social.quote2_text" authorKey="landing.social.quote2_author" />
           </div>
         </div>
       </section>
@@ -439,11 +403,11 @@ export default function LandingV2() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-12 text-center v2-reveal-onscroll">
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-v2-violet mb-4">
-              Vanliga frågor
+              <T k="landing.faq.eyebrow" />
             </p>
             <h2 className="font-display text-[34px] sm:text-[48px] leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
-              <span className="whitespace-nowrap">Allt du undrar</span>{" "}
-              <span className="whitespace-nowrap text-v2-muted">— kort förklarat.</span>
+              <span className="whitespace-nowrap"><T k="landing.faq.title_1" /></span>{" "}
+              <span className="whitespace-nowrap text-v2-muted"><T k="landing.faq.title_2" /></span>
             </h2>
           </div>
 
@@ -452,59 +416,16 @@ export default function LandingV2() {
             collapsible
             className="w-full bg-white rounded-2xl border border-v2-line shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)] px-2 sm:px-4 v2-reveal-onscroll"
           >
-            <AccordionItem value="q1" className="border-b border-v2-line last:border-b-0">
-              <AccordionTrigger className="text-left text-[16px] font-medium py-5 px-3 hover:no-underline">
-                Vad är manuskort?
-              </AccordionTrigger>
-              <AccordionContent className="text-[15px] text-v2-muted leading-relaxed pb-5 px-3">
-                Manuskort är korta, strukturerade avsnitt av ditt manus — med stödord, tider och
-                cues. De gör det lättare att hålla röd tråd när du talar inför publik, jämfört med
-                att läsa från ett långt löpande manus.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="q2" className="border-b border-v2-line last:border-b-0">
-              <AccordionTrigger className="text-left text-[16px] font-medium py-5 px-3 hover:no-underline">
-                Hur hjälper manuskort vid en presentation?
-              </AccordionTrigger>
-              <AccordionContent className="text-[15px] text-v2-muted leading-relaxed pb-5 px-3">
-                Du får överblick, kontroll på tiden och ett tydligt stöd vid presentationen — utan
-                att låsa dig vid ordagrann text. Cue-färger och tidsbudgetar hjälper dig att hitta
-                rätt tempo, hålla pauser och anpassa längden om något oväntat händer.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="q3" className="border-b border-v2-line last:border-b-0">
-              <AccordionTrigger className="text-left text-[16px] font-medium py-5 px-3 hover:no-underline">
-                Är det gratis att använda?
-              </AccordionTrigger>
-              <AccordionContent className="text-[15px] text-v2-muted leading-relaxed pb-5 px-3">
-                Ja. Du kommer igång helt gratis utan kreditkort. Gratisplanen räcker för de flesta
-                enskilda presentationer. För obegränsat antal manus och kort, samt import från
-                .docx, finns en PRO-plan.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="q4" className="border-b border-v2-line last:border-b-0">
-              <AccordionTrigger className="text-left text-[16px] font-medium py-5 px-3 hover:no-underline">
-                Fungerar det i talarstolen och på scen?
-              </AccordionTrigger>
-              <AccordionContent className="text-[15px] text-v2-muted leading-relaxed pb-5 px-3">
-                Ja. Presentationsläget är byggt för riktiga scener: stor läsbar text, mörkt tema,
-                fullskärm och wake-lock som håller skärmen vaken. Det fungerar i webbläsaren på
-                laptop, surfplatta och telefon.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="q5" className="border-b border-v2-line last:border-b-0">
-              <AccordionTrigger className="text-left text-[16px] font-medium py-5 px-3 hover:no-underline">
-                Kan jag importera ett befintligt manus?
-              </AccordionTrigger>
-              <AccordionContent className="text-[15px] text-v2-muted leading-relaxed pb-5 px-3">
-                Ja. Med PRO-planen kan du importera ett .docx-manus. Verktyget känner igen talare
-                och styckar upp texten automatiskt — du behöver bara finjustera.
-              </AccordionContent>
-            </AccordionItem>
+            {(["q1", "q2", "q3", "q4", "q5"] as const).map((q) => (
+              <AccordionItem key={q} value={q} className="border-b border-v2-line last:border-b-0">
+                <AccordionTrigger className="text-left text-[16px] font-medium py-5 px-3 hover:no-underline">
+                  <T k={`landing.faq.${q}_q`} />
+                </AccordionTrigger>
+                <AccordionContent className="text-[15px] text-v2-muted leading-relaxed pb-5 px-3">
+                  <T k={`landing.faq.${q}_a`} />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
       </section>
@@ -527,13 +448,13 @@ export default function LandingV2() {
         </div>
         <div className="relative max-w-4xl mx-auto text-center v2-reveal-onscroll">
           <h2 className="font-display text-[40px] sm:text-[64px] leading-[1.0] font-semibold tracking-[-0.035em]">
-            Nästa presentation{" "}
+            <T k="landing.final.title_1" />{" "}
             <span className="bg-gradient-to-r from-white via-v2-pink to-v2-violet bg-clip-text text-transparent">
-              börjar här.
+              <T k="landing.final.title_2" />
             </span>
           </h2>
           <p className="mt-6 text-[17px] text-white/70 max-w-xl mx-auto">
-            Skapa ditt första manus på under en minut. Gratis att testa, inget kreditkort.
+            <T k="landing.final.lead" />
           </p>
           <div className="mt-10">
             <Link
@@ -541,7 +462,7 @@ export default function LandingV2() {
               className="v2-btn-primary v2-btn-lg v2-btn-on-dark"
             >
               <span className="relative z-10 flex items-center gap-2">
-                {primaryCtaLabel}
+                <T k={primaryCtaKey} />
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -555,10 +476,10 @@ export default function LandingV2() {
           <p>© {new Date().getFullYear()} Manuskort</p>
           <nav className="flex items-center gap-5">
             <Link to="/priser" className="hover:text-v2-ink transition-colors">
-              Priser
+              <T k="landing.footer.pricing" />
             </Link>
             <Link to="/auth" className="hover:text-v2-ink transition-colors">
-              Logga in
+              <T k="landing.footer.login" />
             </Link>
           </nav>
         </div>
@@ -873,43 +794,43 @@ function CardDemo() {
 
 function V2BenefitCard({
   icon,
-  title,
-  text,
+  titleKey,
+  textKey,
 }: {
   icon: React.ReactNode;
-  title: string;
-  text: string;
+  titleKey: string;
+  textKey: string;
 }) {
   return (
     <div className="v2-card group">
       <div className="v2-card-icon">{icon}</div>
-      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight">{title}</h3>
-      <p className="text-[14.5px] text-v2-muted leading-relaxed">{text}</p>
+      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight"><T k={titleKey} /></h3>
+      <p className="text-[14.5px] text-v2-muted leading-relaxed"><T k={textKey} /></p>
     </div>
   );
 }
 
 function V2UseCaseCard({
   icon,
-  title,
-  text,
+  titleKey,
+  textKey,
   to,
 }: {
   icon: React.ReactNode;
-  title: string;
-  text: string;
+  titleKey: string;
+  textKey: string;
   to?: string;
 }) {
   const inner = (
     <>
       <div className="v2-card-icon">{icon}</div>
       <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight group-hover:text-v2-violet transition-colors">
-        {title}
+        <T k={titleKey} />
       </h3>
-      <p className="text-[14.5px] text-v2-muted leading-relaxed">{text}</p>
+      <p className="text-[14.5px] text-v2-muted leading-relaxed"><T k={textKey} /></p>
       {to && (
         <span className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-v2-violet">
-          Läs mer
+          <T k="landing.audience.read_more" />
           <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </span>
       )}
@@ -925,7 +846,7 @@ function V2UseCaseCard({
   return <div className="v2-card">{inner}</div>;
 }
 
-function V2Step({ n, title, text }: { n: number; title: string; text: string }) {
+function V2Step({ n, titleKey, textKey }: { n: number; titleKey: string; textKey: string }) {
   return (
     <div className="group">
       <div className="relative mb-5 inline-flex">
@@ -934,13 +855,13 @@ function V2Step({ n, title, text }: { n: number; title: string; text: string }) 
           {n}
         </span>
       </div>
-      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight">{title}</h3>
-      <p className="text-[14.5px] text-v2-muted leading-relaxed max-w-sm">{text}</p>
+      <h3 className="font-display text-[19px] font-semibold mb-2 tracking-tight"><T k={titleKey} /></h3>
+      <p className="text-[14.5px] text-v2-muted leading-relaxed max-w-sm"><T k={textKey} /></p>
     </div>
   );
 }
 
-function V2FrictionCard({ title, text }: { title: string; text: string }) {
+function V2FrictionCard({ titleKey, textKey }: { titleKey: string; textKey: string }) {
   return (
     <div className="v2-card text-left">
       <div className="flex items-start gap-3">
@@ -948,21 +869,21 @@ function V2FrictionCard({ title, text }: { title: string; text: string }) {
           <Check className="h-4 w-4 text-v2-violet" />
         </div>
         <div>
-          <h3 className="font-display text-[16px] font-semibold mb-1 tracking-tight">{title}</h3>
-          <p className="text-[14px] text-v2-muted leading-relaxed">{text}</p>
+          <h3 className="font-display text-[16px] font-semibold mb-1 tracking-tight"><T k={titleKey} /></h3>
+          <p className="text-[14px] text-v2-muted leading-relaxed"><T k={textKey} /></p>
         </div>
       </div>
     </div>
   );
 }
 
-function V2Quote({ text, author }: { text: string; author: string }) {
+function V2Quote({ textKey, authorKey }: { textKey: string; authorKey: string }) {
   return (
     <figure className="v2-card">
       <blockquote className="font-display text-[18px] leading-[1.5] text-v2-ink">
-        "{text}"
+        "<T k={textKey} />"
       </blockquote>
-      <figcaption className="mt-4 text-[13px] text-v2-muted">— {author}</figcaption>
+      <figcaption className="mt-4 text-[13px] text-v2-muted">— <T k={authorKey} /></figcaption>
     </figure>
   );
 }
