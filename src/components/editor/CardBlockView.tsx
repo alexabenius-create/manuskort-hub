@@ -51,6 +51,7 @@ export function CardBlockView(props: NodeViewProps) {
 }
 
 function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeViewProps) {
+  const { t } = useTranslation();
   const a = node.attrs as {
     cardNumber: number;
     totalCards: number;
