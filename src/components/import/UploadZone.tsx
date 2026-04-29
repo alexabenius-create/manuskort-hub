@@ -84,7 +84,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
       });
 
       if (!res.ok) {
-        let msg = `Kunde inte hämta dokumentet (HTTP ${res.status}).`;
+        let msg = t("import.upload.google_http_error", { status: res.status });
         try {
           const parsed = await res.json();
           if (parsed?.error) msg = parsed.error;
@@ -95,7 +95,7 @@ export function UploadZone({ file, onFileSelected, onClear, disabled }: Props) {
 
       const buf = await res.arrayBuffer();
       if (!buf || buf.byteLength < 100) {
-        setError("Tomt eller ofullständigt svar från servern.");
+        setError(t("import.upload.google_empty_response"));
         return;
       }
 
