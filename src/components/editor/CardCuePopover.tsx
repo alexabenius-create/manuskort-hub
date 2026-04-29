@@ -1,8 +1,5 @@
 /**
  * CardCuePopover — popover för att lägga till en cue.
- *
- * En enda "+ Lägg till cue"-knapp triggar popovern. Inuti väljer användaren typ
- * (energy/action/time) via radio-group + skriver text + sparar.
  */
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,24 +9,26 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Plus, Zap, Play, Users, type LucideIcon } from "lucide-react";
 import { newCueId, type Cue, type CueKind } from "@/lib/cues";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   onAdd: (cue: Cue) => void;
 }
 
-const KIND_OPTIONS: { value: CueKind; label: string; icon: LucideIcon }[] = [
-  { value: "energy", label: "Energi", icon: Zap },
-  { value: "action", label: "Action", icon: Play },
-  { value: "panel", label: "Panel", icon: Users },
+const KIND_OPTIONS: { value: CueKind; labelKey: string; icon: LucideIcon }[] = [
+  { value: "energy", labelKey: "editor.card.cue_kind_energy", icon: Zap },
+  { value: "action", labelKey: "editor.card.cue_kind_action", icon: Play },
+  { value: "panel", labelKey: "editor.card.cue_kind_panel", icon: Users },
 ];
 
-const PLACEHOLDER: Record<CueKind, string> = {
-  energy: "T.ex. Andas, sänk tempo",
-  action: "T.ex. Visa bild 3, byt plats",
-  panel: "T.ex. Be om konkret exempel",
+const PLACEHOLDER_KEY: Record<CueKind, string> = {
+  energy: "editor.card.cue_placeholder_energy",
+  action: "editor.card.cue_placeholder_action",
+  panel: "editor.card.cue_placeholder_panel",
 };
 
 export function CardCuePopover({ onAdd }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<CueKind>("energy");
   const [text, setText] = useState("");
@@ -56,13 +55,15 @@ export function CardCuePopover({ onAdd }: Props) {
           contentEditable={false}
         >
           <Plus className="h-3 w-3" />
-          Lägg till cue
+          {t("editor.card.cue_add_long")}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3" align="start">
         <div className="space-y-3">
           <div>
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Typ</Label>
+            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {t("editor.card.cue_category_label")}
+            </Label>
             <RadioGroup
               value={kind}
               onValueChange={(v) => setKind(v as CueKind)}
@@ -81,18 +82,20 @@ export function CardCuePopover({ onAdd }: Props) {
                   >
                     <RadioGroupItem value={o.value} className="sr-only" />
                     <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>{o.label}</span>
+                    <span>{t(o.labelKey)}</span>
                   </Label>
                 );
               })}
             </RadioGroup>
           </div>
           <div>
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Text</Label>
+            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {t("editor.card.cue_text_label")}
+            </Label>
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={PLACEHOLDER[kind]}
+              placeholder={t(PLACEHOLDER_KEY[kind])}
               className="mt-1.5 min-h-[60px] text-[13px]"
               autoFocus
               onKeyDown={(e) => {
@@ -105,10 +108,10 @@ export function CardCuePopover({ onAdd }: Props) {
           </div>
           <div className="flex justify-end gap-2">
             <Button size="sm" variant="ghost" onClick={() => { reset(); setOpen(false); }}>
-              Avbryt
+              {t("editor.card.cue_cancel")}
             </Button>
             <Button size="sm" onClick={handleSave} disabled={!text.trim()}>
-              Spara
+              {t("editor.card.cue_save")}
             </Button>
           </div>
         </div>

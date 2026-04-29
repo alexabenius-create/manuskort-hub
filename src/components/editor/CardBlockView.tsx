@@ -7,6 +7,7 @@
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { wordCount, estimateSeconds, formatDuration } from "@/lib/wordCount";
 import { removeCue, type Cue } from "@/lib/cues";
 import { countPresentationRows, MAX_ROWS_BY_SIZE, type TextSize } from "@/lib/cardLimits";
@@ -50,6 +51,7 @@ export function CardBlockView(props: NodeViewProps) {
 }
 
 function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeViewProps) {
+  const { t } = useTranslation();
   const a = node.attrs as {
     cardNumber: number;
     totalCards: number;
@@ -275,8 +277,8 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
               }}
               disabled={isFirst}
               className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-              aria-label="Flytta kort uppåt"
-              title="Flytta uppåt"
+              aria-label={t("editor.card.menu_move_up_aria")}
+              title={t("editor.card.menu_move_up_title")}
             >
               <ChevronUp className="h-3.5 w-3.5" />
             </button>
@@ -289,8 +291,8 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
               }}
               disabled={isLast}
               className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-              aria-label="Flytta kort nedåt"
-              title="Flytta nedåt"
+              aria-label={t("editor.card.menu_move_down_aria")}
+              title={t("editor.card.menu_move_down_title")}
             >
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
@@ -298,14 +300,14 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
         )}
         <span className="px-1 tracking-wide">
           <span className="md:hidden">{num}/{a.totalCards}</span>
-          <span className="hidden md:inline">Kort {num} / {a.totalCards}</span>
+          <span className="hidden md:inline">{t("editor.card.label_card_with_total", { num, total: a.totalCards })}</span>
         </span>
         <span className="opacity-40 hidden md:inline">·</span>
         <span className="hidden md:inline-flex">
           <CardRolePopover role={a.role ?? "speaker"} onChange={handleRoleChange} />
         </span>
         <span className="opacity-40">·</span>
-        <span className="tabular-nums">{words} ord</span>
+        <span className="tabular-nums">{words} {t("editor.card.words_unit")}</span>
         <span className="opacity-40">·</span>
         <span className="tabular-nums">{formatDuration(seconds)}</span>
         <CardTargetTimePopover
@@ -320,7 +322,7 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
         {a.isPanic && (
           <>
             <span className="opacity-40">·</span>
-            <span className="text-[11px] uppercase tracking-wider text-[hsl(35_85%_38%)]">panik</span>
+            <span className="text-[11px] uppercase tracking-wider text-[hsl(35_85%_38%)]">{t("editor.card.panic_label")}</span>
           </>
         )}
         <div className="ml-auto flex items-center gap-1">
@@ -370,8 +372,8 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
           }`}
         >
           {isOver && <AlertTriangle className="h-3 w-3" />}
-          <span className="tabular-nums">{currentRows} / {maxRows} rader i presentationsläget</span>
-          {isOver && <span className="opacity-70">· kortet är för långt</span>}
+          <span className="tabular-nums">{t("editor.card.row_status", { current: currentRows, max: maxRows })}</span>
+          {isOver && <span className="opacity-70">· {t("editor.card.rows_too_long")}</span>}
         </div>
       )}
 
@@ -395,7 +397,7 @@ function CardBlockViewInner({ node, updateAttributes, editor, getPos }: NodeView
                     type="button"
                     onClick={() => handleRemoveCue(c.id)}
                     className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-foreground/10 transition-colors"
-                    aria-label="Ta bort cue"
+                    aria-label={t("editor.card.cue_remove_aria")}
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>

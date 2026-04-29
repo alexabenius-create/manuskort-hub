@@ -6,12 +6,11 @@ import {
   type Cue,
   type CueKind,
   CUE_KINDS_ENABLED,
-  CUE_KIND_LABEL,
-  CUE_KIND_DESCRIPTION,
   newCueId,
 } from "@/lib/cues";
 import { hexToRgba, hexToDarkText } from "@/lib/panelistColors";
 import type { Panelist } from "@/hooks/usePanelists";
+import { useTranslation } from "react-i18next";
 
 interface CueChipProps {
   cue: Cue;
@@ -33,10 +32,22 @@ const KIND_STYLE: Record<Exclude<CueKind, "panel">, { chip: string; icon: React.
   },
 };
 
-const PLACEHOLDER: Record<CueKind, string> = {
-  energy: "T.ex. Andas, sänk tempo",
-  action: "T.ex. Visa bild 3, byt plats",
-  panel: "T.ex. Be om konkret exempel",
+const PLACEHOLDER_KEY: Record<CueKind, string> = {
+  energy: "editor.card.cue_placeholder_energy",
+  action: "editor.card.cue_placeholder_action",
+  panel: "editor.card.cue_placeholder_panel",
+};
+
+const KIND_LABEL_KEY: Record<CueKind, string> = {
+  energy: "editor.card.cue_kind_energy",
+  action: "editor.card.cue_kind_action",
+  panel: "editor.card.cue_kind_panel",
+};
+
+const KIND_DESC_KEY: Record<CueKind, string> = {
+  energy: "editor.card.cue_kind_energy_desc",
+  action: "editor.card.cue_kind_action_desc",
+  panel: "editor.card.cue_kind_panel_desc",
 };
 
 function panelChipStyle(color: string | null | undefined): React.CSSProperties {
@@ -52,6 +63,7 @@ function panelChipStyle(color: string | null | undefined): React.CSSProperties {
 
 /** Klickbar chip som öppnar popover för redigering. */
 export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(cue.text);
   const [kind, setKind] = useState<CueKind>(cue.kind);
@@ -83,7 +95,6 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
     setOpen(false);
   };
 
-  // Render chip — panel uses panelist color
   let chipClass = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors";
   let chipStyle: React.CSSProperties = {};
   let icon: React.ReactNode = null;
@@ -100,7 +111,7 @@ export function CueChip({ cue, panelists = [], onSave, onRemove }: CueChipProps)
   }
 
   const panelName = cue.kind === "panel"
-    ? (panelists.find((x) => x.id === cue.panelistId)?.name || "Namnlös")
+    ? (panelists.find((x) => x.id === cue.panelistId)?.name || t("editor.card.cue_unnamed"))
     : null;
 
   return (
@@ -144,6 +155,7 @@ interface AddCueButtonProps {
 
 /** "+ Signal"-knapp som öppnar popover för att skapa ny cue. */
 export function AddCueButton({ panelists = [], onAdd }: AddCueButtonProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<CueKind>("energy");
   const [text, setText] = useState("");
@@ -180,9 +192,9 @@ export function AddCueButton({ panelists = [], onAdd }: AddCueButtonProps) {
         <button
           type="button"
           className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-surface-2 border border-dashed border-border/60 transition-colors"
-          aria-label="Lägg till signal"
+          aria-label={t("editor.card.cue_add_aria")}
         >
-          <Plus className="h-3 w-3" /> Signal
+          <Plus className="h-3 w-3" /> {t("editor.card.cue_add")}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3" align="start">
@@ -223,13 +235,16 @@ function CueForm({
   onKindChange, onTextChange, onPanelistChange,
   inputRef, onCommit, onCancel, onRemove, showRemove,
 }: CueFormProps) {
+  const { t } = useTranslation();
   const panelDisabled = kind === "panel" && panelists.length === 0;
   const commitDisabled = panelDisabled;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Kategori</span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          {t("editor.card.cue_category_label")}
+        </span>
         <div className="inline-flex bg-surface-2 rounded-lg p-1 gap-1 flex-wrap">
           {CUE_KINDS_ENABLED.map((k) => (
             <button
@@ -241,19 +256,21 @@ function CueForm({
                 kind === k ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {CUE_KIND_LABEL[k]}
+              {t(KIND_LABEL_KEY[k])}
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">{CUE_KIND_DESCRIPTION[kind]}</p>
+        <p className="text-[11px] text-muted-foreground">{t(KIND_DESC_KEY[kind])}</p>
       </div>
 
       {kind === "panel" && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Riktas till</span>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            {t("editor.card.cue_target_label")}
+          </span>
           {panelists.length === 0 ? (
             <p className="text-[11px] text-muted-foreground italic">
-              Lägg till paneldeltagare i sidopanelen först.
+              {t("editor.card.cue_panel_no_panelists")}
             </p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
@@ -275,7 +292,7 @@ function CueForm({
                     }}
                   >
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                    {p.name || "Namnlös"}
+                    {p.name || t("editor.card.cue_unnamed")}
                   </button>
                 );
               })}
@@ -285,7 +302,9 @@ function CueForm({
       )}
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Text</span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          {t("editor.card.cue_text_label")}
+        </span>
         <input
           ref={inputRef}
           type="text"
@@ -300,7 +319,7 @@ function CueForm({
               onCancel();
             }
           }}
-          placeholder={PLACEHOLDER[kind]}
+          placeholder={t(PLACEHOLDER_KEY[kind])}
           className="w-full px-3 py-2 rounded-md bg-background border border-border text-[14px] focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
@@ -311,7 +330,7 @@ function CueForm({
             onClick={onRemove}
             className="inline-flex items-center gap-1 text-[12px] text-destructive hover:text-destructive/80"
           >
-            <X className="h-3 w-3" /> Ta bort
+            <X className="h-3 w-3" /> {t("editor.card.cue_remove")}
           </button>
         ) : (
           <span />
@@ -322,7 +341,7 @@ function CueForm({
             onClick={onCancel}
             className="px-3 py-1.5 rounded-md text-[12px] text-muted-foreground hover:text-foreground"
           >
-            Avbryt
+            {t("editor.card.cue_cancel")}
           </button>
           <button
             type="button"
@@ -330,7 +349,7 @@ function CueForm({
             disabled={commitDisabled}
             className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Spara
+            {t("editor.card.cue_save")}
           </button>
         </div>
       </div>

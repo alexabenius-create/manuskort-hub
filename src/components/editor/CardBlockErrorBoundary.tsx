@@ -1,12 +1,9 @@
 /**
- * CardBlockErrorBoundary — fångar render-fel inom CardBlockView och loggar
- * fullständig diagnostik (props, attrs) till konsolen samt visar fallback-UI.
- *
- * VIKTIGT: Fallback måste renderas inuti `NodeViewWrapper`, annars kraschar
- * Tiptap med "Please use the NodeViewWrapper component for your node view".
+ * CardBlockErrorBoundary — fångar render-fel inom CardBlockView.
  */
 import { Component, type ReactNode } from "react";
 import { NodeViewWrapper } from "@tiptap/react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   children: ReactNode;
@@ -15,6 +12,21 @@ interface Props {
 
 interface State {
   error: Error | null;
+}
+
+function ErrorFallback({ message }: { message: string }) {
+  const { t } = useTranslation();
+  return (
+    <NodeViewWrapper
+      as="article"
+      data-card-block="true"
+      className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 mb-4"
+    >
+      <p className="text-[12px] font-mono text-destructive">
+        {t("editor.card.render_error", { message })}
+      </p>
+    </NodeViewWrapper>
+  );
 }
 
 export class CardBlockErrorBoundary extends Component<Props, State> {
@@ -36,19 +48,8 @@ export class CardBlockErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      return (
-        <NodeViewWrapper
-          as="article"
-          data-card-block="true"
-          className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 mb-4"
-        >
-          <p className="text-[12px] font-mono text-destructive">
-            Render-fel i kort: {this.state.error.message}
-          </p>
-        </NodeViewWrapper>
-      );
+      return <ErrorFallback message={this.state.error.message} />;
     }
     return this.props.children;
   }
 }
-

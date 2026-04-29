@@ -1,12 +1,10 @@
 /**
  * CardNotesEditor — inline notes-textarea i kort-footern.
- *
- * Tom: "+ Lägg till notes"-länk. Med innehåll: textarea som autosaves på blur
- * via updateAttributes.
  */
 import { useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   value: string;
@@ -14,6 +12,7 @@ interface Props {
 }
 
 export function CardNotesEditor({ value, onChange }: Props) {
+  const { t } = useTranslation();
   const safeValue = typeof value === "string" ? value : "";
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(safeValue);
@@ -45,7 +44,7 @@ export function CardNotesEditor({ value, onChange }: Props) {
         className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 h-6 rounded-full border border-dashed border-border/60 hover:border-border w-fit"
       >
         <Plus className="h-3 w-3" />
-        Lägg till notes
+        {t("editor.card.notes_add_alt")}
       </button>
     );
   }
@@ -79,7 +78,7 @@ export function CardNotesEditor({ value, onChange }: Props) {
           commit();
         }
       }}
-      placeholder="Notes till kortet…"
+      placeholder={t("editor.card.notes_placeholder_alt")}
       className="min-h-[60px] text-[12px]"
     />
   );

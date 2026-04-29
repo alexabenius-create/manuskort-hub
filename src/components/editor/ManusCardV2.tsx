@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -63,6 +64,7 @@ export function ManusCardV2({
   onLocalChange, onDelete, onDuplicate, onSplit, onMergeUp, onSyncWithPrevious, onPasteOverflow,
   onAutoSplit, onOverflowStateChange, onEditorReady, onAutoOverflow, onPullBack,
 }: Props) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
   const { panelists } = usePanelists();
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -99,7 +101,7 @@ export function ManusCardV2({
     if (selection.activePanelistId === p.id) {
       editor.chain().focus().unsetPanelist().run();
     } else {
-      editor.chain().focus().setPanelist({ panelistId: p.id, color: p.color, name: p.name || "Namnlös" }).run();
+      editor.chain().focus().setPanelist({ panelistId: p.id, color: p.color, name: p.name || t("editor.card.cue_unnamed") }).run();
     }
   };
 
@@ -239,7 +241,7 @@ export function ManusCardV2({
           {/* + Signal — bara om ingen cue finns ännu */}
           {!hasAnyCue && (
             <MetaIconButton
-              label="Lägg till signal"
+              label={t("editor.card.cue_add_aria")}
               onClick={() => setShowCues(true)}
             >
               <Flag className="h-3.5 w-3.5" />
@@ -249,7 +251,7 @@ export function ManusCardV2({
           {/* + Anteckning — bara i auto-läge när panelen kollapsats (ingen text + inte öppen) */}
           {showAddNoteButton && (
             <MetaIconButton
-              label="Lägg till anteckning"
+              label={t("editor.card.notes_add")}
               onClick={() => setNotesOpen(true)}
             >
               <StickyNote className="h-3.5 w-3.5" />
@@ -298,7 +300,7 @@ export function ManusCardV2({
         data-tour="card.title"
         value={titleVal}
         onChange={(e) => { setTitleVal(e.target.value); onLocalChange({ title: e.target.value }); }}
-        placeholder="Korttitel"
+        placeholder={t("editor.card.title_placeholder")}
         className="font-display text-[20px] font-semibold tracking-tight bg-transparent border-0 outline-none w-full placeholder:text-faint placeholder:font-normal -mt-1"
       />
 
@@ -488,7 +490,7 @@ export function ManusCardV2({
                     style={{ backgroundColor: p.color, color: "hsl(240 6% 18%)" }}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-foreground/60" />
-                    {p.name || "Namnlös"}
+                    {p.name || t("editor.card.cue_unnamed")}
                   </button>
                 );
               })}
@@ -679,12 +681,13 @@ function NotesField({
   allowClose: boolean;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1">
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Egna noter, inte för uppläsning"
+        placeholder={t("editor.card.notes_placeholder")}
         autoFocus
         className={cn(
           "w-full bg-transparent border-0 outline-none resize-none text-foreground placeholder:text-faint",
@@ -697,7 +700,7 @@ function NotesField({
           onClick={onClose}
           className="self-start text-[11px] text-faint hover:text-muted-foreground inline-flex items-center gap-1"
         >
-          <X className="h-3 w-3" /> Avbryt
+          <X className="h-3 w-3" /> {t("editor.card.notes_cancel")}
         </button>
       )}
     </div>

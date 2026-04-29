@@ -8,6 +8,7 @@ import { hexToDarkText } from "@/lib/panelistColors";
 import { splitCardBlock, mergeSelectionWithPrev, canMergeSelectionWithPrev } from "@/lib/cardBlockCommands";
 import type { TextSize } from "@/lib/cardLimits";
 import { AiImproveButton } from "./AiImproveButton";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   editor: Editor | null;
@@ -24,6 +25,9 @@ interface ToolButton {
 }
 
 export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
+  const { t } = useTranslation();
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  const splitShortcut = isMac ? "⌘+Enter" : "Ctrl+Enter";
   let panelists: ReturnType<typeof usePanelists>["panelists"] = [];
   try {
     panelists = usePanelists().panelists;
@@ -51,42 +55,42 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
   const buttons: ToolButton[] = [
     {
       key: "bold",
-      label: "Fetstil",
+      label: t("editor.card.format_bold"),
       icon: Bold,
       isActive: () => editor.isActive("bold"),
       onClick: () => editor.chain().focus().toggleBold().run(),
     },
     {
       key: "italic",
-      label: "Kursiv",
+      label: t("editor.card.format_italic"),
       icon: Italic,
       isActive: () => editor.isActive("italic"),
       onClick: () => editor.chain().focus().toggleItalic().run(),
     },
     {
       key: "underline",
-      label: "Understrykning",
+      label: t("editor.card.format_underline"),
       icon: UnderlineIcon,
       isActive: () => editor.isActive("underline"),
       onClick: () => editor.chain().focus().toggleUnderline().run(),
     },
     {
       key: "highlight",
-      label: "Gulmarkering",
+      label: t("editor.card.format_highlight"),
       icon: Highlighter,
       isActive: () => editor.isActive("highlight"),
       onClick: () => editor.chain().focus().toggleHighlight().run(),
     },
     {
       key: "pause",
-      label: "Lägg in paus vid markören",
+      label: t("editor.card.format_pause"),
       icon: Pause,
       isActive: () => false,
       onClick: () => editor.chain().focus().insertPause().run(),
     },
     {
       key: "split",
-      label: "Dela kort här (⌘+Enter)",
+      label: t("editor.card.format_split", { shortcut: splitShortcut }),
       icon: SplitSquareVertical,
       isActive: () => false,
       onClick: () => {
@@ -101,8 +105,14 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
     buttons.push({
       key: "merge-prev",
       label: fits
-        ? `Slå ihop med föregående kort (${mergeCheck.selectionRows}/${mergeCheck.availableRows} rader lediga)`
-        : `Får inte plats i föregående kort (behöver ${mergeCheck.selectionRows} rader, ${mergeCheck.availableRows} lediga)`,
+        ? t("editor.card.format_merge_prev_fits", {
+            used: mergeCheck.selectionRows,
+            available: mergeCheck.availableRows,
+          })
+        : t("editor.card.format_merge_prev_too_big", {
+            used: mergeCheck.selectionRows,
+            available: mergeCheck.availableRows,
+          }),
       icon: ArrowUpToLine,
       isActive: () => false,
       onClick: () => {
@@ -112,6 +122,7 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
       },
     });
   }
+
 
 
   const activePanelistId = (editor.getAttributes("panelist") as { panelistId?: string | null })
@@ -194,24 +205,24 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
             {panelists.map((p) => {
               const isActiveHere = activePanelistId === p.id;
               const initial = (p.name?.trim() || "?").charAt(0).toUpperCase();
+              const displayName = p.name?.trim() || t("editor.card.cue_unnamed");
               return (
                 <button
                   key={p.id}
                   type="button"
-                  aria-label={`Knyt till ${p.name || "panelist"}`}
+                  aria-label={t("editor.card.panelist_chip_aria", { name: displayName })}
                   aria-pressed={isActiveHere}
-                  title={`Panelist: ${p.name || "Namnlös"}`}
+                  title={t("editor.card.panelist_chip_title", { name: displayName })}
                   onClick={() => applyPanelist(p)}
                   className={cn(
                     "inline-flex items-center justify-center rounded-full font-medium leading-none transition-all ring-1 ring-foreground/10 hover:ring-foreground/30 hover:scale-105",
-                    // Mobil: rund 28px-knapp med initial. Desktop: full pill med namn.
                     "h-7 w-7 text-[12px] md:w-auto md:max-w-[140px] md:px-2.5",
                     isActiveHere && "ring-2 ring-foreground/60 scale-105",
                   )}
                   style={{ backgroundColor: p.color, color: hexToDarkText(p.color) }}
                 >
                   <span className="md:hidden">{initial}</span>
-                  <span className="hidden md:inline truncate">{p.name?.trim() || "Namnlös"}</span>
+                  <span className="hidden md:inline truncate">{displayName}</span>
                 </button>
               );
             })}
@@ -219,8 +230,8 @@ export function FormatBubbleMenu({ editor, textSize = "md" }: Props) {
             {activePanelistId && (
               <button
                 type="button"
-                aria-label="Ta bort markering"
-                title="Ta bort markering"
+                aria-label={t("editor.card.panelist_remove_mark_aria")}
+                title={t("editor.card.panelist_remove_mark_aria")}
                 onClick={() => editor.chain().focus().unsetPanelist().run()}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors text-foreground/60 hover:bg-muted hover:text-foreground"
               >
