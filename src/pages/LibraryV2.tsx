@@ -83,6 +83,8 @@ export default function LibraryV2() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const atManuscriptLimit = items.length >= limits.manuscripts;
 
