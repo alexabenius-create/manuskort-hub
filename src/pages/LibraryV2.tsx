@@ -213,42 +213,59 @@ export default function LibraryV2() {
   };
 
   const duplicate = async (m: Manuscript) => {
-    if (!user) return;
-    const { data: dup, error } = await supabase
-      .from("manuscripts")
-      .insert({
-        user_id: user.id,
-        title: m.title + (t("library.copy_suffix") as string),
-        mode: m.mode,
-        tags: m.tags,
-        text_size: m.text_size,
-        show_notes: m.show_notes,
-        show_times: m.show_times,
-        wpm: m.wpm,
-      })
-      .select()
-      .single();
-    if (error || !dup) { toast({ title: t("library.toast.duplicate_failed"), description: error?.message, variant: "destructive" }); return; }
-    const { data: cards } = await supabase.from("cards").select("*").eq("manuscript_id", m.id).order("position");
-    if (cards && cards.length) {
-      await supabase.from("cards").insert(
-        cards.map((c) => ({
-          manuscript_id: dup.id,
+    if (!user || duplicating) return;
+    setDuplicating(true);
+    try {
+      const { data: dup, error } = await supabase
+        .from("manuscripts")
+        .insert({
           user_id: user.id,
-          position: c.position,
-          role: c.role,
-          title: c.title,
-          content_html: c.content_html,
-          notes: c.notes,
-          start_time: c.start_time,
-          end_time: c.end_time,
-          cue_red: c.cue_red,
-          cue_amber: c.cue_amber,
-          cue_teal: c.cue_teal,
-        }))
-      );
+          title: m.title + (t("library.copy_suffix") as string),
+          mode: m.mode,
+          tags: m.tags,
+          text_size: m.text_size,
+          show_notes: m.show_notes,
+          show_times: m.show_times,
+          wpm: m.wpm,
+        })
+        .select()
+        .single();
+      if (error || !dup) {
+        const isLimit = error?.message?.includes("manuscript_limit_reached");
+        if (isLimit) {
+          setUpgradeReason({
+            title: t("library.limits.manuscripts_title"),
+            description: t("library.limits.manuscripts_desc", { count: limits.manuscripts }),
+          });
+          setUpgradeOpen(true);
+        } else {
+          toast({ title: t("library.toast.duplicate_failed"), description: error?.message, variant: "destructive" });
+        }
+        return;
+      }
+      const { data: cards } = await supabase.from("cards").select("*").eq("manuscript_id", m.id).order("position");
+      if (cards && cards.length) {
+        await supabase.from("cards").insert(
+          cards.map((c) => ({
+            manuscript_id: dup.id,
+            user_id: user.id,
+            position: c.position,
+            role: c.role,
+            title: c.title,
+            content_html: c.content_html,
+            notes: c.notes,
+            start_time: c.start_time,
+            end_time: c.end_time,
+            cue_red: c.cue_red,
+            cue_amber: c.cue_amber,
+            cue_teal: c.cue_teal,
+          }))
+        );
+      }
+      load();
+    } finally {
+      setDuplicating(false);
     }
-    load();
   };
 
   const remove = async (m: Manuscript) => {
