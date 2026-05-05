@@ -174,26 +174,42 @@ export default function LibraryV2() {
   }, [items, q, filterMode]);
 
   const createNew = async () => {
-    if (!user) return;
-    const title = newTitle.trim() || (t("library.untitled") as string);
-    const { data, error } = await supabase
-      .from("manuscripts")
-      .insert({ user_id: user.id, title, mode: newMode })
-      .select()
-      .single();
-    if (error || !data) {
-      toast({ title: t("library.toast.create_failed"), description: error?.message, variant: "destructive" });
-      return;
+    if (!user || creating) return;
+    setCreating(true);
+    try {
+      const title = newTitle.trim() || (t("library.untitled") as string);
+      const { data, error } = await supabase
+        .from("manuscripts")
+        .insert({ user_id: user.id, title, mode: newMode })
+        .select()
+        .single();
+      if (error || !data) {
+        const isLimit = error?.message?.includes("manuscript_limit_reached");
+        if (isLimit) {
+          setOpenNew(false);
+          setUpgradeReason({
+            title: t("library.limits.manuscripts_title"),
+            description: t("library.limits.manuscripts_desc", { count: limits.manuscripts }),
+          });
+          setUpgradeOpen(true);
+        } else {
+          toast({ title: t("library.toast.create_failed"), description: error?.message, variant: "destructive" });
+        }
+        await load();
+        return;
+      }
+      await supabase.from("cards").insert({
+        manuscript_id: data.id,
+        user_id: user.id,
+        position: 0,
+        role: newMode,
+      });
+      setOpenNew(false);
+      setNewTitle("");
+      navigate(`/manus/${data.id}`);
+    } finally {
+      setCreating(false);
     }
-    await supabase.from("cards").insert({
-      manuscript_id: data.id,
-      user_id: user.id,
-      position: 0,
-      role: newMode,
-    });
-    setOpenNew(false);
-    setNewTitle("");
-    navigate(`/manus/${data.id}`);
   };
 
   const duplicate = async (m: Manuscript) => {
