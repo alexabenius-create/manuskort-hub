@@ -83,6 +83,8 @@ export default function LibraryV2() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const atManuscriptLimit = items.length >= limits.manuscripts;
 
@@ -172,65 +174,98 @@ export default function LibraryV2() {
   }, [items, q, filterMode]);
 
   const createNew = async () => {
-    if (!user) return;
-    const title = newTitle.trim() || (t("library.untitled") as string);
-    const { data, error } = await supabase
-      .from("manuscripts")
-      .insert({ user_id: user.id, title, mode: newMode })
-      .select()
-      .single();
-    if (error || !data) {
-      toast({ title: t("library.toast.create_failed"), description: error?.message, variant: "destructive" });
-      return;
+    if (!user || creating) return;
+    setCreating(true);
+    try {
+      const title = newTitle.trim() || (t("library.untitled") as string);
+      const { data, error } = await supabase
+        .from("manuscripts")
+        .insert({ user_id: user.id, title, mode: newMode })
+        .select()
+        .single();
+      if (error || !data) {
+        const isLimit = error?.message?.includes("manuscript_limit_reached");
+        if (isLimit) {
+          setOpenNew(false);
+          setUpgradeReason({
+            title: t("library.limits.manuscripts_title"),
+            description: t("library.limits.manuscripts_desc", { count: limits.manuscripts }),
+          });
+          setUpgradeOpen(true);
+        } else {
+          toast({ title: t("library.toast.create_failed"), description: error?.message, variant: "destructive" });
+        }
+        await load();
+        return;
+      }
+      await supabase.from("cards").insert({
+        manuscript_id: data.id,
+        user_id: user.id,
+        position: 0,
+        role: newMode,
+      });
+      setOpenNew(false);
+      setNewTitle("");
+      navigate(`/manus/${data.id}`);
+    } finally {
+      setCreating(false);
     }
-    await supabase.from("cards").insert({
-      manuscript_id: data.id,
-      user_id: user.id,
-      position: 0,
-      role: newMode,
-    });
-    setOpenNew(false);
-    setNewTitle("");
-    navigate(`/manus/${data.id}`);
   };
 
   const duplicate = async (m: Manuscript) => {
-    if (!user) return;
-    const { data: dup, error } = await supabase
-      .from("manuscripts")
-      .insert({
-        user_id: user.id,
-        title: m.title + (t("library.copy_suffix") as string),
-        mode: m.mode,
-        tags: m.tags,
-        text_size: m.text_size,
-        show_notes: m.show_notes,
-        show_times: m.show_times,
-        wpm: m.wpm,
-      })
-      .select()
-      .single();
-    if (error || !dup) { toast({ title: t("library.toast.duplicate_failed"), description: error?.message, variant: "destructive" }); return; }
-    const { data: cards } = await supabase.from("cards").select("*").eq("manuscript_id", m.id).order("position");
-    if (cards && cards.length) {
-      await supabase.from("cards").insert(
-        cards.map((c) => ({
-          manuscript_id: dup.id,
+    if (!user || duplicating) return;
+    setDuplicating(true);
+    try {
+      const { data: dup, error } = await supabase
+        .from("manuscripts")
+        .insert({
           user_id: user.id,
-          position: c.position,
-          role: c.role,
-          title: c.title,
-          content_html: c.content_html,
-          notes: c.notes,
-          start_time: c.start_time,
-          end_time: c.end_time,
-          cue_red: c.cue_red,
-          cue_amber: c.cue_amber,
-          cue_teal: c.cue_teal,
-        }))
-      );
+          title: m.title + (t("library.copy_suffix") as string),
+          mode: m.mode,
+          tags: m.tags,
+          text_size: m.text_size,
+          show_notes: m.show_notes,
+          show_times: m.show_times,
+          wpm: m.wpm,
+        })
+        .select()
+        .single();
+      if (error || !dup) {
+        const isLimit = error?.message?.includes("manuscript_limit_reached");
+        if (isLimit) {
+          setUpgradeReason({
+            title: t("library.limits.manuscripts_title"),
+            description: t("library.limits.manuscripts_desc", { count: limits.manuscripts }),
+          });
+          setUpgradeOpen(true);
+        } else {
+          toast({ title: t("library.toast.duplicate_failed"), description: error?.message, variant: "destructive" });
+        }
+        return;
+      }
+      const { data: cards } = await supabase.from("cards").select("*").eq("manuscript_id", m.id).order("position");
+      if (cards && cards.length) {
+        await supabase.from("cards").insert(
+          cards.map((c) => ({
+            manuscript_id: dup.id,
+            user_id: user.id,
+            position: c.position,
+            role: c.role,
+            title: c.title,
+            content_html: c.content_html,
+            notes: c.notes,
+            start_time: c.start_time,
+            end_time: c.end_time,
+            cue_red: c.cue_red,
+            cue_amber: c.cue_amber,
+            cue_teal: c.cue_teal,
+          }))
+        );
+      }
+      load();
+    } finally {
+      setDuplicating(false);
     }
-    load();
   };
 
   const remove = async (m: Manuscript) => {
@@ -608,7 +643,7 @@ export default function LibraryV2() {
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setOpenNew(false)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-v2-surface">{t("library.cancel")}</Button>
-                  <button type="button" onClick={createNew} className="v2-btn-primary" style={{ height: 40 }}>{t("library.create")}</button>
+                  <button type="button" onClick={createNew} disabled={creating} className="v2-btn-primary disabled:opacity-50" style={{ height: 40 }}>{creating ? "…" : t("library.create")}</button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
