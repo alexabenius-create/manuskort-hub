@@ -643,7 +643,7 @@ export default function LibraryV2() {
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setOpenNew(false)} className="rounded-full text-v2-muted hover:text-v2-ink hover:bg-v2-surface">{t("library.cancel")}</Button>
-                  <button type="button" onClick={createNew} className="v2-btn-primary" style={{ height: 40 }}>{t("library.create")}</button>
+                  <button type="button" onClick={createNew} disabled={creating} className="v2-btn-primary disabled:opacity-50" style={{ height: 40 }}>{creating ? "…" : t("library.create")}</button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
