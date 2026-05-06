@@ -8,9 +8,17 @@ import { Loader2, Sparkles, Gift, CheckCircle2, AlertCircle, ArrowRight } from "
 import { SEO } from "@/components/SEO";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 
+type PromoPreview = {
+  active: boolean;
+  mode: "rolling" | "fixed";
+  duration_days: number | null;
+  fixed_starts_at: string | null;
+  fixed_ends_at: string | null;
+};
+
 type State =
   | { kind: "loading" }
-  | { kind: "needs_auth"; code: string }
+  | { kind: "needs_auth"; code: string; preview: PromoPreview | null }
   | { kind: "success"; expiresAt: string | null }
   | { kind: "error"; message: string; recoverable?: boolean };
 
