@@ -275,6 +275,16 @@ export default function SettingsV2() {
           </div>
         </section>
 
+        <section className="flex flex-col gap-4 v2-reveal">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Kampanjkod</h2>
+          <p className="text-[14px] text-v2-muted -mt-2">
+            Har du fått en kampanjkod? Lös in den för att aktivera PRO under en begränsad period.
+          </p>
+          <div className={cardCls}>
+            <PromoRedeemField onRedeemed={() => window.location.reload()} />
+          </div>
+        </section>
+
         <AffiliateSection />
 
         <section className="flex flex-col gap-4 v2-reveal">
