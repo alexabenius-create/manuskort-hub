@@ -47,7 +47,7 @@ export default function AuthV2() {
       if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}/bibliotek-v2` },
+          options: { emailRedirectTo: signupRedirect },
         });
         if (error) throw error;
         toast({ title: t("auth.magic_sent_title"), description: t("auth.magic_sent_desc") });
@@ -69,7 +69,7 @@ export default function AuthV2() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/bibliotek-v2`,
+            emailRedirectTo: signupRedirect,
             data: { first_name: trimmedFirst, last_name: trimmedLast },
           },
         });
