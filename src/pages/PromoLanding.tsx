@@ -60,7 +60,25 @@ export default function PromoLanding() {
     }
     if (!user) {
       setPendingPromoCode(code);
-      setState({ kind: "needs_auth", code });
+      setState({ kind: "needs_auth", code, preview: null });
+      // Hämta info om koden i bakgrunden för att kunna visa giltighetstid
+      (async () => {
+        const { data } = await supabase.rpc("get_promo_code_preview", { _code: code });
+        const row = Array.isArray(data) ? data[0] : null;
+        if (row) {
+          setState({
+            kind: "needs_auth",
+            code,
+            preview: {
+              active: row.active,
+              mode: row.mode,
+              duration_days: row.duration_days,
+              fixed_starts_at: row.fixed_starts_at,
+              fixed_ends_at: row.fixed_ends_at,
+            },
+          });
+        }
+      })();
       return;
     }
     if (ranRef.current) return;
