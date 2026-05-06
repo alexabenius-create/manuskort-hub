@@ -163,6 +163,13 @@ export default function AuthV2() {
           </p>
         </header>
 
+        {promoCode && (
+          <div className="mb-5 px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 text-[13px] text-center border border-emerald-200 inline-flex items-center justify-center gap-2 w-full">
+            <Tag className="h-3.5 w-3.5" />
+            <span>Du löser in koden <span className="font-mono font-medium">{promoCode}</span> — den aktiveras direkt efter inloggning.</span>
+          </div>
+        )}
+
         {hasAffiliatePending && mode === "signup" && (
           <div className="mb-5 px-4 py-3 rounded-xl bg-v2-violet/10 text-v2-violet text-[13px] text-center border border-v2-violet/20">
             <T k="auth.affiliate_invite" />
