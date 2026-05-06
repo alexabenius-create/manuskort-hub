@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { setPendingPromoCode, clearPendingPromoCode } from "@/lib/redeemPendingPromo";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Gift, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2, Sparkles, Gift, CheckCircle2, AlertCircle, ArrowRight, Clock } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 
@@ -159,7 +159,8 @@ function LoadingView({ code }: { code: string }) {
   );
 }
 
-function NeedsAuthView({ code }: { code: string }) {
+function NeedsAuthView({ code, preview }: { code: string; preview: PromoPreview | null }) {
+  const validity = formatValidity(preview);
   return (
     <div className="text-center">
       <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-v2-violet to-v2-blue text-white shadow-lg shadow-v2-violet/30 mb-5">
@@ -184,6 +185,12 @@ function NeedsAuthView({ code }: { code: string }) {
       <div className="my-6 px-4 py-3 rounded-xl border border-dashed border-v2-violet/40 bg-v2-violet/5">
         <p className="text-[11px] text-v2-muted uppercase tracking-wide mb-1">Din kod</p>
         <p className="font-mono text-v2-ink text-lg font-medium tracking-[0.2em]">{code}</p>
+        {validity && (
+          <p className="text-[12px] text-v2-muted mt-2 flex items-center justify-center gap-1.5">
+            <Clock className="h-3 w-3" />
+            {validity}
+          </p>
+        )}
       </div>
 
       <ul className="text-left space-y-2 mb-7">
