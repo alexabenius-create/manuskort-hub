@@ -127,7 +127,7 @@ export default function PromoLanding() {
 
         <div className="bg-white/85 backdrop-blur-xl rounded-3xl border border-v2-line shadow-[0_30px_80px_-20px_rgba(99,102,241,0.30)] p-8 sm:p-10 v2-reveal">
           {state.kind === "loading" && <LoadingView code={code} />}
-          {state.kind === "needs_auth" && <NeedsAuthView code={state.code} />}
+          {state.kind === "needs_auth" && <NeedsAuthView code={state.code} preview={state.preview} />}
           {state.kind === "success" && <SuccessView expiresAt={state.expiresAt} />}
           {state.kind === "error" && (
             <ErrorView message={state.message} recoverable={state.recoverable} />
