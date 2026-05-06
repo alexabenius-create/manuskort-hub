@@ -17,6 +17,7 @@ import { HelpButton } from "@/components/HelpButton";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { AffiliateSection } from "@/components/settings/AffiliateSection";
 import { AffiliatePromoModal } from "@/components/AffiliatePromoModal";
+import { PromoRedeemField } from "@/components/PromoRedeemField";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
@@ -271,6 +272,16 @@ export default function SettingsV2() {
             <p className="text-[12px] text-v2-muted">
               {t("settings.wpm_hint")}
             </p>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4 v2-reveal">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-v2-ink">Kampanjkod</h2>
+          <p className="text-[14px] text-v2-muted -mt-2">
+            Har du fått en kampanjkod? Lös in den för att aktivera PRO under en begränsad period.
+          </p>
+          <div className={cardCls}>
+            <PromoRedeemField onRedeemed={() => window.location.reload()} />
           </div>
         </section>
 
