@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Copy, Plus, Trash2, Users, Loader2 } from "lucide-react";
+import { Copy, Plus, Trash2, Users, Loader2, Link2 } from "lucide-react";
 
 interface PromoCode {
   id: string;
