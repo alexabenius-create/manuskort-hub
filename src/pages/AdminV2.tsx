@@ -249,6 +249,14 @@ export default function AdminV2() {
               <FlaskConical className="h-3.5 w-3.5" />
               BETA
             </TabsTrigger>
+            <TabsTrigger
+              value="promo"
+              className="rounded-full px-5 text-[14px] text-v2-muted data-[state=active]:text-white gap-2"
+              style={tab === "promo" ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
+            >
+              <Tag className="h-3.5 w-3.5" />
+              Promo
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
