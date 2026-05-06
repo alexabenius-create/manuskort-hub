@@ -37,6 +37,18 @@ function translateErr(msg: string): string {
   return "Något gick fel. Försök igen om en stund.";
 }
 
+function formatValidity(p: PromoPreview | null): string | null {
+  if (!p) return null;
+  if (p.mode === "fixed" && p.fixed_ends_at) {
+    const d = new Date(p.fixed_ends_at).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+    return `Gäller till ${d}`;
+  }
+  if (p.mode === "rolling" && p.duration_days) {
+    return `Ger PRO i ${p.duration_days} dagar från aktivering`;
+  }
+  return null;
+}
+
 const PRO_PERKS = [
   "Obegränsat antal manus",
   "AI-förbättringar i editorn",
