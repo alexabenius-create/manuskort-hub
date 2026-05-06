@@ -1,62 +1,71 @@
+## Mål
+Ersätt manuell "lös in"-flow med klickbara länkar `manuskort.se/promo/<KOD>` som automatiskt aktiverar PRO för rätt konto — oavsett om användaren redan är inloggad, loggar in eller skapar nytt konto.
 
-# Promotion-koder för tidsbegränsad PRO
+## Användarflöde
 
-Ge admin möjlighet att skapa kampanjkoder som ger PRO under en begränsad period. Befintliga och nya användare kan lösa in koden från sin profil/inställningar eller direkt vid signup.
+**Inloggad användare klickar på länken**
+1. Landar på `/promo/Z4WMRS6Z`.
+2. Sidan kallar `redeem_promo_code` direkt.
+3. Toast: "PRO aktiverat till ÅÅÅÅ-MM-DD" → redirect till `/bibliotek`.
+4. Vid fel (utgången, redan inlöst, ogiltig) visas tydligt felkort med knapp tillbaka till startsidan.
 
-## Funktionalitet
+**Utloggad användare klickar på länken**
+1. Landar på `/promo/Z4WMRS6Z`.
+2. Sidan visar kort: "Du har fått en PRO-kod. Logga in eller skapa konto för att aktivera." Koden lagras i `sessionStorage` (`pendingPromoCode`).
+3. Knapp → `/auth?promo=Z4WMRS6Z` (både login- och signup-läge).
+4. När `useAuth` upptäcker `SIGNED_IN` (oavsett om det var login eller nytt signup som verifierats) körs en post-auth-hook som kallar `redeem_promo_code` med pending-koden, visar toast och rensar sessionStorage.
+5. För nytt signup som kräver e-postverifiering: koden ligger kvar i sessionStorage tills verifieringslänken klickas och sessionen blir aktiv — då löses den in automatiskt.
 
-**Admin (i `/admin?tab=promo`):**
-- Skapa kod (manuell eller auto-genererad, t.ex. `SOMMAR2026`).
-- Välj period på två sätt:
-  - Datumintervall (från–till).
-  - Antal dagar → räknas om till exakt slutdatum vid inlösen (rullande), eller fast slutdatum för alla (val "Rullande per användare" / "Fast slutdatum").
-- Välj användning:
-  - **Unik** (engångskod, en användare).
-  - **Delad** (flera användare, valfritt max-antal inlösningar).
-- Aktiv/pausad-toggle, valfri intern beskrivning.
-- Lista befintliga koder med status, antal inlösta, utgångsdatum, åtgärder (pausa, ta bort, kopiera kod).
-- Se vilka användare som löst in en specifik kod.
+## Teknisk design
 
-**Användare:**
-- Fält "Lös in kampanjkod" i Inställningar (SettingsV2) och som steg i WelcomeAfterSignupModal.
-- Vid lyckad inlösen: toast "PRO aktiverat till YYYY-MM-DD", tier uppdateras direkt.
-- Felmeddelanden: ogiltig kod, utgången, redan inlöst, max antal nått, kodanvändning kräver inloggning.
+### Ny route
+- `/promo/:code` → ny sida `src/pages/PromoLanding.tsx` (publik, ingen `RequireAuth`).
+- Läggs till i `src/App.tsx` bredvid `/affiliate/:code` (samma mönster).
 
-**Tier-logik:**
-- `get_user_tier()` utökas så att en aktiv promo-belöning ger `pro` (samma princip som `has_active_affiliate_pro`).
-- När promo-perioden går ut faller användaren tillbaka till `free` automatiskt (ingen cron behövs — beräknas live).
-- Befintliga manuskript-skydd (5 May-migrationen) påverkas inte; existerande data rörs aldrig.
+### `PromoLanding.tsx`
+- Läser `code` från `useParams`.
+- Om `useAuth().user` finns: kör `supabase.rpc("redeem_promo_code", { _code })` direkt, visa loader → success/error → redirect.
+- Om utloggad: spara `sessionStorage.setItem("pendingPromoCode", code)`, visa info-kort med två CTA: "Logga in" och "Skapa konto" → båda till `/auth?promo=<code>&mode=login|signup`.
+- Visar kodens namn (visning av koden i monospace) men ingen periodinfo (vi vet inte den utan extra RPC; håller det enkelt).
 
-## Tekniska detaljer
+### Post-auth inlösen
+- Nytt hook eller utility `src/lib/redeemPendingPromo.ts` som:
+  - Läser `sessionStorage.pendingPromoCode`.
+  - Om finns och user är inloggad: kallar `redeem_promo_code`, visar toast, rensar sessionStorage.
+- Kallas från `useAuth` i `onAuthStateChange` när event är `SIGNED_IN` (eller från en useEffect i `App.tsx`/`RequireAuth` som lyssnar på user-byte).
+- Idempotent: om RPC svarar `promo_already_redeemed` rensas sessionStorage tyst utan felmeddelande.
 
-**Nya tabeller:**
-- `promo_codes`: `id`, `code` (unique, citext), `description`, `duration_days` (nullable), `fixed_starts_at`/`fixed_ends_at` (nullable), `mode` ('rolling' | 'fixed'), `usage_type` ('unique' | 'shared'), `max_redemptions` (nullable för obegränsat), `redemption_count`, `active` bool, `created_by`, `created_at`.
-- `promo_redemptions`: `id`, `promo_code_id`, `user_id`, `redeemed_at`, `expires_at`. Unique(`promo_code_id`, `user_id`) för att blockera dubbel inlösen.
+### `/auth` integration (Auth + AuthV2)
+- Läs `?promo=` från query och visa liten banner: "Du löser in koden Z4WMRS6Z — den aktiveras direkt efter inloggning."
+- Vid signup: skicka med `emailRedirectTo: window.location.origin + "/promo/<code>"` så att verifieringslänken landar tillbaka på promo-sidan (säkerställer inlösen även för bekräftade konton).
+- Vid lyckad login/signup: navigering sköts som vanligt; pending-koden löses in automatiskt av post-auth-hooken.
 
-**RLS:**
-- `promo_codes`: admin full CRUD. Vanliga användare har ingen direktåtkomst — inlösen sker via RPC.
-- `promo_redemptions`: admin select all; user select own. Inserts endast via SECURITY DEFINER RPC.
+### Admin UI — visa länk
+- I `PromoCodesPanel.tsx`: lägg till en "Kopiera länk"-knapp bredvid kopieringsikonen, som kopierar `${window.location.origin}/promo/<code>`.
+- Behåll befintlig "Kopiera kod"-funktion.
 
-**RPC:er (SECURITY DEFINER):**
-- `admin_create_promo_code(...)` — validerar admin, skapar rad.
-- `admin_list_promo_codes()` / `admin_list_promo_redemptions(_promo_id)`.
-- `admin_set_promo_active(_id, _active)` / `admin_delete_promo_code(_id)`.
-- `redeem_promo_code(_code text)` — auth check, hämtar kod (case-insensitive), validerar `active`, period (för fixed), `max_redemptions`, om unique=ej redan använd globalt, om shared=ej redan inlöst av denna user. Räknar `expires_at` (rolling: now + duration_days, fixed: fixed_ends_at). Bumpar `redemption_count`. Returnerar `{ expires_at }`.
-- `has_active_promo_pro(_user_id)` — STABLE; används av `get_user_tier`.
+### Behåll eller ta bort manuell inlösen?
+- **Förslag:** Behåll `PromoRedeemField` i `SettingsV2` som backup (folk kan ha fått koden via SMS/affisch utan länk). Det är samma RPC, ingen extra kostnad.
 
-**UI-komponenter:**
-- `src/components/admin/PromoCodesPanel.tsx` — lista + "Skapa kod"-dialog (`NewPromoCodeDialog.tsx`) + "Inlösta"-dialog.
-- Ny tab "Promo" i `AdminV2.tsx` (`Tag`-ikon).
-- `src/components/PromoRedeemField.tsx` — input + knapp, återanvänds i `SettingsV2` och `WelcomeAfterSignupModal`.
+## Säkerhet
+- Inga ändringar i RPC `redeem_promo_code` — den validerar redan allt server-side.
+- `sessionStorage` (inte `localStorage`) så att koden försvinner när fliken stängs.
+- Koden i URL är inte hemlig (samma princip som affiliate-koder).
 
-**i18n:** Nya nycklar i `sv.json`/`en.json` under `admin.promo.*` och `settings.promo.*`.
+## Filer som påverkas
 
-**Säkerhet:** All validering sker server-side i RPC. Klienten kan aldrig själv sätta sin tier. Koder lagras case-insensitive (citext eller `lower()`-jämförelse). Rate-limit kan läggas till senare om behov uppstår.
+**Nya:**
+- `src/pages/PromoLanding.tsx`
+- `src/lib/redeemPendingPromo.ts`
 
-## Frågor innan jag börjar
+**Ändrade:**
+- `src/App.tsx` — ny route `/promo/:code`.
+- `src/hooks/useAuth.tsx` — anropa `redeemPendingPromo` vid `SIGNED_IN`.
+- `src/pages/Auth.tsx` + `src/pages/AuthV2.tsx` — läs `?promo=` och visa banner; sätt `emailRedirectTo` till `/promo/<code>` vid signup.
+- `src/components/admin/PromoCodesPanel.tsx` — knapp för "Kopiera länk".
+- (Valfritt) i18n-nycklar för promo-sidans texter.
 
-1. **Default kod-mode** när admin fyller i "antal dagar": Rullande per användare (t.ex. 30 dagar från inlösen) eller Fast slutdatum (alla får samma utgångsdatum)? — Förslag: båda valbara, default rullande.
-2. **Stapling**: Om en användare löser in en ny kod medan en gammal promo fortfarande är aktiv — ska vi förlänga (lägga ihop dagar) eller bara använda det senare av de två utgångsdatumen? — Förslag: använd senaste/längsta `expires_at`, ingen stapling.
-3. **Pro via betalning + promo**: Om användaren redan är betalande PRO ska promo ändå loggas (för framtida fallback) men inte påverka något — OK?
-
-Säg till om något ska justeras, annars implementerar jag enligt ovan.
+## Frågor
+1. **Behålla manuell inlösen i Inställningar?** Förslag: ja, som backup.
+2. **Vid signup som kräver e-postverifiering**: ska `emailRedirectTo` peka på `/promo/<code>` (säker, fungerar alltid) eller `/bibliotek` (vanlig flow + sessionStorage tar hand om det)? Förslag: peka på `/promo/<code>` så att inlösen sker explicit på rätt plats.
+3. **Default-flik på `/auth?promo=...`**: login eller signup? Förslag: visa båda likvärdigt, default login (eftersom befintliga PRO-erbjudanden ofta går till befintliga användare).
