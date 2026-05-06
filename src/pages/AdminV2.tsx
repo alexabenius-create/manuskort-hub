@@ -13,7 +13,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Search, Sparkles, MessageSquare, Eye, Lightbulb, FlaskConical } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, MessageSquare, Eye, Lightbulb, FlaskConical, Tag } from "lucide-react";
+import { PromoCodesPanel } from "@/components/admin/PromoCodesPanel";
 import { toast } from "@/hooks/use-toast";
 import { TIER_LABEL, type Tier } from "@/lib/tierLimits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
