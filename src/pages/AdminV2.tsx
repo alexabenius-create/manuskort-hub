@@ -26,12 +26,18 @@ import { InsightsPanel } from "@/components/admin/insights/InsightsPanel";
 import { AiUsagePanel } from "@/components/admin/AiUsagePanel";
 import { BetaAccessPanel } from "@/components/admin/BetaAccessPanel";
 
+interface PromoInfo {
+  code: string;
+  expires_at: string;
+}
+
 interface UserRow {
   user_id: string;
   email: string | null;
   tier: Tier;
   manuscript_count: number;
   last_seen_at: string | null;
+  promo?: PromoInfo;
 }
 
 interface AdminListUserRow {
