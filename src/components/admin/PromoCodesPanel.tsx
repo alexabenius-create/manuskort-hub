@@ -81,6 +81,12 @@ export function PromoCodesPanel() {
     toast.success(`Kopierade ${code}`);
   };
 
+  const copyLink = (code: string) => {
+    const url = `${window.location.origin}/promo/${code}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Länk kopierad");
+  };
+
   const expiresLabel = (r: PromoCode) => {
     if (r.mode === "fixed" && r.fixed_ends_at) {
       return new Date(r.fixed_ends_at).toLocaleDateString("sv-SE");
