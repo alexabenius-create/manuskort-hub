@@ -71,7 +71,7 @@ export default function PromoLanding() {
             code,
             preview: {
               active: row.active,
-              mode: row.mode,
+              mode: row.mode === "fixed" ? "fixed" : "rolling",
               duration_days: row.duration_days,
               fixed_starts_at: row.fixed_starts_at,
               fixed_ends_at: row.fixed_ends_at,
