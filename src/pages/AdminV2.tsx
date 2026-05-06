@@ -13,7 +13,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Search, Sparkles, MessageSquare, Eye, Lightbulb, FlaskConical, Tag } from "lucide-react";
+import { ArrowLeft, Search, Sparkles, MessageSquare, Eye, Lightbulb, FlaskConical, Tag, Gift } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PromoCodesPanel } from "@/components/admin/PromoCodesPanel";
 import { toast } from "@/hooks/use-toast";
 import { TIER_LABEL, type Tier } from "@/lib/tierLimits";
@@ -25,12 +26,18 @@ import { InsightsPanel } from "@/components/admin/insights/InsightsPanel";
 import { AiUsagePanel } from "@/components/admin/AiUsagePanel";
 import { BetaAccessPanel } from "@/components/admin/BetaAccessPanel";
 
+interface PromoInfo {
+  code: string;
+  expires_at: string;
+}
+
 interface UserRow {
   user_id: string;
   email: string | null;
   tier: Tier;
   manuscript_count: number;
   last_seen_at: string | null;
+  promo?: PromoInfo;
 }
 
 interface AdminListUserRow {
@@ -106,12 +113,24 @@ export default function AdminV2() {
       setLoading(false);
       return;
     }
+    // Fetch promo redemptions (admins can select all). Pick latest per user.
+    const { data: promoData } = await supabase
+      .from("promo_redemptions")
+      .select("user_id, expires_at, redeemed_at, promo_codes(code)")
+      .order("redeemed_at", { ascending: false });
+    const promoByUser = new Map<string, PromoInfo>();
+    for (const p of (promoData ?? []) as Array<{ user_id: string; expires_at: string; promo_codes: { code: string } | null }>) {
+      if (!promoByUser.has(p.user_id) && p.promo_codes?.code) {
+        promoByUser.set(p.user_id, { code: p.promo_codes.code, expires_at: p.expires_at });
+      }
+    }
     const list: UserRow[] = ((data ?? []) as AdminListUserRow[]).map((r) => ({
       user_id: r.user_id,
       email: r.email,
       tier: r.tier,
       manuscript_count: Number(r.manuscript_count ?? 0),
       last_seen_at: r.last_seen_at,
+      promo: promoByUser.get(r.user_id),
     }));
     setRows(list);
     setLoading(false);
@@ -319,18 +338,43 @@ export default function AdminV2() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <span
-                              className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${
-                                isAdmin
-                                  ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
-                                  : isPro
-                                  ? "text-white"
-                                  : "bg-slate-100 text-v2-muted"
-                              }`}
-                              style={isPro && !isAdmin ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
-                            >
-                              {TIER_LABEL[r.tier].toUpperCase()}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5">
+                              <span
+                                className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${
+                                  isAdmin
+                                    ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
+                                    : isPro
+                                    ? "text-white"
+                                    : "bg-slate-100 text-v2-muted"
+                                }`}
+                                style={isPro && !isAdmin ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
+                              >
+                                {TIER_LABEL[r.tier].toUpperCase()}
+                              </span>
+                              {r.promo && isPro && (() => {
+                                const days = Math.max(0, Math.ceil((new Date(r.promo.expires_at).getTime() - now) / 86400000));
+                                return (
+                                  <TooltipProvider delayDuration={100}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-pink-100 text-pink-600 ring-1 ring-pink-200 cursor-help">
+                                          <Gift className="h-3 w-3" />
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="text-[12px]">
+                                        <div className="font-semibold">PROMO: {r.promo.code}</div>
+                                        <div className="text-v2-muted">
+                                          {days > 0 ? `Gäller ${days} dag${days === 1 ? "" : "ar"} till` : "Utgången"}
+                                        </div>
+                                        <div className="text-v2-muted">
+                                          Till {new Date(r.promo.expires_at).toLocaleDateString("sv-SE")}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              })()}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right text-[14px] tabular-nums text-v2-ink">{r.manuscript_count}</TableCell>
                           <TableCell className="text-right">
