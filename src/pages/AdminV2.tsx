@@ -406,6 +406,10 @@ export default function AdminV2() {
           <TabsContent value="beta">
             <BetaAccessPanel />
           </TabsContent>
+
+          <TabsContent value="promo">
+            <PromoCodesPanel />
+          </TabsContent>
         </Tabs>
       </main>
 
