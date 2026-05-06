@@ -189,7 +189,7 @@ export default function AdminV2() {
         <Tabs
           value={tab}
           onValueChange={(v) => {
-            setTab(v as "users" | "feedback" | "visits" | "insikter" | "ai" | "beta");
+            setTab(v as "users" | "feedback" | "visits" | "insikter" | "ai" | "beta" | "promo");
             const url = new URL(window.location.href);
             if (v === "users") url.searchParams.delete("tab");
             else url.searchParams.set("tab", v);
