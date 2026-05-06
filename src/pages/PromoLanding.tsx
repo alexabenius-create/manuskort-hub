@@ -4,13 +4,21 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { setPendingPromoCode, clearPendingPromoCode } from "@/lib/redeemPendingPromo";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Gift, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2, Sparkles, Gift, CheckCircle2, AlertCircle, ArrowRight, Clock } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 
+type PromoPreview = {
+  active: boolean;
+  mode: "rolling" | "fixed";
+  duration_days: number | null;
+  fixed_starts_at: string | null;
+  fixed_ends_at: string | null;
+};
+
 type State =
   | { kind: "loading" }
-  | { kind: "needs_auth"; code: string }
+  | { kind: "needs_auth"; code: string; preview: PromoPreview | null }
   | { kind: "success"; expiresAt: string | null }
   | { kind: "error"; message: string; recoverable?: boolean };
 
@@ -27,6 +35,18 @@ const ERR: Record<string, string> = {
 function translateErr(msg: string): string {
   for (const k of Object.keys(ERR)) if (msg.includes(k)) return ERR[k];
   return "Något gick fel. Försök igen om en stund.";
+}
+
+function formatValidity(p: PromoPreview | null): string | null {
+  if (!p) return null;
+  if (p.mode === "fixed" && p.fixed_ends_at) {
+    const d = new Date(p.fixed_ends_at).toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+    return `Gäller till ${d}`;
+  }
+  if (p.mode === "rolling" && p.duration_days) {
+    return `Ger PRO i ${p.duration_days} dagar från aktivering`;
+  }
+  return null;
 }
 
 const PRO_PERKS = [
@@ -52,7 +72,25 @@ export default function PromoLanding() {
     }
     if (!user) {
       setPendingPromoCode(code);
-      setState({ kind: "needs_auth", code });
+      setState({ kind: "needs_auth", code, preview: null });
+      // Hämta info om koden i bakgrunden för att kunna visa giltighetstid
+      (async () => {
+        const { data } = await supabase.rpc("get_promo_code_preview", { _code: code });
+        const row = Array.isArray(data) ? data[0] : null;
+        if (row) {
+          setState({
+            kind: "needs_auth",
+            code,
+            preview: {
+              active: row.active,
+              mode: row.mode === "fixed" ? "fixed" : "rolling",
+              duration_days: row.duration_days,
+              fixed_starts_at: row.fixed_starts_at,
+              fixed_ends_at: row.fixed_ends_at,
+            },
+          });
+        }
+      })();
       return;
     }
     if (ranRef.current) return;
@@ -101,7 +139,7 @@ export default function PromoLanding() {
 
         <div className="bg-white/85 backdrop-blur-xl rounded-3xl border border-v2-line shadow-[0_30px_80px_-20px_rgba(99,102,241,0.30)] p-8 sm:p-10 v2-reveal">
           {state.kind === "loading" && <LoadingView code={code} />}
-          {state.kind === "needs_auth" && <NeedsAuthView code={state.code} />}
+          {state.kind === "needs_auth" && <NeedsAuthView code={state.code} preview={state.preview} />}
           {state.kind === "success" && <SuccessView expiresAt={state.expiresAt} />}
           {state.kind === "error" && (
             <ErrorView message={state.message} recoverable={state.recoverable} />
@@ -133,7 +171,8 @@ function LoadingView({ code }: { code: string }) {
   );
 }
 
-function NeedsAuthView({ code }: { code: string }) {
+function NeedsAuthView({ code, preview }: { code: string; preview: PromoPreview | null }) {
+  const validity = formatValidity(preview);
   return (
     <div className="text-center">
       <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-v2-violet to-v2-blue text-white shadow-lg shadow-v2-violet/30 mb-5">
@@ -158,6 +197,12 @@ function NeedsAuthView({ code }: { code: string }) {
       <div className="my-6 px-4 py-3 rounded-xl border border-dashed border-v2-violet/40 bg-v2-violet/5">
         <p className="text-[11px] text-v2-muted uppercase tracking-wide mb-1">Din kod</p>
         <p className="font-mono text-v2-ink text-lg font-medium tracking-[0.2em]">{code}</p>
+        {validity && (
+          <p className="text-[12px] text-v2-muted mt-2 flex items-center justify-center gap-1.5">
+            <Clock className="h-3 w-3" />
+            {validity}
+          </p>
+        )}
       </div>
 
       <ul className="text-left space-y-2 mb-7">
