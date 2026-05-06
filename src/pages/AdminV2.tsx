@@ -113,12 +113,24 @@ export default function AdminV2() {
       setLoading(false);
       return;
     }
+    // Fetch promo redemptions (admins can select all). Pick latest per user.
+    const { data: promoData } = await supabase
+      .from("promo_redemptions")
+      .select("user_id, expires_at, redeemed_at, promo_codes(code)")
+      .order("redeemed_at", { ascending: false });
+    const promoByUser = new Map<string, PromoInfo>();
+    for (const p of (promoData ?? []) as Array<{ user_id: string; expires_at: string; promo_codes: { code: string } | null }>) {
+      if (!promoByUser.has(p.user_id) && p.promo_codes?.code) {
+        promoByUser.set(p.user_id, { code: p.promo_codes.code, expires_at: p.expires_at });
+      }
+    }
     const list: UserRow[] = ((data ?? []) as AdminListUserRow[]).map((r) => ({
       user_id: r.user_id,
       email: r.email,
       tier: r.tier,
       manuscript_count: Number(r.manuscript_count ?? 0),
       last_seen_at: r.last_seen_at,
+      promo: promoByUser.get(r.user_id),
     }));
     setRows(list);
     setLoading(false);
