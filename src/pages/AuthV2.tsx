@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { registerPendingReferral } from "@/hooks/useAffiliate";
+import { setPendingPromoCode } from "@/lib/redeemPendingPromo";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 import { T, useT } from "@/i18n/T";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 import { translateAuthError } from "@/i18n/authErrors";
+import { Tag } from "lucide-react";
 
 type Mode = "magic" | "password" | "signup" | "forgot";
 
@@ -29,6 +31,14 @@ export default function AuthV2() {
   const [hasAffiliatePending] = useState(() => {
     try { return !!localStorage.getItem("affiliate_pending"); } catch { return false; }
   });
+
+  const promoCode = (searchParams.get("promo") || "").trim().toUpperCase();
+  useEffect(() => {
+    if (promoCode) setPendingPromoCode(promoCode);
+  }, [promoCode]);
+  const signupRedirect = promoCode
+    ? `${window.location.origin}/promo/${promoCode}`
+    : `${window.location.origin}/bibliotek-v2`;
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
