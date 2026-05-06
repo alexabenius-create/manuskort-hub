@@ -17,6 +17,7 @@ import { HelpButton } from "@/components/HelpButton";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { AffiliateSection } from "@/components/settings/AffiliateSection";
 import { AffiliatePromoModal } from "@/components/AffiliatePromoModal";
+import { PromoRedeemField } from "@/components/PromoRedeemField";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 
