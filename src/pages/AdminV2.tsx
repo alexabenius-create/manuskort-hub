@@ -338,18 +338,43 @@ export default function AdminV2() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <span
-                              className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${
-                                isAdmin
-                                  ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
-                                  : isPro
-                                  ? "text-white"
-                                  : "bg-slate-100 text-v2-muted"
-                              }`}
-                              style={isPro && !isAdmin ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
-                            >
-                              {TIER_LABEL[r.tier].toUpperCase()}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5">
+                              <span
+                                className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${
+                                  isAdmin
+                                    ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
+                                    : isPro
+                                    ? "text-white"
+                                    : "bg-slate-100 text-v2-muted"
+                                }`}
+                                style={isPro && !isAdmin ? { backgroundImage: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)" } : undefined}
+                              >
+                                {TIER_LABEL[r.tier].toUpperCase()}
+                              </span>
+                              {r.promo && isPro && (() => {
+                                const days = Math.max(0, Math.ceil((new Date(r.promo.expires_at).getTime() - now) / 86400000));
+                                return (
+                                  <TooltipProvider delayDuration={100}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-pink-100 text-pink-600 ring-1 ring-pink-200 cursor-help">
+                                          <Gift className="h-3 w-3" />
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="text-[12px]">
+                                        <div className="font-semibold">PROMO: {r.promo.code}</div>
+                                        <div className="text-v2-muted">
+                                          {days > 0 ? `Gäller ${days} dag${days === 1 ? "" : "ar"} till` : "Utgången"}
+                                        </div>
+                                        <div className="text-v2-muted">
+                                          Till {new Date(r.promo.expires_at).toLocaleDateString("sv-SE")}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              })()}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right text-[14px] tabular-nums text-v2-ink">{r.manuscript_count}</TableCell>
                           <TableCell className="text-right">
