@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Copy, Plus, Trash2, Users, Loader2 } from "lucide-react";
+import { Copy, Plus, Trash2, Users, Loader2, Link2 } from "lucide-react";
 
 interface PromoCode {
   id: string;
@@ -81,6 +81,12 @@ export function PromoCodesPanel() {
     toast.success(`Kopierade ${code}`);
   };
 
+  const copyLink = (code: string) => {
+    const url = `${window.location.origin}/promo/${code}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Länk kopierad");
+  };
+
   const expiresLabel = (r: PromoCode) => {
     if (r.mode === "fixed" && r.fixed_ends_at) {
       return new Date(r.fixed_ends_at).toLocaleDateString("sv-SE");
@@ -144,6 +150,9 @@ export function PromoCodesPanel() {
                     <Switch checked={r.active} onCheckedChange={() => toggleActive(r)} />
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => copyLink(r.code)} title="Kopiera inlösningslänk" className="text-v2-muted hover:text-v2-violet">
+                      <Link2 className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(r)} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

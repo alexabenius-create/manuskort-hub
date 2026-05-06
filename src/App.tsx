@@ -36,6 +36,7 @@ const Talare = lazy(() => import("./pages/usecase/TalareV2"));
 const Panelsamtal = lazy(() => import("./pages/usecase/PanelsamtalV2"));
 const Forelasning = lazy(() => import("./pages/usecase/ForelasningV2"));
 const AffiliateLanding = lazy(() => import("./pages/AffiliateLandingV2"));
+const PromoLanding = lazy(() => import("./pages/PromoLanding"));
 
 // Alias-routes (-v2-suffix) renderar samma V2-komponenter — behålls tills v1-filer raderas.
 const LandingV2 = Landing;
@@ -114,6 +115,7 @@ const App = () => (
                   <Route path="/forelasning-v2" element={<ForelasningV2 />} />
                   <Route path="/affiliate/:code" element={<AffiliateLanding />} />
                   <Route path="/affiliate-v2/:code" element={<AffiliateLandingV2 />} />
+                  <Route path="/promo/:code" element={<PromoLanding />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
                   <Route path="/bibliotek-v2" element={<RequireAuth><LibraryV2 /></RequireAuth>} />
                   <Route path="/installningar" element={<RequireAuth><Settings /></RequireAuth>} />

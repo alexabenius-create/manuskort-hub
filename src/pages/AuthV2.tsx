@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { registerPendingReferral } from "@/hooks/useAffiliate";
+import { setPendingPromoCode } from "@/lib/redeemPendingPromo";
 import manuskortLogo from "@/assets/manuskort-logo.png";
 import { T, useT } from "@/i18n/T";
 import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { TranslationEditModeToggle } from "@/i18n/TranslationEditModeToggle";
 import { translateAuthError } from "@/i18n/authErrors";
+import { Tag } from "lucide-react";
 
 type Mode = "magic" | "password" | "signup" | "forgot";
 
@@ -30,6 +32,14 @@ export default function AuthV2() {
     try { return !!localStorage.getItem("affiliate_pending"); } catch { return false; }
   });
 
+  const promoCode = (searchParams.get("promo") || "").trim().toUpperCase();
+  useEffect(() => {
+    if (promoCode) setPendingPromoCode(promoCode);
+  }, [promoCode]);
+  const signupRedirect = promoCode
+    ? `${window.location.origin}/promo/${promoCode}`
+    : `${window.location.origin}/bibliotek-v2`;
+
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -37,7 +47,7 @@ export default function AuthV2() {
       if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}/bibliotek-v2` },
+          options: { emailRedirectTo: signupRedirect },
         });
         if (error) throw error;
         toast({ title: t("auth.magic_sent_title"), description: t("auth.magic_sent_desc") });
@@ -59,7 +69,7 @@ export default function AuthV2() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/bibliotek-v2`,
+            emailRedirectTo: signupRedirect,
             data: { first_name: trimmedFirst, last_name: trimmedLast },
           },
         });
@@ -152,6 +162,13 @@ export default function AuthV2() {
             <T k="auth.tagline" />
           </p>
         </header>
+
+        {promoCode && (
+          <div className="mb-5 px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 text-[13px] text-center border border-emerald-200 inline-flex items-center justify-center gap-2 w-full">
+            <Tag className="h-3.5 w-3.5" />
+            <span>Du löser in koden <span className="font-mono font-medium">{promoCode}</span> — den aktiveras direkt efter inloggning.</span>
+          </div>
+        )}
 
         {hasAffiliatePending && mode === "signup" && (
           <div className="mb-5 px-4 py-3 rounded-xl bg-v2-violet/10 text-v2-violet text-[13px] text-center border border-v2-violet/20">

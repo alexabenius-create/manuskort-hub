@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { redeemPendingPromo } from "@/lib/redeemPendingPromo";
 
 interface AuthCtx {
   session: Session | null;
@@ -17,9 +18,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Sätt upp lyssnare FÖRE getSession
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
       setLoading(false);
+      if (event === "SIGNED_IN" && sess?.user) {
+        // Lös in eventuell väntande promo-kod (defer för att undvika deadlock i callback)
+        setTimeout(() => { redeemPendingPromo(); }, 0);
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {
