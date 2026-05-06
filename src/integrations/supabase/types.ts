@@ -1190,6 +1190,20 @@ export type Database = {
         }[]
       }
       get_or_create_affiliate_code: { Args: never; Returns: string }
+      get_promo_code_preview: {
+        Args: { _code: string }
+        Returns: {
+          active: boolean
+          code: string
+          duration_days: number
+          fixed_ends_at: string
+          fixed_starts_at: string
+          max_redemptions: number
+          mode: string
+          redemption_count: number
+          usage_type: string
+        }[]
+      }
       get_user_tier: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
