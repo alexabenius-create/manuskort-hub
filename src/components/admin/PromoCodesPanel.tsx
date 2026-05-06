@@ -82,7 +82,9 @@ export function PromoCodesPanel() {
   };
 
   const copyLink = (code: string) => {
-    const url = `${window.location.origin}/promo/${code}`;
+    const isProd = /manuskort\.(se|com)$/.test(window.location.hostname);
+    const base = isProd ? window.location.origin : "https://manuskort.se";
+    const url = `${base}/promo/${code}`;
     navigator.clipboard.writeText(url);
     toast.success("Länk kopierad");
   };
