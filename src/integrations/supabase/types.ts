@@ -826,6 +826,89 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string
+          description: string
+          duration_days: number | null
+          fixed_ends_at: string | null
+          fixed_starts_at: string | null
+          id: string
+          max_redemptions: number | null
+          mode: string
+          redemption_count: number
+          updated_at: string
+          usage_type: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by: string
+          description?: string
+          duration_days?: number | null
+          fixed_ends_at?: string | null
+          fixed_starts_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          mode: string
+          redemption_count?: number
+          updated_at?: string
+          usage_type: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          duration_days?: number | null
+          fixed_ends_at?: string | null
+          fixed_starts_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          mode?: string
+          redemption_count?: number
+          updated_at?: string
+          usage_type?: string
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          expires_at: string
+          id: string
+          promo_code_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          promo_code_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          promo_code_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_visits: {
         Row: {
           country: string | null
@@ -1005,6 +1088,54 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_promo_code: {
+        Args: {
+          _code: string
+          _description: string
+          _duration_days: number
+          _fixed_ends_at: string
+          _fixed_starts_at: string
+          _max_redemptions: number
+          _mode: string
+          _usage_type: string
+        }
+        Returns: string
+      }
+      admin_delete_promo_code: { Args: { _id: string }; Returns: undefined }
+      admin_list_promo_codes: {
+        Args: never
+        Returns: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string
+          description: string
+          duration_days: number | null
+          fixed_ends_at: string | null
+          fixed_starts_at: string | null
+          id: string
+          max_redemptions: number | null
+          mode: string
+          redemption_count: number
+          updated_at: string
+          usage_type: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "promo_codes"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_list_promo_redemptions: {
+        Args: { _promo_id: string }
+        Returns: {
+          email: string
+          expires_at: string
+          redeemed_at: string
+          user_id: string
+        }[]
+      }
       admin_list_user_manuscripts: {
         Args: { _target_user_id: string }
         Returns: {
@@ -1029,6 +1160,10 @@ export type Database = {
           tier: Database["public"]["Enums"]["app_role"]
           user_id: string
         }[]
+      }
+      admin_set_promo_active: {
+        Args: { _active: boolean; _id: string }
+        Returns: undefined
       }
       admin_set_user_tier: {
         Args: {
@@ -1060,6 +1195,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       has_active_affiliate_pro: { Args: { _user_id: string }; Returns: boolean }
+      has_active_promo_pro: { Args: { _user_id: string }; Returns: boolean }
       has_active_share: {
         Args: { _admin_id: string; _manuscript_id: string }
         Returns: boolean
@@ -1088,6 +1224,12 @@ export type Database = {
         Returns: boolean
       }
       lookup_affiliate_referrer: { Args: { _code: string }; Returns: string }
+      redeem_promo_code: {
+        Args: { _code: string }
+        Returns: {
+          expires_at: string
+        }[]
+      }
       register_affiliate_referral: {
         Args: { _code: string }
         Returns: undefined
