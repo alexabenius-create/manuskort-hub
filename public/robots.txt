@@ -12,6 +12,10 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /auth
+Disallow: /auth-v2
+Disallow: /aterstall-losenord
+Disallow: /aterstall-losenord-v2
 Disallow: /bibliotek
 Disallow: /manus/
 Disallow: /installningar
