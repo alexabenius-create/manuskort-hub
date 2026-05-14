@@ -77,6 +77,11 @@ const LegacyEditorRedirect = () => {
   return <Navigate to={`/manus/${id}`} replace />;
 };
 
+const AffiliateAliasRedirect = () => {
+  const { code } = useParams<{ code: string }>();
+  return <Navigate to={`/affiliate/${code}`} replace />;
+};
+
 const PresenceTracker = () => {
   usePresence();
   useTranslationOverrides();
