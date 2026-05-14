@@ -77,6 +77,11 @@ const LegacyEditorRedirect = () => {
   return <Navigate to={`/manus/${id}`} replace />;
 };
 
+const AffiliateAliasRedirect = () => {
+  const { code } = useParams<{ code: string }>();
+  return <Navigate to={`/affiliate/${code}`} replace />;
+};
+
 const PresenceTracker = () => {
   usePresence();
   useTranslationOverrides();
@@ -98,23 +103,23 @@ const App = () => (
                 <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
-                  <Route path="/v2" element={<LandingV2 />} />
+                  <Route path="/v2" element={<Navigate to="/" replace />} />
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/auth-v2" element={<AuthV2 />} />
+                  <Route path="/auth-v2" element={<Navigate to="/auth" replace />} />
                   <Route path="/aterstall-losenord" element={<ResetPassword />} />
-                  <Route path="/aterstall-losenord-v2" element={<ResetPasswordV2 />} />
+                  <Route path="/aterstall-losenord-v2" element={<Navigate to="/aterstall-losenord" replace />} />
                   <Route path="/priser" element={<Pricing />} />
-                  <Route path="/priser-v2" element={<PricingV2 />} />
+                  <Route path="/priser-v2" element={<Navigate to="/priser" replace />} />
                   <Route path="/moderator" element={<Moderator />} />
-                  <Route path="/moderator-v2" element={<ModeratorV2 />} />
+                  <Route path="/moderator-v2" element={<Navigate to="/moderator" replace />} />
                   <Route path="/talare" element={<Talare />} />
-                  <Route path="/talare-v2" element={<TalareV2 />} />
+                  <Route path="/talare-v2" element={<Navigate to="/talare" replace />} />
                   <Route path="/panelsamtal" element={<Panelsamtal />} />
-                  <Route path="/panelsamtal-v2" element={<PanelsamtalV2 />} />
+                  <Route path="/panelsamtal-v2" element={<Navigate to="/panelsamtal" replace />} />
                   <Route path="/forelasning" element={<Forelasning />} />
-                  <Route path="/forelasning-v2" element={<ForelasningV2 />} />
+                  <Route path="/forelasning-v2" element={<Navigate to="/forelasning" replace />} />
                   <Route path="/affiliate/:code" element={<AffiliateLanding />} />
-                  <Route path="/affiliate-v2/:code" element={<AffiliateLandingV2 />} />
+                  <Route path="/affiliate-v2/:code" element={<AffiliateAliasRedirect />} />
                   <Route path="/promo/:code" element={<PromoLanding />} />
                   <Route path="/bibliotek" element={<RequireAuth><Library /></RequireAuth>} />
                   <Route path="/bibliotek-v2" element={<RequireAuth><LibraryV2 /></RequireAuth>} />
