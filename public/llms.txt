@@ -1,0 +1,25 @@
+# Manuskort
+
+> Skapa manus i kortformat, håll tiden och tala tryggt inför publik. Stöd för presentation, anförande och panelsamtal.
+
+Manuskort är ett webbaserat verktyg för talare, moderatorer, paneldeltagare och föreläsare som vill strukturera sina manus i ett kortbaserat format med tidsstyrning, talartips och en smidig presentationsvy.
+
+## Pages
+
+- [Startsida](/): Översikt av Manuskort och dess funktioner.
+- [Priser](/priser): Prisplaner och prenumerationsnivåer.
+- [Moderator](/moderator): Användningsfall för moderatorer och konferencierer.
+- [Talare](/talare): Användningsfall för talare och anföranden.
+- [Panelsamtal](/panelsamtal): Användningsfall för paneldeltagare.
+- [Föreläsning](/forelasning): Användningsfall för föreläsare.
+- [Bibliotek](/bibliotek): Dina sparade manus och bibliotek (kräver inloggning).
+- [Manusredigerare](/manus/:id): Skapa och redigera manus i kortformat (kräver inloggning).
+- [Inställningar](/installningar): Kontoinställningar och profil (kräver inloggning).
+- [Debatt Buddy](/debatt-buddy): AI-hjälp för att förbereda debattpositioner (kräver inloggning).
+- [Meddelanden](/meddelanden): Feedback och meddelanden (kräver inloggning).
+- [Importera](/importera): Importera dokument till manus (kräver inloggning).
+- [Checkout](/checkout/return): Återvändandesida efter betalning.
+
+## Optional
+
+- [Återställ lösenord](/aterstall-losenord): Återställning av glömt lösenord.
