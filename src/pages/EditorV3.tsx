@@ -805,20 +805,13 @@ export default function EditorV3() {
               <FeedbackButton source="editor" manuscriptId={id ?? null} className="hidden md:inline-flex" />
               <HelpButton />
 
-              {/* Sparindikator + kortantal (desktop, längst till höger) */}
+              {/* Kortantal (desktop, längst till höger) */}
               <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-border/40">
                 <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
                   {cardCount} kort
                 </span>
-                <span
-                  className={`text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
-                    saving === "error" ? "text-destructive" : "text-muted-foreground"
-                  }`}
-                >
-                  <Save className="h-3 w-3" />
-                  {saveLabel}
-                </span>
               </span>
+
             </div>
           </div>
         </header>
