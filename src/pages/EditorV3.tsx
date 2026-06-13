@@ -583,7 +583,18 @@ export default function EditorV3() {
 
             {/* Rad 2 (mobil, centrerad) / höger (desktop): actions */}
             <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-start md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
+              {/* Sparindikator (desktop, längst till vänster i action-raden) */}
+              <span
+                className={`hidden lg:inline-flex items-center gap-1 mr-1 pr-2 border-r border-border/40 text-[11px] font-mono whitespace-nowrap ${
+                  saving === "error" ? "text-destructive" : "text-muted-foreground"
+                }`}
+              >
+                <Save className="h-3 w-3" />
+                {saveLabel}
+              </span>
+
               {/* Måltid */}
+
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <button
