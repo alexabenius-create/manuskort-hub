@@ -19,13 +19,40 @@ export default function ResetPasswordV2() {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
 
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
+
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => {
+
+    (async () => {
+      // PKCE-flöde: Supabase skickar ?code=... som måste bytas mot en session
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const errorDesc = url.searchParams.get("error_description") || url.hash.match(/error_description=([^&]+)/)?.[1];
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          setExchangeError(decodeURIComponent(errorDesc || error.message));
+        } else {
+          setReady(true);
+          url.searchParams.delete("code");
+          window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+        }
+        return;
+      }
+
+      if (errorDesc) {
+        setExchangeError(decodeURIComponent(errorDesc));
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
       if (data.session) setReady(true);
-    });
+    })();
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
