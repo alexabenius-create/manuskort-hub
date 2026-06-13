@@ -702,6 +702,15 @@ export default function EditorV4() {
 
             {/* Rad 2 (mobil, centrerad) / höger (desktop): actions */}
             <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-start md:ml-auto flex-shrink-0 overflow-x-auto md:overflow-visible">
+              {/* Sparindikator (desktop, längst till vänster i action-raden) */}
+              <span
+                className={`hidden md:inline-flex items-center gap-1 mr-1 pr-2 border-r border-v2-line text-[11px] font-mono whitespace-nowrap ${
+                  saving === "error" ? "text-destructive" : "text-v2-muted"
+                }`}
+              >
+                <Save className="h-3 w-3" />
+                {saveLabel}
+              </span>
               {manuscript.mode === "debate" && (
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
@@ -944,18 +953,10 @@ export default function EditorV4() {
               </div>
               <HelpButton />
 
-              {/* Sparindikator + kortantal (desktop, längst till höger) */}
+              {/* Kortantal (desktop, längst till höger) */}
               <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-v2-line">
                 <span className="text-[11px] text-v2-muted font-mono whitespace-nowrap">
                   {t("editor.card_count", { count: cardCount })}
-                </span>
-                <span
-                  className={`text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
-                    saving === "error" ? "text-destructive" : "text-v2-muted"
-                  }`}
-                >
-                  <Save className="h-3 w-3" />
-                  {saveLabel}
                 </span>
               </span>
             </div>
