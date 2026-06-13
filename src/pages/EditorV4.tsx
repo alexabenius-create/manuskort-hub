@@ -953,18 +953,10 @@ export default function EditorV4() {
               </div>
               <HelpButton />
 
-              {/* Sparindikator + kortantal (desktop, längst till höger) */}
+              {/* Kortantal (desktop, längst till höger) */}
               <span className="hidden lg:flex items-center gap-2 ml-1 pl-2 border-l border-v2-line">
                 <span className="text-[11px] text-v2-muted font-mono whitespace-nowrap">
                   {t("editor.card_count", { count: cardCount })}
-                </span>
-                <span
-                  className={`text-[11px] font-mono inline-flex items-center gap-1 whitespace-nowrap ${
-                    saving === "error" ? "text-destructive" : "text-v2-muted"
-                  }`}
-                >
-                  <Save className="h-3 w-3" />
-                  {saveLabel}
                 </span>
               </span>
             </div>
