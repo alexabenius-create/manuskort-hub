@@ -121,9 +121,12 @@ export default function ResetPasswordV2() {
 
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-v2-line shadow-[0_20px_60px_-20px_rgba(99,102,241,0.25)] p-8">
           {!ready ? (
-            <p className="text-[14px] text-v2-muted text-center">
-              <T k="auth.reset.open_link_hint" />
-            </p>
+            <div className="text-[14px] text-v2-muted text-center space-y-2">
+              <p><T k="auth.reset.open_link_hint" /></p>
+              {exchangeError && (
+                <p className="text-red-600 text-[13px]">{exchangeError}</p>
+              )}
+            </div>
           ) : (
             <form onSubmit={handle} className="space-y-4">
               <div className="space-y-1.5">
